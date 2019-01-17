@@ -1,0 +1,86 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Engine">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="App.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Constants.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Input.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Sprite.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureManager.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector2D.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="GameStateMachine.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundManager.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="GameState.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="MapState.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="MenuState.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Point.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Rectangle.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="BitmapText.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="App.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureManager.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Sprite.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Input.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="GameStateMachine.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundManager.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="win32Main.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="GameState.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="MapState.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="MenuState.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

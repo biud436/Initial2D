@@ -1,0 +1,228 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{F4051E31-887A-4919-8B7B-C68F393F4E71}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>My20180103</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <ProjectName>Initial2D</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>C:\SDK\zlib\include;C:\SDK\tinyxml\include\;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;C:\SDK\libpng\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\SDK\zlib\libs;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;C:\SDK\SDL2\lib\x86;C:\SDK\SDL2_mixer\libs;C:\SDK\libpng\libs;C:\SDK\tinyxml\libs;$(LibraryPath)</LibraryPath>
+    <IntDir>log\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <SourcePath>$(SourcePath)</SourcePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>C:\SDK\libpng\include;C:\SDK\zlib\include;C:\SDK\tinyxml\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\SDK\libpng\libs;C:\SDK\zlib\libs;C:\SDK\tinyxml\libs;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;C:\SDK\SDL2\lib\x86;C:\SDK\SDL2_mixer\libs;$(LibraryPath)</LibraryPath>
+    <IntDir>$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>libzlib.lib;libpng16d.lib;SDL2.lib;native_midi.lib;playmus.lib;playwave.lib;timidity.lib;tinyxml_d.lib;SDL2_mixer.lib;Msimg32.lib;OpenAL32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/NODEFAULTLIB:msvcrt.lib %(AdditionalOptions)</AdditionalOptions>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+    </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <PreBuildEvent>
+      <Command>copy /y $(ProjectDir)bin\zlib1.dll  $(SolutionDir)$(Configuration)\zlib1.dll 
+copy /y $(ProjectDir)bin\libpng16-16.dll  $(SolutionDir)$(Configuration)\libpng16-16.dll 
+copy /y $(ProjectDir)bin\libFLAC-8.dll  $(SolutionDir)$(Configuration)\libFLAC-8.dll
+copy /y $(ProjectDir)bin\libmodplug-1.dll  $(SolutionDir)$(Configuration)\libmodplug-1.dll
+copy /y $(ProjectDir)bin\libmpg123-0.dll  $(SolutionDir)$(Configuration)\libmpg123-0.dll
+copy /y $(ProjectDir)bin\libogg-0.dll  $(SolutionDir)$(Configuration)\libogg-0.dll 
+copy /y $(ProjectDir)bin\libvorbis-0.dll  $(SolutionDir)$(Configuration)\libvorbis-0.dll 
+copy /y $(ProjectDir)bin\libvorbisfile-3.dll  $(SolutionDir)$(Configuration)\libvorbisfile-3.dll 
+copy /y $(ProjectDir)bin\SDL2.dll  $(SolutionDir)$(Configuration)\SDL2.dll 
+copy /y $(ProjectDir)bin\SDL2_mixer.dll  $(SolutionDir)$(Configuration)\SDL2_mixer.dll </Command>
+      <Message>실행에 필요한 기본 DLL 파일을 복사합니다.</Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MinSpace</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <ExceptionHandling>Sync</ExceptionHandling>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>libzlib.lib;libpng16.lib;SDL2.lib;native_midi.lib;playmus.lib;playwave.lib;timidity.lib;SDL2_mixer.lib;Msimg32.lib;tinyxml.lib;OpenAL32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/NODEFAULTLIB:msvcrt.lib %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <PreBuildEvent>
+      <Command>copy /y $(ProjectDir)bin\zlib1.dll  $(SolutionDir)$(Configuration)\zlib1.dll 
+copy /y $(ProjectDir)bin\libpng16-16.dll  $(SolutionDir)$(Configuration)\libpng16-16.dll 
+copy /y $(ProjectDir)bin\libFLAC-8.dll  $(SolutionDir)$(Configuration)\libFLAC-8.dll
+copy /y $(ProjectDir)bin\libmodplug-1.dll  $(SolutionDir)$(Configuration)\libmodplug-1.dll
+copy /y $(ProjectDir)bin\libmpg123-0.dll  $(SolutionDir)$(Configuration)\libmpg123-0.dll
+copy /y $(ProjectDir)bin\libogg-0.dll  $(SolutionDir)$(Configuration)\libogg-0.dll 
+copy /y $(ProjectDir)bin\libvorbis-0.dll  $(SolutionDir)$(Configuration)\libvorbis-0.dll 
+copy /y $(ProjectDir)bin\libvorbisfile-3.dll  $(SolutionDir)$(Configuration)\libvorbisfile-3.dll 
+copy /y $(ProjectDir)bin\SDL2.dll  $(SolutionDir)$(Configuration)\SDL2.dll 
+copy /y $(ProjectDir)bin\SDL2_mixer.dll  $(SolutionDir)$(Configuration)\SDL2_mixer.dll </Command>
+      <Message>실행에 필요한 기본 DLL 파일을 복사합니다.</Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="App.h" />
+    <ClInclude Include="BitmapText.h" />
+    <ClInclude Include="Constants.h" />
+    <ClInclude Include="GameState.h" />
+    <ClInclude Include="GameStateMachine.h" />
+    <ClInclude Include="Input.h" />
+    <ClInclude Include="MapState.h" />
+    <ClInclude Include="MenuState.h" />
+    <ClInclude Include="Point.h" />
+    <ClInclude Include="Rectangle.h" />
+    <ClInclude Include="SoundManager.h" />
+    <ClInclude Include="Sprite.h" />
+    <ClInclude Include="TextureManager.h" />
+    <ClInclude Include="Vector2D.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="App.cpp" />
+    <ClCompile Include="GameState.cpp" />
+    <ClCompile Include="GameStateMachine.cpp" />
+    <ClCompile Include="Input.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="MapState.cpp" />
+    <ClCompile Include="MenuState.cpp" />
+    <ClCompile Include="SoundManager.cpp" />
+    <ClCompile Include="Sprite.cpp" />
+    <ClCompile Include="TextureManager.cpp" />
+    <ClCompile Include="win32Main.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
