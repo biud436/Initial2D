@@ -33,5 +33,3 @@
 
 - Initial2D
     - Initial2D.lib
-
-```
