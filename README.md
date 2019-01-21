@@ -1,4 +1,9 @@
-# Initial2D
+# 도움말
+API 래퍼런스는 다음 문서를 참고 하시기 바랍니다.
+
+<a href="https://biud436.github.io/Initial2D/docs/" target="_blank">https://biud436.github.io/Initial2D/docs/</a>
+
+# 빌드 시
 
 빌드 시 다음 라이브러리 파일과 DLL 파일이 필요합니다.
 
