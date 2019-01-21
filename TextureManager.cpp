@@ -174,6 +174,7 @@ TextureData* LoadPNG(std::string fileName)
 
 	if (fp == NULL)
 	{
+		MessageBox(g_hWnd, "이미지 파일을 찾을 수 없습니다", "오류", MB_OK | MB_ICONERROR);
 		CLOSE_PNG_FILE(fp, pTextureData,"파일을 불러오는데 실패했습니다")
 		return pTextureData;
 	}

@@ -30,7 +30,7 @@ typedef XFORM TransformData;
  * @struct TextureData
  * @brief
  */
-struct RSLIB TextureData
+struct TextureData
 {
 	int width;			/** 폭 */
 	int height;			/** 높이 */
@@ -57,7 +57,7 @@ TextureData* LoadPNG(std::string fileName);
  * @class TextureManager
  * @brief Texture 관리 모듈
  */
-class RSLIB TextureManager
+class TextureManager
 {
 public:
 	TextureManager();

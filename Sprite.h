@@ -32,7 +32,7 @@
  * @struct SpriteData
  * @brief 스프라이트 데이터
  */
-struct RSLIB SpriteData
+struct SpriteData
 {
 
 	Vector2D position;		/** 스프라이트 벡터 */
@@ -61,7 +61,7 @@ typedef XFORM TransformData;
  * @brief Sprite 클래스
  * @details 
  */
-class RSLIB Sprite
+class Sprite
 {
 public:
 

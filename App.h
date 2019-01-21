@@ -57,7 +57,7 @@ class TextureManager;
  * @details
  상속 시 Initialize, ObjectUpdate, Render, Destroy는 반드시 오버라이드해야 합니다.
  */
-class RSLIB App
+class App
 {
 
 public:

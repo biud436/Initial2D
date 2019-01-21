@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="App.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
+    <ClCompile Include="GameState.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
+    <ClCompile Include="GameStateMachine.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
+    <ClCompile Include="Input.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
+    <ClCompile Include="MapState.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
+    <ClCompile Include="MenuState.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundManager.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
+    <ClCompile Include="Sprite.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureManager.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="App.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="Constants.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="GameState.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="GameStateMachine.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="Input.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="MapState.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="MenuState.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="Rectangle.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="Point.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundManager.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="Sprite.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureManager.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector2D.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Include">
+      <UniqueIdentifier>{f7a4282d-ac7f-4ab1-be45-3affc6b63f6d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src">
+      <UniqueIdentifier>{147570a7-f8e3-4d30-a818-b13e05be7102}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

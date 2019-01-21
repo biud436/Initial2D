@@ -25,7 +25,7 @@
  * @class Input
  * @brief 입력 모듈
  */
-class RSLIB Input
+class Input
 {
 public:
 

@@ -25,6 +25,11 @@ void App::Initialize()
 
 	// 마우스 및 키보드 모듈 초기화
 	m_pInput->initialize(m_hWnd);
+
+	LOG_D("메인 경로 체크 : ");
+	char szPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szPath);
+	LOG_D(szPath);
 	
 	// 게임 상태 머신 초기화
 	m_pGameStateMachine = new GameStateMachine();
@@ -52,7 +57,7 @@ void App::Destroy()
 	SAFE_DELETE(m_pTextureManager);
 
 	ReleaseDC(m_hWnd, m_context.mainContext);
-
-	LOG_D("소멸");
+/*
+	LOG_D("소멸");*/
 
 }
