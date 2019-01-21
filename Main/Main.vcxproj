@@ -25,8 +25,8 @@
     <ClCompile Include="..\src\win32Main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\MapState.h" />
-    <ClInclude Include="..\include\MenuState.h" />
+    <ClInclude Include="..\src\MapState.h" />
+    <ClInclude Include="..\src\MenuState.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C0C5230E-EBC1-4CF8-B75A-436733A63E01}</ProjectGuid>

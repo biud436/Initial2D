@@ -7,7 +7,7 @@
     <ClCompile Include="..\src\MenuState.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\MapState.h" />
-    <ClInclude Include="..\include\MenuState.h" />
+    <ClInclude Include="..\src\MapState.h" />
+    <ClInclude Include="..\src\MenuState.h" />
   </ItemGroup>
 </Project>
