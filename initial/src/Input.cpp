@@ -16,7 +16,7 @@
 
 extern HWND g_hWnd;
 
-Input::Input()
+Input::Input() : m_nWheel(0)
 {
 }
 
@@ -51,6 +51,16 @@ void Input::update()
 	updateMouse();
 }
 
+
+int Input::getMouseZ() const
+{
+	return m_nWheel;
+}
+
+void Input::setMouseZ(int value)
+{
+	m_nWheel = value;
+}
 
 void Input::updateKeyboard()
 {
@@ -109,6 +119,8 @@ void Input::updateMouse()
 
 	m_mouse.setX(static_cast<float>(tempPt.x));
 	m_mouse.setY(static_cast<float>(tempPt.y));
+
+	setMouseZ(0);
 
 }
 

@@ -6,6 +6,7 @@ var searchData=
   ['setframedelay',['setFrameDelay',['../class_sprite.html#a22a26f0936c2d9926e4753aaa984d70f',1,'Sprite']]],
   ['setframes',['setFrames',['../class_sprite.html#a577b8a8597a7e622cb4bc91fb201f650',1,'Sprite']]],
   ['setloop',['setLoop',['../class_sprite.html#a1c19e2d3593015f3b605591a4e1bb04d',1,'Sprite']]],
+  ['setmousez',['setMouseZ',['../class_input.html#a977a052da6d1c0c36f57132997ccb356',1,'Input']]],
   ['setmusicposition',['setMusicPosition',['../class_sound_manager.html#a0899aac2a8b7b15b639a1136fc85a1dd',1,'SoundManager']]],
   ['setopacity',['setOpacity',['../class_sprite.html#ac2c5ec49ef228830b655d1099062f286',1,'Sprite']]],
   ['setradians',['setRadians',['../class_sprite.html#a54a41090d4515f1d4f3b16180dec8d0b',1,'Sprite']]],

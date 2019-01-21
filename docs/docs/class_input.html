@@ -112,6 +112,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad066252083b8374a5fa9b583c4f02593"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af9f8f40d0a19843f11e9a9a201b6a806"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_input.html#af9f8f40d0a19843f11e9a9a201b6a806">isAnyMouseDown</a> () const</td></tr>
 <tr class="separator:af9f8f40d0a19843f11e9a9a201b6a806"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07ae95ecdc24b980b29bb35fed21eac9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_input.html#a07ae95ecdc24b980b29bb35fed21eac9">getMouseZ</a> () const</td></tr>
+<tr class="separator:a07ae95ecdc24b980b29bb35fed21eac9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a977a052da6d1c0c36f57132997ccb356"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_input.html#a977a052da6d1c0c36f57132997ccb356">setMouseZ</a> (int value)</td></tr>
+<tr class="separator:a977a052da6d1c0c36f57132997ccb356"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -148,6 +152,9 @@ BYTE&#160;</td><td class="memItemRight" valign="bottom"><b>m_mbOld</b> [8]</td><
 <tr class="memitem:aedf6e6b2ab598038d774de6b259fb6ec"><td class="memItemLeft" align="right" valign="top"><a id="aedf6e6b2ab598038d774de6b259fb6ec"></a>
 BYTE&#160;</td><td class="memItemRight" valign="bottom"><b>m_mbMap</b> [8]</td></tr>
 <tr class="separator:aedf6e6b2ab598038d774de6b259fb6ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5e994baf3e6a3d7ef2120e86b3ff965d"><td class="memItemLeft" align="right" valign="top"><a id="a5e994baf3e6a3d7ef2120e86b3ff965d"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>m_nWheel</b></td></tr>
+<tr class="separator:a5e994baf3e6a3d7ef2120e86b3ff965d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>입력 모듈 </p>
@@ -201,6 +208,24 @@ BYTE&#160;</td><td class="memItemRight" valign="bottom"><b>m_mbMap</b> [8]</td><
       </table>
 </div><div class="memdoc">
 <p>마우스 Y 좌표 반환합니다. </p>
+
+</div>
+</div>
+<a id="a07ae95ecdc24b980b29bb35fed21eac9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a07ae95ecdc24b980b29bb35fed21eac9">&#9670;&nbsp;</a></span>getMouseZ()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int Input::getMouseZ </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>마우스 휠 값을 확인합니다. </p>
 
 </div>
 </div>
@@ -370,6 +395,25 @@ BYTE&#160;</td><td class="memItemRight" valign="bottom"><b>m_mbMap</b> [8]</td><
       </table>
 </div><div class="memdoc">
 <p>특정 마우스 버튼을 눌렀다가 뗐는 지 확인합니다. </p>
+
+</div>
+</div>
+<a id="a977a052da6d1c0c36f57132997ccb356"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a977a052da6d1c0c36f57132997ccb356">&#9670;&nbsp;</a></span>setMouseZ()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Input::setMouseZ </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>value</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>마우스 휠 값을 설정합니다. </p>
 
 </div>
 </div>

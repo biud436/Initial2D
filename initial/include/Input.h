@@ -104,6 +104,17 @@ public:
 	*/
 	bool isAnyMouseDown() const;
 
+	/**
+	* 마우스 휠 값을 확인합니다.
+	*/
+	int getMouseZ() const;
+
+	/**
+	* 마우스 휠 값을 설정합니다.
+	*/
+	void setMouseZ(int value);
+
+
 protected:
 	void updateKeyboard();
 	void updateMouse();
@@ -120,6 +131,8 @@ protected:
 	BYTE m_mbCurrent[8];
 	BYTE m_mbOld[8];
 	BYTE m_mbMap[8];
+
+	int m_nWheel;
 
 };
 

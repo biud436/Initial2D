@@ -16,6 +16,5 @@ var searchData=
   ['ismousedown',['isMouseDown',['../class_input.html#ade50a28d9020824e82e20539b6d3a191',1,'Input']]],
   ['ismousepress',['isMousePress',['../class_input.html#ad066252083b8374a5fa9b583c4f02593',1,'Input']]],
   ['ismouseup',['isMouseUp',['../class_input.html#aed53e73611a1a265ece72b8b90479659',1,'Input']]],
-  ['isplaying',['isPlaying',['../class_sound_manager.html#adfddf5875cfcdcf2c6cf3958b350dc8b',1,'SoundManager']]],
-  ['initial2d',['Initial2D',['../md__e_1__v_s2015__projects__initial2_d__r_e_a_d_m_e.html',1,'']]]
+  ['isplaying',['isPlaying',['../class_sound_manager.html#adfddf5875cfcdcf2c6cf3958b350dc8b',1,'SoundManager']]]
 ];

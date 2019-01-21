@@ -20,6 +20,7 @@ var searchData=
   ['getlength',['getLength',['../class_vector2_d.html#a2fdc4c6d8ed4ca457381970736e9ab76',1,'Vector2D']]],
   ['getmousex',['getMouseX',['../class_input.html#aad68569383410edc8f78a943113ce511',1,'Input']]],
   ['getmousey',['getMouseY',['../class_input.html#ab8cd307e1a0fe647309da8583a51807b',1,'Input']]],
+  ['getmousez',['getMouseZ',['../class_input.html#a07ae95ecdc24b980b29bb35fed21eac9',1,'Input']]],
   ['getopacity',['getOpacity',['../class_sprite.html#ae8066ba3778c08cbfa167b9a8f2f52b5',1,'Sprite']]],
   ['getradians',['getRadians',['../class_sprite.html#a1b6ffa95774ad477b746d49ac366b5a6',1,'Sprite']]],
   ['getrect',['getRect',['../class_sprite.html#a50b0738eb245be70a251e07136e606df',1,'Sprite']]],
