@@ -1,0 +1,99 @@
+\hypertarget{class_game_state}{}\section{Game\+State Class Reference}
+\label{class_game_state}\index{GameState@{GameState}}
+Inheritance diagram for Game\+State\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{class_game_state}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+virtual void \mbox{\hyperlink{class_game_state_acdace458d1c5a39fdb3bca0d65f88d7d}{update}} (float elapsed)=0
+\item 
+virtual void \mbox{\hyperlink{class_game_state_ade2f8ae5aa83f8709863437a8ffba12c}{render}} ()=0
+\item 
+virtual bool \mbox{\hyperlink{class_game_state_ac9dd3f269dda278d57d9a1e3e27461da}{on\+Enter}} ()=0
+\item 
+virtual bool \mbox{\hyperlink{class_game_state_a17db45d86c52f063cfc854f8ba062178}{on\+Exit}} ()=0
+\item 
+virtual std\+::string \mbox{\hyperlink{class_game_state_a79e985882263b3e2642ad002c03acaa9}{get\+State\+Id}} () const =0
+\end{DoxyCompactItemize}
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{class_game_state_a79e985882263b3e2642ad002c03acaa9}\label{class_game_state_a79e985882263b3e2642ad002c03acaa9}} 
+\index{GameState@{GameState}!getStateId@{getStateId}}
+\index{getStateId@{getStateId}!GameState@{GameState}}
+\subsubsection{\texorpdfstring{getStateId()}{getStateId()}}
+{\footnotesize\ttfamily Game\+State\+::get\+State\+Id (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+\begin{DoxyReturn}{Returns}
+std\+::string 
+\end{DoxyReturn}
+
+
+Implemented in \mbox{\hyperlink{class_map_state_a0434e96d8a597fe7f5cbc6205e4b8f85}{Map\+State}}, and \mbox{\hyperlink{class_menu_state_a96131ebc632546458ccf8034f87a692b}{Menu\+State}}.
+
+\mbox{\Hypertarget{class_game_state_ac9dd3f269dda278d57d9a1e3e27461da}\label{class_game_state_ac9dd3f269dda278d57d9a1e3e27461da}} 
+\index{GameState@{GameState}!onEnter@{onEnter}}
+\index{onEnter@{onEnter}!GameState@{GameState}}
+\subsubsection{\texorpdfstring{onEnter()}{onEnter()}}
+{\footnotesize\ttfamily Game\+State\+::on\+Enter (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+\begin{DoxyReturn}{Returns}
+bool 
+\end{DoxyReturn}
+
+
+Implemented in \mbox{\hyperlink{class_map_state_aa0a860d4f4c09fa6f7da28a243b1fc37}{Map\+State}}, and \mbox{\hyperlink{class_menu_state_a1c825d87d75a552440e0fc54a4428359}{Menu\+State}}.
+
+\mbox{\Hypertarget{class_game_state_a17db45d86c52f063cfc854f8ba062178}\label{class_game_state_a17db45d86c52f063cfc854f8ba062178}} 
+\index{GameState@{GameState}!onExit@{onExit}}
+\index{onExit@{onExit}!GameState@{GameState}}
+\subsubsection{\texorpdfstring{onExit()}{onExit()}}
+{\footnotesize\ttfamily Game\+State\+::on\+Exit (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+\begin{DoxyReturn}{Returns}
+bool 
+\end{DoxyReturn}
+
+
+Implemented in \mbox{\hyperlink{class_map_state_ab2daa5de8a62640f5373ce69315aac93}{Map\+State}}, and \mbox{\hyperlink{class_menu_state_aae03dc2a5d860a3a1a2ea946cd3309a5}{Menu\+State}}.
+
+\mbox{\Hypertarget{class_game_state_ade2f8ae5aa83f8709863437a8ffba12c}\label{class_game_state_ade2f8ae5aa83f8709863437a8ffba12c}} 
+\index{GameState@{GameState}!render@{render}}
+\index{render@{render}!GameState@{GameState}}
+\subsubsection{\texorpdfstring{render()}{render()}}
+{\footnotesize\ttfamily Game\+State\+::render (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}
+
+
+Implemented in \mbox{\hyperlink{class_map_state_a6e06116bc2372a7e0939bb129ea66a3e}{Map\+State}}, and \mbox{\hyperlink{class_menu_state_ac216e0b4c7f5c5d39520165c45af0da6}{Menu\+State}}.
+
+\mbox{\Hypertarget{class_game_state_acdace458d1c5a39fdb3bca0d65f88d7d}\label{class_game_state_acdace458d1c5a39fdb3bca0d65f88d7d}} 
+\index{GameState@{GameState}!update@{update}}
+\index{update@{update}!GameState@{GameState}}
+\subsubsection{\texorpdfstring{update()}{update()}}
+{\footnotesize\ttfamily Game\+State\+::update (\begin{DoxyParamCaption}\item[{float}]{elapsed }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+
+\begin{DoxyParams}{Parameters}
+{\em float} & elapsed \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}
+
+
+Implemented in \mbox{\hyperlink{class_map_state_afeafeea186395c2d4c5ce5c4936b9855}{Map\+State}}, and \mbox{\hyperlink{class_menu_state_ace168c6eaa32fd90e1e09828f46bcfbf}{Menu\+State}}.
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+E\+:/\+V\+S2015/\+Projects/\+Initial2\+D/initial/include/\mbox{\hyperlink{_game_state_8h}{Game\+State.\+h}}\end{DoxyCompactItemize}

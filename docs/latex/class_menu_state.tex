@@ -1,0 +1,92 @@
+\hypertarget{class_menu_state}{}\section{Menu\+State Class Reference}
+\label{class_menu_state}\index{MenuState@{MenuState}}
+Inheritance diagram for Menu\+State\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{class_menu_state}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+virtual void \mbox{\hyperlink{class_menu_state_ace168c6eaa32fd90e1e09828f46bcfbf}{update}} (float elapsed) override
+\item 
+virtual void \mbox{\hyperlink{class_menu_state_ac216e0b4c7f5c5d39520165c45af0da6}{render}} () override
+\item 
+virtual bool \mbox{\hyperlink{class_menu_state_a1c825d87d75a552440e0fc54a4428359}{on\+Enter}} () override
+\item 
+virtual bool \mbox{\hyperlink{class_menu_state_aae03dc2a5d860a3a1a2ea946cd3309a5}{on\+Exit}} () override
+\item 
+virtual std\+::string \mbox{\hyperlink{class_menu_state_a96131ebc632546458ccf8034f87a692b}{get\+State\+Id}} () const override
+\end{DoxyCompactItemize}
+\subsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{class_menu_state_a5e5043c2d02a2a355f491b09e519a8cf}\label{class_menu_state_a5e5043c2d02a2a355f491b09e519a8cf}} 
+std\+::vector$<$ \mbox{\hyperlink{class_sprite}{Sprite}} $\ast$ $>$ {\bfseries m\+\_\+game\+Objects}
+\end{DoxyCompactItemize}
+\subsection*{Static Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{class_menu_state_ae5acc053ee13be25d518c53d93dea6bb}\label{class_menu_state_ae5acc053ee13be25d518c53d93dea6bb}} 
+static const std\+::string {\bfseries m\+\_\+str\+Menu\+Id} = \char`\"{}M\+E\+NU\char`\"{}
+\end{DoxyCompactItemize}
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{class_menu_state_a96131ebc632546458ccf8034f87a692b}\label{class_menu_state_a96131ebc632546458ccf8034f87a692b}} 
+\index{MenuState@{MenuState}!getStateId@{getStateId}}
+\index{getStateId@{getStateId}!MenuState@{MenuState}}
+\subsubsection{\texorpdfstring{getStateId()}{getStateId()}}
+{\footnotesize\ttfamily virtual std\+::string Menu\+State\+::get\+State\+Id (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [override]}, {\ttfamily [virtual]}}
+
+I\+D를 반환합니다. 
+
+Implements \mbox{\hyperlink{class_game_state_a79e985882263b3e2642ad002c03acaa9}{Game\+State}}.
+
+\mbox{\Hypertarget{class_menu_state_a1c825d87d75a552440e0fc54a4428359}\label{class_menu_state_a1c825d87d75a552440e0fc54a4428359}} 
+\index{MenuState@{MenuState}!onEnter@{onEnter}}
+\index{onEnter@{onEnter}!MenuState@{MenuState}}
+\subsubsection{\texorpdfstring{onEnter()}{onEnter()}}
+{\footnotesize\ttfamily bool Menu\+State\+::on\+Enter (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+진입 시에 수행됩니다. 
+
+Implements \mbox{\hyperlink{class_game_state_ac9dd3f269dda278d57d9a1e3e27461da}{Game\+State}}.
+
+\mbox{\Hypertarget{class_menu_state_aae03dc2a5d860a3a1a2ea946cd3309a5}\label{class_menu_state_aae03dc2a5d860a3a1a2ea946cd3309a5}} 
+\index{MenuState@{MenuState}!onExit@{onExit}}
+\index{onExit@{onExit}!MenuState@{MenuState}}
+\subsubsection{\texorpdfstring{onExit()}{onExit()}}
+{\footnotesize\ttfamily bool Menu\+State\+::on\+Exit (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+제거 시에 수행됩니다. 
+
+Implements \mbox{\hyperlink{class_game_state_a17db45d86c52f063cfc854f8ba062178}{Game\+State}}.
+
+\mbox{\Hypertarget{class_menu_state_ac216e0b4c7f5c5d39520165c45af0da6}\label{class_menu_state_ac216e0b4c7f5c5d39520165c45af0da6}} 
+\index{MenuState@{MenuState}!render@{render}}
+\index{render@{render}!MenuState@{MenuState}}
+\subsubsection{\texorpdfstring{render()}{render()}}
+{\footnotesize\ttfamily void Menu\+State\+::render (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+렌더링을 수행합니다. 
+
+Implements \mbox{\hyperlink{class_game_state_ade2f8ae5aa83f8709863437a8ffba12c}{Game\+State}}.
+
+\mbox{\Hypertarget{class_menu_state_ace168c6eaa32fd90e1e09828f46bcfbf}\label{class_menu_state_ace168c6eaa32fd90e1e09828f46bcfbf}} 
+\index{MenuState@{MenuState}!update@{update}}
+\index{update@{update}!MenuState@{MenuState}}
+\subsubsection{\texorpdfstring{update()}{update()}}
+{\footnotesize\ttfamily void Menu\+State\+::update (\begin{DoxyParamCaption}\item[{float}]{elapsed }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+업데이트를 수행합니다. 
+
+Implements \mbox{\hyperlink{class_game_state_acdace458d1c5a39fdb3bca0d65f88d7d}{Game\+State}}.
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+E\+:/\+V\+S2015/\+Projects/\+Initial2\+D/src/\mbox{\hyperlink{_menu_state_8h}{Menu\+State.\+h}}\item 
+E\+:/\+V\+S2015/\+Projects/\+Initial2\+D/src/\mbox{\hyperlink{_menu_state_8cpp}{Menu\+State.\+cpp}}\end{DoxyCompactItemize}

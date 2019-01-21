@@ -1,0 +1,78 @@
+\hypertarget{class_texture_manager}{}\section{Texture\+Manager Class Reference}
+\label{class_texture_manager}\index{TextureManager@{TextureManager}}
+
+
+Texture 관리 모듈  
+
+
+
+
+{\ttfamily \#include $<$Texture\+Manager.\+h$>$}
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+bool \mbox{\hyperlink{class_texture_manager_a086c507b246921b4d46d65d05804e463}{Load}} (std\+::string file\+Name, std\+::string id, H\+DC $\ast$hdc)
+\item 
+bool \mbox{\hyperlink{class_texture_manager_ae40da6381207fdd73f2556164cb64ac7}{Remove}} (std\+::string id)
+\item 
+void \mbox{\hyperlink{class_texture_manager_ad2d52c0673d95a8958c0800b895279f2}{Draw}} (std\+::string id, int x, int y, int width, int height)
+\item 
+void \mbox{\hyperlink{class_texture_manager_a153f1fdbc4f953470c289a31058fcfd7}{Draw\+Frame}} (std\+::string id, int x, int y, int width, int height, R\+E\+CT \&rect, Transform\+Data \&transform)
+\item 
+bool \mbox{\hyperlink{class_texture_manager_aa3f56db961e2415d3dbb7ebe809307f3}{valid}} (std\+::string id)
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{class_texture_manager_a96ca15b2c412dd637a79e268b0ccdcb6}\label{class_texture_manager_a96ca15b2c412dd637a79e268b0ccdcb6}} 
+std\+::map$<$ std\+::string, \mbox{\hyperlink{struct_texture_data}{Texture\+Data}} $\ast$ $>$ {\bfseries m\+\_\+texture\+Map}
+\end{DoxyCompactItemize}
+\subsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{class_texture_manager_a956eede5169325a9c85017beb8dce5e6}\label{class_texture_manager_a956eede5169325a9c85017beb8dce5e6}} 
+C\+O\+L\+O\+R\+R\+EF {\bfseries m\+\_\+cr\+Transparent}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Texture 관리 모듈 
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{class_texture_manager_ad2d52c0673d95a8958c0800b895279f2}\label{class_texture_manager_ad2d52c0673d95a8958c0800b895279f2}} 
+\index{TextureManager@{TextureManager}!Draw@{Draw}}
+\index{Draw@{Draw}!TextureManager@{TextureManager}}
+\subsubsection{\texorpdfstring{Draw()}{Draw()}}
+{\footnotesize\ttfamily void Texture\+Manager\+::\+Draw (\begin{DoxyParamCaption}\item[{std\+::string}]{id,  }\item[{int}]{x,  }\item[{int}]{y,  }\item[{int}]{width,  }\item[{int}]{height }\end{DoxyParamCaption})}
+
+화면에 Texture를 출력합니다. \mbox{\Hypertarget{class_texture_manager_a153f1fdbc4f953470c289a31058fcfd7}\label{class_texture_manager_a153f1fdbc4f953470c289a31058fcfd7}} 
+\index{TextureManager@{TextureManager}!DrawFrame@{DrawFrame}}
+\index{DrawFrame@{DrawFrame}!TextureManager@{TextureManager}}
+\subsubsection{\texorpdfstring{DrawFrame()}{DrawFrame()}}
+{\footnotesize\ttfamily void Texture\+Manager\+::\+Draw\+Frame (\begin{DoxyParamCaption}\item[{std\+::string}]{id,  }\item[{int}]{x,  }\item[{int}]{y,  }\item[{int}]{width,  }\item[{int}]{height,  }\item[{R\+E\+CT \&}]{rect,  }\item[{Transform\+Data \&}]{transform }\end{DoxyParamCaption})}
+
+화면에 Texture를 출력합니다. \mbox{\Hypertarget{class_texture_manager_a086c507b246921b4d46d65d05804e463}\label{class_texture_manager_a086c507b246921b4d46d65d05804e463}} 
+\index{TextureManager@{TextureManager}!Load@{Load}}
+\index{Load@{Load}!TextureManager@{TextureManager}}
+\subsubsection{\texorpdfstring{Load()}{Load()}}
+{\footnotesize\ttfamily bool Texture\+Manager\+::\+Load (\begin{DoxyParamCaption}\item[{std\+::string}]{file\+Name,  }\item[{std\+::string}]{id,  }\item[{H\+DC $\ast$}]{hdc }\end{DoxyParamCaption})}
+
+이미지 파일로부터 새로운 Texture를 생성합니다. \mbox{\Hypertarget{class_texture_manager_ae40da6381207fdd73f2556164cb64ac7}\label{class_texture_manager_ae40da6381207fdd73f2556164cb64ac7}} 
+\index{TextureManager@{TextureManager}!Remove@{Remove}}
+\index{Remove@{Remove}!TextureManager@{TextureManager}}
+\subsubsection{\texorpdfstring{Remove()}{Remove()}}
+{\footnotesize\ttfamily bool Texture\+Manager\+::\+Remove (\begin{DoxyParamCaption}\item[{std\+::string}]{id }\end{DoxyParamCaption})}
+
+Texture를 캐시에서 제거합니다. \mbox{\Hypertarget{class_texture_manager_aa3f56db961e2415d3dbb7ebe809307f3}\label{class_texture_manager_aa3f56db961e2415d3dbb7ebe809307f3}} 
+\index{TextureManager@{TextureManager}!valid@{valid}}
+\index{valid@{valid}!TextureManager@{TextureManager}}
+\subsubsection{\texorpdfstring{valid()}{valid()}}
+{\footnotesize\ttfamily bool Texture\+Manager\+::valid (\begin{DoxyParamCaption}\item[{std\+::string}]{id }\end{DoxyParamCaption})}
+
+유효한 Texture인지 체크합니다. 
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+E\+:/\+V\+S2015/\+Projects/\+Initial2\+D/initial/include/\mbox{\hyperlink{_texture_manager_8h}{Texture\+Manager.\+h}}\item 
+E\+:/\+V\+S2015/\+Projects/\+Initial2\+D/initial/src/\mbox{\hyperlink{_texture_manager_8cpp}{Texture\+Manager.\+cpp}}\end{DoxyCompactItemize}

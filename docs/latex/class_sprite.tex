@@ -1,0 +1,377 @@
+\hypertarget{class_sprite}{}\section{Sprite Class Reference}
+\label{class_sprite}\index{Sprite@{Sprite}}
+
+
+\mbox{\hyperlink{class_sprite}{Sprite}} 클래스  
+
+
+
+
+{\ttfamily \#include $<$Sprite.\+h$>$}
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+virtual bool \mbox{\hyperlink{class_sprite_aba9774f26aa07337d9e071b9e436dd95}{initialize}} (float x, float y, int width, int height, int max\+Frames, std\+::string texture\+Id)
+\item 
+virtual void \mbox{\hyperlink{class_sprite_a8552f93511e6f0957c7f763104193afb}{update}} (float elapsed)
+\item 
+virtual void \mbox{\hyperlink{class_sprite_a940292edd2ff28d2e8c60b840636f994}{draw}} (void)
+\item 
+const \mbox{\hyperlink{struct_sprite_data}{Sprite\+Data}} \& \mbox{\hyperlink{class_sprite_afce7986c5fb568479b044a36f4c1cbbf}{get\+Sprite\+Data}} ()
+\item 
+float \mbox{\hyperlink{class_sprite_a566efc9772b4e9a983d3db71b2e5e34e}{getX}} ()
+\item 
+float \mbox{\hyperlink{class_sprite_a3bb08547e9d46ab58e05aec774b26ee4}{getY}} ()
+\item 
+float \mbox{\hyperlink{class_sprite_a1b0aff3c4f856f0c8cf56df3d81bc7ef}{get\+Scale}} ()
+\item 
+int \mbox{\hyperlink{class_sprite_aba3d4752461ec679fbf5de7ec4c34f61}{get\+Width}} ()
+\item 
+int \mbox{\hyperlink{class_sprite_a67b67082cfda90103d2d9eefea04cc4b}{get\+Height}} ()
+\item 
+float \mbox{\hyperlink{class_sprite_a9c887ea9c0c44f7bc0ca9746e885ed31}{get\+Angle}} ()
+\item 
+float \mbox{\hyperlink{class_sprite_a1b6ffa95774ad477b746d49ac366b5a6}{get\+Radians}} ()
+\item 
+bool \mbox{\hyperlink{class_sprite_a0dccd1488bcdba09fc67d1d4bb19298f}{get\+Visible}} ()
+\item 
+B\+Y\+TE \mbox{\hyperlink{class_sprite_ae8066ba3778c08cbfa167b9a8f2f52b5}{get\+Opacity}} ()
+\item 
+float \mbox{\hyperlink{class_sprite_ae94abbbeb05f4a166ba96f6fa9f31ddc}{get\+Frame\+Delay}} ()
+\item 
+int \mbox{\hyperlink{class_sprite_a005efd7aaf18903ca8e36e6e4b7b493d}{get\+Start\+Frame}} ()
+\item 
+int \mbox{\hyperlink{class_sprite_a2d6fcef649708d0b82a441f5412d73ec}{get\+End\+Frame}} ()
+\item 
+int \mbox{\hyperlink{class_sprite_a278f32183edd6a9efb095ae3f102e50f}{get\+Current\+Frame}} ()
+\item 
+R\+E\+CT \mbox{\hyperlink{class_sprite_a50b0738eb245be70a251e07136e606df}{get\+Rect}} ()
+\item 
+bool \mbox{\hyperlink{class_sprite_a277d1623109b672a1ba5837603122bf1}{get\+Anim\+Complete}} ()
+\item 
+void \mbox{\hyperlink{class_sprite_a83c882524ce2588098faa793773b6113}{setX}} (float x)
+\item 
+void \mbox{\hyperlink{class_sprite_a042a48623b9c8202662a595fac2d6790}{setY}} (float y)
+\item 
+void \mbox{\hyperlink{class_sprite_a463c10936b40d8de3354e6383294a78a}{set\+Scale}} (float scale)
+\item 
+void \mbox{\hyperlink{class_sprite_a7c8b37b2672f5454473f95f0440ad158}{set\+Angle}} (float degree)
+\item 
+void \mbox{\hyperlink{class_sprite_a54a41090d4515f1d4f3b16180dec8d0b}{set\+Radians}} (float rad)
+\item 
+void \mbox{\hyperlink{class_sprite_add93d55788046c00deb1d7f0fa2d6ae8}{set\+Visible}} (bool visible)
+\item 
+void \mbox{\hyperlink{class_sprite_ac2c5ec49ef228830b655d1099062f286}{set\+Opacity}} (B\+Y\+TE opacity)
+\item 
+void \mbox{\hyperlink{class_sprite_a22a26f0936c2d9926e4753aaa984d70f}{set\+Frame\+Delay}} (double delay)
+\item 
+void \mbox{\hyperlink{class_sprite_a577b8a8597a7e622cb4bc91fb201f650}{set\+Frames}} (int start\+Num, int end\+Num)
+\item 
+void \mbox{\hyperlink{class_sprite_ad3ab1bb056b66dfb446f33770d3a7701}{set\+Current\+Frame}} (int current\+Frame)
+\item 
+void \mbox{\hyperlink{class_sprite_a7408db338ffbc3f72b9cdc5657d5356b}{set\+Rect}} ()
+\item 
+void \mbox{\hyperlink{class_sprite_a99e56eaf275bd38be8ba500437f7ff12}{set\+Rect}} (R\+E\+CT rect)
+\item 
+void \mbox{\hyperlink{class_sprite_a47f0ac9f55ebdfa25d01fbc5c3a1b881}{set\+Rect}} (int x, int y, int width, int height)
+\item 
+void \mbox{\hyperlink{class_sprite_a1c19e2d3593015f3b605591a4e1bb04d}{set\+Loop}} (bool is\+Looping)
+\item 
+void \mbox{\hyperlink{class_sprite_a38f9be6d0bec1e1debf6221f97119b31}{set\+Anim\+Complete}} (bool is\+Complete)
+\item 
+virtual void \mbox{\hyperlink{class_sprite_aaa9e697dce4d8e28391735496c864867}{update\+Transform}} ()
+\item 
+virtual Transform\+Data \& \mbox{\hyperlink{class_sprite_a2270ad97c4ae71ff234676e322fe5409}{get\+Transform}} ()
+\item 
+void \mbox{\hyperlink{class_sprite_a62aef363da8c3a42e4eab4c3590b95a7}{add\+Child}} (\mbox{\hyperlink{class_sprite}{Sprite}} $\ast$sprite)
+\item 
+void \mbox{\hyperlink{class_sprite_a8c3e7df57403297e11bf8ea6672786ff}{remove\+Child}} (\mbox{\hyperlink{class_sprite}{Sprite}} $\ast$sprite)
+\end{DoxyCompactItemize}
+\subsection*{Protected Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{class_sprite_ab87c8ed476119904bbe282ab7bed9fcd}\label{class_sprite_ab87c8ed476119904bbe282ab7bed9fcd}} 
+\mbox{\hyperlink{struct_sprite_data}{Sprite\+Data}} {\bfseries m\+\_\+sprite\+Data}
+\item 
+\mbox{\Hypertarget{class_sprite_a5c907ed0f4f38944fe80304a1c636d33}\label{class_sprite_a5c907ed0f4f38944fe80304a1c636d33}} 
+bool {\bfseries m\+\_\+b\+Visible}
+\item 
+\mbox{\Hypertarget{class_sprite_a2fb3896ec487fc65ded8f3b5686aeb99}\label{class_sprite_a2fb3896ec487fc65ded8f3b5686aeb99}} 
+bool {\bfseries m\+\_\+b\+Anim\+Complete}
+\item 
+\mbox{\Hypertarget{class_sprite_a63568381e61a508714de4b14d367db85}\label{class_sprite_a63568381e61a508714de4b14d367db85}} 
+bool {\bfseries m\+\_\+b\+Loop}
+\item 
+\mbox{\Hypertarget{class_sprite_a3f7445f1c5caa23248383be8f529e636}\label{class_sprite_a3f7445f1c5caa23248383be8f529e636}} 
+int {\bfseries m\+\_\+n\+Current\+Frame}
+\item 
+\mbox{\Hypertarget{class_sprite_aa415edd56c2c2a5de2db34176dee6ae6}\label{class_sprite_aa415edd56c2c2a5de2db34176dee6ae6}} 
+int {\bfseries m\+\_\+n\+Max\+Frames}
+\item 
+\mbox{\Hypertarget{class_sprite_ad00393c1210dc9a79c0999e79b50c74c}\label{class_sprite_ad00393c1210dc9a79c0999e79b50c74c}} 
+double {\bfseries m\+\_\+f\+Animation\+Time}
+\item 
+\mbox{\Hypertarget{class_sprite_abae9742b98c4f44cd17d84c1f14df7ed}\label{class_sprite_abae9742b98c4f44cd17d84c1f14df7ed}} 
+bool {\bfseries m\+\_\+b\+Initialized}
+\item 
+\mbox{\Hypertarget{class_sprite_ad11d1fd1bb62289383b63266225b6197}\label{class_sprite_ad11d1fd1bb62289383b63266225b6197}} 
+Transform\+Data {\bfseries m\+\_\+transform}
+\item 
+\mbox{\Hypertarget{class_sprite_aa43e0627a0876d04a0e1d21d24783307}\label{class_sprite_aa43e0627a0876d04a0e1d21d24783307}} 
+std\+::vector$<$ \mbox{\hyperlink{class_sprite}{Sprite}} $\ast$ $>$ {\bfseries \+\_\+children}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\mbox{\hyperlink{class_sprite}{Sprite}} 클래스 
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{class_sprite_a62aef363da8c3a42e4eab4c3590b95a7}\label{class_sprite_a62aef363da8c3a42e4eab4c3590b95a7}} 
+\index{Sprite@{Sprite}!addChild@{addChild}}
+\index{addChild@{addChild}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{addChild()}{addChild()}}
+{\footnotesize\ttfamily void Sprite\+::add\+Child (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{class_sprite}{Sprite}} $\ast$}]{sprite }\end{DoxyParamCaption})}
+
+새로운 자식 스프라이트를 추가합니다. \mbox{\Hypertarget{class_sprite_a940292edd2ff28d2e8c60b840636f994}\label{class_sprite_a940292edd2ff28d2e8c60b840636f994}} 
+\index{Sprite@{Sprite}!draw@{draw}}
+\index{draw@{draw}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{draw()}{draw()}}
+{\footnotesize\ttfamily void Sprite\+::draw (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}}
+
+스프라이트를 묘화합니다. \mbox{\Hypertarget{class_sprite_a9c887ea9c0c44f7bc0ca9746e885ed31}\label{class_sprite_a9c887ea9c0c44f7bc0ca9746e885ed31}} 
+\index{Sprite@{Sprite}!getAngle@{getAngle}}
+\index{getAngle@{getAngle}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{getAngle()}{getAngle()}}
+{\footnotesize\ttfamily float Sprite\+::get\+Angle (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+스프라이트의 각도를 구합니다. \mbox{\Hypertarget{class_sprite_a277d1623109b672a1ba5837603122bf1}\label{class_sprite_a277d1623109b672a1ba5837603122bf1}} 
+\index{Sprite@{Sprite}!getAnimComplete@{getAnimComplete}}
+\index{getAnimComplete@{getAnimComplete}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{getAnimComplete()}{getAnimComplete()}}
+{\footnotesize\ttfamily bool Sprite\+::get\+Anim\+Complete (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+애니메이션이 완료되었는지 여부를 알아냅니다. \mbox{\Hypertarget{class_sprite_a278f32183edd6a9efb095ae3f102e50f}\label{class_sprite_a278f32183edd6a9efb095ae3f102e50f}} 
+\index{Sprite@{Sprite}!getCurrentFrame@{getCurrentFrame}}
+\index{getCurrentFrame@{getCurrentFrame}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{getCurrentFrame()}{getCurrentFrame()}}
+{\footnotesize\ttfamily int Sprite\+::get\+Current\+Frame (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+현재 프레임 값을 가져옵니다. \mbox{\Hypertarget{class_sprite_a2d6fcef649708d0b82a441f5412d73ec}\label{class_sprite_a2d6fcef649708d0b82a441f5412d73ec}} 
+\index{Sprite@{Sprite}!getEndFrame@{getEndFrame}}
+\index{getEndFrame@{getEndFrame}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{getEndFrame()}{getEndFrame()}}
+{\footnotesize\ttfamily int Sprite\+::get\+End\+Frame (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+마지막 프레임 값을 가져옵니다. \mbox{\Hypertarget{class_sprite_ae94abbbeb05f4a166ba96f6fa9f31ddc}\label{class_sprite_ae94abbbeb05f4a166ba96f6fa9f31ddc}} 
+\index{Sprite@{Sprite}!getFrameDelay@{getFrameDelay}}
+\index{getFrameDelay@{getFrameDelay}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{getFrameDelay()}{getFrameDelay()}}
+{\footnotesize\ttfamily float Sprite\+::get\+Frame\+Delay (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+스프라이트의 프레임 간 프레임 딜레이 값을 구합니다. \mbox{\Hypertarget{class_sprite_a67b67082cfda90103d2d9eefea04cc4b}\label{class_sprite_a67b67082cfda90103d2d9eefea04cc4b}} 
+\index{Sprite@{Sprite}!getHeight@{getHeight}}
+\index{getHeight@{getHeight}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{getHeight()}{getHeight()}}
+{\footnotesize\ttfamily int Sprite\+::get\+Height (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+스프라이트의 높이를 구합니다. \mbox{\Hypertarget{class_sprite_ae8066ba3778c08cbfa167b9a8f2f52b5}\label{class_sprite_ae8066ba3778c08cbfa167b9a8f2f52b5}} 
+\index{Sprite@{Sprite}!getOpacity@{getOpacity}}
+\index{getOpacity@{getOpacity}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{getOpacity()}{getOpacity()}}
+{\footnotesize\ttfamily B\+Y\+TE Sprite\+::get\+Opacity (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+스프라이트의 투명도 값을 구합니다. \mbox{\Hypertarget{class_sprite_a1b6ffa95774ad477b746d49ac366b5a6}\label{class_sprite_a1b6ffa95774ad477b746d49ac366b5a6}} 
+\index{Sprite@{Sprite}!getRadians@{getRadians}}
+\index{getRadians@{getRadians}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{getRadians()}{getRadians()}}
+{\footnotesize\ttfamily float Sprite\+::get\+Radians (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+스프라이트의 각도를 라디안으로 얻습니다. \mbox{\Hypertarget{class_sprite_a50b0738eb245be70a251e07136e606df}\label{class_sprite_a50b0738eb245be70a251e07136e606df}} 
+\index{Sprite@{Sprite}!getRect@{getRect}}
+\index{getRect@{getRect}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{getRect()}{getRect()}}
+{\footnotesize\ttfamily R\+E\+CT Sprite\+::get\+Rect (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+스프라이트의 텍스처 영역(\+Rect)을 가져옵니다. \mbox{\Hypertarget{class_sprite_a1b0aff3c4f856f0c8cf56df3d81bc7ef}\label{class_sprite_a1b0aff3c4f856f0c8cf56df3d81bc7ef}} 
+\index{Sprite@{Sprite}!getScale@{getScale}}
+\index{getScale@{getScale}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{getScale()}{getScale()}}
+{\footnotesize\ttfamily float Sprite\+::get\+Scale (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+스프라이트의 스케일 값을 구합니다. \mbox{\Hypertarget{class_sprite_afce7986c5fb568479b044a36f4c1cbbf}\label{class_sprite_afce7986c5fb568479b044a36f4c1cbbf}} 
+\index{Sprite@{Sprite}!getSpriteData@{getSpriteData}}
+\index{getSpriteData@{getSpriteData}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{getSpriteData()}{getSpriteData()}}
+{\footnotesize\ttfamily const \mbox{\hyperlink{struct_sprite_data}{Sprite\+Data}} \& Sprite\+::get\+Sprite\+Data (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+스프라이트 데이터를 획득합니다. \mbox{\Hypertarget{class_sprite_a005efd7aaf18903ca8e36e6e4b7b493d}\label{class_sprite_a005efd7aaf18903ca8e36e6e4b7b493d}} 
+\index{Sprite@{Sprite}!getStartFrame@{getStartFrame}}
+\index{getStartFrame@{getStartFrame}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{getStartFrame()}{getStartFrame()}}
+{\footnotesize\ttfamily int Sprite\+::get\+Start\+Frame (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+시작 프레임 값을 얻습니다. \mbox{\Hypertarget{class_sprite_a2270ad97c4ae71ff234676e322fe5409}\label{class_sprite_a2270ad97c4ae71ff234676e322fe5409}} 
+\index{Sprite@{Sprite}!getTransform@{getTransform}}
+\index{getTransform@{getTransform}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{getTransform()}{getTransform()}}
+{\footnotesize\ttfamily Transform\+Data \& Sprite\+::get\+Transform (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}}
+
+트랜스폼 데이터를 얻습니다. \mbox{\Hypertarget{class_sprite_a0dccd1488bcdba09fc67d1d4bb19298f}\label{class_sprite_a0dccd1488bcdba09fc67d1d4bb19298f}} 
+\index{Sprite@{Sprite}!getVisible@{getVisible}}
+\index{getVisible@{getVisible}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{getVisible()}{getVisible()}}
+{\footnotesize\ttfamily bool Sprite\+::get\+Visible (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+스프라이트 표시 여부를 구합니다. \mbox{\Hypertarget{class_sprite_aba3d4752461ec679fbf5de7ec4c34f61}\label{class_sprite_aba3d4752461ec679fbf5de7ec4c34f61}} 
+\index{Sprite@{Sprite}!getWidth@{getWidth}}
+\index{getWidth@{getWidth}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{getWidth()}{getWidth()}}
+{\footnotesize\ttfamily int Sprite\+::get\+Width (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+스프라이트의 폭을 구합니다. \mbox{\Hypertarget{class_sprite_a566efc9772b4e9a983d3db71b2e5e34e}\label{class_sprite_a566efc9772b4e9a983d3db71b2e5e34e}} 
+\index{Sprite@{Sprite}!getX@{getX}}
+\index{getX@{getX}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{getX()}{getX()}}
+{\footnotesize\ttfamily float Sprite\+::getX (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+스프라이트의 X 좌표를 구합니다. \mbox{\Hypertarget{class_sprite_a3bb08547e9d46ab58e05aec774b26ee4}\label{class_sprite_a3bb08547e9d46ab58e05aec774b26ee4}} 
+\index{Sprite@{Sprite}!getY@{getY}}
+\index{getY@{getY}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{getY()}{getY()}}
+{\footnotesize\ttfamily float Sprite\+::getY (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+스프라이트의 Y 좌표를 구합니다. \mbox{\Hypertarget{class_sprite_aba9774f26aa07337d9e071b9e436dd95}\label{class_sprite_aba9774f26aa07337d9e071b9e436dd95}} 
+\index{Sprite@{Sprite}!initialize@{initialize}}
+\index{initialize@{initialize}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{initialize()}{initialize()}}
+{\footnotesize\ttfamily bool Sprite\+::initialize (\begin{DoxyParamCaption}\item[{float}]{x,  }\item[{float}]{y,  }\item[{int}]{width,  }\item[{int}]{height,  }\item[{int}]{max\+Frames,  }\item[{std\+::string}]{texture\+Id = {\ttfamily \char`\"{}none\char`\"{}} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}}
+
+스프라이트를 초기화 합니다. \mbox{\Hypertarget{class_sprite_a8c3e7df57403297e11bf8ea6672786ff}\label{class_sprite_a8c3e7df57403297e11bf8ea6672786ff}} 
+\index{Sprite@{Sprite}!removeChild@{removeChild}}
+\index{removeChild@{removeChild}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{removeChild()}{removeChild()}}
+{\footnotesize\ttfamily void Sprite\+::remove\+Child (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{class_sprite}{Sprite}} $\ast$}]{sprite }\end{DoxyParamCaption})}
+
+자식 스프라이트를 제거합니다. \mbox{\Hypertarget{class_sprite_a7c8b37b2672f5454473f95f0440ad158}\label{class_sprite_a7c8b37b2672f5454473f95f0440ad158}} 
+\index{Sprite@{Sprite}!setAngle@{setAngle}}
+\index{setAngle@{setAngle}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{setAngle()}{setAngle()}}
+{\footnotesize\ttfamily void Sprite\+::set\+Angle (\begin{DoxyParamCaption}\item[{float}]{degree }\end{DoxyParamCaption})}
+
+회전 각도를 설정합니다. \mbox{\Hypertarget{class_sprite_a38f9be6d0bec1e1debf6221f97119b31}\label{class_sprite_a38f9be6d0bec1e1debf6221f97119b31}} 
+\index{Sprite@{Sprite}!setAnimComplete@{setAnimComplete}}
+\index{setAnimComplete@{setAnimComplete}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{setAnimComplete()}{setAnimComplete()}}
+{\footnotesize\ttfamily void Sprite\+::set\+Anim\+Complete (\begin{DoxyParamCaption}\item[{bool}]{is\+Complete }\end{DoxyParamCaption})}
+
+애니메이션 완료 여부를 설정합니다. \mbox{\Hypertarget{class_sprite_ad3ab1bb056b66dfb446f33770d3a7701}\label{class_sprite_ad3ab1bb056b66dfb446f33770d3a7701}} 
+\index{Sprite@{Sprite}!setCurrentFrame@{setCurrentFrame}}
+\index{setCurrentFrame@{setCurrentFrame}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{setCurrentFrame()}{setCurrentFrame()}}
+{\footnotesize\ttfamily void Sprite\+::set\+Current\+Frame (\begin{DoxyParamCaption}\item[{int}]{current\+Frame }\end{DoxyParamCaption})}
+
+현재 프레임 값을 설정합니다. \mbox{\Hypertarget{class_sprite_a22a26f0936c2d9926e4753aaa984d70f}\label{class_sprite_a22a26f0936c2d9926e4753aaa984d70f}} 
+\index{Sprite@{Sprite}!setFrameDelay@{setFrameDelay}}
+\index{setFrameDelay@{setFrameDelay}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{setFrameDelay()}{setFrameDelay()}}
+{\footnotesize\ttfamily void Sprite\+::set\+Frame\+Delay (\begin{DoxyParamCaption}\item[{double}]{delay }\end{DoxyParamCaption})}
+
+프레임 간의 딜레이 시간을 설정합니다. \mbox{\Hypertarget{class_sprite_a577b8a8597a7e622cb4bc91fb201f650}\label{class_sprite_a577b8a8597a7e622cb4bc91fb201f650}} 
+\index{Sprite@{Sprite}!setFrames@{setFrames}}
+\index{setFrames@{setFrames}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{setFrames()}{setFrames()}}
+{\footnotesize\ttfamily void Sprite\+::set\+Frames (\begin{DoxyParamCaption}\item[{int}]{start\+Num,  }\item[{int}]{end\+Num }\end{DoxyParamCaption})}
+
+시작 및 마지막 프레임 값을 설정합니다. \mbox{\Hypertarget{class_sprite_a1c19e2d3593015f3b605591a4e1bb04d}\label{class_sprite_a1c19e2d3593015f3b605591a4e1bb04d}} 
+\index{Sprite@{Sprite}!setLoop@{setLoop}}
+\index{setLoop@{setLoop}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{setLoop()}{setLoop()}}
+{\footnotesize\ttfamily void Sprite\+::set\+Loop (\begin{DoxyParamCaption}\item[{bool}]{is\+Looping }\end{DoxyParamCaption})}
+
+애니메이션 반복 재생 여부를 설정합니다. \mbox{\Hypertarget{class_sprite_ac2c5ec49ef228830b655d1099062f286}\label{class_sprite_ac2c5ec49ef228830b655d1099062f286}} 
+\index{Sprite@{Sprite}!setOpacity@{setOpacity}}
+\index{setOpacity@{setOpacity}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{setOpacity()}{setOpacity()}}
+{\footnotesize\ttfamily void Sprite\+::set\+Opacity (\begin{DoxyParamCaption}\item[{B\+Y\+TE}]{opacity }\end{DoxyParamCaption})}
+
+투명도 값을 설정할 수 있습니다.
+
+
+\begin{DoxyParams}{Parameters}
+{\em opacity} & 0$\sim$255 사이의 값 \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{class_sprite_a54a41090d4515f1d4f3b16180dec8d0b}\label{class_sprite_a54a41090d4515f1d4f3b16180dec8d0b}} 
+\index{Sprite@{Sprite}!setRadians@{setRadians}}
+\index{setRadians@{setRadians}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{setRadians()}{setRadians()}}
+{\footnotesize\ttfamily void Sprite\+::set\+Radians (\begin{DoxyParamCaption}\item[{float}]{rad }\end{DoxyParamCaption})}
+
+회전 각도를 라디안 단위로 설정합니다. \mbox{\Hypertarget{class_sprite_a7408db338ffbc3f72b9cdc5657d5356b}\label{class_sprite_a7408db338ffbc3f72b9cdc5657d5356b}} 
+\index{Sprite@{Sprite}!setRect@{setRect}}
+\index{setRect@{setRect}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{setRect()}{setRect()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily void Sprite\+::set\+Rect (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+스프라이트 영역을 설정합니다. \mbox{\Hypertarget{class_sprite_a99e56eaf275bd38be8ba500437f7ff12}\label{class_sprite_a99e56eaf275bd38be8ba500437f7ff12}} 
+\index{Sprite@{Sprite}!setRect@{setRect}}
+\index{setRect@{setRect}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{setRect()}{setRect()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily void Sprite\+::set\+Rect (\begin{DoxyParamCaption}\item[{R\+E\+CT}]{rect }\end{DoxyParamCaption})}
+
+스프라이트 영역을 설정합니다. \mbox{\Hypertarget{class_sprite_a47f0ac9f55ebdfa25d01fbc5c3a1b881}\label{class_sprite_a47f0ac9f55ebdfa25d01fbc5c3a1b881}} 
+\index{Sprite@{Sprite}!setRect@{setRect}}
+\index{setRect@{setRect}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{setRect()}{setRect()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily void Sprite\+::set\+Rect (\begin{DoxyParamCaption}\item[{int}]{x,  }\item[{int}]{y,  }\item[{int}]{width,  }\item[{int}]{height }\end{DoxyParamCaption})}
+
+스프라이트 영역을 설정합니다. \mbox{\Hypertarget{class_sprite_a463c10936b40d8de3354e6383294a78a}\label{class_sprite_a463c10936b40d8de3354e6383294a78a}} 
+\index{Sprite@{Sprite}!setScale@{setScale}}
+\index{setScale@{setScale}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{setScale()}{setScale()}}
+{\footnotesize\ttfamily void Sprite\+::set\+Scale (\begin{DoxyParamCaption}\item[{float}]{scale }\end{DoxyParamCaption})}
+
+스프라이트의 스케일 값을 설정합니다. \mbox{\Hypertarget{class_sprite_add93d55788046c00deb1d7f0fa2d6ae8}\label{class_sprite_add93d55788046c00deb1d7f0fa2d6ae8}} 
+\index{Sprite@{Sprite}!setVisible@{setVisible}}
+\index{setVisible@{setVisible}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{setVisible()}{setVisible()}}
+{\footnotesize\ttfamily void Sprite\+::set\+Visible (\begin{DoxyParamCaption}\item[{bool}]{visible }\end{DoxyParamCaption})}
+
+스프라이트 표시 여부를 설정합니다. \mbox{\Hypertarget{class_sprite_a83c882524ce2588098faa793773b6113}\label{class_sprite_a83c882524ce2588098faa793773b6113}} 
+\index{Sprite@{Sprite}!setX@{setX}}
+\index{setX@{setX}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{setX()}{setX()}}
+{\footnotesize\ttfamily void Sprite\+::setX (\begin{DoxyParamCaption}\item[{float}]{x }\end{DoxyParamCaption})}
+
+X 좌표를 설정합니다. \mbox{\Hypertarget{class_sprite_a042a48623b9c8202662a595fac2d6790}\label{class_sprite_a042a48623b9c8202662a595fac2d6790}} 
+\index{Sprite@{Sprite}!setY@{setY}}
+\index{setY@{setY}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{setY()}{setY()}}
+{\footnotesize\ttfamily void Sprite\+::setY (\begin{DoxyParamCaption}\item[{float}]{y }\end{DoxyParamCaption})}
+
+Y 좌표를 설정합니다. \mbox{\Hypertarget{class_sprite_a8552f93511e6f0957c7f763104193afb}\label{class_sprite_a8552f93511e6f0957c7f763104193afb}} 
+\index{Sprite@{Sprite}!update@{update}}
+\index{update@{update}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{update()}{update()}}
+{\footnotesize\ttfamily void Sprite\+::update (\begin{DoxyParamCaption}\item[{float}]{elapsed }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}}
+
+스프라이트를 업데이트 합니다.
+
+
+\begin{DoxyParams}{Parameters}
+{\em elapsed} & 지난 프레임으로부터 경과한 시간 \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{class_sprite_aaa9e697dce4d8e28391735496c864867}\label{class_sprite_aaa9e697dce4d8e28391735496c864867}} 
+\index{Sprite@{Sprite}!updateTransform@{updateTransform}}
+\index{updateTransform@{updateTransform}!Sprite@{Sprite}}
+\subsubsection{\texorpdfstring{updateTransform()}{updateTransform()}}
+{\footnotesize\ttfamily void Sprite\+::update\+Transform (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}}
+
+회전, 확대, 축소, 이동 행렬을 다루는 행렬을 매 프레임 업데이트합니다. 
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+E\+:/\+V\+S2015/\+Projects/\+Initial2\+D/initial/include/\mbox{\hyperlink{_sprite_8h}{Sprite.\+h}}\item 
+E\+:/\+V\+S2015/\+Projects/\+Initial2\+D/initial/src/\mbox{\hyperlink{_sprite_8cpp}{Sprite.\+cpp}}\end{DoxyCompactItemize}
