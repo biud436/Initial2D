@@ -72,21 +72,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\SDK\zlib\include;C:\SDK\tinyxml\include\;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;C:\SDK\libpng\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\SDK\zlib\include;C:\SDK\tinyxml\include\;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;C:\SDK\libpng\include;$(SolutionDir)include\;$(IncludePath)</IncludePath>
     <LibraryPath>C:\SDK\zlib\libs;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;C:\SDK\SDL2\lib\x86;C:\SDK\SDL2_mixer\libs;C:\SDK\libpng\libs;C:\SDK\tinyxml\libs;$(LibraryPath)</LibraryPath>
     <IntDir>log\$(Configuration)\</IntDir>
-    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
-    <SourcePath>$(SourcePath)</SourcePath>
+    <OutDir>$(SolutionDir)lib\</OutDir>
+    <SourcePath>$(SolutionDir)src\;$(SourcePath)</SourcePath>
+    <TargetName>$(ProjectName)_d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\SDK\libpng\include;C:\SDK\zlib\include;C:\SDK\tinyxml\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\SDK\libpng\include;C:\SDK\zlib\include;C:\SDK\tinyxml\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;$(SolutionDir)include\;$(IncludePath)</IncludePath>
     <LibraryPath>C:\SDK\libpng\libs;C:\SDK\zlib\libs;C:\SDK\tinyxml\libs;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;C:\SDK\SDL2\lib\x86;C:\SDK\SDL2_mixer\libs;$(LibraryPath)</LibraryPath>
     <IntDir>$(Configuration)\</IntDir>
-    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)lib\</OutDir>
+    <SourcePath>$(SolutionDir)src\;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -125,7 +127,7 @@ copy /y $(ProjectDir)bin\SDL2_mixer.dll  $(SolutionDir)$(Configuration)\SDL2_mix
       <Message>실행에 필요한 기본 DLL 파일을 복사합니다.</Message>
     </PreBuildEvent>
     <Lib>
-      <OutputFile>$(OutDir)$(TargetName)_d$(TargetExt)</OutputFile>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -197,30 +199,30 @@ copy /y $(ProjectDir)bin\SDL2_mixer.dll  $(SolutionDir)$(Configuration)\SDL2_mix
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="App.h" />
-    <ClInclude Include="Constants.h" />
-    <ClInclude Include="GameState.h" />
-    <ClInclude Include="GameStateMachine.h" />
-    <ClInclude Include="Input.h" />
-    <ClInclude Include="MapState.h" />
-    <ClInclude Include="MenuState.h" />
-    <ClInclude Include="Point.h" />
-    <ClInclude Include="Rectangle.h" />
-    <ClInclude Include="SoundManager.h" />
-    <ClInclude Include="Sprite.h" />
-    <ClInclude Include="TextureManager.h" />
-    <ClInclude Include="Vector2D.h" />
+    <ClCompile Include="src\lib\App.cpp" />
+    <ClCompile Include="src\lib\GameState.cpp" />
+    <ClCompile Include="src\lib\GameStateMachine.cpp" />
+    <ClCompile Include="src\lib\Input.cpp" />
+    <ClCompile Include="src\lib\MapState.cpp" />
+    <ClCompile Include="src\lib\MenuState.cpp" />
+    <ClCompile Include="src\lib\SoundManager.cpp" />
+    <ClCompile Include="src\lib\Sprite.cpp" />
+    <ClCompile Include="src\lib\TextureManager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="App.cpp" />
-    <ClCompile Include="GameState.cpp" />
-    <ClCompile Include="GameStateMachine.cpp" />
-    <ClCompile Include="Input.cpp" />
-    <ClCompile Include="MapState.cpp" />
-    <ClCompile Include="MenuState.cpp" />
-    <ClCompile Include="SoundManager.cpp" />
-    <ClCompile Include="Sprite.cpp" />
-    <ClCompile Include="TextureManager.cpp" />
+    <ClInclude Include="include\App.h" />
+    <ClInclude Include="include\Constants.h" />
+    <ClInclude Include="include\GameState.h" />
+    <ClInclude Include="include\GameStateMachine.h" />
+    <ClInclude Include="include\Input.h" />
+    <ClInclude Include="include\MapState.h" />
+    <ClInclude Include="include\MenuState.h" />
+    <ClInclude Include="include\Point.h" />
+    <ClInclude Include="include\Rectangle.h" />
+    <ClInclude Include="include\SoundManager.h" />
+    <ClInclude Include="include\Sprite.h" />
+    <ClInclude Include="include\TextureManager.h" />
+    <ClInclude Include="include\Vector2D.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

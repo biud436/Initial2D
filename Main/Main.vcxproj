@@ -18,6 +18,10 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\main.cpp" />
+    <ClCompile Include="..\src\win32Main.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C0C5230E-EBC1-4CF8-B75A-436733A63E01}</ProjectGuid>
     <RootNamespace>Main</RootNamespace>
@@ -70,11 +74,15 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LibraryPath>..\lib\;C:\SDK\libpng\libs;C:\SDK\zlib\libs;C:\SDK\tinyxml\libs;C:\Program Files (x86)\OpenAL 1.1 SDK\libs\Win32;C:\SDK\SDL2\lib\x86;C:\SDK\SDL2_mixer\libs;$(LibraryPath)</LibraryPath>
-    <IncludePath>..\;C:\SDK\libpng\include;C:\SDK\zlib\include;C:\SDK\tinyxml\include;C:\Program Files (x86)\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;$(IncludePath)</IncludePath>
+    <IncludePath>..\;C:\SDK\libpng\include;C:\SDK\zlib\include;C:\SDK\tinyxml\include;C:\Program Files (x86)\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;$(SolutionDir)include\;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)bin\</OutDir>
+    <SourcePath>$(SolutionDir)src\lib\;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>..\;C:\SDK\libpng\include;C:\SDK\zlib\include;C:\SDK\tinyxml\include;C:\Program Files (x86)\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;$(IncludePath)</IncludePath>
     <LibraryPath>..\lib\;C:\SDK\libpng\libs;C:\SDK\zlib\libs;C:\SDK\tinyxml\libs;C:\Program Files (x86)\OpenAL 1.1 SDK\libs\Win32;C:\SDK\SDL2\lib\x86;C:\SDK\SDL2_mixer\libs;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)bin\</OutDir>
+    <TargetName>$(ProjectName)_debug</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -121,10 +129,6 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="..\main.cpp" />
-    <ClCompile Include="..\win32Main.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
