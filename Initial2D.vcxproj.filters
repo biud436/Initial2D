@@ -9,73 +9,67 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\lib\App.cpp">
-      <Filter>Src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lib\GameState.cpp">
-      <Filter>Src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lib\GameStateMachine.cpp">
-      <Filter>Src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lib\Input.cpp">
-      <Filter>Src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lib\MapState.cpp">
-      <Filter>Src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lib\MenuState.cpp">
-      <Filter>Src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lib\SoundManager.cpp">
-      <Filter>Src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lib\Sprite.cpp">
-      <Filter>Src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\lib\TextureManager.cpp">
-      <Filter>Src</Filter>
-    </ClCompile>
+    <ClInclude Include="initial\include\App.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="initial\include\Constants.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="initial\include\GameState.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="initial\include\GameStateMachine.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="initial\include\Input.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="initial\include\MapState.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="initial\include\MenuState.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="initial\include\Point.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="initial\include\Rectangle.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="initial\include\SoundManager.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="initial\include\Sprite.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="initial\include\TextureManager.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="initial\include\Vector2D.h">
+      <Filter>Include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\App.h">
-      <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Constants.h">
-      <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\GameState.h">
-      <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\GameStateMachine.h">
-      <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Input.h">
-      <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\MapState.h">
-      <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\MenuState.h">
-      <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Point.h">
-      <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Rectangle.h">
-      <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\SoundManager.h">
-      <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Sprite.h">
-      <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\TextureManager.h">
-      <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Vector2D.h">
-      <Filter>Include</Filter>
-    </ClInclude>
+    <ClCompile Include="initial\src\App.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
+    <ClCompile Include="initial\src\GameState.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
+    <ClCompile Include="initial\src\GameStateMachine.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
+    <ClCompile Include="initial\src\Input.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
+    <ClCompile Include="initial\src\SoundManager.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
+    <ClCompile Include="initial\src\Sprite.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
+    <ClCompile Include="initial\src\TextureManager.cpp">
+      <Filter>Src</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

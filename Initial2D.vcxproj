@@ -18,6 +18,30 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="initial\include\App.h" />
+    <ClInclude Include="initial\include\Constants.h" />
+    <ClInclude Include="initial\include\GameState.h" />
+    <ClInclude Include="initial\include\GameStateMachine.h" />
+    <ClInclude Include="initial\include\Input.h" />
+    <ClInclude Include="initial\include\MapState.h" />
+    <ClInclude Include="initial\include\MenuState.h" />
+    <ClInclude Include="initial\include\Point.h" />
+    <ClInclude Include="initial\include\Rectangle.h" />
+    <ClInclude Include="initial\include\SoundManager.h" />
+    <ClInclude Include="initial\include\Sprite.h" />
+    <ClInclude Include="initial\include\TextureManager.h" />
+    <ClInclude Include="initial\include\Vector2D.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="initial\src\App.cpp" />
+    <ClCompile Include="initial\src\GameState.cpp" />
+    <ClCompile Include="initial\src\GameStateMachine.cpp" />
+    <ClCompile Include="initial\src\Input.cpp" />
+    <ClCompile Include="initial\src\SoundManager.cpp" />
+    <ClCompile Include="initial\src\Sprite.cpp" />
+    <ClCompile Include="initial\src\TextureManager.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{F4051E31-887A-4919-8B7B-C68F393F4E71}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
@@ -72,11 +96,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\SDK\zlib\include;C:\SDK\tinyxml\include\;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;C:\SDK\libpng\include;$(SolutionDir)include\;$(IncludePath)</IncludePath>
+    <IncludePath>C:\SDK\zlib\include;C:\SDK\tinyxml\include\;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;C:\SDK\libpng\include;$(SolutionDir)initial\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\SDK\zlib\libs;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;C:\SDK\SDL2\lib\x86;C:\SDK\SDL2_mixer\libs;C:\SDK\libpng\libs;C:\SDK\tinyxml\libs;$(LibraryPath)</LibraryPath>
     <IntDir>log\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)lib\</OutDir>
-    <SourcePath>$(SolutionDir)src\;$(SourcePath)</SourcePath>
+    <SourcePath>$(SolutionDir)initial\src;$(SourcePath)</SourcePath>
     <TargetName>$(ProjectName)_d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -84,11 +108,11 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\SDK\libpng\include;C:\SDK\zlib\include;C:\SDK\tinyxml\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;$(SolutionDir)include\;$(IncludePath)</IncludePath>
+    <IncludePath>C:\SDK\libpng\include;C:\SDK\zlib\include;C:\SDK\tinyxml\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;$(SolutionDir)initial\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\SDK\libpng\libs;C:\SDK\zlib\libs;C:\SDK\tinyxml\libs;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;C:\SDK\SDL2\lib\x86;C:\SDK\SDL2_mixer\libs;$(LibraryPath)</LibraryPath>
     <IntDir>$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)lib\</OutDir>
-    <SourcePath>$(SolutionDir)src\;$(SourcePath)</SourcePath>
+    <SourcePath>$(SolutionDir)initial\src\;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -198,32 +222,6 @@ copy /y $(ProjectDir)bin\SDL2_mixer.dll  $(SolutionDir)$(Configuration)\SDL2_mix
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="src\lib\App.cpp" />
-    <ClCompile Include="src\lib\GameState.cpp" />
-    <ClCompile Include="src\lib\GameStateMachine.cpp" />
-    <ClCompile Include="src\lib\Input.cpp" />
-    <ClCompile Include="src\lib\MapState.cpp" />
-    <ClCompile Include="src\lib\MenuState.cpp" />
-    <ClCompile Include="src\lib\SoundManager.cpp" />
-    <ClCompile Include="src\lib\Sprite.cpp" />
-    <ClCompile Include="src\lib\TextureManager.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="include\App.h" />
-    <ClInclude Include="include\Constants.h" />
-    <ClInclude Include="include\GameState.h" />
-    <ClInclude Include="include\GameStateMachine.h" />
-    <ClInclude Include="include\Input.h" />
-    <ClInclude Include="include\MapState.h" />
-    <ClInclude Include="include\MenuState.h" />
-    <ClInclude Include="include\Point.h" />
-    <ClInclude Include="include\Rectangle.h" />
-    <ClInclude Include="include\SoundManager.h" />
-    <ClInclude Include="include\Sprite.h" />
-    <ClInclude Include="include\TextureManager.h" />
-    <ClInclude Include="include\Vector2D.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

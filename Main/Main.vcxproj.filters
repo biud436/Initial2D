@@ -3,5 +3,11 @@
   <ItemGroup>
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\win32Main.cpp" />
+    <ClCompile Include="..\src\MapState.cpp" />
+    <ClCompile Include="..\src\MenuState.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\MapState.h" />
+    <ClInclude Include="..\include\MenuState.h" />
   </ItemGroup>
 </Project>
