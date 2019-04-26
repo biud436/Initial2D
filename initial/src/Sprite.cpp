@@ -98,7 +98,8 @@ void Sprite::update(float elapsed)
 	if (endFrame - startFrame > 0)
 	{
 		m_fAnimationTime += elapsed;
-	
+
+		// 프레임 딜레이 처리 이후 다음 프레임으로 전환
 		if (m_fAnimationTime > delay)
 		{
 			m_fAnimationTime -= delay;
@@ -255,9 +256,6 @@ void Sprite::setVisible(bool visible)
 void Sprite::setOpacity(BYTE opacity)
 {
 	
-	// 정수형이 더 연산이 빠르기 때문에 정수형으로 계산
-	// AlphaBlend
-
 	if (opacity < 0)
 		opacity = 0;
 
@@ -333,6 +331,7 @@ void Sprite::setAnimComplete(bool isComplete)
 
 void Sprite::updateTransform()
 {
+	// 회전, 이동, 스케일이 모두 포함된 행렬
 	m_transform.eM11 = cos(m_spriteData.rotation) * m_spriteData.scale;
 	m_transform.eM12 = sin(m_spriteData.rotation) * m_spriteData.scale;
 	m_transform.eM21 = -sin(m_spriteData.rotation) * m_spriteData.scale;
@@ -344,24 +343,4 @@ void Sprite::updateTransform()
 TransformData&	Sprite::getTransform()
 {
 	return m_transform;
-}
-
-void Sprite::addChild(Sprite* sprite)
-{
-	if (sprite != NULL) {
-		_children.push_back(sprite);
-	}
-}
-
-void Sprite::removeChild(Sprite* sprite)
-{
-	if (!_children.empty()) {
-		std::vector<Sprite*>::iterator iter;
-		for (iter = _children.begin(); iter != _children.end(); iter++) {
-			if ((*iter) == sprite) {
-				_children.erase(iter);
-				delete sprite;
-			}
-		}
-	}
 }

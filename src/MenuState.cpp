@@ -29,8 +29,8 @@ bool MenuState::onEnter()
 	tm.Load(".\\resources\\Ruins4.png", "Ruins4", NULL);
 	tm.Load(".\\resources\\011-Lancer03.png", "character1", NULL);
 
-	Audio->load("resources/test.ogg", "bgm", SOUND_MUSIC);
-	Audio->playMusic("bgm", -1);
+	//Audio->load("resources/test.ogg", "bgm", SOUND_MUSIC);
+	//Audio->playMusic("bgm", -1);
 
 	// 배경 생성
 	Sprite* pBackground = new Sprite();

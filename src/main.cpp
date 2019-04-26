@@ -18,6 +18,12 @@
 #include "GameStateMachine.h"
 #include "MenuState.h"
 
+#include "lua_tbl.h"
+
+#include "SoundManager.h"
+
+extern HWND g_hWnd;
+
 void App::Initialize()
 {
 	LOG_D("초기화");
@@ -26,38 +32,43 @@ void App::Initialize()
 	// 마우스 및 키보드 모듈 초기화
 	m_pInput->initialize(m_hWnd);
 
-	LOG_D("메인 경로 체크 : ");
-	char szPath[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, szPath);
-	LOG_D(szPath);
+	// 루아 초기화
+	Lua_Init();
 	
 	// 게임 상태 머신 초기화
 	m_pGameStateMachine = new GameStateMachine();
 	m_pGameStateMachine->changeState(new MenuState());
+
 }
 
 
 void App::ObjectUpdate(double elapsed)
 {
 	m_pGameStateMachine->update(elapsed);
+
+	Lua_Update();
+
 }
 
 
 void App::Render()
 {
 	m_pGameStateMachine->render();
+
+	Lua_Render();
+
 }
 
 
 void App::Destroy()
 {
+	Lua_Destory();
+
 	// 입력 객체 삭제
 	SAFE_DELETE(m_pInput);
 	SAFE_DELETE(m_pGameStateMachine);
 	SAFE_DELETE(m_pTextureManager);
 
 	ReleaseDC(m_hWnd, m_context.mainContext);
-/*
-	LOG_D("소멸");*/
 
 }

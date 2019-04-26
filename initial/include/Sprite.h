@@ -253,16 +253,6 @@ public:
 	 */
 	virtual	TransformData&	getTransform();
 
-	/**
-	 * 새로운 자식 스프라이트를 추가합니다.
-	 */
-	void addChild(Sprite* sprite);
-
-	/**
-	 * 자식 스프라이트를 제거합니다.
-	 */
-	void removeChild(Sprite* sprite);
-
 protected:
 
 	SpriteData	m_spriteData;
@@ -275,8 +265,6 @@ protected:
 	bool	m_bInitialized;
 
 	TransformData	m_transform;
-
-	std::vector<Sprite*> _children;
 
 };
 

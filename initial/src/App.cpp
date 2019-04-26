@@ -40,6 +40,7 @@ App::App() :
 	m_elapsed(0)
 {
 
+	// 디버그 모드라면 콘솔 창을 띄운다.
 #ifndef NDEBUG
 	if (AllocConsole())
 		freopen("CON", "w", stdout);
@@ -51,8 +52,11 @@ App::App() :
 
 	QueryPerformanceCounter(&m_nTimeStart);
 
-	m_pTextureManager = new TextureManager();	// 텍스처 매니저
-	m_pInput = new Input();	// 입력 객체
+	// 텍스쳐 관리자 생성
+	m_pTextureManager = new TextureManager();
+
+	// 입력 관리자 생성
+	m_pInput = new Input();
 
 }
 
@@ -150,6 +154,7 @@ int App::Run(int nCmdShow)
 		}
 	}
 
+	// 이런 소멸자는 사용에 주의를 요구한다.
 	delete this;
 
 	return static_cast<int>(Message.wParam);
@@ -199,11 +204,11 @@ Input& App::GetInput()
 
 void App::Update()
 {
-	// 현재 시간과 경과 시간을 구합니다.
+	// 경과된 시간(Elapsed)을 구한다.
 	QueryPerformanceCounter(&m_nTimeEnd);
 	float elapsed = static_cast<float>(m_nTimeEnd.QuadPart - m_nTimeStart.QuadPart);
 
-	// 프레임 시간을 구합니다.
+	// Frame Time을 획득한다.
 	m_frameTime = elapsed / static_cast<float>(m_nTimeFreq.QuadPart);
 
 	m_elapsed += 60 * m_frameTime;
@@ -212,16 +217,20 @@ void App::Update()
 
 	char TITLE[64];
 
-	for (; m_elapsed >= 1.0; m_elapsed -= 1.0) {
+	// 부동 소수점 오차를 줄이기 위해 정밀도가 높은 double 형을 사용하였다.
+	for (; m_elapsed >= 1.0; m_elapsed -= 1.0) 
+	{
 		UpdateInput();
 		ObjectUpdate(UpdateTime());
 	}
 
 	// 평균 FPS 구하기
-	if (m_frameTime > 0.0)
+	if (m_frameTime > 0.0) 
+	{
 		m_nFPS = (m_nFPS * 0.99f) + (0.01f / m_frameTime);
-
-	// FPS 출력
+	}
+		
+	// 창 제목에 FPS를 출력한다.
 	sprintf(TITLE, "Demo Game - FPS : %d\n", static_cast<int>(m_nFPS));
 	SetWindowText(m_hWnd, TITLE);
 
