@@ -3,7 +3,7 @@
 
 본래 선호하는 스크립트 언어는 Ruby나 JS이지만 게임에 임베디드(Embedded)하기가 까다롭기 때문에, 
 
-가볍고 쉬운 임베디드(Embedded)하기도 쉬운 Lua 스크립트를 선택하였습니다.
+가볍고 임베디드(Embedded)하기도 쉬운 Lua 스크립트를 선택하였습니다.
 
 간단한 2D 게임을 만드는 데 충분한 기능이 있지만, 이건 단순 게임 엔진 제작 연습일 뿐 실제 사용하는 분은 없길 바랍니다.
 
@@ -13,7 +13,9 @@ API 래퍼런스는 다음 문서를 참고 하시기 바랍니다.
 <a href="https://biud436.github.io/Initial2D/docs/" target="_blank">https://biud436.github.io/Initial2D/docs/</a>
 
 # 스크립트
+이미지, 오디오, 입력 등 기본적인 것은 있지만 데이터 관리나 타일맵 묘화, 텍스트 묘화 심지어 맵 에디터, 씬 관리도 없습니다.
 
+기본적인 메인 프레임워크는 다음과 같습니다. 
 
 ```lua
  function Initialize()
