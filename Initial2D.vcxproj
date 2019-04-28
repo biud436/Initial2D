@@ -19,28 +19,101 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="initial\include\App.h" />
-    <ClInclude Include="initial\include\Constants.h" />
-    <ClInclude Include="initial\include\GameState.h" />
-    <ClInclude Include="initial\include\GameStateMachine.h" />
-    <ClInclude Include="initial\include\Input.h" />
-    <ClInclude Include="initial\include\MapState.h" />
-    <ClInclude Include="initial\include\MenuState.h" />
-    <ClInclude Include="initial\include\Point.h" />
-    <ClInclude Include="initial\include\Rectangle.h" />
-    <ClInclude Include="initial\include\SoundManager.h" />
-    <ClInclude Include="initial\include\Sprite.h" />
-    <ClInclude Include="initial\include\TextureManager.h" />
-    <ClInclude Include="initial\include\Vector2D.h" />
+    <ClCompile Include="App.cpp" />
+    <ClCompile Include="GameState.cpp" />
+    <ClCompile Include="GameStateMachine.cpp" />
+    <ClCompile Include="Input.cpp" />
+    <ClCompile Include="lua\lapi.cpp" />
+    <ClCompile Include="lua\lauxlib.cpp" />
+    <ClCompile Include="lua\lbaselib.cpp" />
+    <ClCompile Include="lua\lbitlib.cpp" />
+    <ClCompile Include="lua\lcode.cpp" />
+    <ClCompile Include="lua\lcorolib.cpp" />
+    <ClCompile Include="lua\lctype.cpp" />
+    <ClCompile Include="lua\ldblib.cpp" />
+    <ClCompile Include="lua\ldebug.cpp" />
+    <ClCompile Include="lua\ldo.cpp" />
+    <ClCompile Include="lua\ldump.cpp" />
+    <ClCompile Include="lua\lfunc.cpp" />
+    <ClCompile Include="lua\lgc.cpp" />
+    <ClCompile Include="lua\linit.cpp" />
+    <ClCompile Include="lua\liolib.cpp" />
+    <ClCompile Include="lua\llex.cpp" />
+    <ClCompile Include="lua\lmathlib.cpp" />
+    <ClCompile Include="lua\lmem.cpp" />
+    <ClCompile Include="lua\loadlib.cpp" />
+    <ClCompile Include="lua\lobject.cpp" />
+    <ClCompile Include="lua\lopcodes.cpp" />
+    <ClCompile Include="lua\loslib.cpp" />
+    <ClCompile Include="lua\lparser.cpp" />
+    <ClCompile Include="lua\lstate.cpp" />
+    <ClCompile Include="lua\lstring.cpp" />
+    <ClCompile Include="lua\lstrlib.cpp" />
+    <ClCompile Include="lua\ltable.cpp" />
+    <ClCompile Include="lua\ltablib.cpp" />
+    <ClCompile Include="lua\ltm.cpp" />
+    <ClCompile Include="lua\lundump.cpp" />
+    <ClCompile Include="lua\lutf8lib.cpp" />
+    <ClCompile Include="lua\lvm.cpp" />
+    <ClCompile Include="lua\lzio.cpp" />
+    <ClCompile Include="lua_audio.cpp" />
+    <ClCompile Include="lua_input.cpp" />
+    <ClCompile Include="lua_prot.cpp" />
+    <ClCompile Include="lua_sprite.cpp" />
+    <ClCompile Include="lua_texture.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="MapState.cpp" />
+    <ClCompile Include="MenuState.cpp" />
+    <ClCompile Include="SoundManager.cpp" />
+    <ClCompile Include="Sprite.cpp" />
+    <ClCompile Include="TextureManager.cpp" />
+    <ClCompile Include="win32Main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="initial\src\App.cpp" />
-    <ClCompile Include="initial\src\GameState.cpp" />
-    <ClCompile Include="initial\src\GameStateMachine.cpp" />
-    <ClCompile Include="initial\src\Input.cpp" />
-    <ClCompile Include="initial\src\SoundManager.cpp" />
-    <ClCompile Include="initial\src\Sprite.cpp" />
-    <ClCompile Include="initial\src\TextureManager.cpp" />
+    <ClInclude Include="App.h" />
+    <ClInclude Include="Constants.h" />
+    <ClInclude Include="GameState.h" />
+    <ClInclude Include="GameStateMachine.h" />
+    <ClInclude Include="Input.h" />
+    <ClInclude Include="lua\lapi.h" />
+    <ClInclude Include="lua\lauxlib.h" />
+    <ClInclude Include="lua\lcode.h" />
+    <ClInclude Include="lua\lctype.h" />
+    <ClInclude Include="lua\ldebug.h" />
+    <ClInclude Include="lua\ldo.h" />
+    <ClInclude Include="lua\lfunc.h" />
+    <ClInclude Include="lua\lgc.h" />
+    <ClInclude Include="lua\llex.h" />
+    <ClInclude Include="lua\llimits.h" />
+    <ClInclude Include="lua\lmem.h" />
+    <ClInclude Include="lua\lobject.h" />
+    <ClInclude Include="lua\lopcodes.h" />
+    <ClInclude Include="lua\lparser.h" />
+    <ClInclude Include="lua\lprefix.h" />
+    <ClInclude Include="lua\lstate.h" />
+    <ClInclude Include="lua\lstring.h" />
+    <ClInclude Include="lua\ltable.h" />
+    <ClInclude Include="lua\ltm.h" />
+    <ClInclude Include="lua\lua.h" />
+    <ClInclude Include="lua\lua.hpp" />
+    <ClInclude Include="lua\luaconf.h" />
+    <ClInclude Include="lua\lualib.h" />
+    <ClInclude Include="lua\lundump.h" />
+    <ClInclude Include="lua\lvm.h" />
+    <ClInclude Include="lua\lzio.h" />
+    <ClInclude Include="lua_audio.h" />
+    <ClInclude Include="lua_input.h" />
+    <ClInclude Include="lua_sprite.h" />
+    <ClInclude Include="lua_tbl.h" />
+    <ClInclude Include="lua_texture.h" />
+    <ClInclude Include="MapState.h" />
+    <ClInclude Include="MenuState.h" />
+    <ClInclude Include="Point.h" />
+    <ClInclude Include="Rectangle.h" />
+    <ClInclude Include="SoundManager.h" />
+    <ClInclude Include="Sprite.h" />
+    <ClInclude Include="TextureManager.h" />
+    <ClInclude Include="Vector2D.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{F4051E31-887A-4919-8B7B-C68F393F4E71}</ProjectGuid>
@@ -51,13 +124,13 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -96,11 +169,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\SDK\zlib\include;C:\SDK\tinyxml\include\;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;C:\SDK\libpng\include;$(SolutionDir)initial\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\SDK\zlib\include;C:\SDK\tinyxml\include\;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;C:\SDK\libpng\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\SDK\zlib\libs;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;C:\SDK\SDL2\lib\x86;C:\SDK\SDL2_mixer\libs;C:\SDK\libpng\libs;C:\SDK\tinyxml\libs;$(LibraryPath)</LibraryPath>
     <IntDir>log\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)lib\</OutDir>
-    <SourcePath>$(SolutionDir)initial\src;$(SourcePath)</SourcePath>
+    <SourcePath>$(SourcePath)</SourcePath>
     <TargetName>$(ProjectName)_d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -108,11 +181,11 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\SDK\libpng\include;C:\SDK\zlib\include;C:\SDK\tinyxml\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;$(SolutionDir)initial\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\SDK\libpng\include;C:\SDK\zlib\include;C:\SDK\tinyxml\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\SDK\libpng\libs;C:\SDK\zlib\libs;C:\SDK\tinyxml\libs;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;C:\SDK\SDL2\lib\x86;C:\SDK\SDL2_mixer\libs;$(LibraryPath)</LibraryPath>
     <IntDir>$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)lib\</OutDir>
-    <SourcePath>$(SolutionDir)initial\src\;$(SourcePath)</SourcePath>
+    <SourcePath>$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
