@@ -85,15 +85,20 @@ public:
 	void DrawFrame(std::string id, int x, int y, int width, int height, RECT& rect, TransformData& transform);
 
 	/**
+	 * 화면에 텍스트를 출력합니다.
+	 */
+	void DrawText(std::string id, int x, int y, int width, int height, RECT& rect, TransformData& transform);
+
+	/**
 	* 유효한 Texture인지 체크합니다.
 	*/
 	bool valid(std::string id);
 
 	std::map<std::string, TextureData*> m_textureMap;
 
-private:
-	
 	COLORREF m_crTransparent;
+
+private:
 
 };
 

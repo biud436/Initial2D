@@ -13,7 +13,7 @@ API 래퍼런스는 다음 문서를 참고 하시기 바랍니다.
 <a href="https://biud436.github.io/Initial2D/docs/" target="_blank">https://biud436.github.io/Initial2D/docs/</a>
 
 # 스크립트
-이미지, 오디오, 입력 등 기본적인 것은 있지만 데이터 관리나 타일맵 묘화, 텍스트 묘화 심지어 맵 에디터, 씬 관리도 없습니다.
+이미지, 오디오, 입력 등 기본적인 것은 있지만 데이터 관리나 타일맵 묘화, 맵 에디터는 없습니다.
 
 기본적인 메인 프레임워크는 다음과 같습니다. 
 
@@ -21,10 +21,10 @@ API 래퍼런스는 다음 문서를 참고 하시기 바랍니다.
  function Initialize()
 	
 	-- 배경 이미지 생성
-	background = Image("./resources/background.png", 0, 0, 640, 480, 1, "background")
+	background = Image("./resources/Ruins4.png", 0, 0, 640, 480, 1, "Ruins4")
 	
 	-- 캐릭터 생성
-	character = Image("./resources/my_character.png", 0, 0, 32, 48, 4, "my_character")
+	character = Image("./resources/011-Lancer03.png", 0, 0, 32, 48, 4, "character1")
 	character.setPosition(10, 50)
 	character.setAngle(10.0)
 	character.setScale(4.0)
@@ -32,6 +32,8 @@ API 래퍼런스는 다음 문서를 참고 하시기 바랍니다.
 	character.setFrameDelay(0.5)
 	
 	Audio.PlayMusic("./resources/test.ogg", "mainBGM", true)
+	
+	isValid = PreparaFont("./resources/hangul.fnt");
 	
 end
 
@@ -43,6 +45,14 @@ end
 function Render()
 	background.draw()
 	character.draw()
+	
+	if isValid then 
+		DrawText(100, 50, "Hello")
+		DrawText(100, 100, "안녕하세요? 러닝은빛입니다.\n반가워요...")
+		frameCount = GetFrameCount()
+		DrawText(0, 0, tostring(frameCount))
+	end
+	
 end
 
 function Destroy()

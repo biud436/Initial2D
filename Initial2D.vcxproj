@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
+    <ClCompile Include="Font.cpp" />
     <ClCompile Include="GameState.cpp" />
     <ClCompile Include="GameStateMachine.cpp" />
     <ClCompile Include="Input.cpp" />
@@ -72,6 +73,7 @@
   <ItemGroup>
     <ClInclude Include="App.h" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="Font.h" />
     <ClInclude Include="GameState.h" />
     <ClInclude Include="GameStateMachine.h" />
     <ClInclude Include="Input.h" />

@@ -48,6 +48,7 @@ class Sprite;
 class Input;
 class GameStateMachine;
 class TextureManager;
+class Font;
 /// @endcond
 
 /**
@@ -105,12 +106,19 @@ protected:
 	LARGE_INTEGER	m_nTimeStart;	
 	LARGE_INTEGER	m_nTimeEnd;
 	double			m_frameTime;
+	int				m_nFrameCount;
 
 	// 입력
 	Input* m_pInput;
 
 	// 장면 관리
 	GameStateMachine* m_pGameStateMachine;
+
+	// 창 포커스
+	bool m_bFocus;
+
+	// 폰트 아틀라스
+	Font* m_pFont;
 	
 public:
 	static App* s_pInstance;
@@ -233,6 +241,31 @@ public:
 	* 메모리 정리 후 게임을 종료합니다.
 	*/
 	void Quit();
+
+	/**
+	* 포커스를 구합니다.
+	*/
+	bool GetFocus();
+
+	/**
+	 * 폰트를 구합니다.
+	 */
+	Font* GetFont();
+
+	/**
+	* 폰트를 로드합니다.
+	*/
+	bool LoadFont();
+
+	/**
+	* 폰트 메모리 해제
+	*/
+	bool DestroyFont();
+
+	/**
+	* 프레임 카운트
+	*/
+	int GetFrameCount();
 
 };
 

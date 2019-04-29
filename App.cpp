@@ -16,6 +16,9 @@
 #include "TextureManager.h"
 #include "Input.h"
 #include "GameStateMachine.h"
+#include "Font.h"
+
+#include <thread>
 
 extern HWND g_hWnd;
 extern LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -37,7 +40,10 @@ App::App() :
 	m_pInput(NULL),
 	m_pGameStateMachine(NULL),
 	m_nFPS(100),
-	m_elapsed(0)
+	m_elapsed(0),
+	m_bFocus(true),
+	m_pFont(NULL),
+	m_nFrameCount(0)
 {
 
 	// 디버그 모드라면 콘솔 창을 띄운다.
@@ -57,6 +63,9 @@ App::App() :
 
 	// 입력 관리자 생성
 	m_pInput = new Input();
+
+	// 폰트 생성
+	m_pFont = new Font();
 
 }
 
@@ -89,7 +98,6 @@ const int App::GetWindowHeight()
 {
 	return m_nWindowHeight;
 }
-
 
 int App::Run(int nCmdShow)
 {
@@ -173,6 +181,12 @@ LRESULT App::HandleEvent(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
+	case WM_SETFOCUS:
+		m_bFocus = true;
+		return 0;
+	case WM_KILLFOCUS:
+		m_bFocus = false;
+		return 0;
 	}
 	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
@@ -201,19 +215,16 @@ Input& App::GetInput()
 	return *m_pInput;
 }
 
-
 void App::Update()
 {
 	// 경과된 시간(Elapsed)을 구한다.
 	QueryPerformanceCounter(&m_nTimeEnd);
-	float elapsed = static_cast<float>(m_nTimeEnd.QuadPart - m_nTimeStart.QuadPart);
 
-	// Frame Time을 획득한다.
-	m_frameTime = elapsed / static_cast<float>(m_nTimeFreq.QuadPart);
+	m_frameTime = (double)(m_nTimeEnd.QuadPart - m_nTimeStart.QuadPart) / (double)m_nTimeFreq.QuadPart;
 
-	m_elapsed += 60 * m_frameTime;
+	m_elapsed += m_frameTime;
 
-	m_nTimeStart = m_nTimeEnd;
+	m_nFrameCount++;
 
 	char TITLE[64];
 
@@ -221,18 +232,25 @@ void App::Update()
 	for (; m_elapsed >= 1.0; m_elapsed -= 1.0) 
 	{
 		UpdateInput();
-		ObjectUpdate(UpdateTime());
+		ObjectUpdate(m_frameTime);
 	}
 
-	// 평균 FPS 구하기
-	if (m_frameTime > 0.0) 
+	if (m_frameTime >= 1.0)
 	{
-		m_nFPS = (m_nFPS * 0.99f) + (0.01f / m_frameTime);
+		sprintf(TITLE, "Demo Game - FPS : %d\n", m_nFrameCount);
+		SetWindowText(m_hWnd, TITLE);
+		m_nFPS = m_nFrameCount;
+		m_nFrameCount = 0;
+
+		m_nTimeStart = m_nTimeEnd;
 	}
-		
-	// 창 제목에 FPS를 출력한다.
-	sprintf(TITLE, "Demo Game - FPS : %d\n", static_cast<int>(m_nFPS));
-	SetWindowText(m_hWnd, TITLE);
+
+	//// 평균 FPS 구하기
+	//if (m_frameTime > 0.0)
+	//{
+	//	m_nFPS = (double)(m_nFrameCount / m_frameTime);
+
+	//}
 
 	RenderClear();
 	RenderTransform();
@@ -275,7 +293,6 @@ void App::RenderPresent()
 	DeleteObject(SelectObject(m_context.currentContext, m_context.prevSurface)); // 이전 상태로 복원
 	DeleteObject(m_context.currentSurface); // 복사된 DC 삭제
 	DeleteDC(m_context.currentContext);
-
 }
 
 
@@ -289,4 +306,37 @@ double App::UpdateTime()
 void App::Quit()
 {
 	::PostQuitMessage(0);
+}
+
+bool App::GetFocus()
+{
+	return m_bFocus;
+}
+
+Font* App::GetFont()
+{
+	return m_pFont;
+}
+
+bool App::LoadFont()
+{
+	bool isValid = m_pFont->ParseFont(".\\resources\\font.fnt");
+	
+	m_pFont->load();
+
+	return isValid;
+}
+
+bool App::DestroyFont()
+{
+	bool isValid = m_pFont->remove();
+
+	SAFE_DELETE(m_pFont);
+
+	return isValid;
+}
+
+int App::GetFrameCount()
+{
+	return m_nFPS;
 }

@@ -20,6 +20,10 @@
 #include <cstdio>
 #include <vector>
 
+#include "Font.h"
+
+int ShowMessageBox(HWND hWnd, LPCWCHAR text, LPCWCHAR caption, UINT type);
+
 namespace Initial2D {
 	/**
 	 * 윈도우즈 플랫폼에서 스크립트 파일을 읽습니다.
@@ -65,7 +69,7 @@ wchar_t* AllocWideChar(const char* law)
 	WCHAR *wide_text = new WCHAR[len];
 	memset(wide_text, 0, sizeof(WCHAR) * len);
 
-	MultiByteToWideChar(CP_ACP, 0, (LPCSTR)law, -1, wide_text, len);
+	MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)law, -1, wide_text, len);
 
 	return wide_text;
 }
@@ -78,6 +82,13 @@ void DestroyWideChar(const wchar_t* law)
 /**
 * Show MessageBox
 */
+
+int ShowMessageBox(HWND hWnd, LPCWCHAR text, LPCWCHAR caption, UINT type)
+{
+	MessageBoxW(hWnd, text, caption, type);
+	return 0;
+}
+
 static int Lua_MessageBox(lua_State *g_pLuaSt)
 {
 	int n = lua_gettop(g_pLuaSt);
@@ -88,7 +99,7 @@ static int Lua_MessageBox(lua_State *g_pLuaSt)
 	WCHAR *wt = AllocWideChar(text);
 	WCHAR *wc = AllocWideChar(caption);
 
-	MessageBoxW(g_hWnd, wt, wc, MB_OK);
+	ShowMessageBox(g_hWnd, wt, wc, MB_OK);
 
 	DestroyWideChar(wt);
 	DestroyWideChar(wc);
@@ -130,7 +141,7 @@ int Lua_Destory()
 int Lua_LoadScript(lua_State *pL)
 {
 	int n = lua_gettop(pL);
-	
+
 	if (n < 1)
 	{
 		return 0;
@@ -138,8 +149,57 @@ int Lua_LoadScript(lua_State *pL)
 
 	const char *filename = luaL_checkstring(pL, 1);
 	luaL_dofile(pL, filename);
-	
+
 	return 0;
+}
+
+int Lua_PreparaFont(lua_State *pL)
+{
+	bool isValid = App::GetInstance().LoadFont();
+	Font *pFont = App::GetInstance().GetFont();
+
+	std::string filename = luaL_checkstring(pL, 1);
+	
+	isValid = pFont->open(filename);
+	lua_pushboolean(pL, isValid);
+	return 1;
+}
+
+int Lua_DrawText(lua_State *pL)
+{
+	Font *pFont = App::GetInstance().GetFont();
+
+	if (pFont->isValid())
+	{
+		int x, y;
+		x = luaL_checknumber(pL, 1);
+		y = luaL_checknumber(pL, 2);
+
+		const char *text = luaL_checkstring(pL, 3);
+		const wchar_t *c = AllocWideChar(text);
+		pFont->drawText(x, y, c);
+		delete[] c;
+	}
+
+	return 0;
+}
+
+int Lua_WindowWidth(lua_State *pL)
+{
+	lua_pushinteger(pL, App::GetInstance().GetWindowWidth());
+	return 1;
+}
+
+int Lua_WindowHeight(lua_State *pL)
+{
+	lua_pushinteger(pL, App::GetInstance().GetWindowHeight());
+	return 1;
+}
+
+int Lua_GetFrameCount(lua_State *pL)
+{
+	lua_pushinteger(pL, App::GetInstance().GetFrameCount());
+	return 1;
 }
 
 int Lua_Init()
@@ -149,6 +209,11 @@ int Lua_Init()
 
 	lua_register(g_pLuaState, "MessageBox", Lua_MessageBox);
 	lua_register(g_pLuaState, "LoadScript", Lua_LoadScript);
+	lua_register(g_pLuaState, "PreparaFont", Lua_PreparaFont);
+	lua_register(g_pLuaState, "DrawText", Lua_DrawText);
+	lua_register(g_pLuaState, "WindowWidth", Lua_WindowWidth);
+	lua_register(g_pLuaState, "WindowHeight", Lua_WindowHeight);
+	lua_register(g_pLuaState, "GetFrameCount", Lua_GetFrameCount);
 
 	// Audio
 	Lua_CreateAudioObject(g_pLuaState);

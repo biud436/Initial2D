@@ -121,6 +121,7 @@
     <ClCompile Include="lua_input.cpp" />
     <ClCompile Include="lua_sprite.cpp" />
     <ClCompile Include="lua_texture.cpp" />
+    <ClCompile Include="Font.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lua\lapi.h">
@@ -219,5 +220,6 @@
     <ClInclude Include="lua_input.h" />
     <ClInclude Include="lua_sprite.h" />
     <ClInclude Include="lua_texture.h" />
+    <ClInclude Include="Font.h" />
   </ItemGroup>
 </Project>

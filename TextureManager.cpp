@@ -110,7 +110,6 @@ TextureData::TextureData()
 	width = 0;
 	height = 0;
 	texture = NULL;
-	LOG_D("생성되었습니다 : TextureData")
 }
 
 TextureData::~TextureData()
@@ -285,11 +284,6 @@ TextureData* LoadPNG(std::string fileName)
 
 	memset(&bmih, 0, sizeof(BITMAPINFOHEADER));
 
-	// 이미지 정보 콘솔에 출력
-	LOG_D("width : " << width);
-	LOG_D("height : " << height);
-	LOG_D("bit_depth : " << (int)bit_depth);
-
 	// 비트맵 구조체 정의
 	bmih.biWidth = width;
 	bmih.biHeight = -height; // 비트맵은 상하 반전이므로 음수 값으로 반전 처리
@@ -431,13 +425,14 @@ void TextureManager::Draw(std::string id, int x, int y, int width, int height)
 
 	// 메모리 DC에 그린다
 	context.newContext = CreateCompatibleDC(context.mainContext);
-	SelectObject(context.newContext, currentTexture->texture);
+	HBITMAP hOldBitmap = (HBITMAP)SelectObject(context.newContext, currentTexture->texture);
 
 	// 투명하게 출력한다
 	TransparentBlt(context.currentContext, x, y, width, height, context.newContext, 0, 0, width, height, m_crTransparent);
 
 	// 메모리 DC 삭제
-	DeleteObject(context.newContext);
+	SelectObject(context.newContext, hOldBitmap);
+	DeleteDC(context.newContext);
 
 }
 
@@ -456,7 +451,7 @@ void TextureManager::DrawFrame(std::string id, int x, int y, int width, int heig
 
 	// 메모리 DC에 그린다
 	context.newContext = CreateCompatibleDC(context.mainContext);
-	SelectObject(context.newContext, currentTexture->texture);
+	HBITMAP hOldBitmap = (HBITMAP)SelectObject(context.newContext, currentTexture->texture);
 
 	// 투명하게 출력한다
 	TransparentBlt(context.currentContext,
@@ -470,5 +465,39 @@ void TextureManager::DrawFrame(std::string id, int x, int y, int width, int heig
 	SetWorldTransform(context.currentContext, &normalTransform);
 
 	// 메모리 DC 삭제
-	DeleteObject(context.newContext);
+	SelectObject(context.newContext, hOldBitmap);
+	DeleteDC(context.newContext);
+}
+
+void TextureManager::DrawText(std::string id, int x, int y, int width, int height, RECT& rect, TransformData& transform)
+{
+
+	TextureData *currentTexture = m_textureMap[id];		// 텍스처 풀에서 텍스처를 가져온다
+
+														// 디바이스 컨텍스트 획득
+	App::DeviceContext& context = App::GetInstance().GetContext();
+	//XFORM normalTransform = { 1, 0, 0, 1, 0, 0 };
+
+	//// 트랜스폼 적용
+	//SetGraphicsMode(context.currentContext, GM_ADVANCED);
+	//SetWorldTransform(context.currentContext, &transform);
+
+	// 메모리 DC에 그린다
+	context.newContext = CreateCompatibleDC(context.mainContext);
+	HBITMAP hOldBitmap = (HBITMAP)SelectObject(context.newContext, currentTexture->texture);
+
+	// 투명하게 출력한다
+	TransparentBlt(context.currentContext,
+		x, y, width, height,
+		context.newContext,
+		rect.left, rect.top, width, height,
+		m_crTransparent);
+
+	// 트랜스폼 복구
+	//SetGraphicsMode(context.currentContext, GM_ADVANCED);
+	//SetWorldTransform(context.currentContext, &normalTransform);
+
+	// 메모리 DC 삭제
+	SelectObject(context.newContext, hOldBitmap);
+	DeleteDC(context.newContext);
 }

@@ -13,6 +13,8 @@
 	
 	Audio.PlayMusic("./resources/test.ogg", "mainBGM", true)
 	
+	isValid = PreparaFont("./resources/hangul.fnt");
+	
 end
 
 function Update(elapsed)
@@ -23,6 +25,14 @@ end
 function Render()
 	background.draw()
 	character.draw()
+	
+	if isValid then 
+		DrawText(100, 50, "Hello")
+		DrawText(100, 100, "안녕하세요? 러닝은빛입니다.\n반가워요...")
+		frameCount = GetFrameCount()
+		DrawText(0, 0, tostring(frameCount))
+	end
+	
 end
 
 function Destroy()

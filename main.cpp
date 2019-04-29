@@ -65,6 +65,7 @@ void App::Destroy()
 	Lua_Destory();
 
 	// 입력 객체 삭제
+	DestroyFont();
 	SAFE_DELETE(m_pInput);
 	SAFE_DELETE(m_pGameStateMachine);
 	SAFE_DELETE(m_pTextureManager);

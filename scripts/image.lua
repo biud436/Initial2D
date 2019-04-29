@@ -27,7 +27,7 @@ function Image(path, x, y, width, height, max_frames, id)
 	
 	function self.dispose()
 		if isReady == false then return end
-		TextureManager.Remove(uniqName)
+		TextureManager.Remove(id)
 	end
 	
 	function self.getPosition()
