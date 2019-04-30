@@ -115,7 +115,7 @@ Image 객체에서 내부적으로 호출하므로 굳이 수동으로 사용할
 ```
 
 # Audio
-OGG 파일 또는 WAV 파일 등을 재생할 수 있습니다. 
+OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오 파일을 재생할 수 있습니다. 
 
 ```lua
 	Audio.PlayMusic(path, id, loop) -- BGM 재생
@@ -245,6 +245,3 @@ GDI 기반의 텍스트 묘화를 쓰고 싶었지만 렌더링 시스템의 문
 - TinyXML (zlib license)
     - tinyxml.lib
     - OpenAL32.lib
-
-- Initial2D
-    - Initial2D.lib
