@@ -245,13 +245,6 @@ void App::Update()
 		m_nTimeStart = m_nTimeEnd;
 	}
 
-	//// Æò±Õ FPS ±¸ÇÏ±â
-	//if (m_frameTime > 0.0)
-	//{
-	//	m_nFPS = (double)(m_nFrameCount / m_frameTime);
-
-	//}
-
 	RenderClear();
 	RenderTransform();
 	Render();

@@ -86,12 +86,6 @@ LUA_METHOD(IsAnyKeyDown)
 {
 	int n = lua_gettop(pL);
 
-	if (n < 1)
-	{
-		lua_pushboolean(pL, 0);
-		return 1;
-	}
-
 	bool isValid = App::GetInstance().GetInput().isAnyKeyDown();
 
 	lua_pushboolean(pL, isValid);
@@ -128,12 +122,6 @@ LUA_METHOD(GetMouseX)
 {
 	int n = lua_gettop(pL);
 
-	if (n < 1)
-	{
-		lua_pushnumber(pL, 0);
-		return 1;
-	}
-
 	float value = App::GetInstance().GetInput().getMouseX();
 
 	lua_pushnumber(pL, value);
@@ -147,12 +135,6 @@ LUA_METHOD(GetMouseX)
 LUA_METHOD(GetMouseY)
 {
 	int n = lua_gettop(pL);
-
-	if (n < 1)
-	{
-		lua_pushnumber(pL, 0);
-		return 1;
-	}
 
 	float value = App::GetInstance().GetInput().getMouseY();
 
@@ -231,12 +213,6 @@ LUA_METHOD(IsAnyMouseDown)
 {
 	int n = lua_gettop(pL);
 
-	if (n < 1)
-	{
-		lua_pushboolean(pL, false);
-		return 1;
-	}
-
 	bool isValid = App::GetInstance().GetInput().isAnyMouseDown();
 
 	lua_pushboolean(pL, isValid);
@@ -251,12 +227,6 @@ LUA_METHOD(IsAnyMouseDown)
 LUA_METHOD(GetMouseZ)
 {
 	int n = lua_gettop(pL);
-
-	if (n < 1) 
-	{
-		lua_pushinteger(pL, 0);
-		return 1;
-	}
 
 	int value = App::GetInstance().GetInput().getMouseZ();
 	lua_pushinteger(pL, value);

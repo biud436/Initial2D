@@ -12,7 +12,7 @@ API 래퍼런스는 다음 문서를 참고 하시기 바랍니다.
 
 <a href="https://biud436.github.io/Initial2D/docs/" target="_blank">https://biud436.github.io/Initial2D/docs/</a>
 
-# 스크립트
+# 스크립트 예제
 이미지, 오디오, 입력 등 기본적인 것은 있지만 데이터 관리나 타일맵 묘화, 맵 에디터는 없습니다.
 
 기본적인 메인 프레임워크는 다음과 같습니다. 
@@ -60,6 +60,157 @@ function Destroy()
 	character.dispose()
 	Audio.ReleaseMusic("mainBGM")
 end
+```
+
+# Image
+Image 객체는 Sprite Sheet를 사용하여 Character Animation을 표현하기 위한 객체입니다.
+또한 Sprite class의 Wrapper입니다. 
+루아의 GC 대상이 아니므로 비트맵 메모리 해제를 명시적으로 호출해줘야 할 필요성이 있습니다.
+
+```lua
+	image = Image(path, x, y, width, height, max_frames, id)
+	image.update(elapsed) -- 프레임 업데이트
+	image.draw() -- 렌더링
+	image.dispose() -- 메모리 해제
+	image.getPosition() -- 위치 
+	image.getScale() -- 스케일
+	image.getWidth() -- 가로 크기
+	image.getHeight() -- 세로 크기
+	image.getRadians() -- 각도를 라디안으로 반환
+	image.getAngle() -- 각도 반환
+	image.getVisible() -- Visible 값 반환
+	image.getOpacity() -- 투명도
+	image.getFrameDelay() -- 프레임 딜레이
+	image.getStartFrame() -- 시작 프레임
+	image.getEndFrame() -- 종료 프레임
+	image.getAnimComplete() -- 애니메이션 완료
+	image.getRect() -- Rect Table 반환
+	image.setPosition(x, y)
+	image.setScale(n)
+	image.setAngle(degree)
+	image.setRadians(rotation)
+	image.setVisible(visible)
+	image.setOpacity(n)
+	image.setFrameDelay(delay)
+	image.setFrames(s, e)
+	image.setCurrentFrame(currentFrame)
+	image.setRect(x, y, width, height)
+	image.setLoop(isLooping)
+	image.setAnimComplete(isCompletedAnimation)
+```
+
+# TextureManager
+
+이미지 파일(*.png, *.bmp)을 로드하여 DIB로 변환합니다. DIB는 GDI 기반으로 렌더링 시 이용됩니다.
+PNG 파일의 경우, 내부적으로 libpng를 이용하여 색상 RAW 값을 얻은 후 DIB로 디코딩하였습니다. 
+
+Image 객체에서 내부적으로 호출하므로 굳이 수동으로 사용할 필요는 없습니다.
+
+```lua
+	-- id는 문자열이어야 합니다. 
+	-- "my_character"와 같은 식으로 지정하십시오.
+	TextureManager.Load(filename, id)
+	TextureManager.Remove(id)
+	local isValid = TextureManager.IsValid(id)
+```
+
+# Audio
+OGG 파일 또는 WAV 파일 등을 재생할 수 있습니다. 
+
+```lua
+	Audio.PlayMusic(path, id, loop) -- BGM 재생
+	Audio.PlaySound(path, id, loop) -- SE 재생
+	Audio.SetVolume(vol) -- BGM 볼륨 설정
+	Audio.GetVolume() -- BGM 볼륨 획득
+	Audio.InsertNextMusic(path, id, loop) -- 다음 BGM 추가
+	Audio.PauseMusic() -- BGM 일시 정지
+	Audio.StopMusic() -- BGM 정지
+	Audio.ResumeMusic() -- BGM 재개
+	Audio.IsPlayingMusic() -- BGM 재생 여부
+	Audio.FadeOutMusic(ms) -- BGM 페이드아웃
+	Audio.SetMusicPosition(position) -- BGM 재생 위치 설정
+	Audio.ReleaseMusic(id) -- 메모리 해제
+```
+
+음악 재생 시 오디오 파일을 자동으로 로드합니다. 하지만 메모리는 반드시 수동으로 해제해야 합니다.
+
+# Input
+키보드 및 마우스 입력을 처리합니다. 
+
+```lua
+
+	-- vKey는 가상 키 값입니다. 
+	Input.IsKeyDown(vKey)
+	Input.IsKeyUp(vKey)
+	Input.IsKeyPress(vKey)
+	Input.IsAnyKeyDown()
+	Input.GetMouseX()
+	Input.GetMouseY()
+
+	-- 마우스에서의 가상 키는 다음과 같습니다.
+	-- 1 : 마우스 왼쪽
+	-- 2 : 마우스 오른쪽
+	-- 4 : 마우스 중앙
+	-- 5 : 마우스 X1
+	-- 6 : 마우스 X2
+	Input.IsMouseDown(vKey)
+	Input.IsMouseUp(vKey)
+	Input.IsMousePress(vKey)
+	Input.IsAnyMouseDown()
+
+	-- 마우스 휠 처리는 메시지 콜백 함수에서 수신합니다.
+	-- 마우스 휠 올림 내림 판단을 -1과 1로 처리합니다.
+	Input.GetMouseZ()
+	Input.SetMouseZ(wheel)
+
+	-- Enter 키를 누르고 있는가?
+	local vKey = string.byte("\r\n") -- 13
+	if Input.IsKeyPress(vKey) then
+		-- 처리
+	end
+
+	-- A 키를 눌렀는가?
+	local vKey = string.byte("A") --65
+	if Input.IsKeyDown(vKey) then
+		-- 처리
+	end	
+
+```
+
+# Bitmap Text
+
+텍스트를 화면에 그립니다. Bitmap Text(비트맵 텍스트)로 되어있으나 \n과 같은 개행 문자(Line Break)도 처리합니다. **한글**과 **영어**를 사용할 수 있습니다. BMFont로 만든 **PNG 파일**과 **XML 규격**으로 된 **FNT 파일**이 리소스 폴더에 있어야 합니다.
+
+동적 할당이 아닌 고정적으로 수 만자에 대한 텍스트 메모리를 한 번에 할당합니다. 이렇게 하는 이유는 동적 할당으로 인한 캐시 문제 때문입니다.
+
+```lua
+	-- FNT 파일 준비 (TinyXml을 이용하여 읽습니다)
+	PreparaFont(fontFilePath)
+	--텍스트 묘화 (Bitmap Text 기반입니다.)
+	DrawText(x, y, text)
+```
+
+GDI 기반의 텍스트 묘화를 쓰고 싶었지만 렌더링 시스템의 문제 또는 플랫폼 의존성 API 사용 문제로 인해 비트맵 텍스트로 처리하였습니다.
+
+# Utils
+
+```lua
+	-- 메시지 박스를 띄웁니다.
+	MessageBox(title, caption)
+
+	-- 루아 스크립트 파일을 로드합니다.
+	LoadScript(luaFile)
+	
+	-- 창 가로 크기
+	WindowWidth()
+
+	-- 창 세로 크기
+	WindowHeight()
+
+	-- 평균 FPS 
+	-- 고정 프레임을 사용하지 않으므로
+	-- 보통 100 프레임 이상이 나와야 정상입니다.
+	GetFrameCount()
 ```
 
 # 빌드 시
