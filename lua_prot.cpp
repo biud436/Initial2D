@@ -20,6 +20,8 @@
 #include <cstdio>
 #include <vector>
 
+#include <atlconv.h>
+
 #include "Font.h"
 
 int ShowMessageBox(HWND hWnd, LPCWCHAR text, LPCWCHAR caption, UINT type);
@@ -64,14 +66,29 @@ extern HWND g_hWnd;
 
 wchar_t* AllocWideChar(const char* law)
 {
-	int len = strlen(law);
+	int length = MultiByteToWideChar(CP_UTF8, 0, law, -1, NULL, 0);
+	
+	if (length == 0)
+	{
+		return L"";
+	}
 
-	WCHAR *wide_text = new WCHAR[len];
-	memset(wide_text, 0, sizeof(WCHAR) * len);
+	// NULL 문자를 포함하여 메모리를 초기화 않으면 오류가 난다.
+	LPWSTR lpszWideChar = new WCHAR[length + 1];
+	if (lpszWideChar == NULL)
+	{
+		return L"";
+	}
 
-	MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)law, -1, wide_text, len);
+	memset(lpszWideChar, 0, sizeof(WCHAR) * (length + 1));
+	int ret = MultiByteToWideChar(CP_UTF8, 0, law, -1, lpszWideChar, length);
 
-	return wide_text;
+	if (ret == 0)
+	{
+		return L"";
+	}
+
+	return lpszWideChar;
 }
 
 void DestroyWideChar(const wchar_t* law)
@@ -178,7 +195,7 @@ int Lua_DrawText(lua_State *pL)
 		const char *text = luaL_checkstring(pL, 3);
 		const wchar_t *c = AllocWideChar(text);
 		pFont->drawText(x, y, c);
-		delete[] c;
+		DestroyWideChar(c);
 	}
 
 	return 0;
