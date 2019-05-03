@@ -24,6 +24,8 @@
 
 #include "Font.h"
 
+#include <memory>
+
 int ShowMessageBox(HWND hWnd, LPCWCHAR text, LPCWCHAR caption, UINT type);
 
 namespace Initial2D {
@@ -75,6 +77,7 @@ wchar_t* AllocWideChar(const char* law)
 
 	// NULL 문자를 포함하여 메모리를 초기화 않으면 오류가 난다.
 	LPWSTR lpszWideChar = new WCHAR[length + 1];
+
 	if (lpszWideChar == NULL)
 	{
 		return L"";

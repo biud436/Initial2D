@@ -20,6 +20,8 @@
 class Sprite;
 // @endcond
 
+using Sprites = std::vector<Sprite*>;
+
 /**
 * @class MenuState
 */
@@ -64,7 +66,7 @@ public:
 
 private:
 	static const std::string m_strMenuId;
-	std::vector<Sprite*> m_gameObjects;
+	Sprites m_gameObjects;
 
 };
 

@@ -241,7 +241,7 @@ void App::Update()
 		SetWindowText(m_hWnd, TITLE);
 		m_nFPS = m_nFrameCount;
 		m_nFrameCount = 0;
-
+		m_elapsed = 0.0;
 		m_nTimeStart = m_nTimeEnd;
 	}
 

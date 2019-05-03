@@ -54,7 +54,7 @@ struct SpriteData
 };
 
 /// @typedef TransformData
-typedef XFORM TransformData;
+using TransformData = XFORM;
 
 /** 
  * @class Sprite

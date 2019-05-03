@@ -33,6 +33,9 @@ enum sound_type
 	//SOUND_BGS			/**		BGS	*/
 };
 
+using BGM = std::map<std::string, Mix_Music*>;
+using SE = std::map<std::string, Mix_Chunk*>; 
+
 /**
  * @class SoundManager
  * @brief 사운드 모듈
@@ -161,8 +164,8 @@ private:
 
 	static SoundManager* s_pInstance;
 
-	std::map<std::string, Mix_Music*> m_music;	// BGM
-	std::map<std::string, Mix_Chunk*> m_sfxs;	// SE
+	BGM m_music;	// BGM
+	SE m_sfxs;	// SE
 
 	std::string m_previousMusicID; // 이전 BGM ID
 	std::string m_currentMusicID; // 현재 BGM ID

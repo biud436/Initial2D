@@ -23,8 +23,10 @@
 
 class Texture;
 
-/** @typedef TransformData */
-typedef XFORM TransformData;
+using TransformData = XFORM;
+using Color = COLORREF;
+using TextureGroup = std::map<std::string, TextureData*>;
+using Texture = HBITMAP;
 
 /**
  * @struct TextureData
@@ -34,7 +36,7 @@ struct TextureData
 {
 	int width;			/** 폭 */
 	int height;			/** 높이 */
-	HBITMAP texture;	/** 텍스처 */
+	Texture texture;	/** 텍스처 */
 	TextureData();		
 	~TextureData();
 };
@@ -85,20 +87,14 @@ public:
 	void DrawFrame(std::string id, int x, int y, int width, int height, RECT& rect, TransformData& transform);
 
 	/**
-	 * 화면에 텍스트를 출력합니다.
-	 */
-	void DrawText(std::string id, int x, int y, int width, int height, RECT& rect, TransformData& transform);
-
-	/**
 	* 유효한 Texture인지 체크합니다.
 	*/
 	bool valid(std::string id);
 
-	std::map<std::string, TextureData*> m_textureMap;
+public:
 
-	COLORREF m_crTransparent;
-
-private:
+	TextureGroup m_textureMap;
+	Color m_crTransparent;
 
 };
 

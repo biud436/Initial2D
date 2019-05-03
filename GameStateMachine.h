@@ -17,6 +17,7 @@
 #include <vector>
 
 class GameState;
+using States = std::vector<GameState*>;
 
 /**
  * @class GameStateMachine
@@ -80,7 +81,7 @@ public:
 
 private:
 
-	std::vector<GameState*> m_gameStates;
+	States m_gameStates;
 
 };
 
