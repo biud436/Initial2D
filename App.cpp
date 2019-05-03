@@ -42,8 +42,8 @@ App::App() :
 	m_nFPS(100),
 	m_elapsed(0),
 	m_bFocus(true),
-	m_pFont(NULL),
-	m_nFrameCount(0)
+	m_nFrameCount(0),
+	m_pFont(nullptr)
 {
 
 	// 디버그 모드라면 콘솔 창을 띄운다.
@@ -215,6 +215,8 @@ Input& App::GetInput()
 	return *m_pInput;
 }
 
+const double DELAY_TIME = 1.0 / 60.0;
+
 void App::Update()
 {
 	// 경과된 시간(Elapsed)을 구한다.
@@ -226,18 +228,19 @@ void App::Update()
 
 	m_nFrameCount++;
 
-	char TITLE[64];
+	TCHAR TITLE[64];
 
 	// 부동 소수점 오차를 줄이기 위해 정밀도가 높은 double 형을 사용하였다.
-	for (; m_elapsed >= 1.0; m_elapsed -= 1.0) 
+	while(m_elapsed >= DELAY_TIME)
 	{
 		UpdateInput();
 		ObjectUpdate(m_frameTime);
+		m_elapsed -= DELAY_TIME;
 	}
 
 	if (m_frameTime >= 1.0)
 	{
-		sprintf(TITLE, "Demo Game - FPS : %d\n", m_nFrameCount);
+		_tsprintf(TITLE, _T("Demo Game - FPS : %d\n"), m_nFrameCount);
 		SetWindowText(m_hWnd, TITLE);
 		m_nFPS = m_nFrameCount;
 		m_nFrameCount = 0;
@@ -245,6 +248,7 @@ void App::Update()
 		m_nTimeStart = m_nTimeEnd;
 	}
 
+	// Rendering
 	RenderClear();
 	RenderTransform();
 	Render();

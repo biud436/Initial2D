@@ -176,7 +176,7 @@ int Lua_LoadScript(lua_State *pL)
 int Lua_PreparaFont(lua_State *pL)
 {
 	bool isValid = App::GetInstance().LoadFont();
-	Font *pFont = App::GetInstance().GetFont();
+	Font* pFont = App::GetInstance().GetFont();
 
 	std::string filename = luaL_checkstring(pL, 1);
 	
@@ -187,7 +187,7 @@ int Lua_PreparaFont(lua_State *pL)
 
 int Lua_DrawText(lua_State *pL)
 {
-	Font *pFont = App::GetInstance().GetFont();
+	Font* pFont = App::GetInstance().GetFont();
 
 	if (pFont->isValid())
 	{

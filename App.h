@@ -19,6 +19,14 @@
 
 #include <iostream>
 #include <string>
+#include <memory>
+#include <tchar.h>
+
+#ifdef _UNICODE
+#define _tsprintf swprintf;
+#else
+#define _tsprintf sprintf;
+#endif
 
 /** 
  * @def LOG_D(MSG)
