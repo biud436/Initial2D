@@ -65,7 +65,7 @@ App::App() :
 	m_pInput = new Input();
 
 	// 폰트 생성
-	m_pFont = new Font();
+	m_pFont = std::make_unique<Font>();
 
 }
 
@@ -228,7 +228,7 @@ void App::Update()
 
 	m_nFrameCount++;
 
-	TCHAR TITLE[64];
+	char TITLE[128];
 
 	// 부동 소수점 오차를 줄이기 위해 정밀도가 높은 double 형을 사용하였다.
 	while(m_elapsed >= DELAY_TIME)
@@ -240,7 +240,7 @@ void App::Update()
 
 	if (m_frameTime >= 1.0)
 	{
-		_tsprintf(TITLE, _T("Demo Game - FPS : %d\n"), m_nFrameCount);
+		sprintf(TITLE, "Demo Game - FPS : %d\n", m_nFrameCount);
 		SetWindowText(m_hWnd, TITLE);
 		m_nFPS = m_nFrameCount;
 		m_nFrameCount = 0;
@@ -310,9 +310,9 @@ bool App::GetFocus()
 	return m_bFocus;
 }
 
-Font* App::GetFont()
+GameFont* App::GetFont()
 {
-	return m_pFont;
+	return &m_pFont;
 }
 
 bool App::LoadFont()
@@ -328,7 +328,8 @@ bool App::DestroyFont()
 {
 	bool isValid = m_pFont->remove();
 
-	SAFE_DELETE(m_pFont);
+	m_pFont.reset();
+	m_pFont.release();
 
 	return isValid;
 }

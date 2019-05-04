@@ -59,6 +59,8 @@ class TextureManager;
 class Font;
 /// @endcond
 
+using GameFont = std::unique_ptr<Font>;
+
 /**
  * @class App
  * @author biud436 (biud436@gmail.com)
@@ -126,7 +128,7 @@ protected:
 	bool m_bFocus;
 
 	// 폰트 아틀라스
-	Font* m_pFont;
+	GameFont m_pFont;
 	
 public:
 	static App* s_pInstance;
@@ -258,7 +260,7 @@ public:
 	/**
 	 * 폰트를 구합니다.
 	 */
-	Font* GetFont();
+	GameFont* GetFont();
 
 	/**
 	* 폰트를 로드합니다.

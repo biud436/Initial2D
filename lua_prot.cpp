@@ -176,20 +176,20 @@ int Lua_LoadScript(lua_State *pL)
 int Lua_PreparaFont(lua_State *pL)
 {
 	bool isValid = App::GetInstance().LoadFont();
-	Font* pFont = App::GetInstance().GetFont();
+	GameFont *pFont = App::GetInstance().GetFont();
 
 	std::string filename = luaL_checkstring(pL, 1);
 	
-	isValid = pFont->open(filename);
+	isValid = pFont->get()->open(filename);
 	lua_pushboolean(pL, isValid);
 	return 1;
 }
 
 int Lua_DrawText(lua_State *pL)
 {
-	Font* pFont = App::GetInstance().GetFont();
+	GameFont* pFont = App::GetInstance().GetFont();
 
-	if (pFont->isValid())
+	if (pFont->get()->isValid())
 	{
 		int x, y;
 		x = luaL_checknumber(pL, 1);
@@ -197,7 +197,7 @@ int Lua_DrawText(lua_State *pL)
 
 		const char *text = luaL_checkstring(pL, 3);
 		const wchar_t *c = AllocWideChar(text);
-		pFont->drawText(x, y, c);
+		pFont->get()->drawText(x, y, c);
 		DestroyWideChar(c);
 	}
 
