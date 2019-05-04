@@ -27,8 +27,18 @@ function Render()
 	character.draw()
 	
 	if isValid then 
-		DrawText(100, 50, "Hello")
-		DrawText(100, 100, "안녕하세요? 러닝은빛입니다.\n반가워요...")
+		DrawText(100, 50, "아이즈원 - 비올레타")
+		DrawText(100, 100, [[
+눈 감아도 느껴지는 향기 Oh
+은은해서 빠져들어
+저 멀리 사라진 그 빛을 따라 난
+너에게 더 다가가 다가가 Ah ah
+
+날 보는 네 눈빛과 날 비추는 빛깔이
+모든 걸 멈추게 해 너를 더 빛나게 해
+어느 순간 내게로 조용히 스며들어 
+같은 꿈을 꾸게 될 테니까
+		]])
 		frameCount = GetFrameCount()
 		DrawText(0, 0, tostring(frameCount))
 	end

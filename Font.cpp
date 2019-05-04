@@ -286,6 +286,7 @@ int Font::drawText(int x, int y, std::wstring text)
 	// 투명색 설정을 이전으로 되돌린다.
 	tm.m_crTransparent = tempColor;
 
+	// 최대 텍스트 폭을 반환합니다.
 	std::vector<int>::iterator iter = std::max_element(lineWidth.begin(), lineWidth.end());
 
 	return *iter;
