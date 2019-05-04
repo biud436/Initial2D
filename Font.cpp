@@ -3,6 +3,8 @@
 #include "App.h"
 #include "TextureManager.h"
 #include <tinyxml.h>
+#include <memory>
+#include <algorithm>
 
 Font::Font()
 {
@@ -56,10 +58,10 @@ bool Font::ParseFont(std::string fntName)
 	}
 
 	TiXmlElement *pRoot = xmlDoc.RootElement();
-	TiXmlElement *pCommon = 0;
-	TiXmlElement *pChars = 0;
-	TiXmlElement *pPages = 0;
-	TiXmlElement *pKernings = 0;
+	TiXmlElement *pCommon = nullptr;
+	TiXmlElement *pChars = nullptr;
+	TiXmlElement *pPages = nullptr;
+	TiXmlElement *pKernings = nullptr;
 
 	for (TiXmlElement *e = pRoot->FirstChildElement(); e != NULL; e = e->NextSiblingElement())
 	{
@@ -88,15 +90,6 @@ bool Font::ParseFont(std::string fntName)
 			pKernings = e;
 		}
 	}
-
-	//for (TiXmlElement *e = pPages->FirstChildElement(); e != NULL; e = e->NextSiblingElement()) {
-	//	if (e->Value() == std::string("page"))
-	//	{
-	//		int id;
-	//		e->Attribute("id", &id);
-	//		m_filename[id] = e->Attribute("file");
-	//	}
-	//}
 
 	int count;
 	pChars->Attribute("count", &count);
@@ -187,13 +180,15 @@ int Font::drawText(int x, int y, std::wstring text)
 	int cursorY = y;
 	int prevCursorX = 0;
 
-	int lineWidth = 0;
+	//int lineWidth = 0;
+	std::vector<int> lineWidth;
+	lineWidth.push_back(0);
 
 	std::string textureId = "font";
 
 	if (!m_charsetDesc.IsTextureReady) {
 		LOG_D("폰트 아틀라스가 준비되지 않았습니다.");
-		return lineWidth;
+		return lineWidth.back();
 	}
 
 	TextureManager &tm = App::GetInstance().GetTextureManager();
@@ -220,6 +215,7 @@ int Font::drawText(int x, int y, std::wstring text)
 			int ch = desc.Height;
 			int ox = desc.XOffset;
 			int oy = desc.YOffset;
+			int page = desc.Page;
 
 			transform.eDx = cursorX + ox;
 			transform.eDy = cursorY + oy;
@@ -239,7 +235,7 @@ int Font::drawText(int x, int y, std::wstring text)
 
 			cursorX += desc.XAdvance;
 
-			lineWidth = cursorX;
+			lineWidth.push_back(cursorX);
 
 			prevCode = c;
 
@@ -251,7 +247,7 @@ int Font::drawText(int x, int y, std::wstring text)
 				cursorY += lineHeight;
 			}
 
-			lineWidth = cursorX;
+			lineWidth.push_back(cursorX);
 
 		}
 	}
@@ -259,6 +255,8 @@ int Font::drawText(int x, int y, std::wstring text)
 	// 투명색 설정을 이전으로 되돌린다.
 	tm.m_crTransparent = tempColor;
 
-	return lineWidth;
+	std::vector<int>::iterator iter = std::max_element(lineWidth.begin(), lineWidth.end());
+
+	return *iter;
 
 }

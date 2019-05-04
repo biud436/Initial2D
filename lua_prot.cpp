@@ -191,17 +191,24 @@ int Lua_DrawText(lua_State *pL)
 
 	if (pFont->get()->isValid())
 	{
-		int x, y;
+		int x, y, width;
 		x = luaL_checknumber(pL, 1);
 		y = luaL_checknumber(pL, 2);
+		width = 0;
 
 		const char *text = luaL_checkstring(pL, 3);
 		const wchar_t *c = AllocWideChar(text);
-		pFont->get()->drawText(x, y, c);
+		width = pFont->get()->drawText(x, y, c);
+		
+		lua_pushnumber(pL, width);
+
 		DestroyWideChar(c);
 	}
+	else {
+		lua_pushnumber(pL, 0);
+	}
 
-	return 0;
+	return 1;
 }
 
 int Lua_WindowWidth(lua_State *pL)
