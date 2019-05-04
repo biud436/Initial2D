@@ -8,22 +8,27 @@
 
 Font::Font()
 {
-	m_charsetDesc.IsTextureReady = false;
-	m_charsetDesc.IsReady = false;
-	isUsedTextWidth = false;
+	initMembers();
 }
 
 Font::Font(std::string fntName)
 {
-	m_charsetDesc.IsTextureReady = false;
-	m_charsetDesc.IsReady = false;
-	isUsedTextWidth = false;
+	initMembers();
 	open(fntName);
 }
 
 Font::~Font()
 {
 
+}
+
+void Font::initMembers()
+{
+	m_charsetDesc.IsTextureReady = false;
+	m_charsetDesc.IsReady = false;
+	isUsedTextWidth = false;
+	m_scale = 1.0;
+	m_fontSize = 32.0;
 }
 
 bool Font::isValid()
@@ -91,9 +96,17 @@ bool Font::ParseFont(std::string fntName)
 		}
 	}
 
+	// Parse Page
+	for (TiXmlElement *e = pPages->FirstChildElement(); e != NULL; e = e->NextSiblingElement()) {
+		if (e->Value() == std::string("page")) {
+			m_textureNames.push_back(e->Attribute("file"));
+		}
+	}
+
 	int count;
 	pChars->Attribute("count", &count);
 
+	// Parse char
 	for (TiXmlElement *e = pChars->FirstChildElement(); e != NULL; e = e->NextSiblingElement()) {
 		if (e->Value() == std::string("char"))
 		{
@@ -110,6 +123,7 @@ bool Font::ParseFont(std::string fntName)
 		}
 	}
 
+	// Parse kerning
 	for (TiXmlElement *e = pKernings->FirstChildElement(); e != NULL; e = e->NextSiblingElement()) {
 		if (e->Value() == std::string("kerning"))
 		{
@@ -143,12 +157,20 @@ Charset& Font::getDesc()
 
 bool Font::load()
 {
-	std::string resourcePath = ".\\resources\\hangul_0.png";
-	LOG_D(resourcePath);
+	std::string resourcePath = ".\\resources\\";
 	std::string textureId = "font";
 
+	TextureNames::iterator iter = m_textureNames.begin();
 	TextureManager &tm = App::GetInstance().GetTextureManager();
-	m_charsetDesc.IsTextureReady = tm.Load(resourcePath, textureId, NULL);
+	int i = 0;
+
+	for (TextureNames::iterator iter = m_textureNames.begin(); iter != m_textureNames.end(); iter++)
+	{
+		std::string path = resourcePath.append(iter[0]);
+		std::string id = textureId + std::to_string(i);
+		m_textureIds[i++] = id;
+		m_charsetDesc.IsTextureReady = tm.Load(path, id, NULL);
+	}
 
 	return m_charsetDesc.IsTextureReady;
 }
@@ -199,6 +221,9 @@ int Font::drawText(int x, int y, std::wstring text)
 	
 	int prevCode = 0;
 
+	// Set the scale with font.
+	m_scale = m_fontSize / static_cast<double>(lineHeight);
+
 	for (std::size_t i = 0; i < text.length(); i++)
 	{
 		int c = text.at(i);
@@ -213,9 +238,10 @@ int Font::drawText(int x, int y, std::wstring text)
 			int cy = desc.y;
 			int cw = desc.Width;
 			int ch = desc.Height;
-			int ox = desc.XOffset;
-			int oy = desc.YOffset;
+			int ox = static_cast<int>(desc.XOffset * m_scale);
+			int oy = static_cast<int>(desc.YOffset * m_scale);
 			int page = desc.Page;
+			std::string textureId = m_textureIds[page];
 
 			transform.eDx = cursorX + ox;
 			transform.eDy = cursorY + oy;
@@ -225,7 +251,12 @@ int Font::drawText(int x, int y, std::wstring text)
 
 			if (!isUsedTextWidth) 
 			{
-				tm.DrawText(textureId, cursorX + ox, cursorY + oy, cw, ch, rt, transform);
+				tm.DrawText(textureId,
+					cursorX + ox, 
+					cursorY + oy,
+					static_cast<int>(cw * m_scale), 
+					static_cast<int>(ch * m_scale), 
+					rt, transform);
 			}
 			
 			if (prevCode != 0 && desc.kerning[prevCode] > 0) 
@@ -233,7 +264,7 @@ int Font::drawText(int x, int y, std::wstring text)
 				cursorX += desc.kerning[prevCode];
 			}
 
-			cursorX += desc.XAdvance;
+			cursorX += static_cast<int>(desc.XAdvance * m_scale);
 
 			lineWidth.push_back(cursorX);
 
@@ -258,5 +289,18 @@ int Font::drawText(int x, int y, std::wstring text)
 	std::vector<int>::iterator iter = std::max_element(lineWidth.begin(), lineWidth.end());
 
 	return *iter;
+
+}
+
+int Font::getTextWidth(int x, int y, std::wstring text)
+{
+	int width = 0;
+
+	// Draw Call을 줄이기 위해, isUsedTextWidth 플래그를 설정한다.
+	isUsedTextWidth = true;
+	width = drawText(x, y, text);
+	isUsedTextWidth = false;
+
+	return width;
 
 }

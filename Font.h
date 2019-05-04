@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <fstream>
+#include <unordered_map>
 
 class Sprite;
 
@@ -40,6 +41,9 @@ struct Charset
 
 };
 
+using TextureNames = std::vector<std::string>;
+using TextureIds = std::unordered_map<int, std::string>;
+
 class Font
 {
 
@@ -48,6 +52,7 @@ public:
 	Font(std::string fntName);
 	~Font();
 
+	void initMembers();
 	bool load();
 	bool remove();
 	bool isValid();
@@ -55,12 +60,17 @@ public:
 	bool ParseFont(std::string fntName);
 	Charset& getDesc();
 	int drawText(int x, int y, std::wstring text);
+	int getTextWidth(int x, int y, std::wstring text);
 
 protected:
 
 	Charset m_charsetDesc;
 	std::string m_filename[2];
 	bool isUsedTextWidth;
+	double m_scale;
+	double m_fontSize;
+	TextureNames m_textureNames;
+	TextureIds m_textureIds;
 
 };
 
