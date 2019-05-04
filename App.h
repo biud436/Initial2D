@@ -265,7 +265,7 @@ public:
 	/**
 	* 폰트를 로드합니다.
 	*/
-	bool LoadFont();
+	bool LoadFont(std::string fontName);
 
 	/**
 	* 폰트 메모리 해제

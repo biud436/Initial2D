@@ -175,10 +175,9 @@ int Lua_LoadScript(lua_State *pL)
 
 int Lua_PreparaFont(lua_State *pL)
 {
-	bool isValid = App::GetInstance().LoadFont();
-	GameFont *pFont = App::GetInstance().GetFont();
-
 	std::string filename = luaL_checkstring(pL, 1);
+	bool isValid = App::GetInstance().LoadFont(filename);
+	GameFont *pFont = App::GetInstance().GetFont();
 	
 	isValid = pFont->get()->open(filename);
 	lua_pushboolean(pL, isValid);

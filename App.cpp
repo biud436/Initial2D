@@ -315,9 +315,9 @@ GameFont* App::GetFont()
 	return &m_pFont;
 }
 
-bool App::LoadFont()
+bool App::LoadFont(std::string fontName)
 {
-	bool isValid = m_pFont->ParseFont(".\\resources\\hangul.fnt");
+	bool isValid = m_pFont->ParseFont(fontName);
 	
 	m_pFont->load();
 
