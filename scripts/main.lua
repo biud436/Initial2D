@@ -15,6 +15,11 @@
 	
 	Audio.PlayMusic("./resources/test.ogg", "mainBGM", true)
 	print("Audio")
+
+	nanumFont = Font("나눔고딕", 72)
+	nanumFont.setText("안녕하세요?")
+	nanumFont.setPosition(100, 100)
+	nanumFont.setTextColor(255, 0, 0)
 	
 	myFont = Font("궁서체", 48)
 	myFont.setText("반갑습니다. ")
@@ -28,12 +33,14 @@ end
 function Update(elapsed)
 	background.update(elapsed)
 	character.update(elapsed)
+	nanumFont.update(elapsed)
 	myFont.update(elapsed)
 end
 
 function Render()
 	background.draw()
 	character.draw()
+	nanumFont.draw()
 	myFont.draw()
 	
 	-- if isValid then 
@@ -58,6 +65,7 @@ end
 function Destroy()
 	background.dispose()
 	character.dispose()
-	-- myFont.dispose()
+	nanumFont.dispose()
+	myFont.dispose()
 	Audio.ReleaseMusic("mainBGM")
 end

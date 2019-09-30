@@ -126,6 +126,7 @@
     <ClInclude Include="Vector2D.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="README.md" />
     <None Include="scripts\Font.lua" />
     <None Include="scripts\image.lua" />
     <None Include="scripts\main.lua" />

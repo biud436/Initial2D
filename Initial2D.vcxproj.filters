@@ -246,5 +246,6 @@
     <None Include="scripts\Font.lua">
       <Filter>scripts</Filter>
     </None>
+    <None Include="README.md" />
   </ItemGroup>
 </Project>

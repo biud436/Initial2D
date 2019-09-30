@@ -27,12 +27,12 @@ bool MenuState::onEnter()
 {
 	LOG_D("MenuState.onEnter()");
 
-	AntiAliasingFont* pFont = new AntiAliasingFont(L"≥™¥Æ∞ÌµÒ", 36);
-	pFont->setText(L"æ»≥Á«œººø‰?")
-		.setPosition(100, 100)
-		.setTextColor(255, 0, 0);
+	//AntiAliasingFont* pFont = new AntiAliasingFont(L"≥™¥Æ∞ÌµÒ", 36);
+	//pFont->setText(L"æ»≥Á«œººø‰?")
+	//	.setPosition(100, 100)
+	//	.setTextColor(255, 0, 0);
 
-	m_gameObjects.push_back(pFont);
+	//m_gameObjects.push_back(pFont);
 
 	return true;
 }
