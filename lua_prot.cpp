@@ -3,6 +3,7 @@
 #include "lua_input.h"
 #include "lua_sprite.h"
 #include "lua_texture.h"
+#include "lua_font.h"
 
 #include "App.h"
 #include "Sprite.h"
@@ -25,6 +26,7 @@
 #include "Font.h"
 
 #include <memory>
+#include <exception>
 
 int ShowMessageBox(HWND hWnd, LPCWCHAR text, LPCWCHAR caption, UINT type);
 
@@ -230,8 +232,11 @@ int Lua_GetFrameCount(lua_State *pL)
 
 int Lua_Init()
 {
+
 	g_pLuaState = luaL_newstate();
 	luaL_openlibs(g_pLuaState);
+
+	try {
 
 	lua_register(g_pLuaState, "MessageBox", Lua_MessageBox);
 	lua_register(g_pLuaState, "LoadScript", Lua_LoadScript);
@@ -253,13 +258,24 @@ int Lua_Init()
 	// Texture
 	Lua_CreateTextureManagerObject(g_pLuaState);
 
-	// 스크립트 파일을 읽습니다 (Windows Only)
-	luaL_dostring(g_pLuaState, 
-		"for dir in io.popen([[dir \"./scripts/\" /r /b]]) :lines() do LoadScript(\"./scripts/\"..dir) end");
+	// FontEx
+	Lua_CreateFontExImpl(g_pLuaState);
 
-	// 스크립트 파일 내에 선언된 초기화 함수를 호출합니다.
-	lua_getglobal(g_pLuaState, "Initialize");
-	lua_call(g_pLuaState, 0, 0);
+		// 스크립트 파일을 읽습니다 (Windows Only)
+		luaL_dostring(g_pLuaState,
+			"for dir in io.popen([[dir \"./scripts/\" /r /b]]) :lines() do LoadScript(\"./scripts/\"..dir) end");
+
+		// 스크립트 파일 내에 선언된 초기화 함수를 호출합니다.
+		lua_getglobal(g_pLuaState, "Initialize");
+		lua_call(g_pLuaState, 0, 0);
+
+	}
+	catch (std::exception &e) {
+		luaL_error(g_pLuaState, e.what());
+	}
+	catch (...) {
+		luaL_error(g_pLuaState, "Unknown Error");
+	}
 
 	return 0;
 }

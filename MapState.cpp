@@ -14,6 +14,7 @@
 #include "MapState.h"
 #include "App.h"
 #include "Sprite.h"
+#include "GameObject.h"
 
 const std::string MapState::m_strMapId = "MAP";
 

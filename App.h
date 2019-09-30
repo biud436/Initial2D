@@ -21,6 +21,7 @@
 #include <string>
 #include <memory>
 #include <tchar.h>
+#include <sstream>
 
 #ifdef _UNICODE
 #define _tsprintf swprintf;

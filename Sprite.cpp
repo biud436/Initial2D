@@ -33,7 +33,9 @@ SpriteData::SpriteData()
 	opacity = 255;
 }
 
-Sprite::Sprite() : m_bInitialized(false)
+Sprite::Sprite() : 
+	m_bInitialized(false),
+	GameObject::GameObject()
 {
 	m_transform.eM11 = 1.0f;
 	m_transform.eM12 = 0.0f;
@@ -46,6 +48,7 @@ Sprite::Sprite() : m_bInitialized(false)
 
 Sprite::~Sprite()
 {
+	GameObject::~GameObject();
 }
 
 bool Sprite::initialize(float x, float y, int width, int height, int maxFrames, std::string textureId = "none")

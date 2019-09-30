@@ -17,9 +17,9 @@
 
 #include "GameState.h"
 
-using Sprites = std::vector<Sprite*>;
+class GameObject;
 
-class Sprite;
+using GameObjects = std::vector<GameObject*>;
 
 /**
 *	@file MapState.h
@@ -66,7 +66,7 @@ public:
 
 private:
 	static const std::string m_strMapId;
-	Sprites m_gameObjects;
+	GameObjects m_gameObjects;
 };
 
 #endif

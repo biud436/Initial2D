@@ -141,6 +141,20 @@ int App::Run(int nCmdShow)
 
 	ShowWindow(g_hWnd, nCmdShow);
 
+	std::unique_ptr<RECT> pRect = std::make_unique<RECT>();
+	GetClientRect(g_hWnd, pRect.get());
+	int cw = pRect.get()->right - pRect.get()->left;
+	int ch = pRect.get()->bottom - pRect.get()->top;
+
+	SetWindowPos(g_hWnd, NULL,
+		GetSystemMetrics(SM_CXSCREEN) / 2 - cw / 2,
+		GetSystemMetrics(SM_CYSCREEN) / 2 - ch / 2,
+		GetWindowWidth(),
+		GetWindowHeight(),
+		SWP_SHOWWINDOW);
+
+	pRect.reset(0);
+
 	Initialize();
 
 	bool done = false;
@@ -228,20 +242,19 @@ void App::Update()
 
 	m_nFrameCount++;
 
-	char TITLE[128];
-
 	// 부동 소수점 오차를 줄이기 위해 정밀도가 높은 double 형을 사용하였다.
 	while(m_elapsed >= DELAY_TIME)
 	{
 		UpdateInput();
 		ObjectUpdate(m_frameTime);
 		m_elapsed -= DELAY_TIME;
+		Sleep(1);
 	}
 
-	if (m_frameTime >= 1.0)
-	{
-		sprintf(TITLE, "Demo Game - FPS : %d\n", m_nFrameCount);
-		SetWindowText(m_hWnd, TITLE);
+	if (m_frameTime >= 1.0) {
+		std::ostringstream oss; 
+		oss << "Demo Game - FPS : " << m_nFrameCount << std::endl;
+		SetWindowText(m_hWnd, oss.str().c_str());
 		m_nFPS = m_nFrameCount;
 		m_nFrameCount = 0;
 		m_elapsed = 0.0;

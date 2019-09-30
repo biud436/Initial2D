@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-class Sprite;
+class GameObject;
 
 /**
  * @class GameState
@@ -73,7 +73,7 @@ public:
 	* @brief
 	* @return   std::string
 	*/
-	virtual void addChild(Sprite* p) = 0;
+	virtual void addChild(GameObject* p) = 0;
 
 };
 

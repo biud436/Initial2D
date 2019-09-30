@@ -20,7 +20,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
+    <ClCompile Include="ExperimentalFont.cpp" />
     <ClCompile Include="Font.cpp" />
+    <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GameState.cpp" />
     <ClCompile Include="GameStateMachine.cpp" />
     <ClCompile Include="Input.cpp" />
@@ -58,6 +60,7 @@
     <ClCompile Include="lua\lvm.cpp" />
     <ClCompile Include="lua\lzio.cpp" />
     <ClCompile Include="lua_audio.cpp" />
+    <ClCompile Include="lua_font.cpp" />
     <ClCompile Include="lua_input.cpp" />
     <ClCompile Include="lua_prot.cpp" />
     <ClCompile Include="lua_sprite.cpp" />
@@ -74,7 +77,9 @@
   <ItemGroup>
     <ClInclude Include="App.h" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="ExperimentalFont.h" />
     <ClInclude Include="Font.h" />
+    <ClInclude Include="GameObject.h" />
     <ClInclude Include="GameState.h" />
     <ClInclude Include="GameStateMachine.h" />
     <ClInclude Include="Input.h" />
@@ -105,6 +110,7 @@
     <ClInclude Include="lua\lvm.h" />
     <ClInclude Include="lua\lzio.h" />
     <ClInclude Include="lua_audio.h" />
+    <ClInclude Include="lua_font.h" />
     <ClInclude Include="lua_input.h" />
     <ClInclude Include="lua_sprite.h" />
     <ClInclude Include="lua_tbl.h" />
@@ -118,6 +124,11 @@
     <ClInclude Include="TextureManager.h" />
     <ClInclude Include="Utility.h" />
     <ClInclude Include="Vector2D.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="scripts\Font.lua" />
+    <None Include="scripts\image.lua" />
+    <None Include="scripts\main.lua" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{F4051E31-887A-4919-8B7B-C68F393F4E71}</ProjectGuid>

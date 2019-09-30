@@ -17,10 +17,10 @@
 #include "GameState.h"
 
 ///@cond
-class Sprite;
+class GameObject;
 // @endcond
 
-using Sprites = std::vector<Sprite*>;
+using GameObjects = std::vector<GameObject*>;
 
 /**
 * @class MenuState
@@ -62,11 +62,11 @@ public:
 	* @brief
 	* @return   std::string
 	*/
-	virtual void addChild(Sprite* p) override;
+	virtual void addChild(GameObject* p) override;
 
 private:
 	static const std::string m_strMenuId;
-	Sprites m_gameObjects;
+	GameObjects m_gameObjects;
 
 };
 

@@ -44,19 +44,15 @@ void App::Initialize()
 
 void App::ObjectUpdate(double elapsed)
 {
-	m_pGameStateMachine->update(elapsed);
-
 	Lua_Update(elapsed);
-
+	m_pGameStateMachine->update(elapsed);
 }
 
 
 void App::Render()
 {
-	m_pGameStateMachine->render();
-
 	Lua_Render();
-
+	m_pGameStateMachine->render();
 }
 
 

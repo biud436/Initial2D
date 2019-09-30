@@ -21,6 +21,7 @@
 #include "Vector2D.h"
 #include <vector>
 #include "Constants.h"
+#include "GameObject.h"
 
 /**
  * @addtogroup Sprites
@@ -61,7 +62,7 @@ using TransformData = XFORM;
  * @brief Sprite Å¬·¡½º
  * @details 
  */
-class Sprite
+class Sprite : public GameObject
 {
 public:
 
