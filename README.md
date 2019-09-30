@@ -221,6 +221,22 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 
 GDI 기반의 텍스트 묘화를 쓰고 싶었지만 렌더링 시스템의 문제 또는 플랫폼 의존성 API 사용 문제로 인해 비트맵 텍스트로 처리하였습니다.
 
+# Font
+
+다이나믹 폰트 기능으로 GetGlyphOutlineW를 이용하여 폰트 텍스쳐를 동적으로 생성합니다.
+
+```
+	nanumFont = Font("나눔고딕", 72)
+	nanumFont.setText("안녕하세요?")
+	nanumFont.setPosition(100, 100)
+	nanumFont.setTextColor(255, 0, 0)
+
+	nanumFont.update(elapsed)
+	nanumFont.draw()
+	nanumFont.dispose()
+
+```
+
 # Utils
 
 ```lua
