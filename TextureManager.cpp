@@ -437,7 +437,7 @@ void TextureManager::Draw(std::string id, int x, int y, int width, int height)
 
 }
 
-void TextureManager::DrawFrame(std::string id, int x, int y, int width, int height, RECT& rect, TransformData& transform)
+void TextureManager::DrawFrame(std::string id, int x, int y, int width, int height, RECT& rect, BYTE opacity, TransformData& transform)
 {
 
 	TextureData *currentTexture = m_textureMap[id];		// 텍스처 풀에서 텍스처를 가져온다
@@ -454,12 +454,14 @@ void TextureManager::DrawFrame(std::string id, int x, int y, int width, int heig
 	context.newContext = CreateCompatibleDC(context.mainContext);
 	HBITMAP hOldBitmap = (HBITMAP)SelectObject(context.newContext, currentTexture->texture);
 
-	// 투명하게 출력한다
-	TransparentBlt(context.currentContext,
-		0, 0, width, height, 
-		context.newContext,
-		rect.left, rect.top, width, height, 
-		m_crTransparent);
+	BLENDFUNCTION bf;
+	bf.AlphaFormat = AC_SRC_ALPHA;
+	bf.BlendFlags = 0;
+	bf.BlendOp = 0;
+	bf.SourceConstantAlpha = opacity;
+
+	AlphaBlend(context.currentContext, 0, 0, width, height, context.newContext,
+		rect.left, rect.top, width, height, bf);
 
 	// 트랜스폼 복구
 	SetGraphicsMode(context.currentContext, GM_ADVANCED);

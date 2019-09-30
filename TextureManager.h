@@ -84,7 +84,7 @@ public:
 	/**
 	* 화면에 Texture를 출력합니다.
 	*/
-	void DrawFrame(std::string id, int x, int y, int width, int height, RECT& rect, TransformData& transform);
+	void DrawFrame(std::string id, int x, int y, int width, int height, RECT& rect, BYTE opacity, TransformData& transform);
 
 	/**
 	* 화면에 텍스트를 출력합니다.

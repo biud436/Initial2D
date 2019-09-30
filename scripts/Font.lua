@@ -41,6 +41,11 @@ function Font(font_face, font_size)
 		if isReady == false then return end
 		FontEx.SetTextColor(self.objectId, red, green, blue)
 	end
+
+	function self.setOpacity(value)
+		if isReady == false then return end
+		FontEx.SetOpacity(self.objectId, value)
+	end
 	
 	self.create(font_face, font_size)
 	

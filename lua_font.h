@@ -3,7 +3,7 @@
 
 #include "lua_tbl.h"
 
-#define LUA_FONTEX_MEMBERS 7
+#define LUA_FONTEX_MEMBERS 8
 
 LUA_METHOD(CreateFontExImpl);
 
@@ -16,5 +16,6 @@ LUA_METHOD(ReleaseFontEx);
 LUA_CLASS(Set, FontEx, Text);
 LUA_CLASS(Set, FontEx, Position);
 LUA_CLASS(Set, FontEx, TextColor);
+LUA_CLASS(Set, FontEx, Opacity);
 
 #endif

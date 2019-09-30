@@ -33,6 +33,7 @@ public:
 	ExperimentalFont& setText(std::wstring text);
 	ExperimentalFont& setPosition(int x, int y);
 	ExperimentalFont& setTextColor(BYTE red, BYTE green, BYTE blue);
+	ExperimentalFont& setOpacity(BYTE value);
 
 private:
 	void drawImpl(HDC hdc, HBITMAP hBitmap, int xStart, int yStart, LPWSTR lpszText, COLORREF cr);
@@ -53,6 +54,8 @@ private:
 
 	std::wstring m_sText;
 	Point m_position;
+
+	BYTE m_nOpacity;
 
 	COLORREF m_textColor;
 

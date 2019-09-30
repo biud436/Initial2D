@@ -141,6 +141,7 @@ void Sprite::draw(void)
 		m_spriteData.width,
 		m_spriteData.height,
 		m_spriteData.rect,
+		m_spriteData.opacity,
 		m_transform
 	);
 

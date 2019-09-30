@@ -14,7 +14,8 @@ LuaObjectToken luaj_FontEx[LUA_FONTEX_MEMBERS] = {
 	{ "Dispose", LUA_METHOD_P1(ReleaseFontEx) },
 	{ "SetText", LUA_METHOD_P1(SetFontExText) },
 	{ "SetPosition", LUA_METHOD_P1(SetFontExPosition) },
-	{ "SetTextColor", LUA_METHOD_P1(SetFontExTextColor) }
+	{ "SetTextColor", LUA_METHOD_P1(SetFontExTextColor) },
+	{ "SetOpacity", LUA_METHOD_P1(SetFontExOpacity) }
 };
 
 
@@ -176,7 +177,7 @@ LUA_CLASS(Set, FontEx, Position)
 	return 0;
 }
 
-// FontEx.TextColor(fontId, red, green, blue)
+// FontEx.SetTextColor(fontId, red, green, blue)
 LUA_CLASS(Set, FontEx, TextColor)
 {
 	int n = lua_gettop(pL);
@@ -194,6 +195,26 @@ LUA_CLASS(Set, FontEx, TextColor)
 	const int b = lua_tonumber(pL, 4);
 
 	p->setTextColor(r, g, b);
+
+	return 0;
+}
+
+// FontEx.SetOpacity(fontId, value)
+LUA_CLASS(Set, FontEx, Opacity)
+{
+	int n = lua_gettop(pL);
+	DWORD d = (DWORD)lua_tonumber(pL, 1);
+
+	AntiAliasingFont* p = (AntiAliasingFont*)d;
+
+	if (!p)
+	{
+		return 0;
+	}
+
+	const int opacity = lua_tonumber(pL, 2);
+
+	p->setOpacity(opacity);
 
 	return 0;
 }

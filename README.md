@@ -219,23 +219,28 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 	DrawText(x, y, text)
 ```
 
-GDI 기반의 텍스트 묘화를 쓰고 싶었지만 렌더링 시스템의 문제 또는 플랫폼 의존성 API 사용 문제로 인해 비트맵 텍스트로 처리하였습니다.
-
 # Font
 
-다이나믹 폰트 기능으로 GetGlyphOutlineW를 이용하여 폰트 텍스쳐를 동적으로 생성합니다.
+동적으로 폰트 텍스쳐를 생성하고 화면에 텍스트를 그립니다. 
+사용자의 시스템 폰트 폴더에 있는 어떤 폰트도 사용할 수 있습니다.
 
-```
+```lua
 	nanumFont = Font("나눔고딕", 72)
 	nanumFont.setText("안녕하세요?")
 	nanumFont.setPosition(100, 100)
 	nanumFont.setTextColor(255, 0, 0)
+	nanumFont.setOpacity(128)
 
+	-- 업데이트 함수입니다만 아직 아무 기능도 하지 않습니다.
 	nanumFont.update(elapsed)
+
+	-- 렌더링 함수입니다. 반드시 호출해야 합니다.
 	nanumFont.draw()
 	nanumFont.dispose()
 
 ```
+
+다만 폰트가 시스템에 설치되어있는 지 여부는 따로 검색하지 않습니다.
 
 # Utils
 

@@ -22,9 +22,10 @@
 	nanumFont.setTextColor(255, 0, 0)
 	
 	myFont = Font("궁서체", 48)
-	myFont.setText("반갑습니다. ")
+	myFont.setText("반갑습니다.")
 	myFont.setPosition(200, 200)
 	myFont.setTextColor(56, 128, 110)
+	myFont.setOpacity(64)
 	
 	-- isValid = PreparaFont("./resources/hangul.fnt");
 	
