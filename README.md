@@ -8,7 +8,7 @@
 간단한 2D 게임을 만드는 데 충분한 기능이 있지만, 이건 단순 게임 엔진 제작 연습일 뿐 실제 사용하는 분은 없길 바랍니다.
 
 
-Link : https://biud436.github.io/Initial2D/docs/html/
+Link : https://biud436.github.io/Initial2D/html/
 
 
 # 스크립트 예제
