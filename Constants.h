@@ -74,12 +74,12 @@ namespace RS {
 /**
 * @def WINDOW_NAME
 */
-const char* WINDOW_NAME = TEXT("test");
+#define WINDOW_NAME "test"
 
 /**
 * @def CLASS_NAME
 */
-const char* CLASS_NAME = TEXT("test");
+#define CLASS_NAME "test"
 
 /**
 * @def WINDOW_WIDTH
@@ -92,18 +92,18 @@ const int WINDOW_WIDTH = 640;
 const int WINDOW_HEIGHT = 480;
 
 
-typedef double IFLOAT;
+typedef float IFLOAT;
 
-const IFLOAT FPS1 = 240.0;
-const IFLOAT FPS2 = 10.0;
-const IFLOAT MIN_FRAME_TIME = 1.0 / FPS1;
-const IFLOAT MAX_FRAME_TIME = 1.0 / FPS2;
-const IFLOAT MS_PER_UPDATE = 1.0 / 60.0;
+const IFLOAT FPS1 = 240.0f;
+const IFLOAT FPS2 = 10.0f;
+const IFLOAT MIN_FRAME_TIME = 1.0f / FPS1;
+const IFLOAT MAX_FRAME_TIME = 1.0f / FPS2;
+const IFLOAT MS_PER_UPDATE = 1.0f / 60.0f;
 
 /**
 * @def PI
 */
-const IFLOAT PI = 3.141592653589793;
+const IFLOAT PI = 3.141592653589793f;
 
 // @def SPRITE_SHEET_COLS
 const int SPRITE_SHEET_COLS = 4;

@@ -144,6 +144,7 @@ void ExperimentalFont::renderChar(HDC hdc, HBITMAP hBitmap, int xStart, int ySta
 	int x, y;
 	int width, height;
 	int line;
+	int lineStartX = xStart;
 
 	BYTE alpha;
 	DWORD dwBufferSize;
@@ -192,8 +193,22 @@ void ExperimentalFont::renderChar(HDC hdc, HBITMAP hBitmap, int xStart, int ySta
 			}
 		}
 
+		TEXTMETRICW tm;
+		GetTextMetricsW(hdc, &tm);
+
 		// gmCellIncX는 다음 문자까지의 거리
 		xStart += gm.gmCellIncX;
+
+		// 개행 처리
+		if (*lpszText == '\r') {
+			xStart = lineStartX;
+		}
+		if (*lpszText == '\n') {
+			xStart = lineStartX;
+			yStart += gm.gmCellIncY;
+			yStart += tm.tmHeight;
+		}
+
 		lpszText++;
 
 		delete[] lpBuffer;

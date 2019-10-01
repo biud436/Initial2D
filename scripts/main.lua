@@ -16,8 +16,8 @@
 	Audio.PlayMusic("./resources/test.ogg", "mainBGM", true)
 	print("Audio")
 
-	nanumFont = Font("나눔고딕", 72)
-	nanumFont.setText("안녕하세요?")
+	nanumFont = Font("나눔고딕", 36)
+	nanumFont.setText("안녕하세요? 반갑습니다. \r\n러닝은빛입니다")
 	nanumFont.setPosition(100, 100)
 	nanumFont.setTextColor(255, 0, 0)
 	
