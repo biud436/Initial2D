@@ -1,3 +1,11 @@
+/**
+* @file ExperimentalFont.cpp
+*
+* @author biud436
+* Contact: biud436@gmail.com
+*
+*/
+
 #include "ExperimentalFont.h"
 #include <locale>
 #include <codecvt>
@@ -35,6 +43,10 @@ ExperimentalFont::ExperimentalFont(std::wstring fontFace, int fontSize) :
 	init();
 }
 
+ExperimentalFont::ExperimentalFont(const ExperimentalFont& other)
+{
+	*this = other;
+}
 
 ExperimentalFont::~ExperimentalFont()
 {
@@ -94,7 +106,7 @@ void ExperimentalFont::render(int x, int y, LPWSTR lpszText, COLORREF cr)
 	HDC hDC;
 
 	hFontPrev = (HFONT)SelectObject(m_hDCBackBuffer, m_hFont);
-	drawImpl(m_hDCBackBuffer, m_hBmpBackBuffer, x, y, lpszText, cr);
+	renderChar(m_hDCBackBuffer, m_hBmpBackBuffer, x, y, lpszText, cr);
 	SelectObject(m_hDCBackBuffer, hFontPrev);
 
 	int width = App::GetInstance().GetWindowWidth();
@@ -122,7 +134,7 @@ void ExperimentalFont::render(int x, int y, LPWSTR lpszText, COLORREF cr)
 
 }
 
-void ExperimentalFont::drawImpl(HDC hdc, HBITMAP hBitmap, int xStart, int yStart, LPWSTR lpszText, COLORREF cr)
+void ExperimentalFont::renderChar(HDC hdc, HBITMAP hBitmap, int xStart, int yStart, LPWSTR lpszText, COLORREF cr)
 {
 	if (!m_bInit)
 	{
@@ -146,7 +158,7 @@ void ExperimentalFont::drawImpl(HDC hdc, HBITMAP hBitmap, int xStart, int yStart
 	while (*lpszText)
 	{
 		dwBufferSize = GetGlyphOutlineW(hdc, *lpszText, GGO_GRAY8_BITMAP, &gm, 0, NULL, &mat2);
-		lpBuffer = new BYTE[dwBufferSize];
+		lpBuffer = new (std::nothrow) BYTE[dwBufferSize];
 		GetGlyphOutlineW(hdc, *lpszText, GGO_GRAY8_BITMAP, &gm, dwBufferSize, lpBuffer, &mat2);
 
 		line = ((gm.gmBlackBoxX + 3) / 4) * 4;
@@ -200,15 +212,13 @@ LPBYTE ExperimentalFont::getBits(HBITMAP hBMP, int x, int y)
 
 	// 음수 값이 되면 오류가 난다.
 	lp += (bm.bmHeight - y - 1) * ((4 * bm.bmWidth + 3) / 4) * 4;
-
+	// 4바이트 정렬을 하지 않으면 문제가 된다.
 	lp += 4 * x;
 
 	return lp;
 }
 
-/**
- * http://eternalwindows.jp/graphics/bitmap/bitmap12.html
- */
+
 HBITMAP ExperimentalFont::createBackBuffer(int width, int height)
 {
 	LPVOID lp;
@@ -219,7 +229,7 @@ HBITMAP ExperimentalFont::createBackBuffer(int width, int height)
 	bmih.biWidth = width;
 	bmih.biHeight = height;
 	bmih.biPlanes = 1;
-	bmih.biBitCount = 32;
+	bmih.biBitCount = 32; // 24 비트로 설정할 경우, 투명도 조절을 할 수 없다.
 
 	bmi.bmiHeader = bmih;
 

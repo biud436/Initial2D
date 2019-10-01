@@ -64,13 +64,14 @@ public:
 
 protected:
 
-	Charset m_charsetDesc;
-	std::string m_filename[2];
-	bool isUsedTextWidth;
-	double m_scale;
-	double m_fontSize;
+	Charset      m_charsetDesc;
+	std::string  m_filename[2];
+	double       m_scale;
+	double       m_fontSize;
 	TextureNames m_textureNames;
-	TextureIds m_textureIds;
+	TextureIds   m_textureIds;
+
+	bool isUsedTextWidth;
 
 };
 

@@ -43,7 +43,7 @@ public:
 public:
 	Input();
 	virtual ~Input();
-	
+
 	/**
 	* 입력 모듈을 초기화합니다.
 	*/
@@ -133,6 +133,12 @@ protected:
 	BYTE m_mbMap[8];
 
 	int m_nWheel;
+
+private:
+
+	// 복사 및 대입 연산 불필요 (불가능하게 설정)
+	Input(const Input&);
+	void operator=(const Input&);
 
 };
 

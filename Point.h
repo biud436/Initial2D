@@ -11,10 +11,10 @@
  * @note
 */
 
-/** @cond DO_NOT_INCLUDE */
-
+//! @cond DO_NOT_INCLUDE
 #ifndef POINT_H
 #define POINT_H
+//! @endcode
 
 /**
 *	@class Point
@@ -98,6 +98,7 @@ public:
 	int x, y;
 };
 
-/** @endcond */
 
+//! @cond DO_NOT_INCLUDE
 #endif
+//! @endcond

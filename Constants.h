@@ -74,45 +74,42 @@ namespace RS {
 /**
 * @def WINDOW_NAME
 */
-#define WINDOW_NAME	"test"
+const char* WINDOW_NAME = TEXT("test");
 
 /**
 * @def CLASS_NAME
 */
-#define CLASS_NAME	"test"
+const char* CLASS_NAME = TEXT("test");
 
 /**
 * @def WINDOW_WIDTH
 */
-#define WINDOW_WIDTH	640
+const int WINDOW_WIDTH = 640;
 
 /**
 * @def WINDOW_HEIGHT
 */
-#define WINDOW_HEIGHT	480
+const int WINDOW_HEIGHT = 480;
 
-const float FPS1 = 240.0f;            
-const float FPS2 = 10.0f;             
-const float MIN_FRAME_TIME = 1.0f / FPS1;
-const float MAX_FRAME_TIME = 1.0f / FPS2;
-const float MS_PER_UPDATE = 1.0f / 60.0f;
+
+typedef double IFLOAT;
+
+const IFLOAT FPS1 = 240.0;
+const IFLOAT FPS2 = 10.0;
+const IFLOAT MIN_FRAME_TIME = 1.0 / FPS1;
+const IFLOAT MAX_FRAME_TIME = 1.0 / FPS2;
+const IFLOAT MS_PER_UPDATE = 1.0 / 60.0;
 
 /**
 * @def PI
 */
-#define PI				3.141592653589793
+const IFLOAT PI = 3.141592653589793;
 
-/**
-* @def SPRITE_SHEET_COLS
-* 스프라이트 시트 열 갯수
-*/
-#define SPRITE_SHEET_COLS	4
+// @def SPRITE_SHEET_COLS
+const int SPRITE_SHEET_COLS = 4;
 
-/**
-* @def SPRITE_SHEET_COLS
-* 스프라이트 시트 행 갯수
-*/
-#define SPRITE_SHEET_ROWS	4
+// @def SPRITE_SHEET_ROWS
+const int SPRITE_SHEET_ROWS = 4;
 
 /**
 * @def SAFE_DELETE(p)

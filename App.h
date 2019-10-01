@@ -90,52 +90,9 @@ public:
 		HBITMAP prevSurface;
 
 	} m_context;
-
-private:
-
-	App();
-	virtual ~App();
-
-protected:
-
-	const char* m_szWindowName;			// 윈도우 이름
-	const char* m_szClassName;			// 클래스 이름
-	int m_nWindowWidth;					// 창의 폭
-	int m_nWindowHeight;				// 창의 높이
-
-	int m_nFPS;
-
-	double m_elapsed;
 	
-	// 텍스처 관리자
-	TextureManager* m_pTextureManager;
-
-	HWND m_hWnd;	// 윈도우 핸들
-
-	// 프레임 관리
-	LARGE_INTEGER	m_nTimeFreq;	
-	LARGE_INTEGER	m_nTimeStart;	
-	LARGE_INTEGER	m_nTimeEnd;
-	double			m_frameTime;
-	int				m_nFrameCount;
-
-	// 입력
-	Input* m_pInput;
-
-	// 장면 관리
-	GameStateMachine* m_pGameStateMachine;
-
-	// 창 포커스
-	bool m_bFocus;
-
-	// 폰트 아틀라스
-	GameFont m_pFont;
-	
-public:
 	static App* s_pInstance;
 	static App& GetInstance();
-
-public:
 
 	/**
 	* 게임 모듈을 초기화합니다(상속 시 반드시 구현)
@@ -277,6 +234,48 @@ public:
 	* 프레임 카운트
 	*/
 	int GetFrameCount();
+
+protected:
+
+	const char*       m_szWindowName;			// 윈도우 이름
+	const char*       m_szClassName;			// 클래스 이름
+	int               m_nWindowWidth;					// 창의 폭
+	int               m_nWindowHeight;				// 창의 높이
+
+	int               m_nFPS;
+
+	double            m_elapsed;
+
+	// 텍스처 관리자
+	TextureManager*   m_pTextureManager;
+
+	HWND              m_hWnd;	// 윈도우 핸들
+
+								// 프레임 관리
+	LARGE_INTEGER	  m_nTimeFreq;
+	LARGE_INTEGER	  m_nTimeStart;
+	LARGE_INTEGER	  m_nTimeEnd;
+	double			  m_frameTime;
+	int				  m_nFrameCount;
+
+	// 입력
+	Input*            m_pInput;
+
+	// 장면 관리
+	GameStateMachine* m_pGameStateMachine;
+
+	// 창 포커스
+	bool              m_bFocus;
+
+	// 폰트 아틀라스
+	GameFont          m_pFont;
+
+private:
+
+	App();
+	virtual ~App();
+	App(const App& other);
+	void operator=(const App&);
 
 };
 

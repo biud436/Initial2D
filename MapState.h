@@ -66,7 +66,7 @@ public:
 
 private:
 	static const std::string m_strMapId;
-	GameObjects m_gameObjects;
+	GameObjects              m_gameObjects;
 };
 
 #endif

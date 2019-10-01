@@ -256,14 +256,14 @@ public:
 
 protected:
 
-	SpriteData	m_spriteData;
-	bool	m_bVisible;	
-	bool	m_bAnimComplete;
-	bool	m_bLoop;
-	int	m_nCurrentFrame;
-	int	m_nMaxFrames;
-	double	m_fAnimationTime;
-	bool	m_bInitialized;
+	SpriteData	    m_spriteData;
+	bool	        m_bVisible;	
+	bool	        m_bAnimComplete;
+	bool	        m_bLoop;
+	int	            m_nCurrentFrame;
+	int	            m_nMaxFrames;
+	double	        m_fAnimationTime;
+	bool	        m_bInitialized;
 
 	TransformData	m_transform;
 

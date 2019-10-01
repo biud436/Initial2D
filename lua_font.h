@@ -8,7 +8,7 @@
 LUA_METHOD(CreateFontExImpl);
 
 // Lua Sprite API from C
-LUA_METHOD(CreateFontEx);
+static int Lua_CreateFontEx(lua_State *pL);
 LUA_METHOD(UpdateFontEx);
 LUA_METHOD(DrawFontEx);
 LUA_METHOD(ReleaseFontEx);

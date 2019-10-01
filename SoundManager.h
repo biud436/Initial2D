@@ -164,16 +164,16 @@ private:
 
 	static SoundManager* s_pInstance;
 
-	BGM m_music;	// BGM
-	SE m_sfxs;	// SE
+	SoundManager(const SoundManager&);
+	SoundManager& operator=(const SoundManager&);
+
+	BGM         m_music;	// BGM
+	SE          m_sfxs;	// SE
 
 	std::string m_previousMusicID; // 이전 BGM ID
 	std::string m_currentMusicID; // 현재 BGM ID
 	std::string m_nextMusicID; // 다음 BGM ID
-	int m_nextMusicLoop; // 다음 BGM 반복 재생 여부 
-
-	SoundManager(const SoundManager&);
-	SoundManager& operator=(const SoundManager&);
+	int         m_nextMusicLoop; // 다음 BGM 반복 재생 여부 
 		
 };
 

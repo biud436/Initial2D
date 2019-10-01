@@ -99,7 +99,7 @@ public:
 public:
 
 	TextureGroup m_textureMap;
-	Color m_crTransparent;
+	Color        m_crTransparent;
 
 };
 

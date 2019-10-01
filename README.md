@@ -7,15 +7,10 @@
 
 간단한 2D 게임을 만드는 데 충분한 기능이 있지만, 이건 단순 게임 엔진 제작 연습일 뿐 실제 사용하는 분은 없길 바랍니다.
 
-# 도움말
-API 래퍼런스는 다음 문서를 참고 하시기 바랍니다.
-
-<a href="https://biud436.github.io/Initial2D/docs/" target="_blank">https://biud436.github.io/Initial2D/docs/</a>
-
 # 스크립트 예제
-이미지, 오디오, 입력 등 기본적인 것은 있지만 데이터 관리나 타일맵 묘화, 맵 에디터는 없습니다.
+C++ 에선 내부적으로 WinMain을 Entry Point로 삼고 초기화를 거치고, 상태 머신을 통해 순서대로 initialize, update, render 등의 메소드를 자동으로 호출할 수 있습니다. 
 
-기본적인 메인 프레임워크는 다음과 같습니다. 
+아직까지 루아 스크립트 단에서는 상태 머신이 따로 없습니다. Initialize 함수가 유일한 Entry Point 입니다. 다음으로 중요한 함수는 Update 함수와 Render 함수로 매 프레임마다 호출되며 마지막으로 Destroy 함수에서 메모리 해제를 합니다.
 
 ```lua
  function Initialize()
@@ -42,9 +37,10 @@ API 래퍼런스는 다음 문서를 참고 하시기 바랍니다.
 	nanumFont.setTextColor(255, 0, 0)
 	
 	myFont = Font("궁서체", 48)
-	myFont.setText("반갑습니다. ")
+	myFont.setText("반갑습니다.")
 	myFont.setPosition(200, 200)
 	myFont.setTextColor(56, 128, 110)
+	myFont.setOpacity(64)
 	
 	-- isValid = PreparaFont("./resources/hangul.fnt");
 	

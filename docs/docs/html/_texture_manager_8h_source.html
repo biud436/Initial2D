@@ -1,0 +1,127 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=9"/>
+<meta name="generator" content="Doxygen 1.8.15"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Initial2D: TextureManager.h 소스 파일</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+  $(document).ready(initResizable);
+/* @license-end */</script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr style="height: 56px;">
+  <td id="projectalign" style="padding-left: 0.5em;">
+   <div id="projectname">Initial2D
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 다음에 의해 생성됨 :  Doxygen 1.8.15 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+var searchBox = new SearchBox("searchBox", "search",false,'검색');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(function() {
+  initMenu('',true,false,'search.php','검색');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('_texture_manager_8h_source.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">TextureManager.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<a href="_texture_manager_8h.html">이 파일의 문서화 페이지로 가기</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div><div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#ifndef TEXTUREMANAGER_H</span></div><div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#define TEXTUREMANAGER_H</span></div><div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;</div><div class="line"><a name="l00017"></a><span class="lineno"><a class="line" href="_texture_manager_8h.html#ac7bef5d85e3dcd73eef56ad39ffc84a9">   17</a></span>&#160;<span class="preprocessor">#define WIN32_LEAN_AND_MEAN</span></div><div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;</div><div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &lt;map&gt;</span></div><div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;string&gt;</span></div><div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;Windows.h&gt;</span></div><div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_constants_8h.html">Constants.h</a>&quot;</span></div><div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;</div><div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="comment">//class Texture;</span></div><div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;</div><div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="_texture_manager_8h.html#a382d7aa5c746f2d14ea60c4a9f32eef4">   26</a></span>&#160;<span class="keyword">using</span> <a class="code" href="group___sprites.html#ga382d7aa5c746f2d14ea60c4a9f32eef4">TransformData</a> = XFORM;</div><div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="_texture_manager_8h.html#aeae03908d34d7419a550e100d244fca8">   27</a></span>&#160;<span class="keyword">using</span> <a class="code" href="_texture_manager_8h.html#aeae03908d34d7419a550e100d244fca8">Color</a> = COLORREF;</div><div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;</div><div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="struct_texture_data.html">   33</a></span>&#160;<span class="keyword">struct </span><a class="code" href="struct_texture_data.html">TextureData</a></div><div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;{</div><div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="struct_texture_data.html#aaa5bcfecb7dc292f2ab48b768e4d2ba4">   35</a></span>&#160;    <span class="keywordtype">int</span> <a class="code" href="struct_texture_data.html#aaa5bcfecb7dc292f2ab48b768e4d2ba4">width</a>;          </div><div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="struct_texture_data.html#a0b6dde87d3f8cad8b8faa3e3cbb67b24">   36</a></span>&#160;    <span class="keywordtype">int</span> <a class="code" href="struct_texture_data.html#a0b6dde87d3f8cad8b8faa3e3cbb67b24">height</a>;         </div><div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="struct_texture_data.html#a7e2fd3fd9d3c2e06a0f29229f486f972">   37</a></span>&#160;    HBITMAP <a class="code" href="struct_texture_data.html#a7e2fd3fd9d3c2e06a0f29229f486f972">texture</a>;    </div><div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="code" href="struct_texture_data.html#a3ddb180b141d41ffdc5ebd73df3c6c10">TextureData</a>();      </div><div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <a class="code" href="struct_texture_data.html#ab5ba8c4b65adf5f919450fbd8374001e">~TextureData</a>();</div><div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;};</div><div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;</div><div class="line"><a name="l00042"></a><span class="lineno"><a class="line" href="_texture_manager_8h.html#a4953c2f9da5f9ca4a0bb714a1f50dfa8">   42</a></span>&#160;<span class="keyword">using</span> <a class="code" href="_texture_manager_8h.html#a4953c2f9da5f9ca4a0bb714a1f50dfa8">TextureGroup</a> = std::map&lt;std::string, TextureData*&gt;;</div><div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;</div><div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<a class="code" href="struct_texture_data.html">TextureData</a>* <a class="code" href="_texture_manager_8h.html#a1d233849abd3f536e8cf35bac0c30c70">LoadBMP</a>(std::string fileName);</div><div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;</div><div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<a class="code" href="struct_texture_data.html">TextureData</a>* <a class="code" href="_texture_manager_8h.html#a0e28db465ebfcf5ab30cdb7698f51880">LoadPNG</a>(std::string fileName);</div><div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;</div><div class="line"><a name="l00062"></a><span class="lineno"><a class="line" href="class_texture_manager.html">   62</a></span>&#160;<span class="keyword">class </span><a class="code" href="class_texture_manager.html">TextureManager</a></div><div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;{</div><div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="keyword">public</span>:</div><div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <a class="code" href="class_texture_manager.html#ad76abb178b37cedf4514eb0154349935">TextureManager</a>();</div><div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="class_texture_manager.html#a001d6d74674961db79987e3222682576">~TextureManager</a>();</div><div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="keyword">public</span>:</div><div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;</div><div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="class_texture_manager.html#a086c507b246921b4d46d65d05804e463">Load</a>(std::string fileName, std::string <span class="keywordtype">id</span>, HDC *hdc);</div><div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    </div><div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="class_texture_manager.html#ae40da6381207fdd73f2556164cb64ac7">Remove</a>(std::string <span class="keywordtype">id</span>);</div><div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;</div><div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="class_texture_manager.html#ad2d52c0673d95a8958c0800b895279f2">Draw</a>(std::string <span class="keywordtype">id</span>, <span class="keywordtype">int</span> x, <span class="keywordtype">int</span> y, <span class="keywordtype">int</span> width, <span class="keywordtype">int</span> height);</div><div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;</div><div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="class_texture_manager.html#afa1b5689e034caa4bebb217888cf61b6">DrawFrame</a>(std::string <span class="keywordtype">id</span>, <span class="keywordtype">int</span> x, <span class="keywordtype">int</span> y, <span class="keywordtype">int</span> width, <span class="keywordtype">int</span> height, RECT&amp; rect, BYTE opacity, <a class="code" href="group___sprites.html#ga382d7aa5c746f2d14ea60c4a9f32eef4">TransformData</a>&amp; transform);</div><div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;</div><div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="class_texture_manager.html#a08446e08e96f69d0e6d58c774339f2a3">DrawText</a>(std::string <span class="keywordtype">id</span>, <span class="keywordtype">int</span> x, <span class="keywordtype">int</span> y, <span class="keywordtype">int</span> width, <span class="keywordtype">int</span> height, RECT&amp; rect, <a class="code" href="group___sprites.html#ga382d7aa5c746f2d14ea60c4a9f32eef4">TransformData</a>&amp; transform);</div><div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;</div><div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="class_texture_manager.html#aa3f56db961e2415d3dbb7ebe809307f3">valid</a>(std::string <span class="keywordtype">id</span>);</div><div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;</div><div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="keyword">public</span>:</div><div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;</div><div class="line"><a name="l00101"></a><span class="lineno"><a class="line" href="class_texture_manager.html#ae4be797b4f314b6cda39e13f7abec066">  101</a></span>&#160;    <a class="code" href="_texture_manager_8h.html#a4953c2f9da5f9ca4a0bb714a1f50dfa8">TextureGroup</a> <a class="code" href="class_texture_manager.html#ae4be797b4f314b6cda39e13f7abec066">m_textureMap</a>;</div><div class="line"><a name="l00102"></a><span class="lineno"><a class="line" href="class_texture_manager.html#ab4da1a58c7e7427f25c09e04474bca2b">  102</a></span>&#160;    <a class="code" href="_texture_manager_8h.html#aeae03908d34d7419a550e100d244fca8">Color</a>        <a class="code" href="class_texture_manager.html#ab4da1a58c7e7427f25c09e04474bca2b">m_crTransparent</a>;</div><div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;</div><div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;};</div><div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;</div><div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;<span class="preprocessor">#endif</span></div><div class="ttc" id="class_texture_manager_html"><div class="ttname"><a href="class_texture_manager.html">TextureManager</a></div><div class="ttdoc">Texture 관리 모듈</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8h_source.html#l00062">TextureManager.h:62</a></div></div>
+<div class="ttc" id="struct_texture_data_html_aaa5bcfecb7dc292f2ab48b768e4d2ba4"><div class="ttname"><a href="struct_texture_data.html#aaa5bcfecb7dc292f2ab48b768e4d2ba4">TextureData::width</a></div><div class="ttdeci">int width</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8h_source.html#l00035">TextureManager.h:35</a></div></div>
+<div class="ttc" id="_texture_manager_8h_html_a4953c2f9da5f9ca4a0bb714a1f50dfa8"><div class="ttname"><a href="_texture_manager_8h.html#a4953c2f9da5f9ca4a0bb714a1f50dfa8">TextureGroup</a></div><div class="ttdeci">std::map&lt; std::string, TextureData * &gt; TextureGroup</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8h_source.html#l00042">TextureManager.h:42</a></div></div>
+<div class="ttc" id="class_texture_manager_html_a001d6d74674961db79987e3222682576"><div class="ttname"><a href="class_texture_manager.html#a001d6d74674961db79987e3222682576">TextureManager::~TextureManager</a></div><div class="ttdeci">virtual ~TextureManager()</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8cpp_source.html#l00346">TextureManager.cpp:346</a></div></div>
+<div class="ttc" id="struct_texture_data_html_ab5ba8c4b65adf5f919450fbd8374001e"><div class="ttname"><a href="struct_texture_data.html#ab5ba8c4b65adf5f919450fbd8374001e">TextureData::~TextureData</a></div><div class="ttdeci">~TextureData()</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8cpp_source.html#l00115">TextureManager.cpp:115</a></div></div>
+<div class="ttc" id="class_texture_manager_html_ad2d52c0673d95a8958c0800b895279f2"><div class="ttname"><a href="class_texture_manager.html#ad2d52c0673d95a8958c0800b895279f2">TextureManager::Draw</a></div><div class="ttdeci">void Draw(std::string id, int x, int y, int width, int height)</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8cpp_source.html#l00420">TextureManager.cpp:420</a></div></div>
+<div class="ttc" id="_constants_8h_html"><div class="ttname"><a href="_constants_8h.html">Constants.h</a></div></div>
+<div class="ttc" id="struct_texture_data_html_a7e2fd3fd9d3c2e06a0f29229f486f972"><div class="ttname"><a href="struct_texture_data.html#a7e2fd3fd9d3c2e06a0f29229f486f972">TextureData::texture</a></div><div class="ttdeci">HBITMAP texture</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8h_source.html#l00037">TextureManager.h:37</a></div></div>
+<div class="ttc" id="class_texture_manager_html_a08446e08e96f69d0e6d58c774339f2a3"><div class="ttname"><a href="class_texture_manager.html#a08446e08e96f69d0e6d58c774339f2a3">TextureManager::DrawText</a></div><div class="ttdeci">void DrawText(std::string id, int x, int y, int width, int height, RECT &amp;rect, TransformData &amp;transform)</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8cpp_source.html#l00475">TextureManager.cpp:475</a></div></div>
+<div class="ttc" id="_texture_manager_8h_html_a1d233849abd3f536e8cf35bac0c30c70"><div class="ttname"><a href="_texture_manager_8h.html#a1d233849abd3f536e8cf35bac0c30c70">LoadBMP</a></div><div class="ttdeci">TextureData * LoadBMP(std::string fileName)</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8cpp_source.html#l00120">TextureManager.cpp:120</a></div></div>
+<div class="ttc" id="struct_texture_data_html"><div class="ttname"><a href="struct_texture_data.html">TextureData</a></div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8h_source.html#l00033">TextureManager.h:33</a></div></div>
+<div class="ttc" id="class_texture_manager_html_ae4be797b4f314b6cda39e13f7abec066"><div class="ttname"><a href="class_texture_manager.html#ae4be797b4f314b6cda39e13f7abec066">TextureManager::m_textureMap</a></div><div class="ttdeci">TextureGroup m_textureMap</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8h_source.html#l00101">TextureManager.h:101</a></div></div>
+<div class="ttc" id="class_texture_manager_html_a086c507b246921b4d46d65d05804e463"><div class="ttname"><a href="class_texture_manager.html#a086c507b246921b4d46d65d05804e463">TextureManager::Load</a></div><div class="ttdeci">bool Load(std::string fileName, std::string id, HDC *hdc)</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8cpp_source.html#l00388">TextureManager.cpp:388</a></div></div>
+<div class="ttc" id="class_texture_manager_html_ad76abb178b37cedf4514eb0154349935"><div class="ttname"><a href="class_texture_manager.html#ad76abb178b37cedf4514eb0154349935">TextureManager::TextureManager</a></div><div class="ttdeci">TextureManager()</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8cpp_source.html#l00338">TextureManager.cpp:338</a></div></div>
+<div class="ttc" id="class_texture_manager_html_afa1b5689e034caa4bebb217888cf61b6"><div class="ttname"><a href="class_texture_manager.html#afa1b5689e034caa4bebb217888cf61b6">TextureManager::DrawFrame</a></div><div class="ttdeci">void DrawFrame(std::string id, int x, int y, int width, int height, RECT &amp;rect, BYTE opacity, TransformData &amp;transform)</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8cpp_source.html#l00440">TextureManager.cpp:440</a></div></div>
+<div class="ttc" id="struct_texture_data_html_a3ddb180b141d41ffdc5ebd73df3c6c10"><div class="ttname"><a href="struct_texture_data.html#a3ddb180b141d41ffdc5ebd73df3c6c10">TextureData::TextureData</a></div><div class="ttdeci">TextureData()</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8cpp_source.html#l00108">TextureManager.cpp:108</a></div></div>
+<div class="ttc" id="_texture_manager_8h_html_aeae03908d34d7419a550e100d244fca8"><div class="ttname"><a href="_texture_manager_8h.html#aeae03908d34d7419a550e100d244fca8">Color</a></div><div class="ttdeci">COLORREF Color</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8h_source.html#l00027">TextureManager.h:27</a></div></div>
+<div class="ttc" id="class_texture_manager_html_aa3f56db961e2415d3dbb7ebe809307f3"><div class="ttname"><a href="class_texture_manager.html#aa3f56db961e2415d3dbb7ebe809307f3">TextureManager::valid</a></div><div class="ttdeci">bool valid(std::string id)</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8cpp_source.html#l00380">TextureManager.cpp:380</a></div></div>
+<div class="ttc" id="group___sprites_html_ga382d7aa5c746f2d14ea60c4a9f32eef4"><div class="ttname"><a href="group___sprites.html#ga382d7aa5c746f2d14ea60c4a9f32eef4">TransformData</a></div><div class="ttdeci">XFORM TransformData</div><div class="ttdef"><b>Definition:</b> <a href="_sprite_8h_source.html#l00058">Sprite.h:58</a></div></div>
+<div class="ttc" id="_texture_manager_8h_html_a0e28db465ebfcf5ab30cdb7698f51880"><div class="ttname"><a href="_texture_manager_8h.html#a0e28db465ebfcf5ab30cdb7698f51880">LoadPNG</a></div><div class="ttdeci">TextureData * LoadPNG(std::string fileName)</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8cpp_source.html#l00157">TextureManager.cpp:157</a></div></div>
+<div class="ttc" id="class_texture_manager_html_ab4da1a58c7e7427f25c09e04474bca2b"><div class="ttname"><a href="class_texture_manager.html#ab4da1a58c7e7427f25c09e04474bca2b">TextureManager::m_crTransparent</a></div><div class="ttdeci">Color m_crTransparent</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8h_source.html#l00102">TextureManager.h:102</a></div></div>
+<div class="ttc" id="struct_texture_data_html_a0b6dde87d3f8cad8b8faa3e3cbb67b24"><div class="ttname"><a href="struct_texture_data.html#a0b6dde87d3f8cad8b8faa3e3cbb67b24">TextureData::height</a></div><div class="ttdeci">int height</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8h_source.html#l00036">TextureManager.h:36</a></div></div>
+<div class="ttc" id="class_texture_manager_html_ae40da6381207fdd73f2556164cb64ac7"><div class="ttname"><a href="class_texture_manager.html#ae40da6381207fdd73f2556164cb64ac7">TextureManager::Remove</a></div><div class="ttdeci">bool Remove(std::string id)</div><div class="ttdef"><b>Definition:</b> <a href="_texture_manager_8cpp_source.html#l00364">TextureManager.cpp:364</a></div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="_texture_manager_8h.html">TextureManager.h</a></li>
+    <li class="footer">다음에 의해 생성됨 : 
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.15 </li>
+  </ul>
+</div>
+</body>
+</html>

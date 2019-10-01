@@ -25,9 +25,16 @@ extern LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 App* App::s_pInstance = NULL;
 
+namespace 
+{
+const double DELAY_TIME = 1.0 / 60.0;
+const char* GAME_TITLE = TEXT("Demo Game - FPS : ");
+}
+
+
 App& App::GetInstance(void)
 {
-	static App *s_pInstance = new App();
+	static App *s_pInstance = new (std::nothrow) App();
 	return *s_pInstance;
 }
 
@@ -229,7 +236,6 @@ Input& App::GetInput()
 	return *m_pInput;
 }
 
-const double DELAY_TIME = 1.0 / 60.0;
 
 void App::Update()
 {
@@ -253,7 +259,7 @@ void App::Update()
 
 	if (m_frameTime >= 1.0) {
 		std::ostringstream oss; 
-		oss << "Demo Game - FPS : " << m_nFrameCount << std::endl;
+		oss << GAME_TITLE << m_nFrameCount << std::endl;
 		SetWindowText(m_hWnd, oss.str().c_str());
 		m_nFPS = m_nFrameCount;
 		m_nFrameCount = 0;

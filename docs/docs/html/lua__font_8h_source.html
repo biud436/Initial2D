@@ -1,0 +1,108 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=9"/>
+<meta name="generator" content="Doxygen 1.8.15"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Initial2D: lua_font.h 소스 파일</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+  $(document).ready(initResizable);
+/* @license-end */</script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr style="height: 56px;">
+  <td id="projectalign" style="padding-left: 0.5em;">
+   <div id="projectname">Initial2D
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 다음에 의해 생성됨 :  Doxygen 1.8.15 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+var searchBox = new SearchBox("searchBox", "search",false,'검색');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(function() {
+  initMenu('',true,false,'search.php','검색');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('lua__font_8h_source.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">lua_font.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<a href="lua__font_8h.html">이 파일의 문서화 페이지로 가기</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#ifndef _LUA_FONT_H_</span></div><div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#define _LUA_FONT_H_</span></div><div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;</div><div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="lua__tbl_8h.html">lua_tbl.h</a>&quot;</span></div><div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;</div><div class="line"><a name="l00006"></a><span class="lineno"><a class="line" href="lua__font_8h.html#ab9aaa8b7789a7f30b12e1f54ff831b66">    6</a></span>&#160;<span class="preprocessor">#define LUA_FONTEX_MEMBERS 8</span></div><div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;</div><div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<a class="code" href="lua__font_8h.html#a6e1db3fb51f5ec5db9feb1948ddfaa31">LUA_METHOD</a>(CreateFontExImpl);</div><div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;</div><div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment">// Lua Sprite API from C</span></div><div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">static</span> <span class="keywordtype">int</span> <a class="code" href="lua__font_8h.html#ac677d0941a0ee74ae75c0dee4ae3a50e">Lua_CreateFontEx</a>(lua_State *pL);</div><div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<a class="code" href="lua__font_8h.html#a6e1db3fb51f5ec5db9feb1948ddfaa31">LUA_METHOD</a>(UpdateFontEx);</div><div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<a class="code" href="lua__font_8h.html#a6e1db3fb51f5ec5db9feb1948ddfaa31">LUA_METHOD</a>(DrawFontEx);</div><div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<a class="code" href="lua__font_8h.html#a6e1db3fb51f5ec5db9feb1948ddfaa31">LUA_METHOD</a>(ReleaseFontEx);</div><div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;</div><div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<a class="code" href="lua__font_8h.html#adee7e62d0eb02c38e24b1013747ca13b">LUA_CLASS</a>(Set, FontEx, Text);</div><div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<a class="code" href="lua__font_8h.html#adee7e62d0eb02c38e24b1013747ca13b">LUA_CLASS</a>(Set, FontEx, Position);</div><div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<a class="code" href="lua__font_8h.html#adee7e62d0eb02c38e24b1013747ca13b">LUA_CLASS</a>(Set, FontEx, TextColor);</div><div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<a class="code" href="lua__font_8h.html#adee7e62d0eb02c38e24b1013747ca13b">LUA_CLASS</a>(Set, FontEx, Opacity);</div><div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;</div><div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#endif</span></div><div class="ttc" id="lua__font_8h_html_a6e1db3fb51f5ec5db9feb1948ddfaa31"><div class="ttname"><a href="lua__font_8h.html#a6e1db3fb51f5ec5db9feb1948ddfaa31">LUA_METHOD</a></div><div class="ttdeci">LUA_METHOD(CreateFontExImpl)</div><div class="ttdef"><b>Definition:</b> <a href="lua__font_8cpp_source.html#l00022">lua_font.cpp:22</a></div></div>
+<div class="ttc" id="lua__tbl_8h_html"><div class="ttname"><a href="lua__tbl_8h.html">lua_tbl.h</a></div></div>
+<div class="ttc" id="lua__font_8h_html_adee7e62d0eb02c38e24b1013747ca13b"><div class="ttname"><a href="lua__font_8h.html#adee7e62d0eb02c38e24b1013747ca13b">LUA_CLASS</a></div><div class="ttdeci">LUA_CLASS(Set, FontEx, Text)</div><div class="ttdef"><b>Definition:</b> <a href="lua__font_8cpp_source.html#l00158">lua_font.cpp:158</a></div></div>
+<div class="ttc" id="lua__font_8h_html_ac677d0941a0ee74ae75c0dee4ae3a50e"><div class="ttname"><a href="lua__font_8h.html#ac677d0941a0ee74ae75c0dee4ae3a50e">Lua_CreateFontEx</a></div><div class="ttdeci">static int Lua_CreateFontEx(lua_State *pL)</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="lua__font_8h.html">lua_font.h</a></li>
+    <li class="footer">다음에 의해 생성됨 : 
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.15 </li>
+  </ul>
+</div>
+</body>
+</html>

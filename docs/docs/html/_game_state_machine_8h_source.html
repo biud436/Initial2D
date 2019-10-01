@@ -1,0 +1,116 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=9"/>
+<meta name="generator" content="Doxygen 1.8.15"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Initial2D: GameStateMachine.h 소스 파일</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+  $(document).ready(initResizable);
+/* @license-end */</script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr style="height: 56px;">
+  <td id="projectalign" style="padding-left: 0.5em;">
+   <div id="projectname">Initial2D
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- 다음에 의해 생성됨 :  Doxygen 1.8.15 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+var searchBox = new SearchBox("searchBox", "search",false,'검색');
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(function() {
+  initMenu('',true,false,'search.php','검색');
+  $(document).ready(function() { init_search(); });
+});
+/* @license-end */</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('_game_state_machine_8h_source.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">GameStateMachine.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<a href="_game_state_machine_8h.html">이 파일의 문서화 페이지로 가기</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div><div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#ifndef GAMESTATEMACHINE_H</span></div><div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#define GAMESTATEMACHINE_H</span></div><div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;</div><div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#include &lt;vector&gt;</span></div><div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;</div><div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="keyword">class </span><a class="code" href="class_game_state.html">GameState</a>;</div><div class="line"><a name="l00020"></a><span class="lineno"><a class="line" href="_game_state_machine_8h.html#a62a39a93fec2376898b048e0323f9fbe">   20</a></span>&#160;<span class="keyword">using</span> <a class="code" href="_game_state_machine_8h.html#a62a39a93fec2376898b048e0323f9fbe">States</a> = std::vector&lt;GameState*&gt;;</div><div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;</div><div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="class_game_state_machine.html">   26</a></span>&#160;<span class="keyword">class </span><a class="code" href="class_game_state_machine.html">GameStateMachine</a></div><div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;{</div><div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">public</span>:</div><div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <a class="code" href="class_game_state_machine.html#af44901f3f0ead9f2534cf3cdd5e122c8">GameStateMachine</a>();</div><div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="class_game_state_machine.html#af3e0ac84b3f3390c1d5a7219fd1ee42e">~GameStateMachine</a>();</div><div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;</div><div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="class_game_state_machine.html#ade8097fd17e51d5393445edf0b69727f">pushState</a>(<a class="code" href="class_game_state.html">GameState</a>* pNewState);</div><div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;</div><div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;</div><div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="class_game_state_machine.html#a80dad9698aa77f735927475247bb9fc6">changeState</a>(<a class="code" href="class_game_state.html">GameState</a>* pNewState);</div><div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;</div><div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;</div><div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="class_game_state_machine.html#a5c66d51927074e0f5d808f709c115f52">popState</a>();</div><div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;</div><div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;</div><div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="class_game_state_machine.html#aad18d7637b7d2fcdd1c906bc1ba3f6dc">update</a>(<span class="keywordtype">float</span> elapsed);</div><div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;</div><div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;</div><div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="class_game_state_machine.html#a60ff87a4e6b489e9d51e180f9522a73b">render</a>();</div><div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;</div><div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <a class="code" href="class_game_state.html">GameState</a>* <a class="code" href="class_game_state_machine.html#a04416f825c7828ccd638bff9bd285db5">current</a>();</div><div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;</div><div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;</div><div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="keyword">private</span>:</div><div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;</div><div class="line"><a name="l00084"></a><span class="lineno"><a class="line" href="class_game_state_machine.html#adff8de3ef6d8a2078673af41b2abdfde">   84</a></span>&#160;    <a class="code" href="_game_state_machine_8h.html#a62a39a93fec2376898b048e0323f9fbe">States</a> <a class="code" href="class_game_state_machine.html#adff8de3ef6d8a2078673af41b2abdfde">m_gameStates</a>;</div><div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;</div><div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;};</div><div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;</div><div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="preprocessor">#endif</span></div><div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;</div><div class="ttc" id="class_game_state_machine_html_adff8de3ef6d8a2078673af41b2abdfde"><div class="ttname"><a href="class_game_state_machine.html#adff8de3ef6d8a2078673af41b2abdfde">GameStateMachine::m_gameStates</a></div><div class="ttdeci">States m_gameStates</div><div class="ttdef"><b>Definition:</b> <a href="_game_state_machine_8h_source.html#l00084">GameStateMachine.h:84</a></div></div>
+<div class="ttc" id="class_game_state_html"><div class="ttname"><a href="class_game_state.html">GameState</a></div><div class="ttdef"><b>Definition:</b> <a href="_game_state_8h_source.html#l00026">GameState.h:26</a></div></div>
+<div class="ttc" id="class_game_state_machine_html_a5c66d51927074e0f5d808f709c115f52"><div class="ttname"><a href="class_game_state_machine.html#a5c66d51927074e0f5d808f709c115f52">GameStateMachine::popState</a></div><div class="ttdeci">void popState()</div><div class="ttdef"><b>Definition:</b> <a href="_game_state_machine_8cpp_source.html#l00056">GameStateMachine.cpp:56</a></div></div>
+<div class="ttc" id="class_game_state_machine_html_a04416f825c7828ccd638bff9bd285db5"><div class="ttname"><a href="class_game_state_machine.html#a04416f825c7828ccd638bff9bd285db5">GameStateMachine::current</a></div><div class="ttdeci">GameState * current()</div><div class="ttdef"><b>Definition:</b> <a href="_game_state_machine_8cpp_source.html#l00084">GameStateMachine.cpp:84</a></div></div>
+<div class="ttc" id="class_game_state_machine_html_a60ff87a4e6b489e9d51e180f9522a73b"><div class="ttname"><a href="class_game_state_machine.html#a60ff87a4e6b489e9d51e180f9522a73b">GameStateMachine::render</a></div><div class="ttdeci">void render()</div><div class="ttdef"><b>Definition:</b> <a href="_game_state_machine_8cpp_source.html#l00076">GameStateMachine.cpp:76</a></div></div>
+<div class="ttc" id="_game_state_machine_8h_html_a62a39a93fec2376898b048e0323f9fbe"><div class="ttname"><a href="_game_state_machine_8h.html#a62a39a93fec2376898b048e0323f9fbe">States</a></div><div class="ttdeci">std::vector&lt; GameState * &gt; States</div><div class="ttdef"><b>Definition:</b> <a href="_game_state_machine_8h_source.html#l00020">GameStateMachine.h:20</a></div></div>
+<div class="ttc" id="class_game_state_machine_html_af3e0ac84b3f3390c1d5a7219fd1ee42e"><div class="ttname"><a href="class_game_state_machine.html#af3e0ac84b3f3390c1d5a7219fd1ee42e">GameStateMachine::~GameStateMachine</a></div><div class="ttdeci">virtual ~GameStateMachine()</div><div class="ttdef"><b>Definition:</b> <a href="_game_state_machine_8cpp_source.html#l00023">GameStateMachine.cpp:23</a></div></div>
+<div class="ttc" id="class_game_state_machine_html_af44901f3f0ead9f2534cf3cdd5e122c8"><div class="ttname"><a href="class_game_state_machine.html#af44901f3f0ead9f2534cf3cdd5e122c8">GameStateMachine::GameStateMachine</a></div><div class="ttdeci">GameStateMachine()</div><div class="ttdef"><b>Definition:</b> <a href="_game_state_machine_8cpp_source.html#l00018">GameStateMachine.cpp:18</a></div></div>
+<div class="ttc" id="class_game_state_machine_html_aad18d7637b7d2fcdd1c906bc1ba3f6dc"><div class="ttname"><a href="class_game_state_machine.html#aad18d7637b7d2fcdd1c906bc1ba3f6dc">GameStateMachine::update</a></div><div class="ttdeci">void update(float elapsed)</div><div class="ttdef"><b>Definition:</b> <a href="_game_state_machine_8cpp_source.html#l00068">GameStateMachine.cpp:68</a></div></div>
+<div class="ttc" id="class_game_state_machine_html"><div class="ttname"><a href="class_game_state_machine.html">GameStateMachine</a></div><div class="ttdef"><b>Definition:</b> <a href="_game_state_machine_8h_source.html#l00026">GameStateMachine.h:26</a></div></div>
+<div class="ttc" id="class_game_state_machine_html_ade8097fd17e51d5393445edf0b69727f"><div class="ttname"><a href="class_game_state_machine.html#ade8097fd17e51d5393445edf0b69727f">GameStateMachine::pushState</a></div><div class="ttdeci">void pushState(GameState *pNewState)</div><div class="ttdef"><b>Definition:</b> <a href="_game_state_machine_8cpp_source.html#l00027">GameStateMachine.cpp:27</a></div></div>
+<div class="ttc" id="class_game_state_machine_html_a80dad9698aa77f735927475247bb9fc6"><div class="ttname"><a href="class_game_state_machine.html#a80dad9698aa77f735927475247bb9fc6">GameStateMachine::changeState</a></div><div class="ttdeci">void changeState(GameState *pNewState)</div><div class="ttdef"><b>Definition:</b> <a href="_game_state_machine_8cpp_source.html#l00034">GameStateMachine.cpp:34</a></div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="_game_state_machine_8h.html">GameStateMachine.h</a></li>
+    <li class="footer">다음에 의해 생성됨 : 
+    <a href="http://www.doxygen.org/index.html">
+    <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.15 </li>
+  </ul>
+</div>
+</body>
+</html>

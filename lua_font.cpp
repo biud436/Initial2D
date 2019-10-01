@@ -8,7 +8,7 @@
 extern lua_State* g_pLuaState;
 
 LuaObjectToken luaj_FontEx[LUA_FONTEX_MEMBERS] = {
-	{ "Create", LUA_METHOD_P1(CreateFontEx) },
+	{ "Create", Lua_CreateFontEx },
 	{ "Update", LUA_METHOD_P1(UpdateFontEx) },
 	{ "Draw", LUA_METHOD_P1(DrawFontEx) },
 	{ "Dispose", LUA_METHOD_P1(ReleaseFontEx) },
@@ -42,8 +42,15 @@ LUA_METHOD(CreateFontExImpl)
 }
 
 
-// local myFont = FontEx.Create(FontFace, FontSize)
-LUA_METHOD(CreateFontEx)
+/*!
+ *
+ * @param pL
+ * 
+ * @code{.lua}
+ * local myFont = FontEx.Create(FontFace, FontSize)
+ * @endcode
+ */
+static int Lua_CreateFontEx(lua_State *pL)
 {
 	try {
 		int n = lua_gettop(pL);
@@ -75,8 +82,14 @@ LUA_METHOD(CreateFontEx)
 	}
 }
 
-
-// FontEx.Update(fontId)
+/*!
+*
+* @param pL
+*
+* @code{.lua}
+* FontEx.Update(fontId)
+* @endcode
+*/
 LUA_METHOD(UpdateFontEx)
 {
 	int n = lua_gettop(pL);
@@ -96,7 +109,14 @@ LUA_METHOD(UpdateFontEx)
 }
 
 
-// FontEx.Draw(fontId)
+/*!
+*
+* @param pL
+*
+* @code{.lua}
+* FontEx.Draw(fontId)
+* @endcode
+*/
 LUA_METHOD(DrawFontEx)
 {
 	int n = lua_gettop(pL);

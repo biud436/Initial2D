@@ -10,6 +10,9 @@
     <Filter Include="scripts">
       <UniqueIdentifier>{90719b4c-bbca-4201-a13c-b61f7ad8125a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="lua-binding">
+      <UniqueIdentifier>{e310ad81-ffc3-48c6-b0ad-e9732a67d516}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="lua\lapi.cpp">
@@ -115,7 +118,6 @@
     <ClCompile Include="GameState.cpp" />
     <ClCompile Include="GameStateMachine.cpp" />
     <ClCompile Include="Input.cpp" />
-    <ClCompile Include="lua_prot.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MapState.cpp" />
     <ClCompile Include="MenuState.cpp" />
@@ -123,15 +125,28 @@
     <ClCompile Include="Sprite.cpp" />
     <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="win32Main.cpp" />
-    <ClCompile Include="lua_audio.cpp" />
-    <ClCompile Include="lua_input.cpp" />
-    <ClCompile Include="lua_sprite.cpp" />
-    <ClCompile Include="lua_texture.cpp" />
     <ClCompile Include="Font.cpp" />
     <ClCompile Include="Utility.cpp" />
     <ClCompile Include="ExperimentalFont.cpp" />
     <ClCompile Include="GameObject.cpp" />
-    <ClCompile Include="lua_font.cpp" />
+    <ClCompile Include="lua_audio.cpp">
+      <Filter>lua-binding</Filter>
+    </ClCompile>
+    <ClCompile Include="lua_font.cpp">
+      <Filter>lua-binding</Filter>
+    </ClCompile>
+    <ClCompile Include="lua_input.cpp">
+      <Filter>lua-binding</Filter>
+    </ClCompile>
+    <ClCompile Include="lua_prot.cpp">
+      <Filter>lua-binding</Filter>
+    </ClCompile>
+    <ClCompile Include="lua_sprite.cpp">
+      <Filter>lua-binding</Filter>
+    </ClCompile>
+    <ClCompile Include="lua_texture.cpp">
+      <Filter>lua-binding</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lua\lapi.h">
@@ -217,7 +232,6 @@
     <ClInclude Include="GameState.h" />
     <ClInclude Include="GameStateMachine.h" />
     <ClInclude Include="Input.h" />
-    <ClInclude Include="lua_tbl.h" />
     <ClInclude Include="MapState.h" />
     <ClInclude Include="MenuState.h" />
     <ClInclude Include="Point.h" />
@@ -226,15 +240,28 @@
     <ClInclude Include="Sprite.h" />
     <ClInclude Include="TextureManager.h" />
     <ClInclude Include="Vector2D.h" />
-    <ClInclude Include="lua_audio.h" />
-    <ClInclude Include="lua_input.h" />
-    <ClInclude Include="lua_sprite.h" />
-    <ClInclude Include="lua_texture.h" />
     <ClInclude Include="Font.h" />
     <ClInclude Include="Utility.h" />
     <ClInclude Include="ExperimentalFont.h" />
     <ClInclude Include="GameObject.h" />
-    <ClInclude Include="lua_font.h" />
+    <ClInclude Include="lua_audio.h">
+      <Filter>lua-binding</Filter>
+    </ClInclude>
+    <ClInclude Include="lua_font.h">
+      <Filter>lua-binding</Filter>
+    </ClInclude>
+    <ClInclude Include="lua_input.h">
+      <Filter>lua-binding</Filter>
+    </ClInclude>
+    <ClInclude Include="lua_sprite.h">
+      <Filter>lua-binding</Filter>
+    </ClInclude>
+    <ClInclude Include="lua_tbl.h">
+      <Filter>lua-binding</Filter>
+    </ClInclude>
+    <ClInclude Include="lua_texture.h">
+      <Filter>lua-binding</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="scripts\image.lua">
