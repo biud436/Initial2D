@@ -16,16 +16,27 @@
 	Audio.PlayMusic("./resources/test.ogg", "mainBGM", true)
 	print("Audio")
 
-	nanumFont = Font("나눔고딕", 36)
-	nanumFont.setText("안녕하세요? 반갑습니다. \r\n러닝은빛입니다")
-	nanumFont.setPosition(100, 100)
-	nanumFont.setTextColor(255, 0, 0)
+	nanumFont = Font("궁서체", 24)
+	nanumFont.setText([[
+눈 감아도 느껴지는 향기 Oh
+은은해서 빠져들어
+저 멀리 사라진 그 빛을 따라 난
+너에게 더 다가가 다가가 Ah ah
+
+날 보는 네 눈빛과 날 비추는 빛깔이
+모든 걸 멈추게 해 너를 더 빛나게 해
+어느 순간 내게로 조용히 스며들어 
+같은 꿈을 꾸게 될 테니까
+]])
+	nanumFont.setPosition(150, 100)
+	nanumFont.setTextColor(255, 0, 128)
+	nanumFont.setOpacity(255)
 	
 	myFont = Font("궁서체", 48)
-	myFont.setText("반갑습니다.")
+	myFont.setText("반갑습니다. 와")
 	myFont.setPosition(200, 200)
 	myFont.setTextColor(56, 128, 110)
-	myFont.setOpacity(64)
+	myFont.setOpacity(255)
 	
 	-- isValid = PreparaFont("./resources/hangul.fnt");
 	

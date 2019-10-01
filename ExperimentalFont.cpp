@@ -177,21 +177,27 @@ void ExperimentalFont::renderChar(HDC hdc, HBITMAP hBitmap, int xStart, int ySta
 			y = 0;
 		}
 
-		for (int my = 0; my < height; my++)
-		{
-			for (int mx = 0; mx < width; mx++)
+		if (*lpszText > ' ') {
+			for (int my = 0; my < height; my++)
 			{
-				alpha = *(lpBuffer + (my * line) + mx);
-				if (alpha)
+				for (int mx = 0; mx < width; mx++)
 				{
-					lp = getBits(hBitmap, x + mx, y + my);
-					lp[0] = (GetBValue(cr) * alpha / 64) + (lp[0] * (64 - alpha) / 64);
-					lp[1] = (GetGValue(cr) * alpha / 64) + (lp[1] * (64 - alpha) / 64);
-					lp[2] = (GetRValue(cr) * alpha / 64) + (lp[2] * (64 - alpha) / 64);
-					lp[3] = (255 * alpha / 64) + (lp[3] * (64 - alpha) / 64);
+					alpha = *(lpBuffer + (my * line) + mx);
+					if (alpha)
+					{
+						lp = getBits(hBitmap, x + mx, y + my);
+						if (lp) {
+							lp[0] = (GetBValue(cr) * alpha / 64) + (lp[0] * (64 - alpha) / 64);
+							lp[1] = (GetGValue(cr) * alpha / 64) + (lp[1] * (64 - alpha) / 64);
+							lp[2] = (GetRValue(cr) * alpha / 64) + (lp[2] * (64 - alpha) / 64);
+							lp[3] = (255 * alpha / 64) + (lp[3] * (64 - alpha) / 64);
+						}
+
+					}
 				}
 			}
 		}
+
 
 		TEXTMETRICW tm;
 		GetTextMetricsW(hdc, &tm);
