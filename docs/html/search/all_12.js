@@ -7,6 +7,7 @@ var searchData=
   ['setangle',['setAngle',['../class_sprite.html#a7c8b37b2672f5454473f95f0440ad158',1,'Sprite']]],
   ['setanimcomplete',['setAnimComplete',['../class_sprite.html#a38f9be6d0bec1e1debf6221f97119b31',1,'Sprite']]],
   ['setcurrentframe',['setCurrentFrame',['../class_sprite.html#ad3ab1bb056b66dfb446f33770d3a7701',1,'Sprite']]],
+  ['setfont',['setFont',['../class_experimental_font.html#a1cbd5ac0b62423e39e0d11cab10098cb',1,'ExperimentalFont']]],
   ['setframedelay',['setFrameDelay',['../class_sprite.html#a22a26f0936c2d9926e4753aaa984d70f',1,'Sprite']]],
   ['setframes',['setFrames',['../class_sprite.html#a577b8a8597a7e622cb4bc91fb201f650',1,'Sprite']]],
   ['setloop',['setLoop',['../class_sprite.html#a1c19e2d3593015f3b605591a4e1bb04d',1,'Sprite']]],

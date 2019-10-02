@@ -1,7 +1,7 @@
 var searchData=
 [
   ['id',['id',['../struct_sprite_data.html#a694a056d642dcb382e0ecce96724bebd',1,'SpriteData']]],
-  ['ifloat',['IFLOAT',['../_constants_8h.html#a192822c031a0b8e6ec097211d4f549b2',1,'Constants.h']]],
+  ['ifloat',['IFLOAT',['../_constants_8h.html#a1e3ddf1699a955ea7f7132df2fb3f1b9',1,'Constants.h']]],
   ['init',['init',['../class_experimental_font.html#a0961858c30ef35a498d73a2296f06992',1,'ExperimentalFont']]],
   ['initial2d',['Initial2D',['../namespace_initial2_d.html',1,'']]],
   ['initialize',['Initialize',['../class_app.html#ab6135ee4083dbe23d9f61fe7cd63291e',1,'App::Initialize()'],['../class_input.html#a6a6b22db894128d4bb3c4b15066e6ad6',1,'Input::initialize()'],['../class_sprite.html#aba9774f26aa07337d9e071b9e436dd95',1,'Sprite::initialize()']]],

@@ -44,6 +44,11 @@ struct Charset
 using TextureNames = std::vector<std::string>;
 using TextureIds = std::unordered_map<int, std::string>;
 
+/**
+ * @class Font
+ * This class allows you to draw the text from the bitmap font.
+ * you must need to prepare the *.fnt file in the ./resources folder
+ */
 class Font
 {
 
@@ -62,7 +67,7 @@ public:
 	int drawText(int x, int y, std::wstring text);
 	int getTextWidth(int x, int y, std::wstring text);
 
-protected:
+private:
 
 	Charset      m_charsetDesc;
 	std::string  m_filename[2];
@@ -74,5 +79,7 @@ protected:
 	bool isUsedTextWidth;
 
 };
+
+using BitmapFont = Font;
 
 #endif

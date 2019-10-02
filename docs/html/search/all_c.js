@@ -23,6 +23,7 @@ var searchData=
   ['m_5fhbmpbackbufferprev',['m_hBmpBackBufferPrev',['../class_experimental_font.html#a997b56869171f69cbf46de89e4cb4b86',1,'ExperimentalFont']]],
   ['m_5fhdcbackbuffer',['m_hDCBackBuffer',['../class_experimental_font.html#a0378a185d86a1378d6821be17a100b89',1,'ExperimentalFont']]],
   ['m_5fhfont',['m_hFont',['../class_experimental_font.html#acebe6f81728867a050d5619843a1db2e',1,'ExperimentalFont']]],
+  ['m_5fholdfont',['m_hOldFont',['../class_experimental_font.html#a2ee1edc918b8737c786022ecefcb6da3',1,'ExperimentalFont']]],
   ['m_5fhwnd',['m_hWnd',['../class_app.html#a43e9dcb9a6a49cea143715062ddf3727',1,'App::m_hWnd()'],['../class_input.html#a4006b3ee24bf396c1e7ddbf9b46fed38',1,'Input::m_hWnd()']]],
   ['m_5fkbcurrent',['m_kbCurrent',['../class_input.html#a0b9dd453ade4923630e64172a0addb84',1,'Input']]],
   ['m_5fkbmap',['m_kbMap',['../class_input.html#aba288f25dcbacc7db13813d6156d9435',1,'Input']]],

@@ -10,7 +10,7 @@ var indexSectionsWithContent =
   7: "ks",
   8: "ks",
   9: "o",
-  10: "_cgilmoprstw",
+  10: "_cgilmoprstuw",
   11: "s",
   12: "í"
 };

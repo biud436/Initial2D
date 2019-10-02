@@ -123,6 +123,7 @@ var menudata={children:[
 {text:"r",url:"globals_r.html#index_r"},
 {text:"s",url:"globals_s.html#index_s"},
 {text:"t",url:"globals_t.html#index_t"},
+{text:"u",url:"globals_u.html#index_u"},
 {text:"w",url:"globals_w.html#index_w"}]},
 {text:"함수",url:"globals_func.html",children:[
 {text:"a",url:"globals_func.html#index_a"},
@@ -138,4 +139,18 @@ var menudata={children:[
 {text:"타입정의",url:"globals_type.html"},
 {text:"열거형 타입",url:"globals_enum.html"},
 {text:"열거형 멤버",url:"globals_eval.html"},
-{text:"매크로",url:"globals_defs.html"}]}]}]}
+{text:"매크로",url:"globals_defs.html",children:[
+{text:"_",url:"globals_defs.html#index__5F"},
+{text:"a",url:"globals_defs.html#index_a"},
+{text:"c",url:"globals_defs.html#index_c"},
+{text:"g",url:"globals_defs.html#index_g"},
+{text:"i",url:"globals_defs.html#index_i"},
+{text:"l",url:"globals_defs.html#index_l"},
+{text:"m",url:"globals_defs.html#index_m"},
+{text:"o",url:"globals_defs.html#index_o"},
+{text:"p",url:"globals_defs.html#index_p"},
+{text:"r",url:"globals_defs.html#index_r"},
+{text:"s",url:"globals_defs.html#index_s"},
+{text:"t",url:"globals_defs.html#index_t"},
+{text:"u",url:"globals_defs.html#index_u"},
+{text:"w",url:"globals_defs.html#index_w"}]}]}]}]}

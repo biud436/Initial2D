@@ -1,5 +1,10 @@
 var NAVTREEINDEX3 =
 {
+"struct_app_1_1_device_context.html#a3e7ecbdf66a753da0f547a4c95872053":[3,0,1,0,1],
+"struct_app_1_1_device_context.html#a8fc8c7e02ed5a063a8604b03dfabbd1b":[3,0,1,0,2],
+"struct_app_1_1_device_context.html#a9a4f3d9a7a181cfd1b6764921fb8ba53":[3,0,1,0,4],
+"struct_app_1_1_device_context.html#aac5cf30686e692fa794d188fd951f0c0":[3,0,1,0,3],
+"struct_app_1_1_device_context.html#af6e1537152d57845c4d3a3eb84007c4e":[3,0,1,0,5],
 "struct_char_descriptor.html":[3,0,2],
 "struct_char_descriptor.html#a00ea6341d6529c5f84b68be216d86e51":[3,0,2,5],
 "struct_char_descriptor.html#a015e7fdae7201cf641999b2059c5c05b":[3,0,2,2],
