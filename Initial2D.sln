@@ -5,6 +5,11 @@ VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Initial2D", "Initial2D.vcxproj", "{F4051E31-887A-4919-8B7B-C68F393F4E71}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "luaLib", "lua\luaLib\luaLib.vcxproj", "{424144CD-ADDF-44A9-BFCD-5A216D14A423}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F4051E31-887A-4919-8B7B-C68F393F4E71} = {F4051E31-887A-4919-8B7B-C68F393F4E71}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,6 +28,16 @@ Global
 		{F4051E31-887A-4919-8B7B-C68F393F4E71}.Release|x64.ActiveCfg = Release|x64
 		{F4051E31-887A-4919-8B7B-C68F393F4E71}.Release|x64.Build.0 = Release|x64
 		{F4051E31-887A-4919-8B7B-C68F393F4E71}.Release|x86.ActiveCfg = Release|Win32
+		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Debug|x64.ActiveCfg = Debug|x64
+		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Debug|x64.Build.0 = Debug|x64
+		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Debug|x86.ActiveCfg = Debug|Win32
+		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Debug|x86.Build.0 = Debug|Win32
+		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Release|Any CPU.ActiveCfg = Release|Win32
+		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Release|x64.ActiveCfg = Release|x64
+		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Release|x64.Build.0 = Release|x64
+		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Release|x86.ActiveCfg = Release|Win32
+		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
