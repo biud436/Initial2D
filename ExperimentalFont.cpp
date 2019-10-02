@@ -188,7 +188,7 @@ void ExperimentalFont::renderChar(HDC hdc, HBITMAP hBitmap, int xStart, int ySta
 		// 버퍼를 할당한다.
 		lpBuffer = new (std::nothrow) BYTE[dwBufferSize];
 
-		// 문자의 윤곽선을 64계조로 획득한다.
+		// 문자의 윤곽선을 65 레벨의 그레이스케일로 획득한다.
 		GetGlyphOutlineW(hdc, *lpszText, GGO_GRAY8_BITMAP, &gm, dwBufferSize, lpBuffer, &mat2);
 
 		// stride또는 pitch 부분; 
@@ -232,7 +232,7 @@ void ExperimentalFont::renderChar(HDC hdc, HBITMAP hBitmap, int xStart, int ySta
 							lp[0] = (GetBValue(cr) * alpha / 64) + (lp[0] * (64 - alpha) / 64);
 							lp[1] = (GetGValue(cr) * alpha / 64) + (lp[1] * (64 - alpha) / 64);
 							lp[2] = (GetRValue(cr) * alpha / 64) + (lp[2] * (64 - alpha) / 64);
-							lp[3] = (255 * alpha / 64) + (lp[3] * (64 - alpha) / 64);
+							lp[3] = (m_nOpacity * alpha / 64) + (lp[3] * (64 - alpha) / 64);
 						}
 
 					}
