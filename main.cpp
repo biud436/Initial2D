@@ -22,6 +22,10 @@
 
 #include "SoundManager.h"
 
+#include <stdio.h>
+#include <mruby.h>
+#include <mruby/compile.h>
+
 extern HWND g_hWnd;
 
 void App::Initialize()
@@ -38,6 +42,15 @@ void App::Initialize()
 	// 게임 상태 머신 초기화
 	m_pGameStateMachine = new GameStateMachine();
 	m_pGameStateMachine->changeState(new MenuState());
+
+	mrb_state* mrb = mrb_open();
+	if (!mrb) {
+		LOG_D("mrb 초기화 실패");
+		return;
+	}
+
+	mrb_load_string(mrb, "p 'hello world!'");
+	mrb_close(mrb);
 
 }
 

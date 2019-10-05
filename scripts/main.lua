@@ -32,7 +32,7 @@
 	nanumFont.setTextColor(255, 0, 128)
 	nanumFont.setOpacity(255)
 	
-	myFont = Font("궁서체", 48)
+	myFont = Font("나눔고딕", 48)
 	myFont.setText("반갑습니다. 와")
 	myFont.setPosition(200, 200)
 	myFont.setTextColor(56, 128, 110)

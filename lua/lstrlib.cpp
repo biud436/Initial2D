@@ -290,7 +290,7 @@ static int match_class (int c, int cl) {
     case 'p' : res = ispunct(c); break;
     case 's' : res = isspace(c); break;
     case 'u' : res = isupper(c); break;
-    case 'w' : res = isalnum(c); break;
+	case 'w':  res = isalnum(c); break;
     case 'x' : res = isxdigit(c); break;
     case 'z' : res = (c == 0); break;  /* deprecated option */
     default: return (cl == c);

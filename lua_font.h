@@ -5,9 +5,8 @@
 
 #define LUA_FONTEX_MEMBERS 8
 
-LUA_METHOD(CreateFontExImpl);
+int Lua_CreateFontExImpl(lua_State* pL);
 
-// Lua Sprite API from C
 static int Lua_CreateFontEx(lua_State *pL);
 LUA_METHOD(UpdateFontEx);
 LUA_METHOD(DrawFontEx);

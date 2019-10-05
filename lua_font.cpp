@@ -18,8 +18,7 @@ LuaObjectToken luaj_FontEx[LUA_FONTEX_MEMBERS] = {
 	{ "SetOpacity", LUA_METHOD_P1(SetFontExOpacity) }
 };
 
-
-LUA_METHOD(CreateFontExImpl)
+int Lua_CreateFontExImpl(lua_State* pL)
 {
 	try {
 
