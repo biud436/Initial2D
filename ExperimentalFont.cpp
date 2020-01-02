@@ -36,10 +36,13 @@ ExperimentalFont::ExperimentalFont(std::wstring fontFace, int fontSize) :
 	m_sText(L""),
 	m_position(0, 0),
 	m_textColor(NULL),
-	m_nOpacity(255)
+	m_nOpacity(255),
+	m_nLastTextWidth(1),
+	Sprite::Sprite()
 {
 	GameObject::GameObject();
 	m_textColor = RGB(255, 255, 255);
+
 	init();
 }
 
@@ -54,6 +57,11 @@ ExperimentalFont::~ExperimentalFont()
 	release();
 }
 
+bool ExperimentalFont::initialize(float x, float y, int width, int height, int maxFrames, std::string textureId)
+{
+	m_bInitialized = true;
+	return true;
+}
 
 void ExperimentalFont::init()
 {
@@ -146,6 +154,25 @@ void ExperimentalFont::render(int x, int y, LPWSTR lpszText, COLORREF cr)
 
 }
 
+int ExperimentalFont::getTextWidth(LPWSTR lpszText)
+{
+	if (!m_bInit)
+	{
+		return 0;
+	}
+
+	PAINTSTRUCT ps;
+	HDC hDC;
+	int x = 0, y = 0;
+	COLORREF cr = RGB(0, 0, 0);
+
+	m_hOldFont = (HFONT)SelectObject(m_hDCBackBuffer, m_hFont);
+	renderChar(m_hDCBackBuffer, m_hBmpBackBuffer, x, y, lpszText, cr);
+	SelectObject(m_hDCBackBuffer, m_hOldFont);
+
+	return m_nLastTextWidth;
+}
+
 /**
 * 폰트 클래스는 트루 타입 폰트에서 폰트 정보를 추출하여 직접 폰트를 렌더링하는 소스로 Windows API에 의존한다.
 * 묘화할 수 없는 영역의 글자나 특정 문자 범위에서 오류가 발생하거나 글자가 뭉개지는 경우도 있다.
@@ -168,6 +195,7 @@ void ExperimentalFont::renderChar(HDC hdc, HBITMAP hBitmap, int xStart, int ySta
 	int width, height;
 	int line;
 	int lineStartX = xStart;
+	int tempLastTextWidth = 0;
 
 	BYTE alpha;
 	DWORD dwBufferSize;
@@ -248,6 +276,9 @@ void ExperimentalFont::renderChar(HDC hdc, HBITMAP hBitmap, int xStart, int ySta
 		// gmCellIncX는 다음 문자까지의 거리
 		xStart += gm.gmCellIncX;
 
+		// 임시 텍스트 폭을 저장한다.
+		tempLastTextWidth = xStart;
+
 		// 캐리지 리턴을 처리한다.
 		if (*lpszText == '\r') {
 			xStart = lineStartX;
@@ -255,6 +286,7 @@ void ExperimentalFont::renderChar(HDC hdc, HBITMAP hBitmap, int xStart, int ySta
 		
 		// 개행 문자를 처리한다.
 		if (*lpszText == '\n') {
+			m_nLastTextWidth = tempLastTextWidth;
 			xStart = lineStartX;
 			yStart += gm.gmCellIncY;
 			yStart += tm.tmHeight;
@@ -266,6 +298,11 @@ void ExperimentalFont::renderChar(HDC hdc, HBITMAP hBitmap, int xStart, int ySta
 		delete[] lpBuffer;
 
 	}
+
+	if (m_nLastTextWidth < xStart) {
+		m_nLastTextWidth = xStart;
+	}
+
 }
 
 

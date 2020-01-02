@@ -188,11 +188,9 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 	Input.GetMouseY()
 
 	-- 마우스에서의 가상 키는 다음과 같습니다.
-	-- 1 : 마우스 왼쪽
-	-- 2 : 마우스 오른쪽
-	-- 4 : 마우스 중앙
-	-- 5 : 마우스 X1
-	-- 6 : 마우스 X2
+	-- 0 : 마우스 왼쪽
+	-- 1 : 마우스 오른쪽
+	-- 2 : 마우스 중앙
 	Input.IsMouseDown(vKey)
 	Input.IsMouseUp(vKey)
 	Input.IsMousePress(vKey)

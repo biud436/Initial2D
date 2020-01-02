@@ -15,7 +15,8 @@ LuaObjectToken luaj_FontEx[LUA_FONTEX_MEMBERS] = {
 	{ "SetText", LUA_METHOD_P1(SetFontExText) },
 	{ "SetPosition", LUA_METHOD_P1(SetFontExPosition) },
 	{ "SetTextColor", LUA_METHOD_P1(SetFontExTextColor) },
-	{ "SetOpacity", LUA_METHOD_P1(SetFontExOpacity) }
+	{ "SetOpacity", LUA_METHOD_P1(SetFontExOpacity) },
+	{ "GetTextWidth", LUA_METHOD_P1(GetFontExTextWidth) }
 };
 
 int Lua_CreateFontExImpl(lua_State* pL)
@@ -62,11 +63,8 @@ static int Lua_CreateFontEx(lua_State *pL)
 		std::string preFontFace = luaL_checkstring(pL, 1);
 		int fontSize = luaL_checknumber(pL, 2);
 
-		// ASCII -> WBCS (UTF8)
 		std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 		std::wstring sFontFace = converter.from_bytes(preFontFace);
-
-		printf_s("ASCII -> WBCS (UTF8) \n");
 
 		AntiAliasingFont* pFont = new AntiAliasingFont(sFontFace, fontSize);
 
@@ -236,4 +234,28 @@ LUA_CLASS(Set, FontEx, Opacity)
 	p->setOpacity(opacity);
 
 	return 0;
+}
+
+LUA_CLASS(Get, FontEx, TextWidth)
+{
+	int n = lua_gettop(pL);
+	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	int w = 0;
+
+	AntiAliasingFont* p = (AntiAliasingFont*)d;
+
+	if (!p)
+	{
+		lua_pushnumber(pL, w);
+		return 1;
+	}
+
+	std::string asciiText = luaL_checkstring(pL, 2);
+	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+	std::wstring sText = converter.from_bytes(asciiText);
+
+	w = p->getTextWidth(&sText[0]);
+	lua_pushnumber(pL, w);
+
+	return 1;
 }

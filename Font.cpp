@@ -157,7 +157,7 @@ Charset& Font::getDesc()
 
 bool Font::load()
 {
-	std::string resourcePath = ".\\resources\\";
+	std::string resourcePath = ".\\resources\\fonts\\";
 	std::string textureId = "font";
 
 	TextureNames::iterator iter = m_textureNames.begin();

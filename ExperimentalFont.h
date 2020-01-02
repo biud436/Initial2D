@@ -14,7 +14,7 @@
 #include <Windows.h>
 #include <sstream>
 #include <string>
-#include "GameObject.h"
+#include "Sprite.h"
 #include "Point.h"
 
 // @def USE_ANTIALIASING 
@@ -33,7 +33,10 @@
  * 
  * <a href="https://rsdn.org/forum/src/830679.1">Link 2</a>
  */
-class ExperimentalFont : public GameObject
+
+using TransformData = XFORM;
+
+class ExperimentalFont : public Sprite
 {
 public:
 	ExperimentalFont(std::wstring fontFace, int fontSize);
@@ -81,14 +84,20 @@ public:
 	 */
 	void setFont(std::wstring fontFace, const int fontSize, bool bold = false, bool italic = false);
 
+	virtual bool initialize(float x, float y, int width, int height, int maxFrames, std::string textureId);
 	virtual void update(float elapsed);
 	virtual void draw();
+
 	void render(int x, int y, LPWSTR lpszText, COLORREF cr);
+
+	int getTextWidth(LPWSTR lpszText);
 
 	ExperimentalFont& setText(std::wstring text);
 	ExperimentalFont& setPosition(int x, int y);
 	ExperimentalFont& setTextColor(BYTE red, BYTE green, BYTE blue);
 	ExperimentalFont& setOpacity(BYTE value);
+
+	virtual	TransformData&	getTransform();
 
 private:
 	void	renderChar(HDC hdc, HBITMAP hBitmap, int xStart, int yStart, LPWSTR lpszText, COLORREF cr);
@@ -107,23 +116,25 @@ private:
 
 private:
 
-	std::wstring m_sFontFace;
-	int		     m_nFontSize;
+	std::wstring  m_sFontFace;
+	int		      m_nFontSize;
 
-	HFONT	     m_hFont;
-	HFONT	     m_hOldFont;
-	HDC		     m_hDCBackBuffer;
-	HBITMAP      m_hBmpBackBuffer;
-	HBITMAP      m_hBmpBackBufferPrev;
+	HFONT	      m_hFont;
+	HFONT	      m_hOldFont;
+	HDC		      m_hDCBackBuffer;
+	HBITMAP       m_hBmpBackBuffer;
+	HBITMAP       m_hBmpBackBufferPrev;
 
-	bool         m_bInit;
+	bool          m_bInit;
 
-	std::wstring m_sText;
-	Point        m_position;
+	std::wstring  m_sText;
+	Point         m_position;
 
-	BYTE         m_nOpacity;
+	BYTE          m_nOpacity;
 
-	COLORREF     m_textColor;
+	COLORREF      m_textColor;
+	int           m_nLastTextWidth;
+
 
 };
 

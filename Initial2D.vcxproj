@@ -155,6 +155,10 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <DisableSpecificWarnings>4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <AdditionalOptions>/Ylsymbol %(AdditionalOptions)</AdditionalOptions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -168,16 +172,18 @@
       </Command>
     </CustomBuildStep>
     <PreBuildEvent>
-      <Command>copy /y $(ProjectDir)bin\zlib1.dll  $(SolutionDir)$(Configuration)\zlib1.dll 
-copy /y $(ProjectDir)bin\libpng16-16.dll  $(SolutionDir)$(Configuration)\libpng16-16.dll 
-copy /y $(ProjectDir)bin\libFLAC-8.dll  $(SolutionDir)$(Configuration)\libFLAC-8.dll
-copy /y $(ProjectDir)bin\libmodplug-1.dll  $(SolutionDir)$(Configuration)\libmodplug-1.dll
-copy /y $(ProjectDir)bin\libmpg123-0.dll  $(SolutionDir)$(Configuration)\libmpg123-0.dll
-copy /y $(ProjectDir)bin\libogg-0.dll  $(SolutionDir)$(Configuration)\libogg-0.dll 
-copy /y $(ProjectDir)bin\libvorbis-0.dll  $(SolutionDir)$(Configuration)\libvorbis-0.dll 
-copy /y $(ProjectDir)bin\libvorbisfile-3.dll  $(SolutionDir)$(Configuration)\libvorbisfile-3.dll 
-copy /y $(ProjectDir)bin\SDL2.dll  $(SolutionDir)$(Configuration)\SDL2.dll 
-copy /y $(ProjectDir)bin\SDL2_mixer.dll  $(SolutionDir)$(Configuration)\SDL2_mixer.dll </Command>
+      <Command>node tools\copydir.js ./bin/zlib1.dll ./$(Configuration)/zlib1.dll file
+node tools\copydir.js ./bin/libpng16d.dll  ./$(Configuration)/libpng16d.dll file 
+node tools\copydir.js ./bin/libFLAC-8.dll  ./$(Configuration)/libFLAC-8.dll file
+node tools\copydir.js ./bin/libmodplug-1.dll  ./$(Configuration)/libmodplug-1.dll file
+node tools\copydir.js ./bin/libmpg123-0.dll  ./$(Configuration)/libmpg123-0.dll file
+node tools\copydir.js ./bin/libogg-0.dll  ./$(Configuration)/libogg-0.dll file 
+node tools\copydir.js ./bin/libvorbis-0.dll  ./$(Configuration)/libvorbis-0.dll file 
+node tools\copydir.js ./bin/libvorbisfile-3.dll  ./$(Configuration)/libvorbisfile-3.dll file 
+node tools\copydir.js ./bin/SDL2.dll  ./$(Configuration)/SDL2.dll file 
+node tools\copydir.js ./bin/SDL2_mixer.dll  ./$(Configuration)/SDL2_mixer.dll file 
+node tools\copydir.js ./scripts ./$(Configuration)/scripts dir
+node tools\copydir.js ./resources ./$(Configuration)/resources dir</Command>
       <Message>실행에 필요한 기본 DLL 파일을 복사합니다.</Message>
     </PreBuildEvent>
     <Lib>
@@ -222,16 +228,18 @@ copy /y $(ProjectDir)bin\SDL2_mixer.dll  $(SolutionDir)$(Configuration)\SDL2_mix
       </Command>
     </CustomBuildStep>
     <PreBuildEvent>
-      <Command>copy /y $(ProjectDir)bin\zlib1.dll  $(SolutionDir)$(Configuration)\zlib1.dll 
-copy /y $(ProjectDir)bin\libpng16-16.dll  $(SolutionDir)$(Configuration)\libpng16-16.dll 
-copy /y $(ProjectDir)bin\libFLAC-8.dll  $(SolutionDir)$(Configuration)\libFLAC-8.dll
-copy /y $(ProjectDir)bin\libmodplug-1.dll  $(SolutionDir)$(Configuration)\libmodplug-1.dll
-copy /y $(ProjectDir)bin\libmpg123-0.dll  $(SolutionDir)$(Configuration)\libmpg123-0.dll
-copy /y $(ProjectDir)bin\libogg-0.dll  $(SolutionDir)$(Configuration)\libogg-0.dll 
-copy /y $(ProjectDir)bin\libvorbis-0.dll  $(SolutionDir)$(Configuration)\libvorbis-0.dll 
-copy /y $(ProjectDir)bin\libvorbisfile-3.dll  $(SolutionDir)$(Configuration)\libvorbisfile-3.dll 
-copy /y $(ProjectDir)bin\SDL2.dll  $(SolutionDir)$(Configuration)\SDL2.dll 
-copy /y $(ProjectDir)bin\SDL2_mixer.dll  $(SolutionDir)$(Configuration)\SDL2_mixer.dll </Command>
+      <Command>node tools\copydir.js ./bin/zlib1.dll ./$(Configuration)/zlib1.dll file
+node tools\copydir.js ./bin/libpng16.dll  ./$(Configuration)/libpng16.dll file 
+node tools\copydir.js ./bin/libFLAC-8.dll  ./$(Configuration)/libFLAC-8.dll file
+node tools\copydir.js ./bin/libmodplug-1.dll  ./$(Configuration)/libmodplug-1.dll file
+node tools\copydir.js ./bin/libmpg123-0.dll  ./$(Configuration)/libmpg123-0.dll file
+node tools\copydir.js ./bin/libogg-0.dll  ./$(Configuration)/libogg-0.dll file 
+node tools\copydir.js ./bin/libvorbis-0.dll  ./$(Configuration)/libvorbis-0.dll file 
+node tools\copydir.js ./bin/libvorbisfile-3.dll  ./$(Configuration)/libvorbisfile-3.dll file 
+node tools\copydir.js ./bin/SDL2.dll  ./$(Configuration)/SDL2.dll file 
+node tools\copydir.js ./bin/SDL2_mixer.dll  ./$(Configuration)/SDL2_mixer.dll file 
+node tools\copydir.js ./scripts ./$(Configuration)/scripts dir
+node tools\copydir.js ./resources ./$(Configuration)/resources dir</Command>
       <Message>실행에 필요한 기본 DLL 파일을 복사합니다.</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>

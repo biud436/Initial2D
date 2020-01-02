@@ -47,6 +47,11 @@ function Font(font_face, font_size)
 		FontEx.SetOpacity(self.objectId, value)
 	end
 	
+	function self.getTextWidth(textValue)
+		if isReady == false then return end	
+		return FontEx.GetTextWidth(self.objectId, textValue)
+	end
+	
 	self.create(font_face, font_size)
 	
 	return self

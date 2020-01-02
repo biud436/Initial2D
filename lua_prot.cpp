@@ -230,6 +230,12 @@ int Lua_GetFrameCount(lua_State *pL)
 	return 1;
 }
 
+int Lua_GameExit(lua_State *pL)
+{
+	PostQuitMessage(0);
+	return 0;
+}
+
 int Lua_Init()
 {
 
@@ -245,6 +251,7 @@ int Lua_Init()
 	lua_register(g_pLuaState, "WindowWidth", Lua_WindowWidth);
 	lua_register(g_pLuaState, "WindowHeight", Lua_WindowHeight);
 	lua_register(g_pLuaState, "GetFrameCount", Lua_GetFrameCount);
+	lua_register(g_pLuaState, "GameExit", Lua_GameExit);
 
 	// Audio
 	Lua_CreateAudioObject(g_pLuaState);
