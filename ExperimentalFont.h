@@ -70,8 +70,15 @@ public:
 		return *this;
 	}
 
+	virtual bool initialize(float x, float y, int width, int height, int maxFrames, std::string textureId);
+	virtual void update(float elapsed);
+	virtual void draw();
+
 	void init();
 	void release();
+
+	void beginFont();
+	void endFont();
 
 	/**
 	 * 폰트 설정을 도중에 변경하려면 폰트 오브젝트를 재생성해야 한다.
@@ -84,10 +91,6 @@ public:
 	 */
 	void setFont(std::wstring fontFace, const int fontSize, bool bold = false, bool italic = false);
 
-	virtual bool initialize(float x, float y, int width, int height, int maxFrames, std::string textureId);
-	virtual void update(float elapsed);
-	virtual void draw();
-
 	void render(int x, int y, LPWSTR lpszText, COLORREF cr);
 
 	int getTextWidth(LPWSTR lpszText);
@@ -96,6 +99,8 @@ public:
 	ExperimentalFont& setPosition(int x, int y);
 	ExperimentalFont& setTextColor(BYTE red, BYTE green, BYTE blue);
 	ExperimentalFont& setOpacity(BYTE value);
+
+	virtual void updateTransform();
 
 	virtual	TransformData&	getTransform();
 

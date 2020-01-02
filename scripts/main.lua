@@ -24,20 +24,24 @@ end
 function Update(elapsed)
 	background.update(elapsed)
 	
-	buttonText.setAngle(Input.GetMouseY());
+	buttonText.setAngle(Input.GetMouseY())
 	
 	buttonText.update(elapsed)
 end
 
 function DrawTempText()
+	-- Create a text
 	local text = "2020년입니다~ 하하"
 	myFont = Font("나눔고딕", 32)
 	myFont.setText(text)
-	myFont.setPosition(WindowWidth() - myFont.getTextWidth(text), 0)
+	-- myFont.setPosition(WindowWidth() - myFont.getTextWidth(text), 0)	
+	myFont.setPosition(WindowWidth() / 2, WindowHeight() / 2)
+	
 	myFont.setTextColor(math.floor(math.random() * 255), math.floor(math.random() * 255), math.floor(math.random() * 255))
-	myFont.setOpacity( math.floor(math.random() * 255) )
+	myFont.setOpacity( 255 )
+	myFont.update(0.0)
 	myFont.draw()
-	myFont.dispose()
+	myFont.dispose()	
 end
 
 function Render()

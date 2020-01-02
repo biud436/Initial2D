@@ -53,12 +53,28 @@ ExperimentalFont::ExperimentalFont(const ExperimentalFont& other)
 
 ExperimentalFont::~ExperimentalFont()
 {
-	GameObject::~GameObject();
 	release();
+	Sprite::~Sprite();
 }
 
 bool ExperimentalFont::initialize(float x, float y, int width, int height, int maxFrames, std::string textureId)
 {
+	m_spriteData.id = textureId;
+	m_spriteData.position.setX(m_position.x);
+	m_spriteData.position.setY(m_position.y);
+	m_spriteData.width = App::GetInstance().GetWindowWidth();
+	m_spriteData.height = App::GetInstance().GetWindowHeight();
+	
+	m_nMaxFrames = 1;
+
+	setFrames(0, m_nMaxFrames);
+	setCurrentFrame(0);
+
+	m_spriteData.frameDelay = 0.0;
+	m_fAnimationTime = 0.0;
+
+	m_bVisible = true;
+
 	m_bInitialized = true;
 	return true;
 }
@@ -68,7 +84,17 @@ void ExperimentalFont::init()
 	// PROOF_QUALITY로 설정하면 폰트의 외형을 아주 중요시 하게 된다 (트루 폰트에는 적용되지 않음)
 	// OUT_TT_PRECIS로 설정하면 트루 타입 폰트를 선택한다.
 	m_hFont = CreateFontW(m_nFontSize, 0, 0, 0, 0, 0, 0, 0, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, FF_DONTCARE, m_sFontFace.c_str());
+
+	initialize(0, 0, 0, 0, 0, "");
+
+	beginFont();
 	
+	m_bInit = true;
+
+}
+
+void ExperimentalFont::beginFont() {
+
 	HDC hDC = GetDC(g_hWnd);
 
 	m_hDCBackBuffer = CreateCompatibleDC(hDC);
@@ -81,23 +107,24 @@ void ExperimentalFont::init()
 	m_hBmpBackBufferPrev = (HBITMAP)SelectObject(m_hDCBackBuffer, m_hBmpBackBuffer);
 
 	ReleaseDC(g_hWnd, hDC);
-
-	m_bInit = true;
-
 }
 
-void ExperimentalFont::release()
-{
+void ExperimentalFont::endFont() {
 	if (m_hDCBackBuffer)
 	{
-		if (m_hBmpBackBuffer) 
+		if (m_hBmpBackBuffer)
 		{
 			SelectObject(m_hDCBackBuffer, m_hBmpBackBufferPrev);
 			DeleteObject(m_hBmpBackBuffer);
 		}
 		DeleteDC(m_hDCBackBuffer);
 	}
-	
+
+}
+
+void ExperimentalFont::release()
+{
+	endFont();
 	DeleteObject(m_hFont);
 }
 
@@ -113,6 +140,8 @@ void ExperimentalFont::setFont(std::wstring fontFace, const int fontSize, bool b
 
 	m_hOldFont = (HFONT)SelectObject(m_hDCBackBuffer, m_hFont);
 
+	m_bInitialized = true;
+
 }
 
 void ExperimentalFont::render(int x, int y, LPWSTR lpszText, COLORREF cr)
@@ -125,6 +154,7 @@ void ExperimentalFont::render(int x, int y, LPWSTR lpszText, COLORREF cr)
 	PAINTSTRUCT ps;
 	HDC hDC;
 
+	// Get Font Texture
 	m_hOldFont = (HFONT)SelectObject(m_hDCBackBuffer, m_hFont);
 	renderChar(m_hDCBackBuffer, m_hBmpBackBuffer, x, y, lpszText, cr);
 	SelectObject(m_hDCBackBuffer, m_hOldFont);
@@ -132,26 +162,29 @@ void ExperimentalFont::render(int x, int y, LPWSTR lpszText, COLORREF cr)
 	int width = App::GetInstance().GetWindowWidth();
 	int height = App::GetInstance().GetWindowHeight();
 
-	// 출력
+	// Get the device context
 	hDC = App::GetInstance().GetContext().currentContext;
 
+	// Apply a default transform
 	App::DeviceContext& context = App::GetInstance().GetContext();
 	XFORM normalTransform = { 1, 0, 0, 1, 0, 0 };
-	SetGraphicsMode(context.currentContext, GM_ADVANCED);
-	SetWorldTransform(context.currentContext, &normalTransform);
+	//SetGraphicsMode(m_hDCBackBuffer, GM_ADVANCED);
+	//SetWorldTransform(m_hDCBackBuffer, &m_transform);
 
-	BLENDFUNCTION bf;
-	bf.AlphaFormat = AC_SRC_ALPHA;
-	bf.BlendFlags = 0;
-	bf.BlendOp = 0;
-	bf.SourceConstantAlpha = (BYTE)m_nOpacity;
+	// Draw a frame to Memory DC
+	{
+		BLENDFUNCTION bf;
+		bf.AlphaFormat = AC_SRC_ALPHA;
+		bf.BlendFlags = 0;
+		bf.BlendOp = 0;
+		bf.SourceConstantAlpha = m_nOpacity;
 
-	AlphaBlend(context.currentContext, 0, 0, width, height, m_hDCBackBuffer, 0, 0, width, height, bf);
+		AlphaBlend(context.currentContext, 0, 0, width, height, m_hDCBackBuffer, 0, 0, width, height, bf);
 
-	// 트랜스폼 복구
-	SetGraphicsMode(context.currentContext, GM_ADVANCED);
-	SetWorldTransform(context.currentContext, &normalTransform);
-
+		// Restore default transform
+		SetGraphicsMode(m_hDCBackBuffer, GM_ADVANCED);
+		SetWorldTransform(m_hDCBackBuffer, &normalTransform);
+	}
 }
 
 int ExperimentalFont::getTextWidth(LPWSTR lpszText)
@@ -351,7 +384,7 @@ HBITMAP ExperimentalFont::createBackBuffer(int width, int height)
 
 void ExperimentalFont::update(float elapsed)
 {
-
+	Sprite::update(elapsed);
 }
 
 
@@ -417,4 +450,19 @@ ExperimentalFont&  ExperimentalFont::setOpacity(BYTE value)
 	m_nOpacity = value;
 
 	return *this;
+}
+
+void ExperimentalFont::updateTransform()
+{
+	m_transform.eM11 = cos(m_spriteData.rotation) * m_spriteData.scale;
+	m_transform.eM12 = sin(m_spriteData.rotation) * m_spriteData.scale;
+	m_transform.eM21 = -sin(m_spriteData.rotation) * m_spriteData.scale;
+	m_transform.eM22 = cos(m_spriteData.rotation) * m_spriteData.scale;
+	m_transform.eDx = m_position.x + m_spriteData.offsetX;
+	m_transform.eDy = m_position.y + m_spriteData.offsetY;
+}
+
+TransformData&	ExperimentalFont::getTransform()
+{
+	return Sprite::getTransform();
 }
