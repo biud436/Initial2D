@@ -245,6 +245,7 @@ protected:
 	int               m_nFPS;
 
 	double            m_elapsed;
+	double            m_accumulateElapsed;
 
 	// 텍스처 관리자
 	TextureManager*   m_pTextureManager;

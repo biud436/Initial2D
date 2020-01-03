@@ -168,8 +168,6 @@ void ExperimentalFont::render(int x, int y, LPWSTR lpszText, COLORREF cr)
 	// Apply a default transform
 	App::DeviceContext& context = App::GetInstance().GetContext();
 	XFORM normalTransform = { 1, 0, 0, 1, 0, 0 };
-	//SetGraphicsMode(m_hDCBackBuffer, GM_ADVANCED);
-	//SetWorldTransform(m_hDCBackBuffer, &m_transform);
 
 	// Draw a frame to Memory DC
 	{

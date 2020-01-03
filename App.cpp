@@ -48,6 +48,7 @@ App::App() :
 	m_pGameStateMachine(NULL),
 	m_nFPS(100),
 	m_elapsed(0),
+	m_accumulateElapsed(0),
 	m_bFocus(true),
 	m_nFrameCount(0),
 	m_pFont(nullptr)
@@ -239,33 +240,65 @@ Input& App::GetInput()
 
 void App::Update()
 {
-	// 경과된 시간(Elapsed)을 구한다.
+	// 마지막 프레임 시간 측정
 	QueryPerformanceCounter(&m_nTimeEnd);
 
-	m_frameTime = (double)(m_nTimeEnd.QuadPart - m_nTimeStart.QuadPart) / (double)m_nTimeFreq.QuadPart;
+	// 프레임 시간
+	m_frameTime = (double)(m_nTimeEnd.QuadPart - m_nTimeStart.QuadPart) / ((double)(m_nTimeFreq.QuadPart));
 
 	m_elapsed += m_frameTime;
+	m_accumulateElapsed += m_frameTime;
 
 	m_nFrameCount++;
 
-	// 부동 소수점 오차를 줄이기 위해 정밀도가 높은 double 형을 사용하였다.
-	while(m_elapsed >= DELAY_TIME)
-	{
+	// 프레임 속도가 정상이라면 업데이트를 진행한다.
+	if (m_frameTime >= DELAY_TIME) {
 		UpdateInput();
 		ObjectUpdate(m_frameTime);
 		m_elapsed -= DELAY_TIME;
+	}
+	else {
 		Sleep(1);
 	}
 
-	if (m_frameTime >= 1.0) {
-		std::ostringstream oss; 
-		oss << GAME_TITLE << m_nFrameCount << std::endl;
-		SetWindowText(m_hWnd, oss.str().c_str());
-		m_nFPS = m_nFrameCount;
+	// 60 프레임이 지났는 지를 체크한다.
+	if (m_accumulateElapsed >= 1.0) {
+
+		// 모든 프레임 값의 누적 시간 / 1 프레임 시간
+		m_nFPS = static_cast<int>(m_accumulateElapsed / DELAY_TIME);
+
 		m_nFrameCount = 0;
 		m_elapsed = 0.0;
-		m_nTimeStart = m_nTimeEnd;
+
+		{
+			std::ostringstream oss;
+			oss << GAME_TITLE << m_nFPS << std::endl;
+			SetWindowText(m_hWnd, &oss.str()[0]);
+			
+			m_accumulateElapsed = 0.0;
+
+		}
 	}
+
+	m_nTimeStart = m_nTimeEnd;
+
+	//while(m_elapsed >= DELAY_TIME)
+	//{
+	//	UpdateInput();
+	//	ObjectUpdate(m_frameTime);
+	//	m_elapsed -= DELAY_TIME;
+	//	Sleep(1);
+	//}
+
+	//if (m_frameTime >= 1.0) {
+	//	std::ostringstream oss; 
+	//	oss << GAME_TITLE << m_nFrameCount << std::endl;
+	//	SetWindowText(m_hWnd, &oss.str()[0]);
+	//	m_nFPS = m_nFrameCount;
+	//	m_nFrameCount = 0;
+	//	m_elapsed = 0.0;
+	//	m_nTimeStart = m_nTimeEnd;
+	//}
 
 	// Rendering
 	RenderClear();

@@ -15,9 +15,11 @@
 	buttonText.setLoop(false)
 	
 	-- Play background music
-	Audio.PlayMusic("./resources/audio/bless.ogg", "mainBGM", true)
+	-- Audio.PlayMusic("./resources/audio/bless.ogg", "mainBGM", true)
 	
 	isValid = PreparaFont("./resources/fonts/hangul.fnt")
+
+	myElapsed = 0.0
 	
 end
 
@@ -27,6 +29,8 @@ function Update(elapsed)
 	buttonText.setAngle(Input.GetMouseY())
 	
 	buttonText.update(elapsed)
+
+	myElapsed = elapsed
 end
 
 function DrawTempText()
@@ -35,11 +39,11 @@ function DrawTempText()
 	myFont = Font("나눔고딕", 32)
 	myFont.setText(text)
 	-- myFont.setPosition(WindowWidth() - myFont.getTextWidth(text), 0)	
-	myFont.setPosition(WindowWidth() / 2, WindowHeight() / 2)
+	myFont.setPosition(WindowWidth() / 2 - myFont.getTextWidth(text) / 2, WindowHeight() / 2)
 	
 	myFont.setTextColor(math.floor(math.random() * 255), math.floor(math.random() * 255), math.floor(math.random() * 255))
 	myFont.setOpacity( 255 )
-	myFont.update(0.0)
+	myFont.update(myElapsed)
 	myFont.draw()
 	myFont.dispose()	
 end
@@ -61,5 +65,5 @@ end
 function Destroy()
 	background.dispose()
 	buttonText.dispose()
-	Audio.ReleaseMusic("mainBGM")
+	-- Audio.ReleaseMusic("mainBGM")
 end
