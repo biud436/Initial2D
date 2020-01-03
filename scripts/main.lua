@@ -15,11 +15,12 @@
 	buttonText.setLoop(false)
 	
 	-- Play background music
-	-- Audio.PlayMusic("./resources/audio/bless.ogg", "mainBGM", true)
+	Audio.PlayMusic("./resources/audio/bless.ogg", "mainBGM", true)
 	
 	isValid = PreparaFont("./resources/fonts/hangul.fnt")
 
 	myElapsed = 0.0
+	tt = 0
 	
 end
 
@@ -30,6 +31,11 @@ function Update(elapsed)
 	
 	buttonText.update(elapsed)
 
+	tt = tt + 1
+	if tt > WindowWidth() then
+		tt = 0
+	end
+
 	myElapsed = elapsed
 end
 
@@ -38,14 +44,14 @@ function DrawTempText()
 	local text = "2020년입니다~ 하하"
 	myFont = Font("나눔고딕", 32)
 	myFont.setText(text)
-	-- myFont.setPosition(WindowWidth() - myFont.getTextWidth(text), 0)	
-	myFont.setPosition(WindowWidth() / 2 - myFont.getTextWidth(text) / 2, WindowHeight() / 2)
 	
+	-- myFont.setPosition(WindowWidth() - myFont.getTextWidth(text), 0)	
 	myFont.setTextColor(math.floor(math.random() * 255), math.floor(math.random() * 255), math.floor(math.random() * 255))
-	myFont.setOpacity( 255 )
+	myFont.setOpacity( 200 )
 	myFont.update(myElapsed)
+	myFont.setPosition(WindowWidth() / 2 - myFont.getTextWidth(text) / 2 + tt, WindowHeight() / 2)
 	myFont.draw()
-	myFont.dispose()	
+	myFont.dispose()
 end
 
 function Render()
@@ -65,5 +71,5 @@ end
 function Destroy()
 	background.dispose()
 	buttonText.dispose()
-	-- Audio.ReleaseMusic("mainBGM")
+	Audio.ReleaseMusic("mainBGM")	
 end

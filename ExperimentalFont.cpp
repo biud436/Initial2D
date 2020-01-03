@@ -169,6 +169,9 @@ void ExperimentalFont::render(int x, int y, LPWSTR lpszText, COLORREF cr)
 	App::DeviceContext& context = App::GetInstance().GetContext();
 	XFORM normalTransform = { 1, 0, 0, 1, 0, 0 };
 
+	SetGraphicsMode(context.currentContext, GM_ADVANCED);
+	SetWorldTransform(context.currentContext, &m_transform);
+
 	// Draw a frame to Memory DC
 	{
 		BLENDFUNCTION bf;
@@ -180,8 +183,8 @@ void ExperimentalFont::render(int x, int y, LPWSTR lpszText, COLORREF cr)
 		AlphaBlend(context.currentContext, 0, 0, width, height, m_hDCBackBuffer, 0, 0, width, height, bf);
 
 		// Restore default transform
-		SetGraphicsMode(m_hDCBackBuffer, GM_ADVANCED);
-		SetWorldTransform(m_hDCBackBuffer, &normalTransform);
+		SetGraphicsMode(context.currentContext, GM_ADVANCED);
+		SetWorldTransform(context.currentContext, &normalTransform);
 	}
 }
 
@@ -193,13 +196,22 @@ int ExperimentalFont::getTextWidth(LPWSTR lpszText)
 	}
 
 	PAINTSTRUCT ps;
-	HDC hDC;
+	HDC hDC = GetDC(g_hWnd);
 	int x = 0, y = 0;
 	COLORREF cr = RGB(0, 0, 0);
 
-	m_hOldFont = (HFONT)SelectObject(m_hDCBackBuffer, m_hFont);
-	renderChar(m_hDCBackBuffer, m_hBmpBackBuffer, x, y, lpszText, cr);
-	SelectObject(m_hDCBackBuffer, m_hOldFont);
+	HDC hDCTempBuffer = CreateCompatibleDC(hDC);
+	HBITMAP hBmpTempBuffer = createBackBuffer(App::GetInstance().GetWindowWidth(), App::GetInstance().GetWindowHeight());
+	HBITMAP hBmpOldBuffer = (HBITMAP)SelectObject(hDCTempBuffer, hBmpTempBuffer);
+
+	m_hOldFont = (HFONT)SelectObject(hDCTempBuffer, m_hFont);
+	renderChar(hDCTempBuffer, hBmpTempBuffer, x, y, lpszText, cr);
+	SelectObject(hDCTempBuffer, m_hOldFont);
+
+	SelectObject(hDCTempBuffer, hBmpOldBuffer);
+	DeleteObject(hBmpTempBuffer);
+	DeleteDC(hDCTempBuffer);
+	ReleaseDC(g_hWnd, hDC);
 
 	return m_nLastTextWidth;
 }
