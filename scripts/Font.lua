@@ -1,12 +1,12 @@
-function Font(font_face, font_size)
+function Font(font_face, font_size, width, height)
 
 	local self = {}
 	
 	self.objectId = nil
 	local isReady = false
 		
-	function self.create(font_face, font_size)
-		self.objectId = FontEx.Create(font_face, font_size)
+	function self.create(font_face, font_size, width, height)
+		self.objectId = FontEx.Create(font_face, font_size, width, height)
 		if self.objectId ~= 0 then
 			isReady = true
 		end
@@ -51,8 +51,13 @@ function Font(font_face, font_size)
 		if isReady == false then return end	
 		return FontEx.GetTextWidth(self.objectId, textValue)
 	end
+
+	function self.setAngle(angle)
+		if isReady == false then return end	
+		return FontEx.SetAngle(self.objectId, angle)
+	end
 	
-	self.create(font_face, font_size)
+	self.create(font_face, font_size, width, height)
 	
 	return self
 	

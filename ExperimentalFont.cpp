@@ -40,10 +40,29 @@ ExperimentalFont::ExperimentalFont(std::wstring fontFace, int fontSize) :
 	m_nLastTextWidth(1),
 	Sprite::Sprite()
 {
-	GameObject::GameObject();
 	m_textColor = RGB(255, 255, 255);
 
 	init();
+}
+
+ExperimentalFont::ExperimentalFont(std::wstring fontFace, int fontSize, int width, int height) :
+	m_sFontFace(fontFace),
+	m_nFontSize(fontSize),
+	m_hFont(NULL),
+	m_hOldFont(NULL),
+	m_hDCBackBuffer(NULL),
+	m_hBmpBackBuffer(NULL),
+	m_hBmpBackBufferPrev(NULL),
+	m_bInit(false),
+	m_sText(L""),
+	m_position(0, 0),
+	m_textColor(NULL),
+	m_nOpacity(255),
+	m_nLastTextWidth(1),
+	Sprite::Sprite()
+{
+	m_textColor = RGB(255, 255, 255);
+	init(width, height);
 }
 
 ExperimentalFont::ExperimentalFont(const ExperimentalFont& other)
@@ -59,7 +78,30 @@ ExperimentalFont::~ExperimentalFont()
 
 bool ExperimentalFont::initialize(float x, float y, int width, int height, int maxFrames, std::string textureId)
 {
-	m_spriteData.id = textureId;
+	m_spriteData.id = "";
+	m_spriteData.position.setX(m_position.x);
+	m_spriteData.position.setY(m_position.y);
+	m_spriteData.width = width;
+	m_spriteData.height = height;
+
+	m_nMaxFrames = 1;
+
+	setFrames(0, m_nMaxFrames);
+	setCurrentFrame(0);
+
+	m_spriteData.frameDelay = 0.0;
+	m_fAnimationTime = 0.0;
+
+	m_bVisible = true;
+
+	m_bInitialized = true;
+
+	return true;
+}
+
+bool ExperimentalFont::initialize()
+{
+	m_spriteData.id = "";
 	m_spriteData.position.setX(m_position.x);
 	m_spriteData.position.setY(m_position.y);
 	m_spriteData.width = App::GetInstance().GetWindowWidth();
@@ -85,7 +127,7 @@ void ExperimentalFont::init()
 	// OUT_TT_PRECIS로 설정하면 트루 타입 폰트를 선택한다.
 	m_hFont = CreateFontW(m_nFontSize, 0, 0, 0, 0, 0, 0, 0, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, FF_DONTCARE, m_sFontFace.c_str());
 
-	initialize(0, 0, 0, 0, 0, "");
+	initialize();
 
 	beginFont();
 	
@@ -93,12 +135,30 @@ void ExperimentalFont::init()
 
 }
 
+void ExperimentalFont::init(int width, int height)
+{
+	// PROOF_QUALITY로 설정하면 폰트의 외형을 아주 중요시 하게 된다 (트루 폰트에는 적용되지 않음)
+	// OUT_TT_PRECIS로 설정하면 트루 타입 폰트를 선택한다.
+	m_hFont = CreateFontW(m_nFontSize, 0, 0, 0, 0, 0, 0, 0, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, FF_DONTCARE, m_sFontFace.c_str());
+
+	initialize(0, 0, width, height, 1, "");
+
+	beginFont();
+
+	m_bInit = true;
+
+}
+
+
 void ExperimentalFont::beginFont() {
+
+	const int width = m_spriteData.width;
+	const int height = m_spriteData.height;
 
 	HDC hDC = GetDC(g_hWnd);
 
 	m_hDCBackBuffer = CreateCompatibleDC(hDC);
-	m_hBmpBackBuffer = createBackBuffer(App::GetInstance().GetWindowWidth(), App::GetInstance().GetWindowHeight());
+	m_hBmpBackBuffer = createBackBuffer(width, height);
 	if (m_hBmpBackBuffer == NULL)
 	{
 		return;
@@ -159,8 +219,8 @@ void ExperimentalFont::render(int x, int y, LPWSTR lpszText, COLORREF cr)
 	renderChar(m_hDCBackBuffer, m_hBmpBackBuffer, x, y, lpszText, cr);
 	SelectObject(m_hDCBackBuffer, m_hOldFont);
 
-	int width = App::GetInstance().GetWindowWidth();
-	int height = App::GetInstance().GetWindowHeight();
+	int width = m_spriteData.width;
+	int height = m_spriteData.height;
 
 	// Get the device context
 	hDC = App::GetInstance().GetContext().currentContext;
@@ -201,7 +261,7 @@ int ExperimentalFont::getTextWidth(LPWSTR lpszText)
 	COLORREF cr = RGB(0, 0, 0);
 
 	HDC hDCTempBuffer = CreateCompatibleDC(hDC);
-	HBITMAP hBmpTempBuffer = createBackBuffer(App::GetInstance().GetWindowWidth(), App::GetInstance().GetWindowHeight());
+	HBITMAP hBmpTempBuffer = createBackBuffer(m_spriteData.width, m_spriteData.height);
 	HBITMAP hBmpOldBuffer = (HBITMAP)SelectObject(hDCTempBuffer, hBmpTempBuffer);
 
 	m_hOldFont = (HFONT)SelectObject(hDCTempBuffer, m_hFont);

@@ -16,7 +16,8 @@ LuaObjectToken luaj_FontEx[LUA_FONTEX_MEMBERS] = {
 	{ "SetPosition", LUA_METHOD_P1(SetFontExPosition) },
 	{ "SetTextColor", LUA_METHOD_P1(SetFontExTextColor) },
 	{ "SetOpacity", LUA_METHOD_P1(SetFontExOpacity) },
-	{ "GetTextWidth", LUA_METHOD_P1(GetFontExTextWidth) }
+	{ "GetTextWidth", LUA_METHOD_P1(GetFontExTextWidth) },
+	{ "SetAngle", LUA_METHOD_P1(SetFontExAngle) },
 };
 
 int Lua_CreateFontExImpl(lua_State* pL)
@@ -54,7 +55,7 @@ static int Lua_CreateFontEx(lua_State *pL)
 {
 	try {
 		int n = lua_gettop(pL);
-		if (n < 2)
+		if (n < 4)
 		{
 			lua_pushnumber(pL, 0);
 			return 1;
@@ -66,7 +67,10 @@ static int Lua_CreateFontEx(lua_State *pL)
 		std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 		std::wstring sFontFace = converter.from_bytes(preFontFace);
 
-		AntiAliasingFont* pFont = new AntiAliasingFont(sFontFace, fontSize);
+		int width = luaL_checknumber(pL, 3);
+		int height = luaL_checknumber(pL, 4);
+
+		AntiAliasingFont* pFont = new AntiAliasingFont(sFontFace, fontSize, width, height);
 
 		DWORD d = (DWORD)pFont;
 
@@ -258,4 +262,22 @@ LUA_CLASS(Get, FontEx, TextWidth)
 	lua_pushnumber(pL, w);
 
 	return 1;
+}
+
+LUA_CLASS(Set, FontEx, Angle)
+{
+	int n = lua_gettop(pL);
+	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	AntiAliasingFont* p = (AntiAliasingFont*)d;
+
+	float angle = luaL_checknumber(pL, 2);
+
+	if (!p)
+	{
+		return 0;
+	}
+
+	p->setAngle(angle);
+
+	return 0;
 }

@@ -42,14 +42,17 @@ end
 function DrawTempText()
 	-- Create a text
 	local text = "2020년입니다~ 하하"
-	myFont = Font("나눔고딕", 32)
+	myFont = Font("나눔고딕", 32, 400, 440)
 	myFont.setText(text)
 	
 	-- myFont.setPosition(WindowWidth() - myFont.getTextWidth(text), 0)	
 	myFont.setTextColor(math.floor(math.random() * 255), math.floor(math.random() * 255), math.floor(math.random() * 255))
 	myFont.setOpacity( 200 )
+	myFont.setAngle(tt % 360)
+	myFont.setPosition(WindowWidth() / 2 - myFont.getTextWidth(text) / 2, WindowHeight() / 4)
+		
 	myFont.update(myElapsed)
-	myFont.setPosition(WindowWidth() / 2 - myFont.getTextWidth(text) / 2 + tt, WindowHeight() / 2)
+
 	myFont.draw()
 	myFont.dispose()
 end

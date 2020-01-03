@@ -40,6 +40,7 @@ class ExperimentalFont : public Sprite
 {
 public:
 	ExperimentalFont(std::wstring fontFace, int fontSize);
+	ExperimentalFont(std::wstring fontFace, int fontSize, int width, int height);
 	virtual ~ExperimentalFont();
 
 	ExperimentalFont(const 	ExperimentalFont& other);
@@ -71,10 +72,13 @@ public:
 	}
 
 	virtual bool initialize(float x, float y, int width, int height, int maxFrames, std::string textureId);
+	virtual bool initialize();
+
 	virtual void update(float elapsed);
 	virtual void draw();
 
 	void init();
+	void init(int width, int height);
 	void release();
 
 	void beginFont();
