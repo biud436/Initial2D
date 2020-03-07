@@ -39,6 +39,45 @@ struct TextureData
 	~TextureData();
 };
 
+namespace Initial2D {
+
+	class Color {
+	
+	public:
+
+		BYTE red;
+		BYTE green;
+		BYTE blue;
+		BYTE alpha;
+
+		Color(BYTE r, BYTE g, BYTE b, BYTE a) :
+			red(r),
+			green(g),
+			blue(b),
+			alpha(a)
+		{
+
+		}
+
+		void SetRGB(BYTE r, BYTE g, BYTE b) 
+		{
+			red = r;
+			green = g;
+			blue = b;
+		}
+
+		void SetAlpha(BYTE a)
+		{
+			alpha = a;
+		}
+
+		COLORREF GetRGBColor() {
+			return RGB(red, green, blue);
+		}
+
+	};
+}
+
 using TextureGroup = std::map<std::string, TextureData*>;
 
 /**
@@ -91,15 +130,22 @@ public:
 	*/
 	void DrawText(std::string id, int x, int y, int width, int height, RECT& rect, TransformData& transform);
 
+
 	/**
 	* 유효한 Texture인지 체크합니다.
 	*/
 	bool valid(std::string id);
 
+
+	void DrawPoint(int x, int y);
+	void SetBitmapColor(BYTE r, BYTE g, BYTE b, BYTE a);
+
 public:
 
 	TextureGroup m_textureMap;
 	Color        m_crTransparent;
+	
+	Initial2D::Color m_bitmapColor;
 
 };
 

@@ -22,12 +22,56 @@
 
 #include "SoundManager.h"
 
+#include <ostream>
+#include <fstream>
+
+#include <Shlwapi.h>
+#pragma comment(lib, "shlwapi.lib")
+
 extern HWND g_hWnd;
+
+inline std::string GetExecutablePath() {
+	HWND hWnd = GetForegroundWindow();
+	HINSTANCE hInstance = (HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE);
+	TCHAR szCurrentPath[MAX_PATH];
+	
+	GetModuleFileName(NULL, szCurrentPath, sizeof(MAX_PATH));
+	PathRemoveFileSpec(szCurrentPath);
+	PathAddBackslash(szCurrentPath);
+
+	std::string sCurrentPath = szCurrentPath;
+
+	return sCurrentPath;
+}
 
 void App::Initialize()
 {
 	LOG_D("초기화");
 	m_context.mainContext = GetDC(m_hWnd);
+
+	HWND hWnd = m_hWnd;
+
+	std::string sCurrentPath = GetExecutablePath();
+
+	sCurrentPath.append("config.setting");
+
+	std::cout << sCurrentPath << std::endl;
+
+	std::ofstream configFile("config.setting");
+	if (configFile.fail()) {
+		throw new std::exception("");
+	}
+
+	bool isDebugMode = false;
+	configFile << isDebugMode << "\n";
+	configFile << sCurrentPath << "\n";
+
+	std::string cd;
+	cd.resize(MAX_PATH);
+	GetCurrentDirectory(MAX_PATH, &cd[0]);
+	cd.resize(MAX_PATH - 1);
+
+	configFile << &cd[0] << "\n";
 
 	// 마우스 및 키보드 모듈 초기화
 	m_pInput->initialize(m_hWnd);

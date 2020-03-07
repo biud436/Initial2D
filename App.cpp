@@ -27,10 +27,9 @@ App* App::s_pInstance = NULL;
 
 namespace 
 {
-const double DELAY_TIME = 1.0 / 60.0;
-const char* GAME_TITLE = TEXT("Demo Game - FPS : ");
+	const double DELAY_TIME = 1.0 / 60.0;
+	const char* GAME_TITLE = TEXT("Demo Game - FPS : ");
 }
-
 
 App& App::GetInstance(void)
 {

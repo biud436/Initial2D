@@ -186,6 +186,46 @@ int Lua_PreparaFont(lua_State *pL)
 	return 1;
 }
 
+int Lua_DrawPoint(lua_State *pL) 
+{
+	int n = lua_gettop(pL);
+	if (n < 2)
+	{
+		lua_pushnumber(pL, 0);
+		return 1;
+	}
+
+	int x = luaL_checkinteger(pL, 1);
+	int y = luaL_checkinteger(pL, 2);
+
+	TextureManager &tm = App::GetInstance().GetTextureManager();
+	tm.DrawPoint(x, y);
+
+	lua_pushnumber(pL, 0);
+	return 1;
+}
+
+int Lua_SetColor(lua_State *pL)
+{
+	int n = lua_gettop(pL);
+	if (n < 4)
+	{
+		lua_pushnumber(pL, 0);
+		return 1;
+	}
+
+	int r = luaL_checkinteger(pL, 1);
+	int g = luaL_checkinteger(pL, 2);
+	int b = luaL_checkinteger(pL, 3);
+	int a = luaL_checkinteger(pL, 4);
+
+	TextureManager &tm = App::GetInstance().GetTextureManager();
+	tm.SetBitmapColor(r, g, b, a);
+
+	lua_pushnumber(pL, 0);
+	return 1;
+}
+
 int Lua_DrawText(lua_State *pL)
 {
 	GameFont* pFont = App::GetInstance().GetFont();
@@ -252,6 +292,10 @@ int Lua_Init()
 	lua_register(g_pLuaState, "WindowHeight", Lua_WindowHeight);
 	lua_register(g_pLuaState, "GetFrameCount", Lua_GetFrameCount);
 	lua_register(g_pLuaState, "GameExit", Lua_GameExit);
+
+	// Draw
+	lua_register(g_pLuaState, "draw_point", Lua_DrawPoint);
+	lua_register(g_pLuaState, "draw_set_color", Lua_SetColor);
 
 	// Audio
 	Lua_CreateAudioObject(g_pLuaState);

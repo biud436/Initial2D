@@ -335,7 +335,10 @@ TextureData* LoadPNG(std::string fileName)
 }
 
 
-TextureManager::TextureManager() : m_crTransparent(RGB(255, 255, 255)) // 투명색
+TextureManager::TextureManager() :
+	m_crTransparent(RGB(255, 255, 255)), // 투명색
+	m_bitmapColor(0, 0, 0, 255)
+
 {
 	if (!TextureManager_InitPNG()) {
 		MessageBox(NULL, "제대로 초기화되지 않았습니다", "", MB_OK);
@@ -503,4 +506,25 @@ void TextureManager::DrawText(std::string id, int x, int y, int width, int heigh
 	// 메모리 DC 삭제
 	SelectObject(context.newContext, hOldBitmap);
 	DeleteDC(context.newContext);
+}
+
+void TextureManager::DrawPoint(int x, int y)
+{
+	// 디바이스 컨텍스트 획득
+	App::DeviceContext& context = App::GetInstance().GetContext();
+
+	// 메모리 DC에 그린다
+	context.newContext = CreateCompatibleDC(context.mainContext);
+	
+	SetPixel(context.newContext, 0, 0, m_bitmapColor.GetRGBColor());
+	BitBlt(context.currentContext, x, y, 1, 1, context.newContext, 0, 0, SRCCOPY);
+
+	// 메모리 DC 삭제
+	DeleteDC(context.newContext);
+}
+
+void TextureManager::SetBitmapColor(BYTE r, BYTE g, BYTE b, BYTE a)
+{
+	m_bitmapColor.SetRGB(r, g, b);
+	m_bitmapColor.SetAlpha(a);
 }
