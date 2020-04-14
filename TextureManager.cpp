@@ -19,17 +19,25 @@
 
 extern "C"
 {
+
 #include <png.h>
+
 }
 
+#if defined (_WIN32) || defined (WIN32)
 extern HWND g_hWnd;
+#endif
 
 #define CLOSE_PNG_FILE(P, P1, P2) \
 	fclose(P); SAFE_DELETE(P1); LOG_D(P2)
 
+/**
+ * @details PNG 디코딩을 위해 함수를 매핑합니다.
+ * PNG_DYNAMIC_LIBRARY가 정의되어있다면 libpng16.dll 파일에서 명시적인 호출을 하고,
+ * 정의되어있지 않다면 libpng16.lib 파일을 이용하여 실행 파일에 포함(정적 링크)합니다.
+ */
 struct libpng_func_group
 {
-	/* refer to SDL_image */
 	png_structp(*png_create_read_struct) (png_const_charp, png_voidp, png_error_ptr, png_error_ptr);
 	png_infop(*png_create_info_struct) (png_const_structrp);
 	void(*png_destroy_read_struct) (png_structpp, png_infopp, png_infopp);

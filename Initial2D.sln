@@ -20,6 +20,9 @@ Global
 		Release|Any CPU = Release|Any CPU
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
+		Test|Any CPU = Test|Any CPU
+		Test|x64 = Test|x64
+		Test|x86 = Test|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{F4051E31-887A-4919-8B7B-C68F393F4E71}.Debug|Any CPU.ActiveCfg = Debug|Win32
@@ -30,6 +33,9 @@ Global
 		{F4051E31-887A-4919-8B7B-C68F393F4E71}.Release|x64.ActiveCfg = Release|x64
 		{F4051E31-887A-4919-8B7B-C68F393F4E71}.Release|x64.Build.0 = Release|x64
 		{F4051E31-887A-4919-8B7B-C68F393F4E71}.Release|x86.ActiveCfg = Release|Win32
+		{F4051E31-887A-4919-8B7B-C68F393F4E71}.Test|Any CPU.ActiveCfg = Test|Win32
+		{F4051E31-887A-4919-8B7B-C68F393F4E71}.Test|x64.ActiveCfg = Test|x64
+		{F4051E31-887A-4919-8B7B-C68F393F4E71}.Test|x86.ActiveCfg = Test|Win32
 		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Debug|Any CPU.ActiveCfg = Debug|Win32
 		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Debug|x64.ActiveCfg = Debug|x64
 		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Debug|x64.Build.0 = Debug|x64
@@ -40,6 +46,9 @@ Global
 		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Release|x64.Build.0 = Release|x64
 		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Release|x86.ActiveCfg = Release|Win32
 		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Release|x86.Build.0 = Release|Win32
+		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Test|Any CPU.ActiveCfg = Test|Win32
+		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Test|x64.ActiveCfg = Test|x64
+		{424144CD-ADDF-44A9-BFCD-5A216D14A423}.Test|x86.ActiveCfg = Test|Win32
 		{24D00579-AF7A-4D31-9D54-3F38E70EAD41}.Debug|Any CPU.ActiveCfg = Debug|Win32
 		{24D00579-AF7A-4D31-9D54-3F38E70EAD41}.Debug|x64.ActiveCfg = Debug|x64
 		{24D00579-AF7A-4D31-9D54-3F38E70EAD41}.Debug|x64.Build.0 = Debug|x64
@@ -50,6 +59,9 @@ Global
 		{24D00579-AF7A-4D31-9D54-3F38E70EAD41}.Release|x64.Build.0 = Release|x64
 		{24D00579-AF7A-4D31-9D54-3F38E70EAD41}.Release|x86.ActiveCfg = Release|Win32
 		{24D00579-AF7A-4D31-9D54-3F38E70EAD41}.Release|x86.Build.0 = Release|Win32
+		{24D00579-AF7A-4D31-9D54-3F38E70EAD41}.Test|Any CPU.ActiveCfg = Test|Win32
+		{24D00579-AF7A-4D31-9D54-3F38E70EAD41}.Test|x64.ActiveCfg = Test|x64
+		{24D00579-AF7A-4D31-9D54-3F38E70EAD41}.Test|x86.ActiveCfg = Test|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

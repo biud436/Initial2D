@@ -13,6 +13,10 @@ class Sprite;
 #define MIN_CHAR 32
 #define MAX_CHAR 255
 
+/**
+ * @brief 
+ * 
+ */
 struct CharDescriptor
 {
 	int x, y;
@@ -28,6 +32,10 @@ struct CharDescriptor
 	}
 };
 
+/**
+ * @brief 
+ * 
+ */
 struct Charset
 {
 	int		LineHeight;
@@ -57,14 +65,79 @@ public:
 	Font(std::string fntName);
 	~Font();
 
+	/**
+	 * @brief 
+	 * 
+	 */
 	void initMembers();
+
+	/**
+	 * @brief 
+	 * 
+	 * @return true 
+	 * @return false 
+	 */
 	bool load();
+
+	/**
+	 * @brief 
+	 * 
+	 * @return true 
+	 * @return false 
+	 */
 	bool remove();
+
+	/**
+	 * @brief 
+	 * 
+	 * @return true 
+	 * @return false 
+	 */
 	bool isValid();
+
+	/**
+	 * @brief 
+	 * 
+	 * @param fntName 
+	 * @return true 
+	 * @return false 
+	 */
 	bool open(std::string fntName);
+
+	/**
+	 * @brief 
+	 * 
+	 * @param fntName 
+	 * @return true 
+	 * @return false 
+	 */
 	bool ParseFont(std::string fntName);
+
+	/**
+	 * @brief Get the Desc object
+	 * 
+	 * @return Charset& 
+	 */
 	Charset& getDesc();
+
+	/**
+	 * @brief 
+	 * 
+	 * @param x 
+	 * @param y 
+	 * @param text 
+	 * @return int 
+	 */
 	int drawText(int x, int y, std::wstring text);
+
+	/**
+	 * @brief Get the Text Width object
+	 * 
+	 * @param x 
+	 * @param y 
+	 * @param text 
+	 * @return int 
+	 */
 	int getTextWidth(int x, int y, std::wstring text);
 
 private:

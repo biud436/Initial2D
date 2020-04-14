@@ -95,144 +95,155 @@ public:
 	static App& GetInstance();
 
 	/**
-	* 게임 모듈을 초기화합니다(상속 시 반드시 구현)
-	*/
+	 * @brief 게임 모듈을 초기화합니다(상속 시 반드시 구현)
+	 */
 	virtual void Initialize();
 
 	/**
-	* 게임 모듈을 초기화하고 게임 루프를 실행합니다.
-	*/
+	 * @brief 게임 모듈을 초기화하고 게임 루프를 실행합니다.
+	 */
 	int Run(int nCmdShow);
 
 	/**
-	* 메시지를 처리합니다.
-	*/
+	 * @brief 메시지를 처리합니다.
+	 */
 	LRESULT HandleEvent(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 	/**
-	* WindowName을 구합니다.
-	*/
+	 * @brief WindowName을 구합니다.
+	 */
 	const char* GetWindowName();
 
 	/**
-	* ClassName을 구합니다.
-	*/
+	 * @brief ClassName을 구합니다.
+	 */
 	const char* GetClassName();
 
 	/**
-	* 창의 폭을 구합니다.
-	*/
+	 * @brief 창의 폭을 구합니다.
+	 */
 	const int GetWindowWidth();
 
 	/**
-	* 창의 높이를 구합니다.
-	*/
+	 * @brief 창의 높이를 구합니다.
+	 */
 	const int GetWindowHeight();
 
 	/**
-	* 현재 Context를 가져옵니다.
-	*/
+	 * @brief 현재 Context를 가져옵니다.
+	 */
 	DeviceContext& GetContext();
 
 	/**
-	* TextureManager의 인스턴스를 가져옵니다.
-	*/
+	 * @brief TextureManager의 인스턴스를 가져옵니다.
+	 */
 	TextureManager& GetTextureManager();
 
 	/**
-	* 상태 머신을 획득합니다.
-	*/
+	 * @brief 상태 머신을 획득합니다.
+	 */
 	GameStateMachine& GetGameStateMachine();
 
 	/**
-	* 입력 모듈의 인스턴스를 가져옵니다.
-	*/
+	 * @brief 입력 모듈의 인스턴스를 가져옵니다.
+	 */
 	Input& GetInput();
 
 	/**
-	* 프레임을 업데이트합니다. (내부용)
-	*
-	* Note: 업데이트 순서는 다음과 같습니다. 
-	* 1. UpdateInput();
-	* 2. ObjectUpdate(UpdateTime());
-	* 3. RenderClear();
-	* 4. RenderTransform();
-	* 5. Render();
-	* 6. RenderPresent();
-	*/
+	 * @brief 프레임을 업데이트합니다. (내부용)
+	 * @details
+	 * Note: 업데이트 순서는 다음과 같습니다. 
+	 * 1. UpdateInput();
+	 * 2. ObjectUpdate(UpdateTime());
+	 * 3. RenderClear();
+	 * 4. RenderTransform();
+	 * 5. Render();
+	 * 6. RenderPresent();
+	 */
 	void Update();
 
 	/**
-	* 입력 모듈을 업데이트합니다
-	*/
+	 * @brief 입력 모듈을 업데이트합니다
+	 */
 	void UpdateInput();
 
 	/**
-	* 상태 머신을 업데이트 합니다(상속 시 반드시 구현)
-	*
-	* @param elapsed 이전 프레임에서 얼마만큼 지났는 지에 대한 시간
-	*
-	*/
+	 * @brief 상태 머신을 업데이트 합니다(상속 시 반드시 구현)
+	 *
+	 * @param elapsed 이전 프레임에서 얼마만큼 지났는 지에 대한 시간
+	 *
+	 */
 	virtual void ObjectUpdate(double elapsed);
 
 	/**
-	* frameTime을 업데이트 합니다.
-	*/
+	 * @brief frameTime을 업데이트 합니다.
+	 * 
+	 * @return double 
+	 */
 	double UpdateTime();
 
 	/**
-	* 렌더링에 필요한 DC를 준비합니다.
-	*/
+	 * @brief 렌더링에 필요한 DC를 준비합니다.
+	 */
 	void RenderClear();
 
 	/**
-	* 화면 맵핑 모드를 변경합니다.
-	*/
+	 * @brief 화면 맵핑 모드를 변경합니다.
+	 */
 	void RenderTransform();
 
 	/**
-	* 현재 프레임을 렌더링합니다(상속 시 반드시 구현)
-	*/
+	 * @brief 현재 프레임을 렌더링합니다(상속 시 반드시 구현)
+	 */
 	virtual void Render();
 
 	/**
-	* 렌더링 결과를 화면에 출력하고 메모리를 정리합니다.
-	*/
+	 * @brief 렌더링 결과를 화면에 출력하고 메모리를 정리합니다.
+	 */
 	void RenderPresent();
 	
 	/**
-	* 메모리 해제(상속 시 반드시 구현)
-	*/
+	 * @brief 메모리 해제(상속 시 반드시 구현)
+	 */
 	virtual void Destroy();
 
 	/**
-	* 메모리 정리 후 게임을 종료합니다.
-	*/
+	 * @brief 메모리 정리 후 게임을 종료합니다.
+	 */
 	void Quit();
 
 	/**
-	* 포커스를 구합니다.
-	*/
+	 * @brief 포커스를 구합니다.
+	 */
 	bool GetFocus();
 
 	/**
-	 * 폰트를 구합니다.
+	 * @brief 폰트를 구합니다.
 	 */
 	GameFont* GetFont();
 
 	/**
-	* 폰트를 로드합니다.
-	*/
+	 * @brief 폰트를 로드합니다.
+	 */
 	bool LoadFont(std::string fontName);
 
 	/**
-	* 폰트 메모리 해제
-	*/
+	 * @brief 폰트 메모리 해제
+	 */
+
+	/**
+	 * @brief 
+	 * 
+	 * @return true 
+	 * @return false 
+	 */
 	bool DestroyFont();
 
 	/**
-	* 프레임 카운트
-	*/
+	 * @brief Get the frame count
+	 * 
+	 * @return int 
+	 */
 	int GetFrameCount();
 
 protected:

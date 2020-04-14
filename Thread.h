@@ -1,0 +1,29 @@
+#ifndef __THREAD_H_
+#define __THREAD_H_
+
+#include <Windows.h>
+#include <process.h>
+
+class Thread
+{
+public:
+	Thread();
+	virtual ~Thread();
+
+	void initWithLocker();
+	void start();
+	static UINT WINAPI Callback(LPVOID p);
+	void lock();
+	virtual void run();
+	void unlock();
+	void join();
+
+	bool isWaiting() const;
+private:
+	HANDLE m_hMutex;
+	HANDLE m_hThread;
+	unsigned int m_nThreadId;
+	bool m_bWait;
+};
+
+#endif

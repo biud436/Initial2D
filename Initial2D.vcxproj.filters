@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Experimental">
-      <UniqueIdentifier>{506b7e99-9bab-4b40-856f-aec6ab18cb69}</UniqueIdentifier>
-    </Filter>
     <Filter Include="scripts">
       <UniqueIdentifier>{90719b4c-bbca-4201-a13c-b61f7ad8125a}</UniqueIdentifier>
     </Filter>
@@ -45,6 +42,7 @@
     <ClCompile Include="lua_texture.cpp">
       <Filter>lua-binding</Filter>
     </ClCompile>
+    <ClCompile Include="Thread.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
@@ -82,6 +80,10 @@
     <ClInclude Include="lua_texture.h">
       <Filter>lua-binding</Filter>
     </ClInclude>
+    <ClInclude Include="lua_prot.h">
+      <Filter>lua-binding</Filter>
+    </ClInclude>
+    <ClInclude Include="Thread.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="scripts\image.lua">

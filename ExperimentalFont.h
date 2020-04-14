@@ -22,6 +22,7 @@
 
 /**
  * @class ExperimentalFont
+ * @details
  * 폰트 클래스는 트루 타입 폰트에서 폰트 정보를 추출하여 직접 폰트를 렌더링하는 소스로 Windows API에 의존한다.
  * 대부분의 소스를 아래에서 참고했지만 튜토리얼 급의 소스라 그런지 많은 문제가 나타난다.
  * 묘화할 수 없는 영역의 글자나 특정 문자 범위에서 오류가 발생하거나 글자가 뭉개지는 경우도 있다.
@@ -109,17 +110,41 @@ public:
 	virtual	TransformData&	getTransform();
 
 private:
+
+
+	/**
+	 * @brief 
+	 * 
+	 * @param hdc 
+	 * @param hBitmap 
+	 * @param xStart 
+	 * @param yStart 
+	 * @param lpszText 
+	 * @param cr 
+	 */
 	void	renderChar(HDC hdc, HBITMAP hBitmap, int xStart, int yStart, LPWSTR lpszText, COLORREF cr);
 
 	/**
-	 * 선택된 비트맵의 raw 픽셀 데이터(BGRA)를 구하는 함수로 
+	 * @brief 선택된 비트맵의 raw 픽셀 데이터(BGRA)를 구하는 함수
+	 * @details
 	 * 각 색상은 8비트를 차지하는 256 색상이어야 하며 4바이트 간격으로 정렬되어있어야 한다.
+	 * 
+	 * @param hBMP 
+	 * @param x 
+	 * @param y 
+	 * @return LPBYTE 
 	 */
 	LPBYTE	getBits(HBITMAP hBMP, int x, int y);
 
 	/**
-	 * 메모리 버퍼를 만든다.
+	 * @brief 메모리 버퍼를 만든다.
+	 * @details
 	 * 메모리 버퍼는 완성된 문자 하나를 메모리 버퍼에 쓴 후, 최종적으로 완성된 문자열만을 화면에 한 번에 출력할 때 사용한다.
+	 * 
+	 * @param width 
+	 * @param height 
+	 * 
+	 * @return HBITMAP 
 	 */
 	HBITMAP createBackBuffer(int width, int height);
 

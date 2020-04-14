@@ -13,13 +13,15 @@
 
 #include "Constants.h"
 
+#ifdef TEST_MODE
+#undef RS_WINDOWS
+#endif
+
 #if defined(RS_WINDOWS)
 
 #include <Windows.h>
 #include <tchar.h>
 #include "App.h"
-
-/** @cond DO_NOT_INCLUDE */
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -37,11 +39,36 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 #else
 
-int RSGameMain(int argc, char* argv)
+#include <iostream>
+#include "Thread.h"
+
+class MyThread : public Thread {
+public:
+	MyThread() : Thread::Thread() 
+	{
+		OutputDebugString("MyThread();\n");
+	}
+	virtual ~MyThread() 
+	{ 
+		OutputDebugString("~MyThread();\n");
+	}
+	virtual void run() 
+	{
+		Thread::run();
+		OutputDebugString("run();\n");
+		std::cout << "실행하였다..." << std::endl;
+	}
+};
+
+int main(int argc, char* argv)
 {
+	std::cout << "test" << std::endl;
+	MyThread* myThread = new MyThread();
+	myThread->start();
+	myThread->join();
+	std::cout << "exit" << std::endl;
+	delete myThread;
 	return 0;
 }
 
 #endif
-
-/** @endcond */

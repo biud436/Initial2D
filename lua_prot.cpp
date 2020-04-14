@@ -205,7 +205,7 @@ int Lua_DrawPoint(lua_State *pL)
 	return 1;
 }
 
-int Lua_SetColor(lua_State *pL)
+int Lua_DrawSetColor(lua_State *pL)
 {
 	int n = lua_gettop(pL);
 	if (n < 4)
@@ -284,33 +284,34 @@ int Lua_Init()
 
 	try {
 
-	lua_register(g_pLuaState, "MessageBox", Lua_MessageBox);
-	lua_register(g_pLuaState, "LoadScript", Lua_LoadScript);
-	lua_register(g_pLuaState, "PreparaFont", Lua_PreparaFont);
-	lua_register(g_pLuaState, "DrawText", Lua_DrawText);
-	lua_register(g_pLuaState, "WindowWidth", Lua_WindowWidth);
-	lua_register(g_pLuaState, "WindowHeight", Lua_WindowHeight);
-	lua_register(g_pLuaState, "GetFrameCount", Lua_GetFrameCount);
-	lua_register(g_pLuaState, "GameExit", Lua_GameExit);
+		lua_register(g_pLuaState, "MessageBox", Lua_MessageBox);
+		lua_register(g_pLuaState, "LoadScript", Lua_LoadScript);
+		lua_register(g_pLuaState, "PreparaFont", Lua_PreparaFont);
+		lua_register(g_pLuaState, "DrawText", Lua_DrawText);
+		lua_register(g_pLuaState, "WindowWidth", Lua_WindowWidth);
+		lua_register(g_pLuaState, "WindowHeight", Lua_WindowHeight);
+		lua_register(g_pLuaState, "GetFrameCount", Lua_GetFrameCount);
+		lua_register(g_pLuaState, "GameExit", Lua_GameExit);
 
-	// Draw
-	lua_register(g_pLuaState, "draw_point", Lua_DrawPoint);
-	lua_register(g_pLuaState, "draw_set_color", Lua_SetColor);
+		// Draw
+		lua_register(g_pLuaState, "draw_text", Lua_DrawText);
+		lua_register(g_pLuaState, "draw_point", Lua_DrawPoint);
+		lua_register(g_pLuaState, "draw_set_color", Lua_DrawSetColor);
 
-	// Audio
-	Lua_CreateAudioObject(g_pLuaState);
+		// Audio
+		Lua_CreateAudioObject(g_pLuaState);
 
-	// Input
-	Lua_CreateInputObject(g_pLuaState);
+		// Input
+		Lua_CreateInputObject(g_pLuaState);
 
-	// Sprite
-	Lua_CreateSpriteImpl(g_pLuaState);
+		// Sprite
+		Lua_CreateSpriteImpl(g_pLuaState);
 
-	// Texture
-	Lua_CreateTextureManagerObject(g_pLuaState);
+		// Texture
+		Lua_CreateTextureManagerObject(g_pLuaState);
 
-	// FontEx
-	Lua_CreateFontExImpl(g_pLuaState);
+		// FontEx
+		Lua_CreateFontExImpl(g_pLuaState);
 
 		// 스크립트 파일을 읽습니다 (Windows Only)
 		luaL_dostring(g_pLuaState,

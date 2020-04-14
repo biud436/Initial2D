@@ -26,9 +26,14 @@
 using TransformData = XFORM;
 using Color = COLORREF;
 
+#if !defined (_WIN32) || !defined (WIN32)
+typedef unsinged char BYTE;
+#endif
+
 /**
  * @struct TextureData
- * @brief
+ * @brief 
+ * 
  */
 struct TextureData
 {
@@ -59,6 +64,12 @@ namespace Initial2D {
 
 		}
 
+		/**
+		* @method SetRGB
+		* @param r
+		* @param g
+		* @param b
+		*/
 		void SetRGB(BYTE r, BYTE g, BYTE b) 
 		{
 			red = r;
@@ -66,6 +77,10 @@ namespace Initial2D {
 			blue = b;
 		}
 
+		/**
+		* @fn SetAlpha
+		* @param a
+		*/
 		void SetAlpha(BYTE a)
 		{
 			alpha = a;
@@ -81,24 +96,41 @@ namespace Initial2D {
 using TextureGroup = std::map<std::string, TextureData*>;
 
 /**
- * @fn LoadBMP
  * @brief BMP 파일을 불러옵니다.
  * @return TextureData*
  */
 TextureData* LoadBMP(std::string fileName);
 
 /**
-* @fn LoadPNG
 * @brief PNG 파일을 불러옵니다.
 * @return TextureData*
 */
 TextureData* LoadPNG(std::string fileName);
 
 /**
- * @class TextureManager
- * @brief Texture 관리 모듈
+ * @brief TextureManager의 인터페이스
+ * 
  */
-class TextureManager
+class ITextureManager
+{
+public:
+	virtual ~ITextureManager() = 0;
+public:
+	virtual bool Load(std::string fileName, std::string id, HDC *hdc) = 0;
+	virtual bool Remove(std::string id) = 0;
+	virtual void Draw(std::string id, int x, int y, int width, int height) = 0;
+	virtual void DrawFrame(std::string id, int x, int y, int width, int height, RECT& rect, BYTE opacity, TransformData& transform) = 0;
+	virtual void DrawText(std::string id, int x, int y, int width, int height, RECT& rect, TransformData& transform) = 0;
+	virtual bool valid(std::string id) = 0;
+	virtual void DrawPoint(int x, int y) = 0;
+	virtual void SetBitmapColor(BYTE r, BYTE g, BYTE b, BYTE a) = 0;
+};
+
+/**
+ * @class TextureManager
+ * @brief This class allows you to create textures and draw them using Win32-GDI.
+ */
+class TextureManager : public ITextureManager
 {
 public:
 	TextureManager();
@@ -106,38 +138,84 @@ public:
 public:
 
 	/**
-	* 이미지 파일로부터 새로운 Texture를 생성합니다.
-	*/
+	 * @brief Create Texture from a specific image such as *.png 
+	 * @details To call this function, PNG image has decoded as bitmap using libpng.
+	 * @param std::string fileName
+	 * @param std::string id
+	 * @param HDC* hdc
+	 */
 	bool Load(std::string fileName, std::string id, HDC *hdc);
 	
 	/**
-	* Texture를 캐시에서 제거합니다.
-	*/
+	 * @brief Remove the texture from Texture Cache
+	 * @param std::string id
+	 * @return boolean
+	 */
 	bool Remove(std::string id);
 
 	/**
-	* 화면에 Texture를 출력합니다.
-	*/
+	 * @brief Draws the texture on the game screen.
+	 * 
+	 * @param std::string id
+	 * @param int x
+	 * @param int y
+	 * @param int width
+	 * @param int height
+	 */
 	void Draw(std::string id, int x, int y, int width, int height);
 
 	/**
-	* 화면에 Texture를 출력합니다.
-	*/
+	 * @brief Draws a certain frame of the texture on the game screen.
+	 * 
+	 * @param std::string id
+	 * @param int x
+	 * @param int y
+	 * @param int width
+	 * @param int height
+	 * @param RECT& rect
+	 * @param BYTE opacity
+	 * @param TransformData& transform
+	 */
 	void DrawFrame(std::string id, int x, int y, int width, int height, RECT& rect, BYTE opacity, TransformData& transform);
 
 	/**
-	* 화면에 텍스트를 출력합니다.
-	*/
+	 * @brief Draw the bitmap text on the screen.
+	 * 
+	 * @param id 
+	 * @param x 
+	 * @param y 
+	 * @param width 
+	 * @param height 
+	 * @param rect 
+	 * @param transform 
+	 */
 	void DrawText(std::string id, int x, int y, int width, int height, RECT& rect, TransformData& transform);
 
-
 	/**
-	* 유효한 Texture인지 체크합니다.
-	*/
+	 * @brief 유효한 Texture인지 체크합니다.
+	 * 
+	 * @param id 
+	 * @return true 
+	 * @return false 
+	 */
 	bool valid(std::string id);
 
-
+	/**
+	 * @brief Draws the point on the game screen.
+	 * 
+	 * @param x 
+	 * @param y 
+	 */
 	void DrawPoint(int x, int y);
+
+	/**
+	 * @brief 비트맵 색상을 설정합니다.
+	 * 
+	 * @param r 
+	 * @param g 
+	 * @param b 
+	 * @param a 
+	 */
 	void SetBitmapColor(BYTE r, BYTE g, BYTE b, BYTE a);
 
 public:
