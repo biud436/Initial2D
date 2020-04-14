@@ -75,6 +75,8 @@ int main(int argc, char* argv)
 	char* errorMSG = nullptr;
 	int result = 0;
 
+	remove("db.sqlite");
+
 	// init with sqlite
 	result = sqlite3_open("db.sqlite", &sqlite);
 	if (result != SQLITE_OK) {
@@ -91,6 +93,38 @@ int main(int argc, char* argv)
 	if (result == SQLITE_OK) {
 		std::cout << "create table ok" << std::endl;
 	}
+
+	// insert
+	query.clear();
+	query += "insert into TB_TSET(NO) values (1), (2), (3)";
+
+	result = sqlite3_exec(sqlite, query.c_str(), NULL, NULL, &errorMSG);
+	if (result == SQLITE_OK) {
+		std::cout << "insert query ok()" << std::endl;
+	}
+
+	// select
+
+	query.clear();
+	query += "select * from TB_TSET";
+	sqlite3_stmt *stmt = nullptr;
+
+	result = sqlite3_prepare_v2(sqlite, query.c_str(), query.length(), &stmt, NULL);
+	if (result == SQLITE_OK) {
+		std::cout << "select query ok()" << std::endl;
+		while (sqlite3_step(stmt) == SQLITE_ROW) {
+			int no = sqlite3_column_int(stmt, 0);
+			std::cout << no << std::endl;
+		}
+	}
+	else {
+		std::cout << "select query fail()" << std::endl;
+		sqlite3_close(sqlite);
+		exit(-1);
+	}
+
+	sqlite3_finalize(stmt);
+
 
 	// close sqlite
 	sqlite3_close(sqlite);
