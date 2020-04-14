@@ -56,7 +56,7 @@ public:
 	{
 		Thread::run();
 		OutputDebugString("run();\n");
-		std::cout << "실행하였다..." << std::endl;
+		std::cout << "myThread.run();" << std::endl;
 	}
 };
 

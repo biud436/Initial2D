@@ -22,7 +22,7 @@ void Thread::initWithLocker()
 
 UINT WINAPI Thread::Callback(LPVOID p)
 {
-	OutputDebugString("콜백이 실행되었습니다.\n");
+	OutputDebugString("Callback();\n");
 	Thread* thread = reinterpret_cast<Thread*>(p);
 	if (thread == nullptr) 
 	{
