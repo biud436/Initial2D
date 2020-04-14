@@ -43,6 +43,7 @@
       <Filter>lua-binding</Filter>
     </ClCompile>
     <ClCompile Include="Thread.cpp" />
+    <ClCompile Include="sqlite3.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
@@ -84,6 +85,7 @@
       <Filter>lua-binding</Filter>
     </ClInclude>
     <ClInclude Include="Thread.h" />
+    <ClInclude Include="sqlite3.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="scripts\image.lua">

@@ -40,7 +40,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 #else
 
 #include <iostream>
+#include <string>
 #include "Thread.h"
+#include "sqlite3.h"
 
 class MyThread : public Thread {
 public:
@@ -68,6 +70,31 @@ int main(int argc, char* argv)
 	myThread->join();
 	std::cout << "exit" << std::endl;
 	delete myThread;
+
+	sqlite3 *sqlite = nullptr;
+	char* errorMSG = nullptr;
+	int result = 0;
+
+	// init with sqlite
+	result = sqlite3_open("db.sqlite", &sqlite);
+	if (result != SQLITE_OK) {
+		std::cout << "sqlite init fail" << std::endl;
+		exit(-1);
+	}
+
+	// query
+	std::string query = "create table if not exists TB_TSET(";
+	query += "NO integer primary key autoincrement";
+	query += ")";
+
+	result = sqlite3_exec(sqlite, query.c_str(), NULL, NULL, &errorMSG);
+	if (result == SQLITE_OK) {
+		std::cout << "create table ok" << std::endl;
+	}
+
+	// close sqlite
+	sqlite3_close(sqlite);
+
 	return 0;
 }
 
