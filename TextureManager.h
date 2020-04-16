@@ -26,10 +26,6 @@
 using TransformData = XFORM;
 using Color = COLORREF;
 
-#if !defined (_WIN32) || !defined (WIN32)
-typedef unsinged char BYTE;
-#endif
-
 /**
  * @struct TextureData
  * @brief 
@@ -108,29 +104,10 @@ TextureData* LoadBMP(std::string fileName);
 TextureData* LoadPNG(std::string fileName);
 
 /**
- * @brief TextureManager의 인터페이스
- * 
- */
-class ITextureManager
-{
-public:
-	virtual ~ITextureManager() = 0;
-public:
-	virtual bool Load(std::string fileName, std::string id, HDC *hdc) = 0;
-	virtual bool Remove(std::string id) = 0;
-	virtual void Draw(std::string id, int x, int y, int width, int height) = 0;
-	virtual void DrawFrame(std::string id, int x, int y, int width, int height, RECT& rect, BYTE opacity, TransformData& transform) = 0;
-	virtual void DrawText(std::string id, int x, int y, int width, int height, RECT& rect, TransformData& transform) = 0;
-	virtual bool valid(std::string id) = 0;
-	virtual void DrawPoint(int x, int y) = 0;
-	virtual void SetBitmapColor(BYTE r, BYTE g, BYTE b, BYTE a) = 0;
-};
-
-/**
  * @class TextureManager
  * @brief This class allows you to create textures and draw them using Win32-GDI.
  */
-class TextureManager : public ITextureManager
+class TextureManager
 {
 public:
 	TextureManager();

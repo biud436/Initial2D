@@ -109,6 +109,8 @@ int main(int argc, char* argv)
 	query += "select * from TB_TSET";
 	sqlite3_stmt *stmt = nullptr;
 
+	// http://www.hanbit.co.kr/media/openbook/cocos2d-x/06-2.html#
+	// https://aroundck.tistory.com/5187
 	result = sqlite3_prepare_v2(sqlite, query.c_str(), query.length(), &stmt, NULL);
 	if (result == SQLITE_OK) {
 		std::cout << "select query ok()" << std::endl;

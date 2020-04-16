@@ -315,18 +315,18 @@
       </Command>
     </CustomBuildStep>
     <PreBuildEvent>
-      <Command>node tools\copydir.js ./bin/zlib1.dll ./$(Configuration)/zlib1.dll file
-node tools\copydir.js ./bin/libpng16d.dll  ./$(Configuration)/libpng16d.dll file 
-node tools\copydir.js ./bin/libFLAC-8.dll  ./$(Configuration)/libFLAC-8.dll file
-node tools\copydir.js ./bin/libmodplug-1.dll  ./$(Configuration)/libmodplug-1.dll file
-node tools\copydir.js ./bin/libmpg123-0.dll  ./$(Configuration)/libmpg123-0.dll file
-node tools\copydir.js ./bin/libogg-0.dll  ./$(Configuration)/libogg-0.dll file 
-node tools\copydir.js ./bin/libvorbis-0.dll  ./$(Configuration)/libvorbis-0.dll file 
-node tools\copydir.js ./bin/libvorbisfile-3.dll  ./$(Configuration)/libvorbisfile-3.dll file 
-node tools\copydir.js ./bin/SDL2.dll  ./$(Configuration)/SDL2.dll file 
-node tools\copydir.js ./bin/SDL2_mixer.dll  ./$(Configuration)/SDL2_mixer.dll file 
-node tools\copydir.js ./scripts ./$(Configuration)/scripts dir
-node tools\copydir.js ./resources ./$(Configuration)/resources dir</Command>
+      <Command>node tools\copydir.js ./bin/zlib1.dll ./$(Configuration)/zlib1.dll --file
+node tools\copydir.js ./bin/libpng16d.dll  ./$(Configuration)/libpng16d.dll --file 
+node tools\copydir.js ./bin/libFLAC-8.dll  ./$(Configuration)/libFLAC-8.dll --file
+node tools\copydir.js ./bin/libmodplug-1.dll  ./$(Configuration)/libmodplug-1.dll --file
+node tools\copydir.js ./bin/libmpg123-0.dll  ./$(Configuration)/libmpg123-0.dll --file
+node tools\copydir.js ./bin/libogg-0.dll  ./$(Configuration)/libogg-0.dll --file 
+node tools\copydir.js ./bin/libvorbis-0.dll  ./$(Configuration)/libvorbis-0.dll --file 
+node tools\copydir.js ./bin/libvorbisfile-3.dll  ./$(Configuration)/libvorbisfile-3.dll --file 
+node tools\copydir.js ./bin/SDL2.dll  ./$(Configuration)/SDL2.dll --file 
+node tools\copydir.js ./bin/SDL2_mixer.dll  ./$(Configuration)/SDL2_mixer.dll --file 
+node tools\copydir.js ./scripts ./$(Configuration)/scripts --dir
+node tools\copydir.js ./resources ./$(Configuration)/resources --dir</Command>
       <Message>실행에 필요한 기본 DLL 파일을 복사합니다.</Message>
     </PreBuildEvent>
     <Lib>
@@ -410,7 +410,7 @@ node tools\copydir.js ./resources ./$(Configuration)/resources dir</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libzlib.lib;libpng16d.lib;SDL2.lib;native_midi.lib;playmus.lib;playwave.lib;timidity.lib;tinyxml_d.lib;SDL2_mixer.lib;Msimg32.lib;OpenAL32.lib;winmm.lib;luaLib_d.lib;libmruby_core.lib;libmruby_d.lib;json_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libzlib.lib;libpng16.lib;SDL2.lib;native_midi.lib;playmus.lib;playwave.lib;timidity.lib;tinyxml.lib;SDL2_mixer.lib;Msimg32.lib;OpenAL32.lib;winmm.lib;luaLib.lib;libmruby_core.lib;libmruby.lib;json.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/NODEFAULTLIB:msvcrt.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <CustomBuildStep>
@@ -418,18 +418,18 @@ node tools\copydir.js ./resources ./$(Configuration)/resources dir</Command>
       </Command>
     </CustomBuildStep>
     <PreBuildEvent>
-      <Command>node tools\copydir.js ./bin/zlib1.dll ./$(Configuration)/zlib1.dll file
-node tools\copydir.js ./bin/libpng16.dll  ./$(Configuration)/libpng16.dll file 
-node tools\copydir.js ./bin/libFLAC-8.dll  ./$(Configuration)/libFLAC-8.dll file
-node tools\copydir.js ./bin/libmodplug-1.dll  ./$(Configuration)/libmodplug-1.dll file
-node tools\copydir.js ./bin/libmpg123-0.dll  ./$(Configuration)/libmpg123-0.dll file
-node tools\copydir.js ./bin/libogg-0.dll  ./$(Configuration)/libogg-0.dll file 
-node tools\copydir.js ./bin/libvorbis-0.dll  ./$(Configuration)/libvorbis-0.dll file 
-node tools\copydir.js ./bin/libvorbisfile-3.dll  ./$(Configuration)/libvorbisfile-3.dll file 
-node tools\copydir.js ./bin/SDL2.dll  ./$(Configuration)/SDL2.dll file 
-node tools\copydir.js ./bin/SDL2_mixer.dll  ./$(Configuration)/SDL2_mixer.dll file 
-node tools\copydir.js ./scripts ./$(Configuration)/scripts dir
-node tools\copydir.js ./resources ./$(Configuration)/resources dir</Command>
+      <Command>node tools\copydir.js ./bin/zlib1.dll ./$(Configuration)/zlib1.dll --file
+node tools\copydir.js ./bin/libpng16.dll  ./$(Configuration)/libpng16.dll --file 
+node tools\copydir.js ./bin/libFLAC-8.dll  ./$(Configuration)/libFLAC-8.dll --file
+node tools\copydir.js ./bin/libmodplug-1.dll  ./$(Configuration)/libmodplug-1.dll --file
+node tools\copydir.js ./bin/libmpg123-0.dll  ./$(Configuration)/libmpg123-0.dll --file
+node tools\copydir.js ./bin/libogg-0.dll  ./$(Configuration)/libogg-0.dll --file 
+node tools\copydir.js ./bin/libvorbis-0.dll  ./$(Configuration)/libvorbis-0.dll --file 
+node tools\copydir.js ./bin/libvorbisfile-3.dll  ./$(Configuration)/libvorbisfile-3.dll --file 
+node tools\copydir.js ./bin/SDL2.dll  ./$(Configuration)/SDL2.dll --file 
+node tools\copydir.js ./bin/SDL2_mixer.dll  ./$(Configuration)/SDL2_mixer.dll --file 
+node tools\copydir.js ./scripts ./$(Configuration)/scripts --dir
+node tools\copydir.js ./resources ./$(Configuration)/resources --dir</Command>
       <Message>실행에 필요한 기본 DLL 파일을 복사합니다.</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>

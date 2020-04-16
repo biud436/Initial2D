@@ -1,31 +1,32 @@
+/**
+ * @author Jinseok Eo(biud436)
+ * @description
+ * copydir {0} {1} --dir
+ * copydir {0} {1} --file
+ */
 const fs = require('fs-extra');
 const path = require('path');
 const args = process.argv.slice(2);
+const argv = require("minimist")(args);
 
-/**
- * copydir {0} {1} dir
- * copydir {0} {1} file
- */
-const sourceDir = args[0];
-const targetDir = args[1];
-const type = args[2];
+const sourceDir = argv._[0];
+const targetDir = argv._[1];
+const type = argv.file || argv.dir;
 
 class UtilsImpl {
     constructor() {
-
-        switch(type) {
-            default:
-            case "dir":
-                this.copyDir();
-                break;
-            case "file":
-                this.copyFile();
-                break;
+        if(argv.file) {
+            this.copyFile();
+        } else if(argv.dir) {
+            this.copyDir();
         }
-        
     }
 
     copyDir() {
+
+        if(fs.existsSync(targetDir) && fs.lstatSync(targetDir).isDirectory()) {
+            fs.removeSync(targetDir);
+        }
 
         fs.copySync(sourceDir, targetDir, {overwrite:true, errorOnExist:false, recursive:true, filter: (src, dst) => {
             if(!fs.existsSync(src)) {
