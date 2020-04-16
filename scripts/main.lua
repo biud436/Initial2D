@@ -1,12 +1,12 @@
 function Initialize()
 	
-	-- Create background image
-	background = Image("./resources/titles/title.png", 0, 0, 640, 480, 1, "Title")
+	-- -- Create background image
+	-- background = Image("./resources/titles/title.png", 0, 0, 640, 480, 1, "Title")
 
-	-- Create button text
+	-- -- Create button text
 	buttonText = Image("./resources/titles/start_button.png" , 0, 0, 256, 30, 1, "buttonText")
 	
-	-- Create Image
+	-- -- Create Image
 	mx = WindowWidth() / 2 - buttonText.getWidth() / 2
 	my = WindowHeight() / 2 - buttonText.getHeight() + WindowHeight() / 4
 	buttonText.setPosition(mx, my)
@@ -21,14 +21,14 @@ function Initialize()
 
 	myElapsed = 0.0
 	tt = 0
-	
+
 	tilemap = Tilemap(17, 13)
 	tilemap.init()
 	
 end
 
 function Update(elapsed)
-	background.update(elapsed)
+	-- background.update(elapsed)
 	
 	buttonText.setAngle(Input.GetMouseY())
 	buttonText.update(elapsed)
@@ -62,7 +62,7 @@ function DrawTempText()
 end
 
 function Render()
-	background.draw()
+	-- background.draw()
 	buttonText.draw()
 
 	tilemap.draw()
@@ -78,7 +78,7 @@ function Render()
 end
 
 function Destroy()
-	background.dispose()
+	-- background.dispose()
 	buttonText.dispose()
 
 	tilemap.dispose()
