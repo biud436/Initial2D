@@ -22,6 +22,9 @@ function Initialize()
 	myElapsed = 0.0
 	tt = 0
 
+	local aha = "한글 테스트"
+	wprint(aha)
+
 	tilemap = Tilemap(17, 13)
 	tilemap.init()
 	

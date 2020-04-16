@@ -27,6 +27,12 @@
 
 #include <memory>
 #include <exception>
+#include <cstdlib>
+
+#include <string> 
+#include <locale> 
+#include <codecvt> 
+#include <cassert>
 
 int ShowMessageBox(HWND hWnd, LPCWCHAR text, LPCWCHAR caption, UINT type);
 
