@@ -33,6 +33,7 @@ function Update(elapsed)
 	buttonText.setAngle(Input.GetMouseY())
 	buttonText.update(elapsed)
 	
+	tilemap.rotate(tt % 360)
 	tilemap.update(elapsed)
 
 	tt = tt + 1

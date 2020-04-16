@@ -78,6 +78,14 @@ function Tilemap(width, height)
             end
         end
     end
+
+    function self.rotate(degree)
+        for k, child in pairs(self.children) do
+            if child then
+                child.setAngle(degree)
+            end
+        end        
+    end
     
     function self.draw()
         for k, child in pairs(self.children) do
