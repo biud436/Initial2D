@@ -276,6 +276,31 @@ int Lua_GameExit(lua_State *pL)
 	return 0;
 }
 
+int Lua_GetCurrentDirectory(lua_State *pL)
+{
+	std::string s;
+	s.resize(MAX_CHAR);
+
+	GetCurrentDirectory(MAX_CHAR, &s[0]);
+
+	int n = lua_gettop(pL);
+	int man = 0;
+	if (n > 0) {
+		std::string from = "\\";
+		std::string to = "/";
+
+		size_t start_pos = 0;
+		while ((start_pos = s.find(from, start_pos)) != std::string::npos) {
+			s.replace(start_pos, from.length(), to);
+			start_pos += to.length();
+		}
+	}
+	
+	lua_pushstring(pL, s.c_str());
+
+	return 1;
+}
+
 int Lua_Init()
 {
 
@@ -297,6 +322,8 @@ int Lua_Init()
 		lua_register(g_pLuaState, "draw_text", Lua_DrawText);
 		lua_register(g_pLuaState, "draw_point", Lua_DrawPoint);
 		lua_register(g_pLuaState, "draw_set_color", Lua_DrawSetColor);
+
+		lua_register(g_pLuaState, "GetCurrentDirectory", Lua_GetCurrentDirectory);
 
 		// Audio
 		Lua_CreateAudioObject(g_pLuaState);

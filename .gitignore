@@ -13,6 +13,7 @@
 node_modules/
 
 resources/*.*
+lib/*.exe
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
