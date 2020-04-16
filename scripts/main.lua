@@ -1,4 +1,4 @@
- function Initialize()
+function Initialize()
 	
 	-- Create background image
 	background = Image("./resources/titles/title.png", 0, 0, 640, 480, 1, "Title")
@@ -21,6 +21,9 @@
 
 	myElapsed = 0.0
 	tt = 0
+
+	tilemap = Tilemap(17, 13)
+	tilemap.init()
 	
 end
 
@@ -28,8 +31,9 @@ function Update(elapsed)
 	background.update(elapsed)
 	
 	buttonText.setAngle(Input.GetMouseY())
-	
 	buttonText.update(elapsed)
+	
+	tilemap.update(elapsed)
 
 	tt = tt + 1
 	if tt > WindowWidth() then
@@ -60,6 +64,8 @@ end
 function Render()
 	background.draw()
 	buttonText.draw()
+
+	tilemap.draw()
 		
 	DrawTempText()
 		
@@ -74,5 +80,8 @@ end
 function Destroy()
 	background.dispose()
 	buttonText.dispose()
+
+	tilemap.dispose()
+
 	Audio.ReleaseMusic("mainBGM")	
 end
