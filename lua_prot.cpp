@@ -115,7 +115,7 @@ std::string AllocMBCS(std::wstring str)
 	return raw;
 }
 
-void DestroyWideChar(const wchar_t* law)
+void RemoveWideChar(const wchar_t* law)
 {
 	delete[] law;
 }
@@ -142,8 +142,8 @@ static int Lua_MessageBox(lua_State *g_pLuaSt)
 
 	ShowMessageBox(g_hWnd, wt, wc, MB_OK);
 
-	DestroyWideChar(wt);
-	DestroyWideChar(wc);
+	RemoveWideChar(wt);
+	RemoveWideChar(wc);
 
 	return 0;
 }
@@ -262,7 +262,7 @@ int Lua_DrawText(lua_State *pL)
 		
 		lua_pushnumber(pL, width);
 
-		DestroyWideChar(c);
+		RemoveWideChar(c);
 	}
 	else {
 		lua_pushnumber(pL, 0);
@@ -328,7 +328,7 @@ int l_wcsprint(lua_State *pL)
 	for (int i = 1; i <= n; ++i) {
 		wchar_t *from = AllocWideChar(lua_tostring(pL, i));
 		std::cout << AllocMBCS(from);
-		DestroyWideChar(from);
+		RemoveWideChar(from);
 	}
 	std::cout << std::endl;
 
