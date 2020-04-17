@@ -102,6 +102,19 @@ wchar_t* AllocWideChar(const char* law)
 	return lpszWideChar;
 }
 
+std::string AllocMBCS(std::wstring str)
+{
+	int nStringArraySize = WideCharToMultiByte(CP_ACP, 0, &str[0], str.size(), NULL, 0, NULL, NULL);
+	if (nStringArraySize == 0) {
+		return "";
+	}
+
+	std::string raw(nStringArraySize, '\0');
+	WideCharToMultiByte(CP_ACP, 0, &str[0], str.size(), &raw[0], raw.size(), NULL, NULL);
+
+	return raw;
+}
+
 void DestroyWideChar(const wchar_t* law)
 {
 	delete[] law;
@@ -312,13 +325,12 @@ int l_wcsprint(lua_State *pL)
 	int n = lua_gettop(pL);
 	luaL_argcheck(pL, n >= 1, n, "out of range");
 
-	auto temp = GetConsoleOutputCP();
-	SetConsoleOutputCP(CP_UTF8);
-
 	for (int i = 1; i <= n; ++i) {
-		printf_s("%s", lua_tostring(pL, i));
+		wchar_t *from = AllocWideChar(lua_tostring(pL, i));
+		std::cout << AllocMBCS(from);
+		DestroyWideChar(from);
 	}
-	printf_s("\n");
+	std::cout << std::endl;
 
 	return 0;
 }

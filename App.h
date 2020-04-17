@@ -33,12 +33,12 @@
  * @def LOG_D(MSG)
  * 디버그 콘솔에 디버그 메시지 #MSG를 출력합니다.
  */
-//#ifndef NDEBUG
-//#define LOG_D(MSG) \
-//	
-//#else
-//#define LOG_D(MSG)
-//#endif
+#ifndef NDEBUG
+#define LOG_D(MSG) \
+	std::cout << MSG << std::endl;	
+#else
+#define LOG_D(MSG)
+#endif
 
 /**
  * @def InputManager 

@@ -50,6 +50,8 @@ void App::Initialize()
 
 	HWND hWnd = m_hWnd;
 
+	LOG_D("생성되었습니다.");
+
 	std::string sCurrentPath = GetExecutablePath();
 
 	sCurrentPath.append("config.setting");
