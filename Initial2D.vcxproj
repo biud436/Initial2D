@@ -256,8 +256,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\SDK\zlib\include;C:\SDK\tinyxml\include\;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;C:\SDK\libpng\include;$(ProjectDir)lua;$(ProjectDir)mruby\include;$(ProjectDir)json\Json;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\SDK\zlib\libs;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;C:\SDK\SDL2\lib\x86;C:\SDK\SDL2_mixer\libs;C:\SDK\libpng\libs;C:\SDK\tinyxml\libs;$(SolutionDir)lib;$(ProjectDir)json\Json;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)external\zlib\include;$(ProjectDir)external\tinyxml\include\;$(ProjectDir)external\OpenAL\include;$(ProjectDir)external\SDL2\include;$(ProjectDir)external\SDL2_mixer\include;$(ProjectDir)external\libpng\include;$(ProjectDir)lua;$(ProjectDir)mruby\include;$(ProjectDir)json\Json;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)external\zlib\libs;$(ProjectDir)external\OpenAL\libs;$(ProjectDir)external\SDL2\lib\x86;$(ProjectDir)external\SDL2_mixer\libs;$(ProjectDir)external\libpng\libs;$(ProjectDir)external\tinyxml\libs;$(SolutionDir)lib;$(ProjectDir)json\Json;$(LibraryPath)</LibraryPath>
     <IntDir>log\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)lib\</OutDir>
     <SourcePath>$(SourcePath)</SourcePath>
@@ -281,8 +281,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\SDK\libpng\include;C:\SDK\zlib\include;C:\SDK\tinyxml\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;$(ProjectDir)lua;$(ProjectDir)mruby\include;$(ProjectDir)json\Json;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\SDK\libpng\libs;C:\SDK\zlib\libs;C:\SDK\tinyxml\libs;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;C:\SDK\SDL2\lib\x86;C:\SDK\SDL2_mixer\libs;$(SolutionDir)lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)external\libpng\include;$(ProjectDir)external\zlib\include;$(ProjectDir)external\tinyxml\include;$(ProjectDir)external\OpenAL\include;$(ProjectDir)external\SDL2\include;$(ProjectDir)external\SDL2_mixer\include;$(ProjectDir)lua;$(ProjectDir)mruby\include;$(ProjectDir)json\Json;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)external\libpng\libs;$(ProjectDir)external\zlib\libs;$(ProjectDir)external\tinyxml\libs;$(ProjectDir)external\OpenAL\libs;$(ProjectDir)external\SDL2\lib\x86;$(ProjectDir)external\SDL2_mixer\libs;$(SolutionDir)lib;$(LibraryPath)</LibraryPath>
     <IntDir>$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)lib\</OutDir>
     <SourcePath>$(SourcePath)</SourcePath>
