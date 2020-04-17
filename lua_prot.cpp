@@ -112,6 +112,8 @@ std::string AllocMBCS(std::wstring str)
 	std::string raw(nStringArraySize, '\0');
 	WideCharToMultiByte(CP_ACP, 0, &str[0], str.size(), &raw[0], raw.size(), NULL, NULL);
 
+	std::cout << "메모리 값 : " << *raw.data() << std::endl;
+
 	return raw;
 }
 
@@ -327,7 +329,9 @@ int l_wcsprint(lua_State *pL)
 
 	for (int i = 1; i <= n; ++i) {
 		wchar_t *from = AllocWideChar(lua_tostring(pL, i));
-		std::cout << AllocMBCS(from);
+		std::string to = AllocMBCS(from);
+		std::cout << "메모리 값 : " << *to.data() << std::endl;
+		std::cout << to;
 		RemoveWideChar(from);
 	}
 	std::cout << std::endl;
