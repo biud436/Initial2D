@@ -39,15 +39,12 @@ void MapState::render()
 
 bool MapState::onEnter()
 {
-	LOG_D("onEnter : MapState");
 	return true;
 }
 
 
 bool MapState::onExit()
 {
-	LOG_D("onExit : MapState");
-
 	for (auto i : m_gameObjects)
 	{
 		delete i;

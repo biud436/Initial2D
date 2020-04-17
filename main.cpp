@@ -46,7 +46,6 @@ inline std::string GetExecutablePath() {
 
 void App::Initialize()
 {
-	LOG_D("√ ±‚»≠");
 	m_context.mainContext = GetDC(m_hWnd);
 
 	HWND hWnd = m_hWnd;

@@ -29,7 +29,7 @@ extern HWND g_hWnd;
 #endif
 
 #define CLOSE_PNG_FILE(P, P1, P2) \
-	fclose(P); SAFE_DELETE(P1); LOG_D(P2)
+	fclose(P); SAFE_DELETE(P1);
 
 /**
  * @details PNG 디코딩을 위해 함수를 매핑합니다.

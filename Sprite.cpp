@@ -74,7 +74,6 @@ bool Sprite::initialize(float x, float y, int width, int height, int maxFrames, 
 
 	if (!App::GetInstance().GetTextureManager().valid(textureId)) 
 	{
-		LOG_D("로드되지 않은 텍스처 사용");
 		m_bInitialized = false;
 	}
 	else

@@ -58,7 +58,6 @@ bool Font::ParseFont(std::string fntName)
 	
 	if (!xmlDoc.LoadFile(fntName))
 	{
-		LOG_D(xmlDoc.ErrorDesc());
 		return false;
 	}
 
@@ -72,7 +71,6 @@ bool Font::ParseFont(std::string fntName)
 	{
 		if (e->Value() == std::string("common"))
 		{
-			LOG_D("== common");
 			pCommon = e;
 			e->Attribute("lineHeight", &m_charsetDesc.LineHeight);
 			e->Attribute("base", &m_charsetDesc.Base);
@@ -87,7 +85,6 @@ bool Font::ParseFont(std::string fntName)
 		}
 		else if (e->Value() == std::string("chars"))
 		{
-			LOG_D("== chars");
 			pChars = e;
 		}
 		else if (e->Value() == std::string("kernings"))
@@ -209,7 +206,6 @@ int Font::drawText(int x, int y, std::wstring text)
 	std::string textureId = "font";
 
 	if (!m_charsetDesc.IsTextureReady) {
-		LOG_D("폰트 아틀라스가 준비되지 않았습니다.");
 		return lineWidth.back();
 	}
 

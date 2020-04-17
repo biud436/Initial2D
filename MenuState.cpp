@@ -25,8 +25,6 @@ const std::string MenuState::m_strMenuId = "MENU";
 
 bool MenuState::onEnter()
 {
-	LOG_D("MenuState.onEnter()");
-
 	//AntiAliasingFont* pFont = new AntiAliasingFont(L"나눔고딕", 36);
 	//pFont->setText(L"안녕하세요?")
 	//	.setPosition(100, 100)
@@ -40,8 +38,6 @@ bool MenuState::onEnter()
 
 bool MenuState::onExit()
 {
-	LOG_D("MenuState.onExit()");
-
 	// 게임 오브젝트 제거
 	for (auto i : m_gameObjects)
 	{
