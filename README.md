@@ -1,4 +1,6 @@
 # 소개
+[![Build status](https://ci.appveyor.com/api/projects/status/277ojyc6arrdrcxd/branch/master?svg=true)](https://ci.appveyor.com/project/biud436/initial2d/branch/master)
+
 개인적인 용도로 만든 GDI 기반 게임 엔진입니다. 
 
 본래 선호하는 스크립트 언어는 Ruby나 JS이지만 게임에 임베디드(Embedded)하기가 까다롭기 때문에, 
