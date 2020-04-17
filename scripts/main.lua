@@ -22,6 +22,8 @@ function Initialize()
 	myElapsed = 0.0
 	tt = 0
 
+	print("hi...",  "안녕하십니까")
+
 	tilemap = Tilemap(17, 13)
 	tilemap.init()
 	

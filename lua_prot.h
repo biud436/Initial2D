@@ -16,7 +16,7 @@ int Lua_WindowHeight(lua_State *pL);
 int Lua_GetFrameCount(lua_State *pL);
 int Lua_GameExit(lua_State *pL);
 int Lua_GetCurrentDirectory(lua_State *pL);
-int Lua_WBCSPrint(lua_State *pL);
+static int l_wcsprint(lua_State *pL);
 
 int Lua_Init();
 int Lua_Update(double elapsed);

@@ -307,6 +307,27 @@ int Lua_GetCurrentDirectory(lua_State *pL)
 	return 1;
 }
 
+int l_wcsprint(lua_State *pL)
+{
+	int n = lua_gettop(pL);
+	luaL_argcheck(pL, n >= 1, n, "out of range");
+
+	auto temp = GetConsoleOutputCP();
+	SetConsoleOutputCP(CP_UTF8);
+
+	for (int i = 1; i <= n; ++i) {
+		printf_s("%s", lua_tostring(pL, i));
+	}
+	printf_s("\n");
+
+	return 0;
+}
+
+static const struct luaL_Reg printlib[] = {
+	{ "print", l_wcsprint },
+	{ NULL, NULL }
+};
+
 int Lua_Init()
 {
 
@@ -314,6 +335,10 @@ int Lua_Init()
 	luaL_openlibs(g_pLuaState);
 
 	try {
+
+		lua_getglobal(g_pLuaState, "_G");
+		luaL_setfuncs(g_pLuaState, printlib, 0);
+		lua_pop(g_pLuaState, 1);
 
 		lua_register(g_pLuaState, "MessageBox", Lua_MessageBox);
 		lua_register(g_pLuaState, "LoadScript", Lua_LoadScript);

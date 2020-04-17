@@ -72,7 +72,7 @@ bool Font::ParseFont(std::string fntName)
 	{
 		if (e->Value() == std::string("common"))
 		{
-			LOG_D("common을 찾았습니다.");
+			LOG_D("== common");
 			pCommon = e;
 			e->Attribute("lineHeight", &m_charsetDesc.LineHeight);
 			e->Attribute("base", &m_charsetDesc.Base);
@@ -87,7 +87,7 @@ bool Font::ParseFont(std::string fntName)
 		}
 		else if (e->Value() == std::string("chars"))
 		{
-			LOG_D("chars을 찾았습니다.");
+			LOG_D("== chars");
 			pChars = e;
 		}
 		else if (e->Value() == std::string("kernings"))

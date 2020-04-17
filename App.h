@@ -35,6 +35,7 @@
  */
 #ifndef NDEBUG
 #define LOG_D(MSG) \
+	SetConsoleOutputCP(GetOEMCP()); \
 	std::cout << ##MSG << std::endl;
 #else
 #define LOG_D(MSG)
