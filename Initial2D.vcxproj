@@ -77,6 +77,7 @@
     <ClCompile Include="MenuState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Process.cpp" />
     <ClCompile Include="SoundManager.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
     </ClCompile>
@@ -150,6 +151,7 @@
     <ClInclude Include="Point.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="Process.h" />
     <ClInclude Include="Rectangle.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
     </ClInclude>

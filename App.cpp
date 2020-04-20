@@ -63,6 +63,22 @@ App::App() :
 		// todo : add it.
 	}
 
+#ifndef NDEBUG
+	const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	const HWND hWndConsole = GetConsoleWindow();
+
+	// 콘솔 윈도우 이름 설정
+	std::string sClassName = WINDOW_NAME;
+	sClassName += " - Console";
+	SetConsoleTitle(sClassName.c_str());
+
+	// 콘솔 윈도우 위치 설정
+	RECT rt = { 0, };
+	GetWindowRect(hWndConsole, &rt);
+	SetWindowPos(hWndConsole, HWND_NOTOPMOST, rt.left, rt.top, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW);
+	
+#endif
+
 	QueryPerformanceCounter(&m_nTimeStart);
 
 	// 텍스쳐 관리자 생성

@@ -25,6 +25,8 @@
 #include <ostream>
 #include <fstream>
 
+#include "Process.h"
+
 #include <Shlwapi.h>
 #pragma comment(lib, "shlwapi.lib")
 
@@ -84,6 +86,14 @@ void App::Initialize()
 	m_pGameStateMachine = new GameStateMachine();
 	m_pGameStateMachine->changeState(new MenuState());
 
+	// 프로세스 정보 출력
+	try {
+		Initial2D::Process process(L"powershell Get-Process");
+	} catch(std::exception ex) {
+#ifdef _DEBUG
+		printf_s(ex.what());
+#endif // !_DEBUG
+	}
 }
 
 
