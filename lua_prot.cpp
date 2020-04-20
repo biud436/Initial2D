@@ -385,8 +385,10 @@ int Lua_Init()
 		Lua_CreateFontExImpl(g_pLuaState);
 
 		// 스크립트 파일을 읽습니다 (Windows Only)
-		luaL_dostring(g_pLuaState,
-			"for dir in io.popen([[dir \"./scripts/\" /r /b]]) :lines() do LoadScript(\"./scripts/\"..dir) end");
+		//luaL_dostring(g_pLuaState,
+		//	"for dir in io.popen([[dir \"./scripts/\" /r /b]]) :lines() do LoadScript(\"./scripts/\"..dir) end");
+
+		luaL_dostring(g_pLuaState, "LoadScript(\"./scripts/main.lua\")");
 
 		// 스크립트 파일 내에 선언된 초기화 함수를 호출합니다.
 		lua_getglobal(g_pLuaState, "Initialize");

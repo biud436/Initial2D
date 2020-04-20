@@ -1,3 +1,7 @@
+local Font = require("scripts/Font")
+local Image = require("scripts/image")
+local Tilemap = require("scripts/tilemap")
+
 function Initialize()
 	
 	-- -- Create background image

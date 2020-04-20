@@ -102,3 +102,5 @@ function Tilemap(width, height)
     return self
 
 end
+
+return Tilemap

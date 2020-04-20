@@ -62,3 +62,5 @@ function Font(font_face, font_size, width, height)
 	return self
 	
 end
+
+return Font
