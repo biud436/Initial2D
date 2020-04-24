@@ -297,23 +297,25 @@ void App::Update()
 
 	m_nTimeStart = m_nTimeEnd;
 
-	//while(m_elapsed >= DELAY_TIME)
-	//{
-	//	UpdateInput();
-	//	ObjectUpdate(m_frameTime);
-	//	m_elapsed -= DELAY_TIME;
-	//	Sleep(1);
-	//}
+#if 0
+	while(m_elapsed >= DELAY_TIME)
+	{
+		UpdateInput();
+		ObjectUpdate(m_frameTime);
+		m_elapsed -= DELAY_TIME;
+		Sleep(1);
+	}
 
-	//if (m_frameTime >= 1.0) {
-	//	std::ostringstream oss; 
-	//	oss << GAME_TITLE << m_nFrameCount << std::endl;
-	//	SetWindowText(m_hWnd, &oss.str()[0]);
-	//	m_nFPS = m_nFrameCount;
-	//	m_nFrameCount = 0;
-	//	m_elapsed = 0.0;
-	//	m_nTimeStart = m_nTimeEnd;
-	//}
+	if (m_frameTime >= 1.0) {
+		std::ostringstream oss; 
+		oss << GAME_TITLE << m_nFrameCount << std::endl;
+		SetWindowText(m_hWnd, &oss.str()[0]);
+		m_nFPS = m_nFrameCount;
+		m_nFrameCount = 0;
+		m_elapsed = 0.0;
+		m_nTimeStart = m_nTimeEnd;
+	}
+#endif
 
 	// Rendering
 	RenderClear();
