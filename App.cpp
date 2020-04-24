@@ -405,3 +405,60 @@ int App::GetFrameCount()
 {
 	return m_nFPS;
 }
+
+/**
+* @brief Set the App Icon from a certain image.
+*/
+void App::SetAppIcon(std::string filename)
+{
+	std::string id = ":global:icon";
+	HDC hDC = GetContext().mainContext;
+
+	if (!std::ifstream(filename))
+	{
+		throw new std::exception("the file is not existed");
+	}
+
+	// Load the texture from certain file.
+	bool bRet = m_pTextureManager->Load(filename, id, &hDC);
+
+	if (!bRet) 
+	{
+		throw new std::exception("Cannot convert an image file to HBITMAP");
+	}
+
+	TextureData *texture = m_pTextureManager->m_textureMap[id];
+	HBITMAP hBitmap = texture->texture;
+
+	HBITMAP hBmMask = CreateCompatibleBitmap(hDC, texture->width, texture->height);
+
+	if (hBmMask == NULL) 
+	{
+		throw new std::exception("Cannot make the hBitmap");
+	}
+
+	// Create an icon info
+	ICONINFO iconInfo;
+	ZeroMemory(&iconInfo, sizeof(ICONINFO));
+
+	iconInfo.fIcon = TRUE;
+	iconInfo.hbmColor = hBitmap;
+	iconInfo.hbmMask = hBmMask;
+
+	HICON hIcon = CreateIconIndirect(&iconInfo);
+	if (hIcon == NULL) 
+	{
+		throw new std::exception("failed to create the hIcon.", GetLastError());
+	}
+
+	SendMessage(m_hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+	SendMessage(m_hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+	SendMessage(m_hWnd, WM_SETICON, ICON_SMALL2, (LPARAM)hIcon);
+
+	DeleteObject(hBmMask);
+
+	if (!m_pTextureManager->Remove(id)) {
+		throw new std::exception("failed to remove the texture");
+	}
+
+}

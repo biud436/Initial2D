@@ -22,11 +22,33 @@ namespace Initial2D {
 	public:
 		Process(std::wstring filename);
 		Process(const Process &e) : m_hWnd(e.m_hWnd) {}
-		bool create(std::wstring filename);
-		std::string catchError();
-		std::wstring getWindowName();
-		std::string toMBCS(std::wstring toUTF16);
 		virtual ~Process();
+
+		/**
+		 * @brief Create the child process.
+		 */
+		bool create(std::wstring filename);
+
+		/**
+		 * @brief Catch the error.
+		 */
+		std::string catchError();
+
+		/** 
+		 * @brief This method allows you to convert character sets to WBCS
+		 */
+		std::wstring getWindowName();
+
+		/**
+		 * @brief This method allows you to convert character set to MBCS (CP_ACP)
+		 */
+		std::string toMBCS(std::wstring toUTF16);
+
+		/**
+		 * Finds out an ID of the main thread.
+		 */
+		static DWORD FindMainThreadID(HANDLE process);
+
 	private:
 		HWND m_hWnd;
 	};

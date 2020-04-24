@@ -1,5 +1,6 @@
 #include "Process.h"
 #include "App.h"
+#include "tlhelp32.h"
 
 namespace Initial2D {
 
@@ -105,4 +106,33 @@ namespace Initial2D {
 		return sFromMBCS;
 	}
 
+	DWORD Process::FindMainThreadID(HANDLE process)
+	{
+		THREADENTRY32 entry;
+		ZeroMemory(&entry, sizeof(THREADENTRY32));
+		entry.dwSize = sizeof(THREADENTRY32);
+
+		HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+
+		if (Thread32First(snapshot, &entry)) 
+		{
+			DWORD processID = GetProcessId(process);
+
+			while (Thread32Next(snapshot, &entry)) 
+			{
+				if (entry.th32OwnerProcessID == processID)
+				{
+					CloseHandle(snapshot);
+					return entry.th32ThreadID;
+				}
+			}
+		}
+
+		CloseHandle(snapshot);
+		
+		return NULL;
+
+	}
+
 }
+

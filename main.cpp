@@ -79,6 +79,8 @@ void App::Initialize()
 	// 마우스 및 키보드 모듈 초기화
 	m_pInput->initialize(m_hWnd);
 
+	SetAppIcon(".\\resources\\icons\\icon.png");
+
 	// 루아 초기화
 	Lua_Init();
 	
@@ -89,6 +91,7 @@ void App::Initialize()
 	// 프로세스 정보 출력
 	try {
 		Initial2D::Process process(L"powershell Get-Process");
+		Initial2D::Process process2(L"cmd /c \"echo wow...\"");
 	} catch(std::exception ex) {
 #ifdef _DEBUG
 		printf_s(ex.what());

@@ -246,6 +246,12 @@ public:
 	 */
 	int GetFrameCount();
 
+
+	/**
+	 * @brief Set the App Icon from a certain image.
+	 */
+	void SetAppIcon(std::string filename);
+
 protected:
 
 	const char*       m_szWindowName;			// 윈도우 이름
