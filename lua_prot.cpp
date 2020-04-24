@@ -320,6 +320,19 @@ int Lua_GetCurrentDirectory(lua_State *pL)
 	return 1;
 }
 
+int Lua_SetAppIcon(lua_State *pL)
+{
+	int n = lua_gettop(pL);
+	if (n < 1) {
+		return 0;
+	}
+
+	std::string filename = luaL_checkstring(pL, 1);
+	App::GetInstance().SetAppIcon(filename);
+
+	return 0;
+}
+
 int l_wcsprint(lua_State *pL)
 {
 	int n = lua_gettop(pL);
@@ -368,6 +381,8 @@ int Lua_Init()
 		lua_register(g_pLuaState, "draw_set_color", Lua_DrawSetColor);
 
 		lua_register(g_pLuaState, "GetCurrentDirectory", Lua_GetCurrentDirectory);
+
+		lua_register(g_pLuaState, "SetAppIcon", Lua_SetAppIcon);
 
 		// Audio
 		Lua_CreateAudioObject(g_pLuaState);
