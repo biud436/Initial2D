@@ -85,6 +85,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="sqlite3.c" />
+    <ClCompile Include="StringUtils.cpp" />
     <ClCompile Include="TextureManager.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
     </ClCompile>
@@ -162,6 +163,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="sqlite3.h" />
+    <ClInclude Include="StringUtils.h" />
     <ClInclude Include="TextureManager.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
     </ClInclude>

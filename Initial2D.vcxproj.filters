@@ -45,6 +45,7 @@
     <ClCompile Include="Thread.cpp" />
     <ClCompile Include="sqlite3.c" />
     <ClCompile Include="Process.cpp" />
+    <ClCompile Include="StringUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
@@ -88,6 +89,7 @@
     <ClInclude Include="Thread.h" />
     <ClInclude Include="sqlite3.h" />
     <ClInclude Include="Process.h" />
+    <ClInclude Include="StringUtils.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="scripts\image.lua">

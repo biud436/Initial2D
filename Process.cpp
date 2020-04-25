@@ -84,11 +84,9 @@ namespace Initial2D {
 		int size = MultiByteToWideChar(CP_UTF8, 0, &sWindowName[0], sWindowName.size(), NULL, NULL);
 
 		std::wstring swWindowName;
-		swWindowName.resize(size + 1);
+		swWindowName.resize(size);
 
 		MultiByteToWideChar(CP_UTF8, 0, &sWindowName[0], sWindowName.size(), &swWindowName[0], size);
-
-		swWindowName.resize(size);
 
 		return swWindowName;
 	}
@@ -98,10 +96,9 @@ namespace Initial2D {
 		int size = WideCharToMultiByte(CP_ACP, 0, &toUTF16[0], toUTF16.size(), NULL, 0, NULL, NULL);
 
 		std::string sFromMBCS;
-		sFromMBCS.resize(size + 2);
+		sFromMBCS.resize(size);
 
 		WideCharToMultiByte(CP_ACP, 0, &toUTF16[0], toUTF16.size(), &sFromMBCS[0], sFromMBCS.size(), NULL, NULL);
-		sFromMBCS.resize(size);
 
 		return sFromMBCS;
 	}
