@@ -29,3 +29,18 @@ std::wstring ConvertMultiByteToWideChar(std::string& str, UINT codePage)
 
 	return wstr;
 }
+
+std::vector<std::string> StrSplit(std::string data, std::string find_at)
+{
+	std::vector<std::string> ret;
+	size_t i = 0;
+	size_t at = 0;
+
+	while ((i = data.find(find_at, at)) != std::string::npos) {
+		size_t len = find_at.size();
+		ret.push_back(data.substr(i, len));
+		at = i + len;
+	}
+
+	return ret;
+}
