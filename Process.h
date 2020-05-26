@@ -45,9 +45,14 @@ namespace Initial2D {
 		std::string toMBCS(std::wstring toUTF16);
 
 		/**
-		 * Finds out an ID of the main thread.
+		 * @brief Finds out an ID of the main thread.
 		 */
 		static DWORD FindMainThreadID(HANDLE process);
+
+		/**
+		 * @brief Get Process ID from the binary file name.
+		 */
+		static DWORD FindProcessID(std::string binaryName);
 
 	private:
 		HWND m_hWnd;

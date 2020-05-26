@@ -131,5 +131,41 @@ namespace Initial2D {
 
 	}
 
+	DWORD Process::FindProcessID(std::string binaryName)
+	{
+		bool isFound = false;
+		DWORD retProcessId = NULL;
+
+		PROCESSENTRY32 entry;
+		entry.dwSize = sizeof(PROCESSENTRY32);
+		HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+
+		if (Process32First(snapshot, &entry) == TRUE) {
+			while (Process32Next(snapshot, &entry) == TRUE) {
+				std::string binPath = entry.szExeFile;
+				if (binPath.find("cheatengine-x86_64.exe") != std::string::npos) {
+					isFound = true;
+					break;
+				}
+				if (binPath.find("cheatengine-i386.exe") != std::string::npos) {
+					isFound = true;
+					break;
+				}
+			}
+		}
+
+		if (isFound) {
+			retProcessId = entry.th32ProcessID;
+		}
+		else {
+			retProcessId = static_cast<DWORD>(0);
+		}
+
+		CloseHandle(snapshot);
+
+		return retProcessId;
+
+	}
+
 }
 
