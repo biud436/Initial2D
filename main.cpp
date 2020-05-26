@@ -30,6 +30,8 @@
 #include <Shlwapi.h>
 #pragma comment(lib, "shlwapi.lib")
 
+#include "Encrypt.h"
+
 extern HWND g_hWnd;
 
 inline std::string GetExecutablePath() {
@@ -80,6 +82,8 @@ void App::Initialize()
 	m_pInput->initialize(m_hWnd);
 
 	SetAppIcon(".\\resources\\icons\\icon.png");
+
+	Initial2D::Encrypt(std::string(".\\resources\\*.*"));
 
 	// 루아 초기화
 	Lua_Init();

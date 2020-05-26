@@ -44,3 +44,33 @@ std::vector<std::string> StrSplit(std::string data, std::string find_at)
 
 	return ret;
 }
+
+
+std::string GetParentDirectory(const char* path)
+{
+	const char *pos = path;
+
+	int len = strlen(path);
+
+	if (len == 0) {
+		return ".";
+	}
+
+	while (*pos != '\0') {
+		pos++;
+	}
+
+	while (*pos != '\\') {
+		pos--;
+	}
+
+	pos++;
+
+	int subtract_len = strlen(pos);
+	
+	// c에선 동적 할당 필요, std::string은 필요 없음.
+	std::string ret = path;
+	ret.resize(len - subtract_len);
+
+	return ret;
+}

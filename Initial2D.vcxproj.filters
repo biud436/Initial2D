@@ -90,6 +90,7 @@
     <ClInclude Include="sqlite3.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="StringUtils.h" />
+    <ClInclude Include="Encrypt.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="scripts\image.lua">

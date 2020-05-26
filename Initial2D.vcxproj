@@ -104,6 +104,7 @@
     <ClInclude Include="Constants.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">false</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="Encrypt.h" />
     <ClInclude Include="ExperimentalFont.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
     </ClInclude>
