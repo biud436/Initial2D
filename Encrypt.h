@@ -10,6 +10,11 @@
 #include <vector>
 #include "StringUtils.h"
 
+/**
+ * @file Encrypt.h
+ * @brief 리소스 파일을 하나의 패키지 파일로 만드는 기능을 제공합니다.
+ */
+
 namespace Initial2D {
 
 	typedef struct _RES_FILE_HEADER {
@@ -42,13 +47,14 @@ namespace Initial2D {
 	* @author 어진석
 	* @brief 특정 폴더에 있는 모든 파일을 반환합니다.
 	*/
-	std::vector<std::string> Encrypt(std::string parent = ".\\res\\")
+	std::vector<std::string> ReadDirectory(std::string parent = ".\\res\\")
 	{
 		WIN32_FIND_DATA findData;
 		HANDLE hFind = FindFirstFile(parent.data(), &findData);
 		std::vector<std::string> dirs;
 
-		std::string root = GetParentDirectory(parent.c_str());;
+		// 부모 폴더를 반환합니다.
+		std::string root = GetParentDirectory(parent.c_str());
 
 		while (FindNextFile(hFind, &findData) != 0)
 		{
@@ -65,13 +71,17 @@ namespace Initial2D {
 				subDirectories += filename;
 				subDirectories += "\\*.*";
 
+				// 디버깅 용 출력
 				printf_s("dir : %s\n", subDirectories.c_str());
 				
-				Encrypt(subDirectories);
+				// 재귀적 탐색
+				ReadDirectory(subDirectories);
 			}
 			else {
 				std::string filename = root;
 				filename += findData.cFileName;
+
+				// 디버깅 용 출력
 				printf_s("file : %s\n", filename.c_str());
 
 				dirs.push_back(filename);

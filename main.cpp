@@ -83,7 +83,7 @@ void App::Initialize()
 
 	SetAppIcon(".\\resources\\icons\\icon.png");
 
-	Initial2D::Encrypt(std::string(".\\resources\\*.*"));
+	auto directories = Initial2D::ReadDirectory(std::string(".\\resources\\*.*"));
 
 	// 루아 초기화
 	Lua_Init();
