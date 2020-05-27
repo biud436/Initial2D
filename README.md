@@ -16,91 +16,107 @@ Link : https://biud436.github.io/Initial2D/html/
 # 스크립트 예제
 C++ 에선 내부적으로 WinMain을 Entry Point로 삼고 초기화를 거치고, 상태 머신을 통해 순서대로 initialize, update, render 등의 메소드를 자동으로 호출할 수 있습니다. 
 
-아직까지 루아 스크립트 단에서는 상태 머신이 따로 없습니다. Initialize 함수가 유일한 Entry Point 입니다. 다음으로 중요한 함수는 Update 함수와 Render 함수로 매 프레임마다 호출되며 마지막으로 Destroy 함수에서 메모리 해제를 합니다.
+Initialize 함수가 유일한 Entry Point 입니다. 다음으로 중요한 함수는 Update 함수와 Render 함수로 매 프레임마다 호출되며 마지막으로 Destroy 함수에서 메모리 해제를 합니다.
 
 ```lua
- function Initialize()
-	
-	-- 배경 이미지 생성
-	background = Image("./resources/Ruins4.png", 0, 0, 640, 480, 1, "Ruins4")
-	print("background")
-	
-	-- 캐릭터 생성
-	character = Image("./resources/011-Lancer03.png", 0, 0, 32, 48, 4, "character1")
-	character.setPosition(10, 50)
-	character.setAngle(10.0)
-	character.setScale(4.0)
-	character.setLoop(true)
-	character.setFrameDelay(0.5)
-	print("character")
-	
-	Audio.PlayMusic("./resources/test.ogg", "mainBGM", true)
-	print("Audio")
+local Font = require("scripts/Font")
+local Image = require("scripts/image")
+local Tilemap = require("scripts/tilemap")
 
-	nanumFont = Font("궁서체", 24)
-	nanumFont.setText([[
-눈 감아도 느껴지는 향기 Oh
-은은해서 빠져들어
-저 멀리 사라진 그 빛을 따라 난
-너에게 더 다가가 다가가 Ah ah
+function Initialize()
+	
+	-- -- Create background image
+	-- background = Image("./resources/titles/title.png", 0, 0, 640, 480, 1, "Title")
 
-날 보는 네 눈빛과 날 비추는 빛깔이
-모든 걸 멈추게 해 너를 더 빛나게 해
-어느 순간 내게로 조용히 스며들어 
-같은 꿈을 꾸게 될 테니까
-]])
-	nanumFont.setPosition(150, 100)
-	nanumFont.setTextColor(255, 0, 128)
-	nanumFont.setOpacity(255)
+	-- -- Create button text
+	buttonText = Image("./resources/titles/start_button.png" , 0, 0, 256, 30, 1, "buttonText")
 	
-	myFont = Font("궁서체", 48)
-	myFont.setText("반갑습니다. 와")
-	myFont.setPosition(200, 200)
-	myFont.setTextColor(56, 128, 110)
-	myFont.setOpacity(255)
+	-- -- Create Image
+	mx = WindowWidth() / 2 - buttonText.getWidth() / 2
+	my = WindowHeight() / 2 - buttonText.getHeight() + WindowHeight() / 4
+	buttonText.setPosition(mx, my)
+	buttonText.setAngle(0.0)
+	buttonText.setScale(1.0)
+	buttonText.setLoop(false)
 	
-	-- isValid = PreparaFont("./resources/hangul.fnt");
+	-- Play background music
+	Audio.PlayMusic("./resources/audio/bless.ogg", "mainBGM", true)
+	
+	isValid = PreparaFont("./resources/fonts/hangul.fnt")
+
+	myElapsed = 0.0
+	tt = 0
+
+	print("hi...",  "안녕하십니까")
+
+	tilemap = Tilemap(17, 13)
+	tilemap.init()
+
+	local res = GetResourcesFiles()
+	for k, v in ipairs(res) do
+		print(v)
+	end
 	
 end
 
 function Update(elapsed)
-	background.update(elapsed)
-	character.update(elapsed)
-	nanumFont.update(elapsed)
-	myFont.update(elapsed)
+	-- background.update(elapsed)
+	
+	buttonText.setAngle(Input.GetMouseY())
+	buttonText.update(elapsed)
+	
+	tilemap.rotate(tt % 360)
+	tilemap.update(elapsed)
+
+	tt = tt + 1
+	if tt > WindowWidth() then
+		tt = 0
+	end
+
+	myElapsed = elapsed
+end
+
+function DrawTempText()
+	-- Create a text
+	local text = "2020년입니다~ 하하"
+	myFont = Font("나눔고딕", 32, 400, 440)
+	myFont.setText(text)
+	
+	-- myFont.setPosition(WindowWidth() - myFont.getTextWidth(text), 0)	
+	myFont.setTextColor(math.floor(math.random() * 255), math.floor(math.random() * 255), math.floor(math.random() * 255))
+	myFont.setOpacity( 200 )
+	myFont.setAngle(tt % 360)
+	myFont.setPosition(WindowWidth() / 2 - myFont.getTextWidth(text) / 2, WindowHeight() / 4)
+		
+	myFont.update(myElapsed)
+
+	myFont.draw()
+	myFont.dispose()
 end
 
 function Render()
-	background.draw()
-	character.draw()
-	nanumFont.draw()
-	myFont.draw()
-	
-	-- if isValid then 
-		-- DrawText(100, 50, "아이즈원 - 비올레타")
-		-- DrawText(100, 100, [[
--- 눈 감아도 느껴지는 향기 Oh
--- 은은해서 빠져들어
--- 저 멀리 사라진 그 빛을 따라 난
--- 너에게 더 다가가 다가가 Ah ah
+	-- background.draw()
+	buttonText.draw()
 
--- 날 보는 네 눈빛과 날 비추는 빛깔이
--- 모든 걸 멈추게 해 너를 더 빛나게 해
--- 어느 순간 내게로 조용히 스며들어 
--- 같은 꿈을 꾸게 될 테니까
-		-- ]])
-		-- frameCount = GetFrameCount()
-		-- DrawText(0, 0, tostring(frameCount))
-	-- end
-	
+	tilemap.draw()
+		
+	DrawTempText()
+		
+	if isValid then 
+		DrawText(100, 0, "테스트")
+		frameCount = GetFrameCount()
+		DrawText(0, 0, tostring(frameCount))
+	end
+		
 end
 
 function Destroy()
-	background.dispose()
-	character.dispose()
-	nanumFont.dispose()
-	myFont.dispose()
-	Audio.ReleaseMusic("mainBGM")
+	-- background.dispose()
+	buttonText.dispose()
+
+	tilemap.dispose()
+
+	Audio.ReleaseMusic("mainBGM")	
 end
 ```
 
