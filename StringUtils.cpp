@@ -74,3 +74,24 @@ std::string GetParentDirectory(const char* path)
 
 	return ret;
 }
+
+std::string GetFileName(const char* path)
+{
+	const char *pos = path;
+	int len = strlen(pos);
+
+	while (*pos != '\0') {
+		pos++;
+	}
+
+	while (*pos != '\\') {
+		pos--;
+	}
+
+	pos++;
+
+	std::string ret = pos;
+
+	return ret;
+
+}

@@ -27,7 +27,7 @@ std::wstring ConvertMultiByteToWideChar(std::string& str, UINT codePage);
  */
 std::vector<std::string> StrSplit(std::string data, std::string find_at);
 
-
 std::string GetParentDirectory(const char* path);
+std::string GetFileName(const char* path);
 
 #endif
