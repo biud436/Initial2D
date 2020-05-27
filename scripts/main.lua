@@ -30,6 +30,13 @@ function Initialize()
 
 	tilemap = Tilemap(17, 13)
 	tilemap.init()
+
+	print("안녕")
+
+	local res = GetResourcesFiles()
+	for k, v in ipairs(res) do
+		print(v)
+	end
 	
 end
 

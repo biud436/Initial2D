@@ -13,6 +13,7 @@
 #include "MenuState.h"
 #include "SoundManager.h"
 #include "MenuState.h"
+#include "Encrypt.h"
 
 #define WIN32_LEAN_AND_MEAN
 
@@ -333,6 +334,23 @@ int Lua_SetAppIcon(lua_State *pL)
 	return 0;
 }
 
+int Lua_GetResourcesFiles(lua_State *pL)
+{
+	std::vector<std::string> dirs;
+	Initial2D::ReadDirectory(dirs, std::string(".\\resources\\*.*"));
+
+	lua_newtable(pL);
+
+	int i = 1;
+	for (std::vector<std::string>::iterator iter = dirs.begin(); iter != dirs.end(); iter++, i++) {
+		lua_pushinteger(pL, i);
+		lua_pushstring(pL, (*iter).c_str());
+		lua_settable(pL, -3);
+	}
+
+	return 1;
+}
+
 int l_wcsprint(lua_State *pL)
 {
 	int n = lua_gettop(pL);
@@ -383,6 +401,8 @@ int Lua_Init()
 		lua_register(g_pLuaState, "GetCurrentDirectory", Lua_GetCurrentDirectory);
 
 		lua_register(g_pLuaState, "SetAppIcon", Lua_SetAppIcon);
+
+		lua_register(g_pLuaState, "GetResourcesFiles", Lua_GetResourcesFiles);
 
 		// Audio
 		Lua_CreateAudioObject(g_pLuaState);

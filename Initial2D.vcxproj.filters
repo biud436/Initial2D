@@ -46,6 +46,7 @@
     <ClCompile Include="sqlite3.c" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="StringUtils.cpp" />
+    <ClCompile Include="Encrypt.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />

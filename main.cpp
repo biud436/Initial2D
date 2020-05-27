@@ -62,6 +62,7 @@ void App::Initialize()
 
 	std::cout << sCurrentPath << std::endl;
 
+	// 설정 파일 작성
 	std::ofstream configFile("config.setting");
 	if (configFile.fail()) {
 		throw new std::exception("");
@@ -83,12 +84,6 @@ void App::Initialize()
 
 	// Set the App Icon from a certain image.
 	SetAppIcon(".\\resources\\icons\\icon.png");
-
-	std::vector<std::string> dirs;
-	Initial2D::ReadDirectory(dirs, std::string(".\\resources\\*.*"));
-	for (std::vector<std::string>::iterator iter = dirs.begin(); iter != dirs.end(); iter++) {
-		std::cout << *iter << std::endl;
-	}
 
 	// Lua Interpreter Initialization
 	Lua_Init();
