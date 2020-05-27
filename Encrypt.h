@@ -9,6 +9,7 @@
 #include <Windows.h>
 #include <vector>
 #include "StringUtils.h"
+#include "App.h"
 
 /**
  * @file Encrypt.h
@@ -47,11 +48,10 @@ namespace Initial2D {
 	* @author 어진석
 	* @brief 특정 폴더에 있는 모든 파일을 반환합니다.
 	*/
-	std::vector<std::string> ReadDirectory(std::string parent = ".\\res\\")
+	void ReadDirectory(std::vector<std::string>& dirs, std::string parent = ".\\res\\")
 	{
 		WIN32_FIND_DATA findData;
 		HANDLE hFind = FindFirstFile(parent.data(), &findData);
-		std::vector<std::string> dirs;
 
 		// 부모 폴더를 반환합니다.
 		std::string root = GetParentDirectory(parent.c_str());
@@ -72,25 +72,23 @@ namespace Initial2D {
 				subDirectories += "\\*.*";
 
 				// 디버깅 용 출력
-				printf_s("dir : %s\n", subDirectories.c_str());
+				//LOG_D(subDirectories);
 				
 				// 재귀적 탐색
-				ReadDirectory(subDirectories);
+				ReadDirectory(dirs, subDirectories);
 			}
 			else {
 				std::string filename = root;
 				filename += findData.cFileName;
 
 				// 디버깅 용 출력
-				printf_s("file : %s\n", filename.c_str());
+				//LOG_D(filename);
 
 				dirs.push_back(filename);
 			}
 		}
 
 		FindClose(hFind);
-
-		return dirs;
 	}
 
 }

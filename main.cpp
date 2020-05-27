@@ -81,11 +81,16 @@ void App::Initialize()
 	// 마우스 및 키보드 모듈 초기화
 	m_pInput->initialize(m_hWnd);
 
+	// Set the App Icon from a certain image.
 	SetAppIcon(".\\resources\\icons\\icon.png");
 
-	auto directories = Initial2D::ReadDirectory(std::string(".\\resources\\*.*"));
+	std::vector<std::string> dirs;
+	Initial2D::ReadDirectory(dirs, std::string(".\\resources\\*.*"));
+	for (std::vector<std::string>::iterator iter = dirs.begin(); iter != dirs.end(); iter++) {
+		std::cout << *iter << std::endl;
+	}
 
-	// 루아 초기화
+	// Lua Interpreter Initialization
 	Lua_Init();
 	
 	// 게임 상태 머신 초기화
