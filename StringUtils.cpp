@@ -95,3 +95,26 @@ std::string GetFileName(const char* path)
 	return ret;
 
 }
+
+/**
+ * 파일 확장자를 반환합니다.
+ * std::string filename = GetFileExtension(".\\res\\mycomputer.png");
+ * => .png
+ */
+std::string GetFileExtension(const char* path)
+{
+	const char *pos = path;
+	int len = strlen(pos);
+
+	while (*pos != '\0') {
+		pos++;
+	}
+
+	while (*pos != '.') {
+		pos--;
+	}
+
+	std::string ret = pos;
+
+	return ret;
+}

@@ -29,5 +29,6 @@ std::vector<std::string> StrSplit(std::string data, std::string find_at);
 
 std::string GetParentDirectory(const char* path);
 std::string GetFileName(const char* path);
+std::string GetFileExtension(const char* path);
 
 #endif
