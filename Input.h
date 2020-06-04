@@ -17,6 +17,7 @@
 #include <Windows.h>
 #include "Vector2D.h"
 #include "Constants.h"
+#include "NonCopyable.h"
 
 #define RELEASED 0
 #define PRESSED 1
@@ -25,7 +26,7 @@
  * @class Input
  * @brief 입력 모듈
  */
-class Input
+class Input : private noncopyable
 {
 public:
 

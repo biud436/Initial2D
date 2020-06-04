@@ -22,6 +22,7 @@
 #include <memory>
 #include <tchar.h>
 #include <sstream>
+#include "NonCopyable.h"
 
 #ifdef _UNICODE
 #define _tsprintf swprintf;
@@ -62,6 +63,7 @@ class Font;
 
 using GameFont = std::unique_ptr<Font>;
 
+
 /**
  * @class App
  * @author biud436 (biud436@gmail.com)
@@ -69,9 +71,8 @@ using GameFont = std::unique_ptr<Font>;
  * @details
  상속 시 Initialize, ObjectUpdate, Render, Destroy는 반드시 오버라이드해야 합니다.
  */
-class App
+class App : private noncopyable
 {
-
 public:
 
 	/**

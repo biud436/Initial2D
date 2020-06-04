@@ -16,6 +16,7 @@
 #include <string>
 #include <map>
 #include <SDL_mixer.h>
+#include "NonCopyable.h"
 
 /**
  * @addtogroup SoundModule
@@ -41,7 +42,7 @@ using SE = std::map<std::string, Mix_Chunk*>;
  * @brief 사운드 모듈
  * @details https://www.libsdl.org/projects/SDL_mixer/docs/SDL_mixer_toc.html#SEC_Contents
  */
-class SoundManager
+class SoundManager : private noncopyable
 {
 private:
 	SoundManager();

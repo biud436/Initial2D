@@ -20,6 +20,7 @@
 #include <string>
 #include <Windows.h>
 #include "Constants.h"
+#include "NonCopyable.h"
 
 //class Texture;
 
@@ -107,7 +108,7 @@ TextureData* LoadPNG(std::string fileName);
  * @class TextureManager
  * @brief This class allows you to create textures and draw them using Win32-GDI.
  */
-class TextureManager
+class TextureManager : private noncopyable
 {
 public:
 	TextureManager();

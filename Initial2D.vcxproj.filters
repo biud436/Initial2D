@@ -92,6 +92,7 @@
     <ClInclude Include="Process.h" />
     <ClInclude Include="StringUtils.h" />
     <ClInclude Include="Encrypt.h" />
+    <ClInclude Include="NonCopyable.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="scripts\image.lua">
