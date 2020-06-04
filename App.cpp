@@ -38,8 +38,8 @@ App& App::GetInstance(void)
 }
 
 App::App() :
-	m_szWindowName(WINDOW_NAME),
-	m_szClassName(CLASS_NAME),
+	m_szWindowName(WINDOW_NAME.c_str()),
+	m_szClassName(CLASS_NAME.c_str()),
 	m_nWindowWidth(WINDOW_WIDTH),
 	m_nWindowHeight(WINDOW_HEIGHT),
 	m_frameTime(0.0),

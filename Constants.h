@@ -73,15 +73,18 @@ namespace RS {
 
 #define OS_TYPE RS::PLATFORM::type;
 
+#include <string>
+
 /**
 * @def WINDOW_NAME
 */
-#define WINDOW_NAME "test"
+const std::string WINDOW_NAME("test");
 
 /**
 * @def CLASS_NAME
 */
-#define CLASS_NAME "test"
+//#define CLASS_NAME "test"
+const std::string CLASS_NAME("test");
 
 /**
 * @def WINDOW_WIDTH
