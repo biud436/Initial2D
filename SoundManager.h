@@ -46,7 +46,7 @@ class SoundManager : private noncopyable
 {
 private:
 	SoundManager();
-	virtual ~SoundManager();
+	~SoundManager();
 public:
 	
 	/**
