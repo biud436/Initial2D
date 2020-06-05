@@ -22,7 +22,7 @@ namespace Initial2D {
 	public:
 		Process(std::wstring filename);
 		Process(const Process &e) : m_hWnd(e.m_hWnd) {}
-		virtual ~Process();
+		~Process();
 
 		/**
 		 * @brief Create the child process.
