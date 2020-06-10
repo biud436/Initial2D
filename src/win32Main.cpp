@@ -152,6 +152,17 @@ void test_run_tilemap()
 {
 	Initial2D::Tilemap tilemap(17, 13);
 	tilemap.initialize();
+
+	const int width = tilemap.width();
+	const int height = tilemap.height();
+
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+
+			std::cout << "x : " << x << " y : " << y << "  :  " << tilemap.getTile(x, y) << std::endl;
+
+		}
+	}
 }
 
 int main(int argc, char* argv)

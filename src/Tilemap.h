@@ -15,15 +15,18 @@ public:
 
 	void initialize();
 	
-	int width() const { 
+	int width() const 
+	{ 
 		return m_nWidth; 
 	};
 
-	int height() const {
+	int height() const 
+	{
 		return m_nHeight;
 	};
 
 	int getTile(int x, int y) const;
+	void setTile(int x, int y, int data);
 
 private:
 	Tilemap(const Tilemap&);

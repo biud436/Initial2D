@@ -20,6 +20,7 @@ Tilemap::~Tilemap()
 
 }
 
+
 void Tilemap::initialize() 
 {
 	int x, y, j;
@@ -35,20 +36,19 @@ void Tilemap::initialize()
 		m_tiles.push_back(yTiles);
 	}
 
-	for (y = 0; y < m_nHeight; y++) {
-		for (x = 0; x < m_nWidth; x++) {
-			
-#ifdef TEST_MODE
-			std::cout << "x : " << x << " y : " << y << "  :  " << m_tiles[y][x] << std::endl;
-#endif
-
-		}
-	}
 }
+
 
 int Tilemap::getTile(int x, int y) const 
 {
 	return m_tiles[y][x];
 }
 
+
+void Tilemap::setTile(int x, int y, int data)
+{
+	m_tiles.at(y).at(x) = data;
+}
+
+// End
 }
