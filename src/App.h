@@ -23,6 +23,8 @@
 #include <tchar.h>
 #include <sstream>
 #include "NonCopyable.h"
+#include "Window.h"
+
 
 #ifdef _UNICODE
 #define _tsprintf swprintf;
@@ -163,6 +165,8 @@ protected:
 
 	// 폰트 아틀라스
 	GameFont          m_pFont;
+
+	Window m_window;
 
 private:
 

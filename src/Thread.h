@@ -12,7 +12,7 @@ public:
 	virtual ~Thread();
 
 	void initWithLocker();
-	void start();
+	virtual void start();
 	static UINT WINAPI Callback(LPVOID p);
 	void lock();
 	virtual void run();

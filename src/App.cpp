@@ -50,7 +50,8 @@ App::App() :
 	m_accumulateElapsed(0),
 	m_bFocus(true),
 	m_nFrameCount(0),
-	m_pFont(nullptr)
+	m_pFont(nullptr),
+	m_window("", 640, 480)
 {
 
 	// 디버그 모드라면 콘솔 창을 띄운다.

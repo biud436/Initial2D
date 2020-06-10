@@ -1,4 +1,8 @@
 #include "Tilemap.h"
+#include "App.h"
+#include "GameStateMachine.h"
+#include "Sprite.h"
+#include "TextureManager.h"
 
 #ifdef TEST_MODE
 #include <iostream>
@@ -48,6 +52,11 @@ int Tilemap::getTile(int x, int y) const
 void Tilemap::setTile(int x, int y, int data)
 {
 	m_tiles.at(y).at(x) = data;
+}
+
+void Tilemap::createTiles()
+{
+	App& app = App::GetInstance();
 }
 
 // End

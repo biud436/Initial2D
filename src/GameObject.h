@@ -4,11 +4,11 @@
 class GameObject
 {
 public:
-	GameObject() {}
+	GameObject();
 	virtual ~GameObject() {}
 
-	virtual void	update(float elapsed) {};
-	virtual void	draw(void) {};
+	virtual void update(float elapsed);
+	virtual void draw(void);
 };
 
 #endif

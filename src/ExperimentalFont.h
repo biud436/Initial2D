@@ -62,6 +62,9 @@ public:
 		*this = std::move(other);
 	}
 
+	/**
+	 * rhs는 우변이라는 뜻으로 보통 rhs로 줄여쓴다. 
+	 */
 	ExperimentalFont& operator=(const ExperimentalFont&& rhs)
 	{
 		if (this != &rhs)

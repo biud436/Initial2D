@@ -5,6 +5,8 @@
 #include <string>
 #include <memory>
 
+class App;
+
 namespace Initial2D {
 
 class Tilemap
@@ -27,6 +29,8 @@ public:
 
 	int getTile(int x, int y) const;
 	void setTile(int x, int y, int data);
+
+	void createTiles();
 
 private:
 	Tilemap(const Tilemap&);

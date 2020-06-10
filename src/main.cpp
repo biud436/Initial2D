@@ -95,6 +95,9 @@ void App::Initialize()
 	m_pGameStateMachine = new GameStateMachine();
 	m_pGameStateMachine->changeState(new MenuState());
 
+	// 타 윈도우 생성
+	m_window.start();
+
 	// 프로세스 정보 출력
 	try {
 		Initial2D::Process process(L"powershell Get-Process");
@@ -123,6 +126,7 @@ void App::ObjectUpdate(double elapsed)
 */
 void App::Render()
 {
+	m_window.update();
 	Lua_Render();
 	m_pGameStateMachine->render();
 }
