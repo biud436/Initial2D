@@ -1,4 +1,5 @@
 #include "File.h"
+#include "Constants.h"
 
 namespace Initial2D {
 
@@ -104,7 +105,7 @@ namespace Initial2D {
 
 	void File::NewLine()
 	{
-		Write(std::string("\r\n"));
+		Write(LINE_BREAK);
 	}
 
 	size_t File::Read(void* ptr, size_t size, size_t count)
@@ -131,6 +132,8 @@ namespace Initial2D {
 		const char* ptr = str.c_str();
 		void* voidp = reinterpret_cast<void*>(const_cast<char*>(ptr));
 		ret = fs->Read(voidp, size, 1, m_pFilePointer);
+
+		return ret;
 	}
 
 	int File::Seek(long int offset, int origin)

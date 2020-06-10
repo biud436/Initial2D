@@ -73,27 +73,11 @@ namespace RS {
 
 #include <string>
 
-/**
-* @def WINDOW_NAME
-*/
 const std::string WINDOW_NAME("test");
-
-/**
-* @def CLASS_NAME
-*/
-//#define CLASS_NAME "test"
 const std::string CLASS_NAME("test");
-
-/**
-* @def WINDOW_WIDTH
-*/
 const int WINDOW_WIDTH = 640;
-
-/**
-* @def WINDOW_HEIGHT
-*/
 const int WINDOW_HEIGHT = 480;
-
+const std::string LINE_BREAK("\r\n");
 
 typedef float IFLOAT;
 

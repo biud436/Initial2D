@@ -34,6 +34,7 @@
     <ClCompile Include="src\Thread.cpp" />
     <ClCompile Include="src\Utility.cpp" />
     <ClCompile Include="src\win32Main.cpp" />
+    <ClCompile Include="src\Tilemap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\App.h" />
@@ -67,6 +68,7 @@
     <ClInclude Include="src\Thread.h" />
     <ClInclude Include="src\Utility.h" />
     <ClInclude Include="src\Vector2D.h" />
+    <ClInclude Include="src\Tilemap.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="scripts\image.lua">

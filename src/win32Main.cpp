@@ -44,6 +44,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 #include "Thread.h"
 #include "sqlite3.h"
 #include "File.h"
+#include "Tilemap.h"
 
 class MyThread : public Thread {
 public:
@@ -147,10 +148,17 @@ void test_run_file_system()
 	file.Close();
 }
 
+void test_run_tilemap() 
+{
+	Initial2D::Tilemap tilemap(17, 13);
+	tilemap.initialize();
+}
+
 int main(int argc, char* argv)
 {
 	// test_run_sqlite();
-	test_run_file_system();
+	// test_run_file_system();
+	test_run_tilemap();
 
 	return 0;
 }
