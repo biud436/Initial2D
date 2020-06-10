@@ -174,7 +174,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir)external\zlib\include;$(ProjectDir)external\tinyxml\include\;$(ProjectDir)external\OpenAL\include;$(ProjectDir)external\SDL2\include;$(ProjectDir)external\SDL2_mixer\include;$(ProjectDir)external\libpng\include;$(ProjectDir)lua;$(ProjectDir)mruby\include;$(ProjectDir)json\Json;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)external\zlib\include;$(ProjectDir)external\tinyxml\include\;$(ProjectDir)external\OpenAL\include;$(ProjectDir)external\SDL2\include;$(ProjectDir)external\SDL2_mixer\include;$(ProjectDir)external\libpng\include;$(ProjectDir)lua;$(ProjectDir)json\Json;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)external\zlib\libs;$(ProjectDir)external\OpenAL\libs;$(ProjectDir)external\SDL2\lib\x86;$(ProjectDir)external\SDL2_mixer\libs;$(ProjectDir)external\libpng\libs;$(ProjectDir)external\tinyxml\libs;$(SolutionDir)lib;$(ProjectDir)json\Json;$(LibraryPath)</LibraryPath>
     <IntDir>log\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)lib\</OutDir>
@@ -183,7 +183,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\SDK\zlib\include;C:\SDK\tinyxml\include\;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;C:\SDK\libpng\include;$(ProjectDir)lua;$(ProjectDir)mruby\include;$(ProjectDir)json\Json;$(IncludePath)</IncludePath>
+    <IncludePath>C:\SDK\zlib\include;C:\SDK\tinyxml\include\;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\SDK\SDL2\include;C:\SDK\SDL2_mixer\include;C:\SDK\libpng\include;$(ProjectDir)lua;$(ProjectDir)json\Json;$(IncludePath)</IncludePath>
     <LibraryPath>C:\SDK\zlib\libs;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;C:\SDK\SDL2\lib\x86;C:\SDK\SDL2_mixer\libs;C:\SDK\libpng\libs;C:\SDK\tinyxml\libs;$(SolutionDir)lib;$(ProjectDir)json\Json;$(LibraryPath)</LibraryPath>
     <IntDir>log\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)lib\</OutDir>
@@ -199,7 +199,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir)external\libpng\include;$(ProjectDir)external\zlib\include;$(ProjectDir)external\tinyxml\include;$(ProjectDir)external\OpenAL\include;$(ProjectDir)external\SDL2\include;$(ProjectDir)external\SDL2_mixer\include;$(ProjectDir)lua;$(ProjectDir)mruby\include;$(ProjectDir)json\Json;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)external\libpng\include;$(ProjectDir)external\zlib\include;$(ProjectDir)external\tinyxml\include;$(ProjectDir)external\OpenAL\include;$(ProjectDir)external\SDL2\include;$(ProjectDir)external\SDL2_mixer\include;$(ProjectDir)lua;$(ProjectDir)json\Json;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)external\libpng\libs;$(ProjectDir)external\zlib\libs;$(ProjectDir)external\tinyxml\libs;$(ProjectDir)external\OpenAL\libs;$(ProjectDir)external\SDL2\lib\x86;$(ProjectDir)external\SDL2_mixer\libs;$(SolutionDir)lib;$(LibraryPath)</LibraryPath>
     <IntDir>$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)lib\</OutDir>
@@ -224,7 +224,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libzlib.lib;libpng16d.lib;SDL2.lib;native_midi.lib;playmus.lib;playwave.lib;timidity.lib;tinyxml_d.lib;SDL2_mixer.lib;Msimg32.lib;OpenAL32.lib;winmm.lib;luaLib_d.lib;libmruby_core.lib;libmruby_d.lib;json_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libzlib.lib;libpng16d.lib;SDL2.lib;native_midi.lib;playmus.lib;playwave.lib;timidity.lib;tinyxml_d.lib;SDL2_mixer.lib;Msimg32.lib;OpenAL32.lib;winmm.lib;luaLib_d.lib;json_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/NODEFAULTLIB:msvcrt.lib %(AdditionalOptions)</AdditionalOptions>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
@@ -328,7 +328,7 @@ node tools\copydir.js ./resources ./$(Configuration)/resources --dir</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libzlib.lib;libpng16.lib;SDL2.lib;native_midi.lib;playmus.lib;playwave.lib;timidity.lib;tinyxml.lib;SDL2_mixer.lib;Msimg32.lib;OpenAL32.lib;winmm.lib;luaLib.lib;libmruby_core.lib;libmruby.lib;json.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libzlib.lib;libpng16.lib;SDL2.lib;native_midi.lib;playmus.lib;playwave.lib;timidity.lib;tinyxml.lib;SDL2_mixer.lib;Msimg32.lib;OpenAL32.lib;winmm.lib;luaLib.lib;json.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/NODEFAULTLIB:msvcrt.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <CustomBuildStep>
