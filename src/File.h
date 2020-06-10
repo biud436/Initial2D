@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <string>
 #include <fstream>
+#include <memory>
 
 namespace Initial2D {
 
@@ -33,8 +34,6 @@ namespace Initial2D {
 
 	}
 
-	FileInterface::FileSystem fs;
-
 	enum FileMode {
 		BinaryWrite = 0,
 		BinrayRead,
@@ -53,6 +52,7 @@ namespace Initial2D {
 		size_t Write(const void* ptr, size_t size, size_t count);
 		size_t Write(const std::string& str);
 		size_t Read(void* ptr, size_t size, size_t count);
+		size_t Read(const std::string& str, size_t size);
 		int Seek(long int offset, int origin);
 		long Tell();
 		bool SetPosition(const fpos_t* pos);
@@ -62,6 +62,7 @@ namespace Initial2D {
 	private:
 		FILE* m_pFilePointer;
 		bool m_bIsOpen;
+		std::unique_ptr<FileInterface::FileSystem> fs;
 
 		File(const File&); // 복사 생성자 방지
 		File& operator=(const File&); // 대입 연산자 방지

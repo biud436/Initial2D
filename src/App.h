@@ -293,8 +293,6 @@ private:
 
 	App();
 	virtual ~App();
-	App(const App& other);
-	void operator=(const App&);
 
 };
 

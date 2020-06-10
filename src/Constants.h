@@ -27,7 +27,7 @@
  * https://stackoverflow.com/questions/5919996/how-to-detect-reliably-mac-os-x-ios-linux-windows-in-c-preprocessor
  */
 
-//#define TEST_MODE 0
+#define TEST_MODE 1
 
 namespace RS {
 	namespace PLATFORM {

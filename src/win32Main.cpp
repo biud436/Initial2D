@@ -43,6 +43,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 #include <string>
 #include "Thread.h"
 #include "sqlite3.h"
+#include "File.h"
 
 class MyThread : public Thread {
 public:
@@ -62,7 +63,7 @@ public:
 	}
 };
 
-int main(int argc, char* argv)
+void test_run_sqlite() 
 {
 	std::cout << "test" << std::endl;
 	MyThread* myThread = new MyThread();
@@ -127,9 +128,22 @@ int main(int argc, char* argv)
 
 	sqlite3_finalize(stmt);
 
-
 	// close sqlite
 	sqlite3_close(sqlite);
+}
+
+void test_run_file_system()
+{
+	Initial2D::File file;
+	file.Open("my_test_file.txt", Initial2D::TextWrite);
+	file.Write(std::string("¹¹Áö ÀÌ°Ç"));
+	file.Close();
+}
+
+int main(int argc, char* argv)
+{
+	// test_run_sqlite();
+	test_run_file_system();
 
 	return 0;
 }
