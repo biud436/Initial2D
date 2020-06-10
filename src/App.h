@@ -71,15 +71,10 @@ using GameFont = std::unique_ptr<Font>;
  * @details
  상속 시 Initialize, ObjectUpdate, Render, Destroy는 반드시 오버라이드해야 합니다.
  */
-class App : private UnCopyable
+class App
 {
 public:
 
-	/**
-	 * @struct DeviceContext
-	 * @brief DeviceContext 보관
-	 *
-	 */
 	struct DeviceContext {
 
 		HDC mainContext;
@@ -95,182 +90,62 @@ public:
 	static App* s_pInstance;
 	static App& GetInstance();
 
-	/**
-	 * @brief 게임 모듈을 초기화합니다(상속 시 반드시 구현)
-	 */
 	virtual void Initialize();
-
-	/**
-	 * @brief 게임 모듈을 초기화하고 게임 루프를 실행합니다.
-	 */
+	
 	int Run(int nCmdShow);
 
-	/**
-	 * @brief 메시지를 처리합니다.
-	 */
 	LRESULT HandleEvent(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-	/**
-	 * @brief WindowName을 구합니다.
-	 */
-	const char* GetWindowName();
+	const char* GetWindowName() const;
+	const char* GetClassName() const;
+	const int GetWindowWidth() const;
+	const int GetWindowHeight() const;
 
-	/**
-	 * @brief ClassName을 구합니다.
-	 */
-	const char* GetClassName();
-
-	/**
-	 * @brief 창의 폭을 구합니다.
-	 */
-	const int GetWindowWidth();
-
-	/**
-	 * @brief 창의 높이를 구합니다.
-	 */
-	const int GetWindowHeight();
-
-	/**
-	 * @brief 현재 Context를 가져옵니다.
-	 */
 	DeviceContext& GetContext();
-
-	/**
-	 * @brief TextureManager의 인스턴스를 가져옵니다.
-	 */
 	TextureManager& GetTextureManager();
-
-	/**
-	 * @brief 상태 머신을 획득합니다.
-	 */
 	GameStateMachine& GetGameStateMachine();
-
-	/**
-	 * @brief 입력 모듈의 인스턴스를 가져옵니다.
-	 */
 	Input& GetInput();
 
-	/**
-	 * @brief 프레임을 업데이트합니다. (내부용)
-	 * @details
-	 * Note: 업데이트 순서는 다음과 같습니다. 
-	 * 1. UpdateInput();
-	 * 2. ObjectUpdate(UpdateTime());
-	 * 3. RenderClear();
-	 * 4. RenderTransform();
-	 * 5. Render();
-	 * 6. RenderPresent();
-	 */
 	void Update();
-
-	/**
-	 * @brief 입력 모듈을 업데이트합니다
-	 */
 	void UpdateInput();
-
-	/**
-	 * @brief 상태 머신을 업데이트 합니다(상속 시 반드시 구현)
-	 *
-	 * @param elapsed 이전 프레임에서 얼마만큼 지났는 지에 대한 시간
-	 *
-	 */
 	virtual void ObjectUpdate(double elapsed);
-
-	/**
-	 * @brief frameTime을 업데이트 합니다.
-	 * 
-	 * @return double 
-	 */
 	double UpdateTime();
 
-	/**
-	 * @brief 렌더링에 필요한 DC를 준비합니다.
-	 */
 	void RenderClear();
-
-	/**
-	 * @brief 화면 맵핑 모드를 변경합니다.
-	 */
 	void RenderTransform();
-
-	/**
-	 * @brief 현재 프레임을 렌더링합니다(상속 시 반드시 구현)
-	 */
 	virtual void Render();
-
-	/**
-	 * @brief 렌더링 결과를 화면에 출력하고 메모리를 정리합니다.
-	 */
 	void RenderPresent();
-	
-	/**
-	 * @brief 메모리 해제(상속 시 반드시 구현)
-	 */
 	virtual void Destroy();
 
-	/**
-	 * @brief 메모리 정리 후 게임을 종료합니다.
-	 */
 	void Quit();
 
-	/**
-	 * @brief 포커스를 구합니다.
-	 */
-	bool GetFocus();
+	bool GetFocus() const;
 
-	/**
-	 * @brief 폰트를 구합니다.
-	 */
 	GameFont* GetFont();
 
-	/**
-	 * @brief 폰트를 로드합니다.
-	 */
 	bool LoadFont(std::string fontName);
-
-	/**
-	 * @brief 폰트 메모리 해제
-	 */
-
-	/**
-	 * @brief 
-	 * 
-	 * @return true 
-	 * @return false 
-	 */
 	bool DestroyFont();
 
-	/**
-	 * @brief Get the frame count
-	 * 
-	 * @return int 
-	 */
-	int GetFrameCount();
+	int GetFrameCount() const;
 
-
-	/**
-	 * @brief Set the App Icon from a certain image.
-	 */
 	void SetAppIcon(std::string filename);
 
 protected:
 
-	const char*       m_szWindowName;			// 윈도우 이름
-	const char*       m_szClassName;			// 클래스 이름
-	int               m_nWindowWidth;					// 창의 폭
-	int               m_nWindowHeight;				// 창의 높이
+	const char*       m_szWindowName;			
+	const char*       m_szClassName;			
+	int               m_nWindowWidth;			
+	int               m_nWindowHeight;			
 
 	int               m_nFPS;
 
 	double            m_elapsed;
 	double            m_accumulateElapsed;
 
-	// 텍스처 관리자
 	TextureManager*   m_pTextureManager;
 
-	HWND              m_hWnd;	// 윈도우 핸들
+	HWND              m_hWnd;	
 
-								// 프레임 관리
 	LARGE_INTEGER	  m_nTimeFreq;
 	LARGE_INTEGER	  m_nTimeStart;
 	LARGE_INTEGER	  m_nTimeEnd;
@@ -293,6 +168,9 @@ private:
 
 	App();
 	virtual ~App();
+
+	App(const App&);
+	App& operator=(const App&);
 
 };
 

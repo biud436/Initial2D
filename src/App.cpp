@@ -98,30 +98,41 @@ App::~App()
 	Destroy();
 }
 
-
-const char* App::GetWindowName()
+/**
+* @brief WindowName을 구합니다.
+*/
+const char* App::GetWindowName() const
 {
 	return m_szWindowName;
 }
 
-
-const char* App::GetClassName()
+/**
+* @brief ClassName을 구합니다.
+*/
+const char* App::GetClassName() const
 {
 	return m_szClassName;
 }
 
-
-const int App::GetWindowWidth()
+/**
+* @brief 창의 폭을 구합니다.
+*/
+const int App::GetWindowWidth() const
 {
 	return m_nWindowWidth;
 }
 
-
-const int App::GetWindowHeight()
+/**
+* @brief 창의 높이를 구합니다.
+*/
+const int App::GetWindowHeight() const
 {
 	return m_nWindowHeight;
 }
 
+/**
+ * @brief 게임 모듈을 초기화하고 게임 루프를 실행합니다.
+ */
 int App::Run(int nCmdShow)
 {
 	MSG Message;
@@ -205,7 +216,9 @@ int App::Run(int nCmdShow)
 	return static_cast<int>(Message.wParam);
 }
 
-
+/**
+* @brief 메시지를 처리합니다.
+*/
 LRESULT App::HandleEvent(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
@@ -228,31 +241,49 @@ LRESULT App::HandleEvent(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
-
+/**
+* @brief 현재 Context를 가져옵니다.
+*/
 App::DeviceContext& App::GetContext()
 {
 	return m_context;
 }
 
-
+/**
+* @brief TextureManager의 인스턴스를 가져옵니다.
+*/
 TextureManager& App::GetTextureManager()
 {
 	return *m_pTextureManager;
 }
 
-
+/**
+* @brief 상태 머신을 획득합니다.
+*/
 GameStateMachine& App::GetGameStateMachine()
 {
 	return *m_pGameStateMachine;
 }
 
-
+/**
+* @brief 입력 모듈의 인스턴스를 가져옵니다.
+*/
 Input& App::GetInput()
 {
 	return *m_pInput;
 }
 
-
+/**
+* @brief 프레임을 업데이트합니다. (내부용)
+* @details
+* Note: 업데이트 순서는 다음과 같습니다.
+* 1. UpdateInput();
+* 2. ObjectUpdate(UpdateTime());
+* 3. RenderClear();
+* 4. RenderTransform();
+* 5. Render();
+* 6. RenderPresent();
+*/
 void App::Update()
 {
 	// 마지막 프레임 시간 측정
@@ -325,12 +356,17 @@ void App::Update()
 
 }
 
-
+/**
+* @brief 입력 모듈을 업데이트합니다
+*/
 void App::UpdateInput()
 {
 	m_pInput->update();
 }
 
+/**
+* @brief 렌더링에 필요한 DC를 준비합니다.
+*/
 void App::RenderClear()
 {
 	m_context.currentContext = CreateCompatibleDC(m_context.mainContext);
@@ -340,7 +376,9 @@ void App::RenderClear()
 	m_context.rotateContext = NULL;
 }
 
-
+/**
+* @brief 화면 맵핑 모드를 변경합니다.
+*/
 void App::RenderTransform()
 {
 	RECT rect;
@@ -350,7 +388,9 @@ void App::RenderTransform()
 	SetViewportExtEx(m_context.mainContext, rect.right, rect.bottom, NULL);
 }
 
-
+/**
+* @brief 렌더링 결과를 화면에 출력하고 메모리를 정리합니다.
+*/
 void App::RenderPresent()
 {
 	SetStretchBltMode(m_context.mainContext, COLORONCOLOR);
@@ -361,29 +401,44 @@ void App::RenderPresent()
 	DeleteDC(m_context.currentContext);
 }
 
-
+/**
+* @brief frameTime을 업데이트 합니다.
+*
+* @return double
+*/
 double App::UpdateTime()
 {
 	return m_frameTime;
 
 }
 
-
+/**
+* @brief 메모리 정리 후 게임을 종료합니다.
+*/
 void App::Quit()
 {
 	::PostQuitMessage(0);
 }
 
-bool App::GetFocus()
+/**
+* @brief 포커스를 구합니다.
+*/
+bool App::GetFocus() const
 {
 	return m_bFocus;
 }
 
+/**
+* @brief 폰트를 구합니다.
+*/
 GameFont* App::GetFont()
 {
 	return &m_pFont;
 }
 
+/**
+* @brief 폰트를 로드합니다.
+*/
 bool App::LoadFont(std::string fontName)
 {
 	bool isValid = m_pFont->ParseFont(fontName);
@@ -393,6 +448,12 @@ bool App::LoadFont(std::string fontName)
 	return isValid;
 }
 
+/**
+* @brief 폰트 메모리 해제
+*
+* @return true
+* @return false
+*/
 bool App::DestroyFont()
 {
 	bool isValid = m_pFont->remove();
@@ -403,7 +464,12 @@ bool App::DestroyFont()
 	return isValid;
 }
 
-int App::GetFrameCount()
+/**
+* @brief Get the frame count
+*
+* @return int
+*/
+int App::GetFrameCount() const
 {
 	return m_nFPS;
 }

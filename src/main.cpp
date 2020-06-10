@@ -48,6 +48,9 @@ inline std::string GetExecutablePath() {
 	return sCurrentPath;
 }
 
+/**
+* @brief 게임 모듈을 초기화합니다(상속 시 반드시 구현)
+*/
 void App::Initialize()
 {
 	m_context.mainContext = GetDC(m_hWnd);
@@ -103,21 +106,30 @@ void App::Initialize()
 	}
 }
 
-
+/**
+* @brief 상태 머신을 업데이트 합니다(상속 시 반드시 구현)
+*
+* @param elapsed 이전 프레임에서 얼마만큼 지났는 지에 대한 시간
+*
+*/
 void App::ObjectUpdate(double elapsed)
 {
 	Lua_Update(elapsed);
 	m_pGameStateMachine->update(elapsed);
 }
 
-
+/**
+* @brief 현재 프레임을 렌더링합니다(상속 시 반드시 구현)
+*/
 void App::Render()
 {
 	Lua_Render();
 	m_pGameStateMachine->render();
 }
 
-
+/**
+* @brief 메모리 해제(상속 시 반드시 구현)
+*/
 void App::Destroy()
 {
 	Lua_Destory();
