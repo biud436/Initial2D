@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <string>
+#include <fstream>
 
 namespace Initial2D {
 
@@ -46,13 +47,13 @@ namespace Initial2D {
 		File();
 		virtual ~File();
 
-		virtual void Open(std::string filename, const FileMode& mode);
-		virtual void Close();
-		virtual size_t Write(const void* ptr, size_t size, size_t count);
-		virtual size_t Read(void* ptr, size_t size, size_t count);
-		virtual int Seek(long int offset, int origin);
-		virtual long Tell();
-		virtual bool SetPosition(const fpos_t* pos);
+		void Open(std::string filename, const FileMode& mode);
+		void Close();
+		size_t Write(const void* ptr, size_t size, size_t count);
+		size_t Read(void* ptr, size_t size, size_t count);
+		int Seek(long int offset, int origin);
+		long Tell();
+		bool SetPosition(const fpos_t* pos);
 
 	private:
 		FILE* m_pFilePointer;
@@ -60,12 +61,6 @@ namespace Initial2D {
 
 		File(const File&); // 복사 생성자 방지
 		File& operator=(const File&); // 대입 연산자 방지
-	};
-
-	class TextFile : public File
-	{
-		TextFile() : File() {};
-		virtual ~TextFile();
 	};
 
 }
