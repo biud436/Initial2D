@@ -132,6 +132,8 @@ public:
 
 	void SetAppIcon(std::string filename);
 
+	HWND GetWindowHandle() const { return m_hWnd;  }
+
 protected:
 
 	const char*       m_szWindowName;			

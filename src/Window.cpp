@@ -26,7 +26,10 @@ void Window::start()
 {
 	// 여기에 코드 추가
 	if (SDL_Init(SDL_INIT_EVERYTHING) >= 0) {
+
 		m_pWindow = SDL_CreateWindow("SDL Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_rect.width, m_rect.height, SDL_WINDOW_SHOWN);
+
+		/*m_pWindow = SDL_CreateWindowFrom(App::GetInstance().GetWindowHandle());*/
 
 		if (m_pWindow != 0) {
 			m_pRenderer = SDL_CreateRenderer(m_pWindow, -1, 0);
@@ -39,13 +42,21 @@ void Window::start()
 void Window::update() 
 {
 	// hadnle events
-	SDL_Event event;
-	if (SDL_PollEvent(&event)) {
-		switch (event.type) {
-		case SDL_QUIT:
-			m_bDone = false;
-		}
-	}
+	//SDL_Event event;
+	//if (SDL_PollEvent(&event)) {
+	//	switch (event.type) {
+	//	case SDL_QUIT:
+	//		m_bDone = false;
+	//	}
+	//}
+
+	//SDL_Surface* pSurf = SDL_GetWindowSurface(m_pWindow);
+	//SDL_Rect rect = { 0, };
+	//rect.w = 200;
+	//rect.h = 200;
+	//SDL_SetClipRect(pSurf, &rect);
+	//SDL_FillRect(pSurf, &pSurf->clip_rect, 0xffff00ff);
+	//SDL_UpdateWindowSurface(m_pWindow);
 
 	// Render
 	SDL_SetRenderDrawColor(m_pRenderer, 0, 0, 0, 255);

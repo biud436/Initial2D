@@ -126,9 +126,9 @@ void App::ObjectUpdate(double elapsed)
 */
 void App::Render()
 {
-	m_window.update();
 	Lua_Render();
 	m_pGameStateMachine->render();
+	m_window.update();
 }
 
 /**
