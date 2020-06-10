@@ -51,6 +51,7 @@ namespace Initial2D {
 		void Open(std::string filename, const FileMode& mode);
 		void Close();
 		size_t Write(const void* ptr, size_t size, size_t count);
+		size_t Write(const std::string& str);
 		size_t Read(void* ptr, size_t size, size_t count);
 		int Seek(long int offset, int origin);
 		long Tell();

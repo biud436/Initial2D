@@ -87,6 +87,19 @@ namespace Initial2D {
 		return ret;
 	}
 
+	size_t File::Write(const std::string& str)
+	{
+		size_t ret = 0;
+		if (isInValid()) {
+			Close();
+			return ret;
+		}
+
+		ret = fs.Write(&str[0], str.size() + 1, 1, m_pFilePointer);
+
+		return ret;
+	}
+
 	size_t File::Read(void* ptr, size_t size, size_t count)
 	{
 		size_t ret = 0;
