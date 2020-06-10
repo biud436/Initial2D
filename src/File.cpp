@@ -102,6 +102,11 @@ namespace Initial2D {
 		return ret;
 	}
 
+	void File::NewLine()
+	{
+		Write(std::string("\r\n"));
+	}
+
 	size_t File::Read(void* ptr, size_t size, size_t count)
 	{
 		size_t ret = 0;

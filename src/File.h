@@ -51,6 +51,7 @@ namespace Initial2D {
 		void Close();
 		size_t Write(const void* ptr, size_t size, size_t count);
 		size_t Write(const std::string& str);
+		void NewLine();
 		size_t Read(void* ptr, size_t size, size_t count);
 		size_t Read(const std::string& str, size_t size);
 		int Seek(long int offset, int origin);
