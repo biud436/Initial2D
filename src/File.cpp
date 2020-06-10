@@ -69,10 +69,16 @@ namespace Initial2D {
 		m_bIsOpen = false;
 	}
 
+	bool File::isInValid()
+	{
+		return !m_bIsOpen || m_pFilePointer == nullptr;
+	}
+
 	size_t File::Write(const void* ptr, size_t size, size_t count) 
 	{
 		size_t ret = 0;
-		if (!m_bIsOpen || m_pFilePointer != nullptr) {
+		if (isInValid()) {
+			Close();
 			return ret;
 		}
 
@@ -84,7 +90,8 @@ namespace Initial2D {
 	size_t File::Read(void* ptr, size_t size, size_t count)
 	{
 		size_t ret = 0;
-		if (!m_bIsOpen || m_pFilePointer != nullptr) {
+		if (isInValid()) {
+			Close();
 			return ret;
 		}
 
@@ -96,7 +103,8 @@ namespace Initial2D {
 	int File::Seek(long int offset, int origin)
 	{
 		int ret = 0;
-		if (!m_bIsOpen || m_pFilePointer != nullptr) {
+		if (isInValid()) {
+			Close();
 			return ret;
 		}
 
@@ -108,7 +116,8 @@ namespace Initial2D {
 	long File::Tell()
 	{
 		long ret = 0;
-		if (!m_bIsOpen || m_pFilePointer != nullptr) {
+		if (isInValid()) {
+			Close();
 			return ret;
 		}
 
@@ -120,7 +129,8 @@ namespace Initial2D {
 	bool File::SetPosition(const fpos_t* pos)
 	{
 		bool ret = false;
-		if (!m_bIsOpen || m_pFilePointer != nullptr) {
+		if (isInValid()) {
+			Close();
 			return false;
 		}
 

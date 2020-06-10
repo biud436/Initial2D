@@ -1,5 +1,6 @@
 #ifndef __FILE_H
 #define __FILE_H
+#define _CRT_SECURE_NO_WARNINGS
 
 #include <cstdio>
 #include <string>
@@ -54,6 +55,8 @@ namespace Initial2D {
 		int Seek(long int offset, int origin);
 		long Tell();
 		bool SetPosition(const fpos_t* pos);
+
+		bool isInValid();
 
 	private:
 		FILE* m_pFilePointer;
