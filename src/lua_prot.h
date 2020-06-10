@@ -1,9 +1,9 @@
 #ifndef _LUA_PROT_H__
 #define _LUA_PROT_H__
 
-#include "lua/lua.h"
-#include "lua/lualib.h"
-#include "lua/lauxlib.h"
+#include "../lua/lua.h"
+#include "../lua/lualib.h"
+#include "../lua/lauxlib.h"
 
 int Lua_MessageBox(lua_State *g_pLuaSt);
 int Lua_LoadScript(lua_State *pL);

@@ -29,156 +29,67 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="App.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Encrypt.cpp" />
-    <ClCompile Include="ExperimentalFont.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Font.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="GameObject.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="GameState.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="GameStateMachine.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Input.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="lua_audio.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="lua_font.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="lua_input.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="lua_prot.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="lua_sprite.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="lua_texture.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="main.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="MapState.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="MenuState.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Process.cpp" />
-    <ClCompile Include="SoundManager.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Sprite.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="sqlite3.c" />
-    <ClCompile Include="StringUtils.cpp" />
-    <ClCompile Include="TextureManager.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Thread.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">false</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Utility.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="win32Main.cpp" />
+    <ClCompile Include="src\App.cpp" />
+    <ClCompile Include="src\Encrypt.cpp" />
+    <ClCompile Include="src\ExperimentalFont.cpp" />
+    <ClCompile Include="src\File.cpp" />
+    <ClCompile Include="src\Font.cpp" />
+    <ClCompile Include="src\GameObject.cpp" />
+    <ClCompile Include="src\GameState.cpp" />
+    <ClCompile Include="src\GameStateMachine.cpp" />
+    <ClCompile Include="src\Input.cpp" />
+    <ClCompile Include="src\lua_audio.cpp" />
+    <ClCompile Include="src\lua_font.cpp" />
+    <ClCompile Include="src\lua_input.cpp" />
+    <ClCompile Include="src\lua_prot.cpp" />
+    <ClCompile Include="src\lua_sprite.cpp" />
+    <ClCompile Include="src\lua_tbl.cpp" />
+    <ClCompile Include="src\lua_texture.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\MapState.cpp" />
+    <ClCompile Include="src\MenuState.cpp" />
+    <ClCompile Include="src\Process.cpp" />
+    <ClCompile Include="src\SoundManager.cpp" />
+    <ClCompile Include="src\Sprite.cpp" />
+    <ClCompile Include="src\sqlite3.c" />
+    <ClCompile Include="src\StringUtils.cpp" />
+    <ClCompile Include="src\TextureManager.cpp" />
+    <ClCompile Include="src\Thread.cpp" />
+    <ClCompile Include="src\Utility.cpp" />
+    <ClCompile Include="src\win32Main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="App.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Constants.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">false</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Encrypt.h" />
-    <ClInclude Include="ExperimentalFont.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Font.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="GameObject.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="GameState.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="GameStateMachine.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Input.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="lua_audio.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="lua_font.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="lua_input.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="lua_prot.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="lua_sprite.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="lua_tbl.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="lua_texture.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="MapState.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="MenuState.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="NonCopyable.h" />
-    <ClInclude Include="Point.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Process.h" />
-    <ClInclude Include="Rectangle.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="SoundManager.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Sprite.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="sqlite3.h" />
-    <ClInclude Include="StringUtils.h" />
-    <ClInclude Include="TextureManager.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Thread.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">false</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Utility.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Vector2D.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
+    <ClInclude Include="src\App.h" />
+    <ClInclude Include="src\Constants.h" />
+    <ClInclude Include="src\Encrypt.h" />
+    <ClInclude Include="src\ExperimentalFont.h" />
+    <ClInclude Include="src\File.h" />
+    <ClInclude Include="src\Font.h" />
+    <ClInclude Include="src\GameObject.h" />
+    <ClInclude Include="src\GameState.h" />
+    <ClInclude Include="src\GameStateMachine.h" />
+    <ClInclude Include="src\Input.h" />
+    <ClInclude Include="src\lua_audio.h" />
+    <ClInclude Include="src\lua_font.h" />
+    <ClInclude Include="src\lua_input.h" />
+    <ClInclude Include="src\lua_prot.h" />
+    <ClInclude Include="src\lua_sprite.h" />
+    <ClInclude Include="src\lua_tbl.h" />
+    <ClInclude Include="src\lua_texture.h" />
+    <ClInclude Include="src\MapState.h" />
+    <ClInclude Include="src\MenuState.h" />
+    <ClInclude Include="src\NonCopyable.h" />
+    <ClInclude Include="src\Point.h" />
+    <ClInclude Include="src\Process.h" />
+    <ClInclude Include="src\Rectangle.h" />
+    <ClInclude Include="src\SoundManager.h" />
+    <ClInclude Include="src\Sprite.h" />
+    <ClInclude Include="src\sqlite3.h" />
+    <ClInclude Include="src\StringUtils.h" />
+    <ClInclude Include="src\TextureManager.h" />
+    <ClInclude Include="src\Thread.h" />
+    <ClInclude Include="src\Utility.h" />
+    <ClInclude Include="src\Vector2D.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">
@@ -267,7 +178,7 @@
     <LibraryPath>$(ProjectDir)external\zlib\libs;$(ProjectDir)external\OpenAL\libs;$(ProjectDir)external\SDL2\lib\x86;$(ProjectDir)external\SDL2_mixer\libs;$(ProjectDir)external\libpng\libs;$(ProjectDir)external\tinyxml\libs;$(SolutionDir)lib;$(ProjectDir)json\Json;$(LibraryPath)</LibraryPath>
     <IntDir>log\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)lib\</OutDir>
-    <SourcePath>$(SourcePath)</SourcePath>
+    <SourcePath>$(SolutionDir)src;$(SourcePath)</SourcePath>
     <TargetName>$(ProjectName)_d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">
@@ -276,7 +187,7 @@
     <LibraryPath>C:\SDK\zlib\libs;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;C:\SDK\SDL2\lib\x86;C:\SDK\SDL2_mixer\libs;C:\SDK\libpng\libs;C:\SDK\tinyxml\libs;$(SolutionDir)lib;$(ProjectDir)json\Json;$(LibraryPath)</LibraryPath>
     <IntDir>log\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)lib\</OutDir>
-    <SourcePath>$(SourcePath)</SourcePath>
+    <SourcePath>$(SolutionDir)src;$(SourcePath)</SourcePath>
     <TargetName>$(ProjectName)_test</TargetName>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
@@ -292,7 +203,7 @@
     <LibraryPath>$(ProjectDir)external\libpng\libs;$(ProjectDir)external\zlib\libs;$(ProjectDir)external\tinyxml\libs;$(ProjectDir)external\OpenAL\libs;$(ProjectDir)external\SDL2\lib\x86;$(ProjectDir)external\SDL2_mixer\libs;$(SolutionDir)lib;$(LibraryPath)</LibraryPath>
     <IntDir>$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)lib\</OutDir>
-    <SourcePath>$(SourcePath)</SourcePath>
+    <SourcePath>$(SolutionDir)src;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>

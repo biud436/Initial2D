@@ -71,7 +71,7 @@ using GameFont = std::unique_ptr<Font>;
  * @details
  상속 시 Initialize, ObjectUpdate, Render, Destroy는 반드시 오버라이드해야 합니다.
  */
-class App : private noncopyable
+class App : private UnCopyable
 {
 public:
 

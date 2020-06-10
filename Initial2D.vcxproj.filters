@@ -4,95 +4,69 @@
     <Filter Include="scripts">
       <UniqueIdentifier>{90719b4c-bbca-4201-a13c-b61f7ad8125a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="lua-binding">
-      <UniqueIdentifier>{e310ad81-ffc3-48c6-b0ad-e9732a67d516}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="App.cpp" />
-    <ClCompile Include="GameState.cpp" />
-    <ClCompile Include="GameStateMachine.cpp" />
-    <ClCompile Include="Input.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="MapState.cpp" />
-    <ClCompile Include="MenuState.cpp" />
-    <ClCompile Include="SoundManager.cpp" />
-    <ClCompile Include="Sprite.cpp" />
-    <ClCompile Include="TextureManager.cpp" />
-    <ClCompile Include="win32Main.cpp" />
-    <ClCompile Include="Font.cpp" />
-    <ClCompile Include="Utility.cpp" />
-    <ClCompile Include="ExperimentalFont.cpp" />
-    <ClCompile Include="GameObject.cpp" />
-    <ClCompile Include="lua_audio.cpp">
-      <Filter>lua-binding</Filter>
-    </ClCompile>
-    <ClCompile Include="lua_font.cpp">
-      <Filter>lua-binding</Filter>
-    </ClCompile>
-    <ClCompile Include="lua_input.cpp">
-      <Filter>lua-binding</Filter>
-    </ClCompile>
-    <ClCompile Include="lua_prot.cpp">
-      <Filter>lua-binding</Filter>
-    </ClCompile>
-    <ClCompile Include="lua_sprite.cpp">
-      <Filter>lua-binding</Filter>
-    </ClCompile>
-    <ClCompile Include="lua_texture.cpp">
-      <Filter>lua-binding</Filter>
-    </ClCompile>
-    <ClCompile Include="Thread.cpp" />
-    <ClCompile Include="sqlite3.c" />
-    <ClCompile Include="Process.cpp" />
-    <ClCompile Include="StringUtils.cpp" />
-    <ClCompile Include="Encrypt.cpp" />
+    <ClCompile Include="src\App.cpp" />
+    <ClCompile Include="src\Encrypt.cpp" />
+    <ClCompile Include="src\ExperimentalFont.cpp" />
+    <ClCompile Include="src\File.cpp" />
+    <ClCompile Include="src\Font.cpp" />
+    <ClCompile Include="src\GameObject.cpp" />
+    <ClCompile Include="src\GameState.cpp" />
+    <ClCompile Include="src\GameStateMachine.cpp" />
+    <ClCompile Include="src\Input.cpp" />
+    <ClCompile Include="src\lua_audio.cpp" />
+    <ClCompile Include="src\lua_font.cpp" />
+    <ClCompile Include="src\lua_input.cpp" />
+    <ClCompile Include="src\lua_prot.cpp" />
+    <ClCompile Include="src\lua_sprite.cpp" />
+    <ClCompile Include="src\lua_tbl.cpp" />
+    <ClCompile Include="src\lua_texture.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\MapState.cpp" />
+    <ClCompile Include="src\MenuState.cpp" />
+    <ClCompile Include="src\Process.cpp" />
+    <ClCompile Include="src\SoundManager.cpp" />
+    <ClCompile Include="src\Sprite.cpp" />
+    <ClCompile Include="src\sqlite3.c" />
+    <ClCompile Include="src\StringUtils.cpp" />
+    <ClCompile Include="src\TextureManager.cpp" />
+    <ClCompile Include="src\Thread.cpp" />
+    <ClCompile Include="src\Utility.cpp" />
+    <ClCompile Include="src\win32Main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="App.h" />
-    <ClInclude Include="Constants.h" />
-    <ClInclude Include="GameState.h" />
-    <ClInclude Include="GameStateMachine.h" />
-    <ClInclude Include="Input.h" />
-    <ClInclude Include="MapState.h" />
-    <ClInclude Include="MenuState.h" />
-    <ClInclude Include="Point.h" />
-    <ClInclude Include="Rectangle.h" />
-    <ClInclude Include="SoundManager.h" />
-    <ClInclude Include="Sprite.h" />
-    <ClInclude Include="TextureManager.h" />
-    <ClInclude Include="Vector2D.h" />
-    <ClInclude Include="Font.h" />
-    <ClInclude Include="Utility.h" />
-    <ClInclude Include="ExperimentalFont.h" />
-    <ClInclude Include="GameObject.h" />
-    <ClInclude Include="lua_audio.h">
-      <Filter>lua-binding</Filter>
-    </ClInclude>
-    <ClInclude Include="lua_font.h">
-      <Filter>lua-binding</Filter>
-    </ClInclude>
-    <ClInclude Include="lua_input.h">
-      <Filter>lua-binding</Filter>
-    </ClInclude>
-    <ClInclude Include="lua_sprite.h">
-      <Filter>lua-binding</Filter>
-    </ClInclude>
-    <ClInclude Include="lua_tbl.h">
-      <Filter>lua-binding</Filter>
-    </ClInclude>
-    <ClInclude Include="lua_texture.h">
-      <Filter>lua-binding</Filter>
-    </ClInclude>
-    <ClInclude Include="lua_prot.h">
-      <Filter>lua-binding</Filter>
-    </ClInclude>
-    <ClInclude Include="Thread.h" />
-    <ClInclude Include="sqlite3.h" />
-    <ClInclude Include="Process.h" />
-    <ClInclude Include="StringUtils.h" />
-    <ClInclude Include="Encrypt.h" />
-    <ClInclude Include="NonCopyable.h" />
+    <ClInclude Include="src\App.h" />
+    <ClInclude Include="src\Constants.h" />
+    <ClInclude Include="src\Encrypt.h" />
+    <ClInclude Include="src\ExperimentalFont.h" />
+    <ClInclude Include="src\File.h" />
+    <ClInclude Include="src\Font.h" />
+    <ClInclude Include="src\GameObject.h" />
+    <ClInclude Include="src\GameState.h" />
+    <ClInclude Include="src\GameStateMachine.h" />
+    <ClInclude Include="src\Input.h" />
+    <ClInclude Include="src\lua_audio.h" />
+    <ClInclude Include="src\lua_font.h" />
+    <ClInclude Include="src\lua_input.h" />
+    <ClInclude Include="src\lua_prot.h" />
+    <ClInclude Include="src\lua_sprite.h" />
+    <ClInclude Include="src\lua_tbl.h" />
+    <ClInclude Include="src\lua_texture.h" />
+    <ClInclude Include="src\MapState.h" />
+    <ClInclude Include="src\MenuState.h" />
+    <ClInclude Include="src\NonCopyable.h" />
+    <ClInclude Include="src\Point.h" />
+    <ClInclude Include="src\Process.h" />
+    <ClInclude Include="src\Rectangle.h" />
+    <ClInclude Include="src\SoundManager.h" />
+    <ClInclude Include="src\Sprite.h" />
+    <ClInclude Include="src\sqlite3.h" />
+    <ClInclude Include="src\StringUtils.h" />
+    <ClInclude Include="src\TextureManager.h" />
+    <ClInclude Include="src\Thread.h" />
+    <ClInclude Include="src\Utility.h" />
+    <ClInclude Include="src\Vector2D.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="scripts\image.lua">

@@ -108,7 +108,7 @@ TextureData* LoadPNG(std::string fileName);
  * @class TextureManager
  * @brief This class allows you to create textures and draw them using Win32-GDI.
  */
-class TextureManager : private noncopyable
+class TextureManager : private UnCopyable
 {
 public:
 	TextureManager();

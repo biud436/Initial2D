@@ -26,7 +26,7 @@
  * @class Input
  * @brief 입력 모듈
  */
-class Input : private noncopyable
+class Input : private UnCopyable
 {
 public:
 
