@@ -19,6 +19,8 @@
 #include "SoundManager.h"
 #include "GameObject.h"
 #include "ExperimentalFont.h"
+#include "GameStateMachine.h"
+#include "MapState.h"
 
 const std::string MenuState::m_strMenuId = "MENU";
 
@@ -31,6 +33,8 @@ bool MenuState::onEnter()
 	//	.setTextColor(255, 0, 0);
 
 	//m_gameObjects.push_back(pFont);
+
+	App::GetInstance().GetGameStateMachine().changeState(new MapState());
 
 	return true;
 }

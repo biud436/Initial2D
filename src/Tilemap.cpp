@@ -1,7 +1,6 @@
 #include "Tilemap.h"
 #include "App.h"
 #include "GameStateMachine.h"
-#include "Sprite.h"
 #include "TextureManager.h"
 #include "File.h"
 
@@ -13,8 +12,9 @@ namespace Initial2D {
 
 
 Tilemap::Tilemap(int width, int height) :
-	m_nWidth(width),
-	m_nHeight(height),
+	_width(width),
+	_height(height),
+	_isLoaded(false),
 	GameObject()
 {
 	
@@ -23,47 +23,75 @@ Tilemap::Tilemap(int width, int height) :
 
 Tilemap::~Tilemap()
 {
+	removeTiles();
+}
 
+void Tilemap::removeTiles() 
+{
+	for (auto iter : _tiles) {
+		delete iter;
+	}
+
+	_tiles.clear();
+
+	if (TheTextureManager.valid("main_tileset") && _isLoaded) {
+		TheTextureManager.Remove("main_tileset");
+		_isLoaded = false;
+	}
+		
+}
+
+bool Tilemap::loadImages() 
+{
+	// 디커플링 필요
+	std::string filename = ".\\resources\\tiles\\tileset16-8x13.png";
+
+	// 타일셋을 불러옵니다.
+	if (!TheTextureManager.Load(filename, "main_tileset", 0)) {
+		LOG_D("타일셋 텍스쳐 로드에 실패하였습니다.");
+		return false;
+	}
+
+	// 파일 닫기
+	//file.close();
+
+	LOG_D("타일셋 이미지를 성공적으로 로드하였습니다");
+
+	return true;
 }
 
 
 void Tilemap::initialize() 
 {
-	int x, y, j;
-	j = 0;
-
-	// 타일을 설정합니다 (임시)
-	// 각 타일 ID는 불러올 타일 이미지와 연관됩니다.
-	for (y = 0; y < m_nHeight; y++) {
-		std::vector<int> yTiles;
-
-		for (x = 0; x < m_nWidth; x++) {
-			yTiles.push_back(j++);
-		}
+	try 
+	{
+		int	x, y, tempTileId;
 		
-		m_tiles.push_back(yTiles);
-	}
+		tempTileId = 46 - 1;
 
-	// 타일맵 로드
-	File file;
-	std::string filename = "resources\\tiles\\tileset.png";
-	file.open(filename, Initial2D::FileMode::BinrayRead);
-	if (!file.isOpen()) {
-		throw new std::exception("tilemap image is not existed!");
-	}
-	
-	if (!TheTextureManager.Load(filename, "main_tileset", 0)) {
+		// 타일을 설정합니다 (디커플링 필요)
+		// 각 타일 ID는 불러올 타일 이미지와 연관됩니다.
+		for (y = 0; y < _height; y++) {
+			std::vector<int> yTiles;
 
-	}
+			for (x = 0; x < _width; x++) {
+				yTiles.push_back(tempTileId);
+			}
 
-	file.close();
-
-	for (y = 0; y < m_nHeight; y++) {
-
-		for (x = 0; x < m_nWidth; x++) {
-			
+			_tileIds.push_back(yTiles);
 		}
 
+		if (!loadImages()) {
+			LOG_D("타일셋 이미지를 로드하는 데 실패했습니다.");
+			throw new std::exception("importing tileset image is failed");
+		}
+
+		createTiles();
+
+	}
+	catch (std::exception& err) 
+	{
+		LOG_D(err.what());
 	}
 
 }
@@ -71,28 +99,70 @@ void Tilemap::initialize()
 
 int Tilemap::getTile(int x, int y) const 
 {
-	return m_tiles[y][x];
+	return _tileIds[y][x];
 }
 
 
 void Tilemap::setTile(int x, int y, int data)
 {
-	m_tiles.at(y).at(x) = data;
+	_tileIds.at(y).at(x) = data;
 }
 
 void Tilemap::createTiles()
 {
-	App& app = App::GetInstance();
+	int cols = 8;
+	int tileWidth = 16;
+	int tileHeight = 16;
+
+	_tiles.resize(_width * _height);
+
+	for (int y = 0; y < _height; y++) {
+
+		for (int x = 0; x < _width; x++) {
+
+			Sprite* tile = new Sprite();
+
+			int tileId = getTile(x, y);
+
+			std::cout << "타일 " << tileId << "를 생성하였습니다" << std::endl;
+
+			tile->initialize(x * tileWidth, y * tileHeight, tileWidth, tileHeight, 1, "main_tileset");
+
+			int mx = (tileId % cols) * tileWidth;
+			int my = static_cast<int>(tileId / cols) * tileHeight;
+			tile->setRect(mx, my, mx + tileWidth, my + tileHeight);
+
+			_tiles.push_back(tile);
+
+		}
+
+	}
+
+	_isLoaded = true;
 }
 
 void Tilemap::update(float elapsed)
 {
+	if (!_isLoaded) {
+		return;
+	}
 
+	for (auto i : _tiles) {
+		if(i != nullptr) 
+			i->update(elapsed);
+	}
 }
 
 void Tilemap::draw(void)
 {
+	if (!_isLoaded) {
+		return;
+	}
 
+	for (auto i : _tiles) {
+		if (i != nullptr)
+			i->draw();
+	}
 }
 
 // End

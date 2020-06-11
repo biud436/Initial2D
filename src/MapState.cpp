@@ -15,6 +15,7 @@
 #include "App.h"
 #include "Sprite.h"
 #include "GameObject.h"
+#include "Tilemap.h"
 
 const std::string MapState::m_strMapId = "MAP";
 
@@ -39,6 +40,11 @@ void MapState::render()
 
 bool MapState::onEnter()
 {
+	Initial2D::Tilemap* tilemap = new Initial2D::Tilemap(17, 13);
+	tilemap->initialize();
+
+	addChild(tilemap);
+
 	return true;
 }
 
@@ -53,4 +59,9 @@ bool MapState::onExit()
 	m_gameObjects.clear();
 
 	return true;
+}
+
+void MapState::addChild(GameObject* p)
+{
+	m_gameObjects.push_back(p);
 }

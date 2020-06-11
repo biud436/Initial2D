@@ -5,9 +5,9 @@
 #include <string>
 #include <memory>
 #include "GameObject.h"
+#include "Sprite.h"
 
 class App;
-class Sprite;
 
 namespace Initial2D {
 
@@ -18,10 +18,9 @@ public:
 	virtual ~Tilemap();
 
 	void initialize();
-	
-	int width() const { return m_nWidth; };
 
-	int height() const { return m_nHeight; };
+	int width() const { return _width;};
+	int height() const { return _height;};
 
 	int getTile(int x, int y) const;
 	void setTile(int x, int y, int data);
@@ -29,16 +28,19 @@ public:
 	virtual void update(float elapsed);
 	virtual void draw(void);
 
+	bool loadImages();
 	void createTiles();
+	void removeTiles();
 
 private:
 	Tilemap(const Tilemap&);
 	Tilemap& operator=(const Tilemap&);
 
-	int m_nWidth;
-	int m_nHeight;
-	std::vector<std::vector<int>> m_tiles;
-	std::vector<Sprite*> m_sprites;
+	int _width;
+	int _height;
+	bool _isLoaded;
+	std::vector<std::vector<int>> _tileIds;
+	std::vector<Sprite*> _tiles;
 };
 
 }

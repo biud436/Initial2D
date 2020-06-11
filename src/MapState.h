@@ -64,6 +64,8 @@ public:
 		return m_strMapId;
 	}
 
+	virtual void addChild(GameObject* p);
+
 private:
 	static const std::string m_strMapId;
 	GameObjects              m_gameObjects;
