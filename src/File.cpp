@@ -40,7 +40,7 @@ namespace Initial2D {
 		fs.reset();
 	}
 
-	void File::Open(std::string filename, const FileMode& mode)
+	void File::open(std::string filename, const FileMode& mode)
 	{
 		std::string filemode = "rb";
 
@@ -65,23 +65,23 @@ namespace Initial2D {
 		m_bIsOpen = true;
 	}
 
-	void File::Close() 
+	void File::close() 
 	{
 		fs->Close(m_pFilePointer);
 		m_pFilePointer = nullptr;
 		m_bIsOpen = false;
 	}
 
-	bool File::isInValid()
+	bool File::isOpen() const
 	{
 		return !m_bIsOpen || m_pFilePointer == nullptr;
 	}
 
-	size_t File::Write(const void* ptr, size_t size, size_t count) 
+	size_t File::write(const void* ptr, size_t size, size_t count) 
 	{
 		size_t ret = 0;
-		if (isInValid()) {
-			Close();
+		if (!isOpen()) {
+			close();
 			return ret;
 		}
 
@@ -90,11 +90,11 @@ namespace Initial2D {
 		return ret;
 	}
 
-	size_t File::Write(const std::string& str)
+	size_t File::write(const std::string& str)
 	{
 		size_t ret = 0;
-		if (isInValid()) {
-			Close();
+		if (!isOpen()) {
+			close();
 			return ret;
 		}
 
@@ -103,16 +103,16 @@ namespace Initial2D {
 		return ret;
 	}
 
-	void File::NewLine()
+	void File::newLine()
 	{
-		Write(LINE_BREAK);
+		write(LINE_BREAK);
 	}
 
-	size_t File::Read(void* ptr, size_t size, size_t count)
+	size_t File::read(void* ptr, size_t size, size_t count)
 	{
 		size_t ret = 0;
-		if (isInValid()) {
-			Close();
+		if (!isOpen()) {
+			close();
 			return ret;
 		}
 
@@ -121,11 +121,11 @@ namespace Initial2D {
 		return ret;
 	}
 
-	size_t File::Read(const std::string& str, size_t size)
+	size_t File::read(const std::string& str, size_t size)
 	{
 		size_t ret = 0;
-		if (isInValid()) {
-			Close();
+		if (!isOpen()) {
+			close();
 			return ret;
 		}
 
@@ -136,11 +136,11 @@ namespace Initial2D {
 		return ret;
 	}
 
-	int File::Seek(long int offset, int origin)
+	int File::seek(long int offset, int origin)
 	{
 		int ret = 0;
-		if (isInValid()) {
-			Close();
+		if (!isOpen()) {
+			close();
 			return ret;
 		}
 
@@ -149,11 +149,11 @@ namespace Initial2D {
 		return ret;
 	}
 
-	long File::Tell()
+	long File::tell()
 	{
 		long ret = 0;
-		if (isInValid()) {
-			Close();
+		if (!isOpen()) {
+			close();
 			return ret;
 		}
 
@@ -162,11 +162,11 @@ namespace Initial2D {
 		return ret;
 	}
 
-	bool File::SetPosition(const fpos_t* pos)
+	bool File::setPosition(const fpos_t* pos)
 	{
 		bool ret = false;
-		if (isInValid()) {
-			Close();
+		if (!isOpen()) {
+			close();
 			return false;
 		}
 

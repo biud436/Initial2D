@@ -4,12 +4,14 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include "GameObject.h"
 
 class App;
+class Sprite;
 
 namespace Initial2D {
 
-class Tilemap
+class Tilemap : public GameObject
 {
 public:
 	Tilemap(int width, int height);
@@ -17,18 +19,15 @@ public:
 
 	void initialize();
 	
-	int width() const 
-	{ 
-		return m_nWidth; 
-	};
+	int width() const { return m_nWidth; };
 
-	int height() const 
-	{
-		return m_nHeight;
-	};
+	int height() const { return m_nHeight; };
 
 	int getTile(int x, int y) const;
 	void setTile(int x, int y, int data);
+
+	virtual void update(float elapsed);
+	virtual void draw(void);
 
 	void createTiles();
 
@@ -39,6 +38,7 @@ private:
 	int m_nWidth;
 	int m_nHeight;
 	std::vector<std::vector<int>> m_tiles;
+	std::vector<Sprite*> m_sprites;
 };
 
 }

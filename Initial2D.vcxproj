@@ -207,6 +207,7 @@
     <None Include="scripts\Font.lua" />
     <None Include="scripts\image.lua" />
     <None Include="scripts\main.lua" />
+    <None Include="scripts\tilemap.lua" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{F4051E31-887A-4919-8B7B-C68F393F4E71}</ProjectGuid>
@@ -280,8 +281,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir)external\zlib\include;$(ProjectDir)external\tinyxml\include\;$(ProjectDir)external\OpenAL\include;$(ProjectDir)external\SDL2\include;$(ProjectDir)external\SDL2_mixer\include;$(ProjectDir)external\libpng\include;$(ProjectDir)lua;$(ProjectDir)json\Json;$(IncludePath)</IncludePath>
-    <LibraryPath>$(ProjectDir)external\zlib\libs;$(ProjectDir)external\OpenAL\libs;$(ProjectDir)external\SDL2\lib\x86;$(ProjectDir)external\SDL2_mixer\libs;$(ProjectDir)external\libpng\libs;$(ProjectDir)external\tinyxml\libs;$(SolutionDir)lib;$(ProjectDir)json\Json;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)external\zlib\include;$(ProjectDir)external\tinyxml\include\;$(ProjectDir)external\OpenAL\include;$(ProjectDir)external\SDL2\include;$(ProjectDir)external\SDL2_mixer\include;$(ProjectDir)external\libpng\include;$(ProjectDir)lua;$(ProjectDir)json\Json;$(ProjectDir)external\SDL2_image\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)external\zlib\libs;$(ProjectDir)external\OpenAL\libs;$(ProjectDir)external\SDL2\lib\x86;$(ProjectDir)external\SDL2_mixer\libs;$(ProjectDir)external\libpng\libs;$(ProjectDir)external\tinyxml\libs;$(SolutionDir)lib;$(ProjectDir)json\Json;$(ProjectDir)external\SDL2_image\libs;$(LibraryPath)</LibraryPath>
     <IntDir>log\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)lib\</OutDir>
     <SourcePath>$(SolutionDir)src;$(SourcePath)</SourcePath>
@@ -305,8 +306,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir)external\libpng\include;$(ProjectDir)external\zlib\include;$(ProjectDir)external\tinyxml\include;$(ProjectDir)external\OpenAL\include;$(ProjectDir)external\SDL2\include;$(ProjectDir)external\SDL2_mixer\include;$(ProjectDir)lua;$(ProjectDir)json\Json;$(IncludePath)</IncludePath>
-    <LibraryPath>$(ProjectDir)external\libpng\libs;$(ProjectDir)external\zlib\libs;$(ProjectDir)external\tinyxml\libs;$(ProjectDir)external\OpenAL\libs;$(ProjectDir)external\SDL2\lib\x86;$(ProjectDir)external\SDL2_mixer\libs;$(SolutionDir)lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)external\libpng\include;$(ProjectDir)external\zlib\include;$(ProjectDir)external\tinyxml\include;$(ProjectDir)external\OpenAL\include;$(ProjectDir)external\SDL2\include;$(ProjectDir)external\SDL2_mixer\include;$(ProjectDir)lua;$(ProjectDir)json\Json;$(ProjectDir)external\SDL2_image\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)external\libpng\libs;$(ProjectDir)external\zlib\libs;$(ProjectDir)external\tinyxml\libs;$(ProjectDir)external\OpenAL\libs;$(ProjectDir)external\SDL2\lib\x86;$(ProjectDir)external\SDL2_mixer\libs;$(SolutionDir)lib;$(ProjectDir)external\SDL2_image\libs;$(LibraryPath)</LibraryPath>
     <IntDir>$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)lib\</OutDir>
     <SourcePath>$(SolutionDir)src;$(SourcePath)</SourcePath>
@@ -330,7 +331,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libzlib.lib;libpng16d.lib;SDL2.lib;native_midi.lib;playmus.lib;playwave.lib;timidity.lib;tinyxml_d.lib;SDL2_mixer.lib;Msimg32.lib;OpenAL32.lib;winmm.lib;luaLib_d.lib;json_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libzlib.lib;libpng16d.lib;SDL2.lib;native_midi.lib;playmus.lib;playwave.lib;timidity.lib;tinyxml_d.lib;SDL2_mixer.lib;Msimg32.lib;OpenAL32.lib;winmm.lib;luaLib_d.lib;json_d.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/NODEFAULTLIB:msvcrt.lib %(AdditionalOptions)</AdditionalOptions>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
@@ -349,6 +350,11 @@ node tools\copydir.js ./bin/libvorbis-0.dll  ./$(Configuration)/libvorbis-0.dll 
 node tools\copydir.js ./bin/libvorbisfile-3.dll  ./$(Configuration)/libvorbisfile-3.dll --file 
 node tools\copydir.js ./bin/SDL2.dll  ./$(Configuration)/SDL2.dll --file 
 node tools\copydir.js ./bin/SDL2_mixer.dll  ./$(Configuration)/SDL2_mixer.dll --file 
+node tools\copydir.js ./bin/SDL2_image.dll  ./$(Configuration)/SDL2_image.dll --file
+node tools\copydir.js ./bin/libjpeg-9.dll  ./$(Configuration)/libjpeg-9.dll --file
+node tools\copydir.js ./bin/libpng16-16.dll  ./$(Configuration)/libpng16-16.dll --file
+node tools\copydir.js ./bin/libtiff-5.dll  ./$(Configuration)/libtiff-5.dll --file
+node tools\copydir.js ./bin/libwebp-7.dll  ./$(Configuration)/libwebp-7.dll --file
 node tools\copydir.js ./scripts ./$(Configuration)/scripts --dir
 node tools\copydir.js ./resources ./$(Configuration)/resources --dir</Command>
       <Message>실행에 필요한 기본 DLL 파일을 복사합니다.</Message>
@@ -434,7 +440,7 @@ node tools\copydir.js ./resources ./$(Configuration)/resources --dir</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libzlib.lib;libpng16.lib;SDL2.lib;native_midi.lib;playmus.lib;playwave.lib;timidity.lib;tinyxml.lib;SDL2_mixer.lib;Msimg32.lib;OpenAL32.lib;winmm.lib;luaLib.lib;json.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libzlib.lib;libpng16.lib;SDL2.lib;native_midi.lib;playmus.lib;playwave.lib;timidity.lib;tinyxml.lib;SDL2_mixer.lib;Msimg32.lib;OpenAL32.lib;winmm.lib;luaLib.lib;json.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/NODEFAULTLIB:msvcrt.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <CustomBuildStep>
@@ -452,6 +458,11 @@ node tools\copydir.js ./bin/libvorbis-0.dll  ./$(Configuration)/libvorbis-0.dll 
 node tools\copydir.js ./bin/libvorbisfile-3.dll  ./$(Configuration)/libvorbisfile-3.dll --file 
 node tools\copydir.js ./bin/SDL2.dll  ./$(Configuration)/SDL2.dll --file 
 node tools\copydir.js ./bin/SDL2_mixer.dll  ./$(Configuration)/SDL2_mixer.dll --file 
+node tools\copydir.js ./bin/SDL2_image.dll  ./$(Configuration)/SDL2_image.dll --file
+node tools\copydir.js ./bin/libjpeg-9.dll  ./$(Configuration)/libjpeg-9.dll --file
+node tools\copydir.js ./bin/libpng16-16.dll  ./$(Configuration)/libpng16-16.dll --file
+node tools\copydir.js ./bin/libtiff-5.dll  ./$(Configuration)/libtiff-5.dll --file
+node tools\copydir.js ./bin/libwebp-7.dll  ./$(Configuration)/libwebp-7.dll --file
 node tools\copydir.js ./scripts ./$(Configuration)/scripts --dir
 node tools\copydir.js ./resources ./$(Configuration)/resources --dir</Command>
       <Message>실행에 필요한 기본 DLL 파일을 복사합니다.</Message>

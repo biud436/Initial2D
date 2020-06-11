@@ -332,3 +332,8 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 - TinyXML (zlib license)
     - tinyxml.lib
     - OpenAL32.lib
+
+
+# 코딩 스타일
+
+- 함수는 소문자로 시작되어야 하며, 단어마다 대문자를 사용해야 합니다.

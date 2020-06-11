@@ -168,8 +168,6 @@ protected:
 	// 폰트 아틀라스
 	GameFont          m_pFont;
 
-	Window m_window;
-
 private:
 
 	App();

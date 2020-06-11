@@ -47,18 +47,18 @@ namespace Initial2D {
 		File();
 		virtual ~File();
 
-		void Open(std::string filename, const FileMode& mode);
-		void Close();
-		size_t Write(const void* ptr, size_t size, size_t count);
-		size_t Write(const std::string& str);
-		void NewLine();
-		size_t Read(void* ptr, size_t size, size_t count);
-		size_t Read(const std::string& str, size_t size);
-		int Seek(long int offset, int origin);
-		long Tell();
-		bool SetPosition(const fpos_t* pos);
+		void open(std::string filename, const FileMode& mode);
+		void close();
+		size_t write(const void* ptr, size_t size, size_t count);
+		size_t write(const std::string& str);
+		void newLine();
+		size_t read(void* ptr, size_t size, size_t count);
+		size_t read(const std::string& str, size_t size);
+		int seek(long int offset, int origin);
+		long tell();
+		bool setPosition(const fpos_t* pos);
 
-		bool isInValid();
+		bool isOpen() const;
 
 	private:
 		FILE* m_pFilePointer;

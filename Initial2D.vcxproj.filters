@@ -84,5 +84,8 @@
     </None>
     <None Include="README.md" />
     <None Include="packages.config" />
+    <None Include="scripts\tilemap.lua">
+      <Filter>scripts</Filter>
+    </None>
   </ItemGroup>
 </Project>

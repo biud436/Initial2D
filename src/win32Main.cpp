@@ -137,15 +137,15 @@ void test_run_file_system()
 {
 	Initial2D::File file;
 	file.Open("my_test_file.txt", Initial2D::TextWrite);
-	file.Write(std::string("뭐지 이건"));
-	file.NewLine();
-	file.Write(std::string("뭐지 이건"));
-	file.NewLine();
-	file.Write(std::string("뭐지 이건"));
-	file.NewLine();
-	file.Write(std::string("뭐지 이건"));
-	file.NewLine();
-	file.Close();
+	file.write(std::string("뭐지 이건"));
+	file.newLine();
+	file.write(std::string("뭐지 이건"));
+	file.newLine();
+	file.write(std::string("뭐지 이건"));
+	file.newLine();
+	file.write(std::string("뭐지 이건"));
+	file.newLine();
+	file.close();
 }
 
 void test_run_tilemap() 

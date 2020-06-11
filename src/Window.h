@@ -21,12 +21,20 @@ public:
 
 	void update();
 
+	bool isDone() const { return _isDone; }
+
+	void destroy();
+
+	bool isRemoved() const { return _isRemoved; }
+
 private:
 	std::string m_name;
-	bool m_bDone;
+	bool _isDone;
+	bool _isRemoved;
 
 	SDL_Window* m_pWindow;
 	SDL_Renderer* m_pRenderer;
+	SDL_Texture* m_pTexture;
 
 	RS::Rectangle m_rect;
 };
