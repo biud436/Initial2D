@@ -115,7 +115,8 @@ void Tilemap::createTiles()
 	int tileHeight = 16;
 
 	_tiles.resize(_width * _height);
-
+	
+	// Layer 1
 	for (int y = 0; y < _height; y++) {
 
 		for (int x = 0; x < _width; x++) {
@@ -123,8 +124,6 @@ void Tilemap::createTiles()
 			Sprite* tile = new Sprite();
 
 			int tileId = getTile(x, y);
-
-			std::cout << "타일 " << tileId << "를 생성하였습니다" << std::endl;
 
 			tile->initialize(x * tileWidth, y * tileHeight, tileWidth, tileHeight, 1, "main_tileset");
 
