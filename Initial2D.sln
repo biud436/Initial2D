@@ -12,6 +12,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "luaLib", "lua\luaLib\luaLib
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Json", "json\Json\Json.vcxproj", "{24D00579-AF7A-4D31-9D54-3F38E70EAD41}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Editor", "Editor\Editor.csproj", "{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -62,6 +64,24 @@ Global
 		{24D00579-AF7A-4D31-9D54-3F38E70EAD41}.Test|Any CPU.ActiveCfg = Test|Win32
 		{24D00579-AF7A-4D31-9D54-3F38E70EAD41}.Test|x64.ActiveCfg = Test|x64
 		{24D00579-AF7A-4D31-9D54-3F38E70EAD41}.Test|x86.ActiveCfg = Test|Win32
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Debug|x64.Build.0 = Debug|Any CPU
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Debug|x86.Build.0 = Debug|Any CPU
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Release|x64.ActiveCfg = Release|Any CPU
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Release|x64.Build.0 = Release|Any CPU
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Release|x86.ActiveCfg = Release|Any CPU
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Release|x86.Build.0 = Release|Any CPU
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Test|Any CPU.ActiveCfg = Release|Any CPU
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Test|Any CPU.Build.0 = Release|Any CPU
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Test|x64.ActiveCfg = Release|Any CPU
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Test|x64.Build.0 = Release|Any CPU
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Test|x86.ActiveCfg = Release|Any CPU
+		{F53076AB-E0EA-4B9F-899F-20A3A9ECDF12}.Test|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
