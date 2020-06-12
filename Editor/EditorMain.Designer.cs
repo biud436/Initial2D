@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(EditorMain));
             this.darkMenuStrip1 = new DarkUI.Controls.DarkMenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -44,28 +45,29 @@
             this.darkStatusStrip1 = new DarkUI.Controls.DarkStatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.webBrowser1 = new System.Windows.Forms.WebBrowser();
             this.darkSectionPanel2 = new DarkUI.Controls.DarkSectionPanel();
+            this.panel3 = new System.Windows.Forms.Panel();
             this.darkScriptTreeView = new DarkUI.Controls.DarkTreeView();
             this.darkSectionPanel3 = new DarkUI.Controls.DarkSectionPanel();
-            this.panel3 = new System.Windows.Forms.Panel();
+            this.panel4 = new System.Windows.Forms.Panel();
+            this.darkObjectTree = new DarkUI.Controls.DarkTreeView();
+            this.darkObjectAddButton = new DarkUI.Controls.DarkButton();
             this.darkMenuStrip2 = new DarkUI.Controls.DarkMenuStrip();
             this.darkToolStrip1 = new DarkUI.Controls.DarkToolStrip();
             this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
             this.toolStripButton2 = new System.Windows.Forms.ToolStripButton();
-            this.toolStripButton3 = new System.Windows.Forms.ToolStripButton();
+            this.toolStripButton7 = new System.Windows.Forms.ToolStripButton();
             this.toolStripButton4 = new System.Windows.Forms.ToolStripButton();
-            this.webBrowser1 = new System.Windows.Forms.WebBrowser();
             this.toolStripButton5 = new System.Windows.Forms.ToolStripButton();
             this.toolStripButton6 = new System.Windows.Forms.ToolStripButton();
-            this.toolStripButton7 = new System.Windows.Forms.ToolStripButton();
             this.toolStripButton8 = new System.Windows.Forms.ToolStripButton();
+            this.toolStripButton3 = new System.Windows.Forms.ToolStripButton();
             this.toolStripButton9 = new System.Windows.Forms.ToolStripButton();
             this.toolStripButton10 = new System.Windows.Forms.ToolStripButton();
             this.toolStripButton11 = new System.Windows.Forms.ToolStripButton();
             this.toolStripButton12 = new System.Windows.Forms.ToolStripButton();
-            this.darkObjectAddButton = new DarkUI.Controls.DarkButton();
-            this.panel4 = new System.Windows.Forms.Panel();
-            this.darkObjectTree = new DarkUI.Controls.DarkTreeView();
+            this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.darkSectionPanel1 = new Editor.DarkTilesetPanel();
             this.panel1 = new System.Windows.Forms.Panel();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
@@ -73,10 +75,10 @@
             this.darkStatusStrip1.SuspendLayout();
             this.panel2.SuspendLayout();
             this.darkSectionPanel2.SuspendLayout();
-            this.darkSectionPanel3.SuspendLayout();
             this.panel3.SuspendLayout();
-            this.darkToolStrip1.SuspendLayout();
+            this.darkSectionPanel3.SuspendLayout();
             this.panel4.SuspendLayout();
+            this.darkToolStrip1.SuspendLayout();
             this.darkSectionPanel1.SuspendLayout();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
@@ -115,6 +117,7 @@
             this.newToolStripMenuItem.Name = "newToolStripMenuItem";
             this.newToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
             this.newToolStripMenuItem.Text = "New";
+            this.newToolStripMenuItem.Click += new System.EventHandler(this.newToolStripMenuItem_Click);
             // 
             // openToolStripMenuItem
             // 
@@ -215,6 +218,15 @@
             this.panel2.Size = new System.Drawing.Size(523, 522);
             this.panel2.TabIndex = 3;
             // 
+            // webBrowser1
+            // 
+            this.webBrowser1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.webBrowser1.Location = new System.Drawing.Point(0, 0);
+            this.webBrowser1.MinimumSize = new System.Drawing.Size(20, 20);
+            this.webBrowser1.Name = "webBrowser1";
+            this.webBrowser1.Size = new System.Drawing.Size(523, 522);
+            this.webBrowser1.TabIndex = 0;
+            // 
             // darkSectionPanel2
             // 
             this.darkSectionPanel2.Controls.Add(this.panel3);
@@ -223,6 +235,15 @@
             this.darkSectionPanel2.SectionHeader = "스크립트";
             this.darkSectionPanel2.Size = new System.Drawing.Size(248, 123);
             this.darkSectionPanel2.TabIndex = 4;
+            // 
+            // panel3
+            // 
+            this.panel3.Controls.Add(this.darkScriptTreeView);
+            this.panel3.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panel3.Location = new System.Drawing.Point(1, 25);
+            this.panel3.Name = "panel3";
+            this.panel3.Size = new System.Drawing.Size(246, 94);
+            this.panel3.TabIndex = 1;
             // 
             // darkScriptTreeView
             // 
@@ -245,14 +266,32 @@
             this.darkSectionPanel3.Size = new System.Drawing.Size(250, 141);
             this.darkSectionPanel3.TabIndex = 5;
             // 
-            // panel3
+            // panel4
             // 
-            this.panel3.Controls.Add(this.darkScriptTreeView);
-            this.panel3.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel3.Location = new System.Drawing.Point(1, 25);
-            this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(246, 94);
-            this.panel3.TabIndex = 1;
+            this.panel4.Controls.Add(this.darkObjectTree);
+            this.panel4.Location = new System.Drawing.Point(5, 31);
+            this.panel4.Name = "panel4";
+            this.panel4.Size = new System.Drawing.Size(241, 75);
+            this.panel4.TabIndex = 2;
+            // 
+            // darkObjectTree
+            // 
+            this.darkObjectTree.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.darkObjectTree.Location = new System.Drawing.Point(0, 0);
+            this.darkObjectTree.MaxDragChange = 20;
+            this.darkObjectTree.Name = "darkObjectTree";
+            this.darkObjectTree.Size = new System.Drawing.Size(241, 75);
+            this.darkObjectTree.TabIndex = 0;
+            this.darkObjectTree.Text = "darkTreeView1";
+            // 
+            // darkObjectAddButton
+            // 
+            this.darkObjectAddButton.Location = new System.Drawing.Point(7, 112);
+            this.darkObjectAddButton.Name = "darkObjectAddButton";
+            this.darkObjectAddButton.Padding = new System.Windows.Forms.Padding(5);
+            this.darkObjectAddButton.Size = new System.Drawing.Size(57, 25);
+            this.darkObjectAddButton.TabIndex = 1;
+            this.darkObjectAddButton.Text = "Add";
             // 
             // darkMenuStrip2
             // 
@@ -301,6 +340,7 @@
             this.toolStripButton1.Name = "toolStripButton1";
             this.toolStripButton1.Size = new System.Drawing.Size(28, 25);
             this.toolStripButton1.Text = "toolStripButton1";
+            this.toolStripButton1.Click += new System.EventHandler(this.toolStripButton1_Click);
             // 
             // toolStripButton2
             // 
@@ -313,16 +353,16 @@
             this.toolStripButton2.Size = new System.Drawing.Size(28, 25);
             this.toolStripButton2.Text = "toolStripButton2";
             // 
-            // toolStripButton3
+            // toolStripButton7
             // 
-            this.toolStripButton3.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripButton3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
-            this.toolStripButton3.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton3.Image")));
-            this.toolStripButton3.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
-            this.toolStripButton3.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButton3.Name = "toolStripButton3";
-            this.toolStripButton3.Size = new System.Drawing.Size(28, 25);
-            this.toolStripButton3.Text = "toolStripButton3";
+            this.toolStripButton7.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.toolStripButton7.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
+            this.toolStripButton7.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton7.Image")));
+            this.toolStripButton7.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
+            this.toolStripButton7.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.toolStripButton7.Name = "toolStripButton7";
+            this.toolStripButton7.Size = new System.Drawing.Size(28, 25);
+            this.toolStripButton7.Text = "toolStripButton7";
             // 
             // toolStripButton4
             // 
@@ -334,15 +374,6 @@
             this.toolStripButton4.Name = "toolStripButton4";
             this.toolStripButton4.Size = new System.Drawing.Size(28, 25);
             this.toolStripButton4.Text = "toolStripButton4";
-            // 
-            // webBrowser1
-            // 
-            this.webBrowser1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.webBrowser1.Location = new System.Drawing.Point(0, 0);
-            this.webBrowser1.MinimumSize = new System.Drawing.Size(20, 20);
-            this.webBrowser1.Name = "webBrowser1";
-            this.webBrowser1.Size = new System.Drawing.Size(523, 522);
-            this.webBrowser1.TabIndex = 0;
             // 
             // toolStripButton5
             // 
@@ -366,17 +397,6 @@
             this.toolStripButton6.Size = new System.Drawing.Size(28, 25);
             this.toolStripButton6.Text = "toolStripButton6";
             // 
-            // toolStripButton7
-            // 
-            this.toolStripButton7.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripButton7.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
-            this.toolStripButton7.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton7.Image")));
-            this.toolStripButton7.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
-            this.toolStripButton7.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButton7.Name = "toolStripButton7";
-            this.toolStripButton7.Size = new System.Drawing.Size(28, 25);
-            this.toolStripButton7.Text = "toolStripButton7";
-            // 
             // toolStripButton8
             // 
             this.toolStripButton8.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
@@ -387,6 +407,17 @@
             this.toolStripButton8.Name = "toolStripButton8";
             this.toolStripButton8.Size = new System.Drawing.Size(28, 25);
             this.toolStripButton8.Text = "toolStripButton8";
+            // 
+            // toolStripButton3
+            // 
+            this.toolStripButton3.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.toolStripButton3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
+            this.toolStripButton3.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton3.Image")));
+            this.toolStripButton3.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
+            this.toolStripButton3.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.toolStripButton3.Name = "toolStripButton3";
+            this.toolStripButton3.Size = new System.Drawing.Size(28, 25);
+            this.toolStripButton3.Text = "toolStripButton3";
             // 
             // toolStripButton9
             // 
@@ -432,32 +463,10 @@
             this.toolStripButton12.Size = new System.Drawing.Size(28, 25);
             this.toolStripButton12.Text = "toolStripButton12";
             // 
-            // darkObjectAddButton
+            // timer1
             // 
-            this.darkObjectAddButton.Location = new System.Drawing.Point(7, 112);
-            this.darkObjectAddButton.Name = "darkObjectAddButton";
-            this.darkObjectAddButton.Padding = new System.Windows.Forms.Padding(5);
-            this.darkObjectAddButton.Size = new System.Drawing.Size(57, 25);
-            this.darkObjectAddButton.TabIndex = 1;
-            this.darkObjectAddButton.Text = "Add";
-            // 
-            // panel4
-            // 
-            this.panel4.Controls.Add(this.darkObjectTree);
-            this.panel4.Location = new System.Drawing.Point(5, 31);
-            this.panel4.Name = "panel4";
-            this.panel4.Size = new System.Drawing.Size(241, 75);
-            this.panel4.TabIndex = 2;
-            // 
-            // darkObjectTree
-            // 
-            this.darkObjectTree.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.darkObjectTree.Location = new System.Drawing.Point(0, 0);
-            this.darkObjectTree.MaxDragChange = 20;
-            this.darkObjectTree.Name = "darkObjectTree";
-            this.darkObjectTree.Size = new System.Drawing.Size(241, 75);
-            this.darkObjectTree.TabIndex = 0;
-            this.darkObjectTree.Text = "darkTreeView1";
+            this.timer1.Enabled = true;
+            this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
             // darkSectionPanel1
             // 
@@ -514,18 +523,17 @@
             this.Name = "EditorMain";
             this.Text = "EditorMain";
             this.Load += new System.EventHandler(this.EditorMain_Load);
-            this.MouseMove += new System.Windows.Forms.MouseEventHandler(this.EditorMain_MouseMove);
             this.darkMenuStrip1.ResumeLayout(false);
             this.darkMenuStrip1.PerformLayout();
             this.darkStatusStrip1.ResumeLayout(false);
             this.darkStatusStrip1.PerformLayout();
             this.panel2.ResumeLayout(false);
             this.darkSectionPanel2.ResumeLayout(false);
-            this.darkSectionPanel3.ResumeLayout(false);
             this.panel3.ResumeLayout(false);
+            this.darkSectionPanel3.ResumeLayout(false);
+            this.panel4.ResumeLayout(false);
             this.darkToolStrip1.ResumeLayout(false);
             this.darkToolStrip1.PerformLayout();
-            this.panel4.ResumeLayout(false);
             this.darkSectionPanel1.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
@@ -576,5 +584,6 @@
         private DarkUI.Controls.DarkButton darkObjectAddButton;
         private System.Windows.Forms.Panel panel4;
         private DarkUI.Controls.DarkTreeView darkObjectTree;
+        private System.Windows.Forms.Timer timer1;
     }
 }

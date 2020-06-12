@@ -27,6 +27,9 @@ namespace Editor
             InitializeComponent();
         }
 
+        /**
+         * 부모 디렉토리의 반환합니다.
+         */
         public string GetParentPath()
         {
             string currentDir = Directory.GetCurrentDirectory();
@@ -40,6 +43,9 @@ namespace Editor
             return parentDir;
         }
 
+        /**
+         * 프로젝트를 초기화합니다.
+         */
         private void Initialize()
         {
             string parentDir = GetParentPath();
@@ -80,6 +86,9 @@ namespace Editor
             File.WriteAllText(filename, text);
         }
 
+        /**
+         * 스크립트를 로드합니다.
+         */
         public void LoadScript(string filename)
         {
             // 스크립트 파일이 있는지 확인합니다.
@@ -93,7 +102,9 @@ namespace Editor
             }
         }
 
-        // 맵에디터를 닫습니다.
+        /**
+         * 맵 에디터를 닫습니다.
+         */
         private void quitToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Application.Exit();
@@ -106,13 +117,22 @@ namespace Editor
             Initialize();
         }
 
+        private void OnMouseMoveToTarget(object sender)
+        {
+            var pt = PointToClient(MousePosition);
+
+            int mx = pt.X;
+            int my = pt.Y;
+            int tw = DataManager.Instance.TileWidth;
+            int th = DataManager.Instance.TileHeight;
+            int mapX = Math.Abs(mx / tw);
+            int mapY = Math.Abs(my / th);
+            darkStatusStrip1.Items[0].Text = String.Format("맵 좌표 : {2}, {3} | 마우스 좌표 : {0}, {1} | 타일 크기 : {4} x {5}", mx, my, mapX, mapY, tw, th);
+        }
+
         private void EditorMain_MouseMove(object sender, MouseEventArgs e)
         {
-            int mx = e.X - 200;
-            int my = e.Y - darkMenuStrip1.Height;
-            int mapX = Math.Abs(mx / 32);
-            int mapY = Math.Abs(my / 32);
-            darkStatusStrip1.Items[0].Text = String.Format("맵 좌표 : {2}, {3} ({0}, {1})", mx, my, mapX, mapY);
+
         }
 
         private void darkSectionPanel1_MouseDown(object sender, MouseEventArgs e)
@@ -122,8 +142,11 @@ namespace Editor
 
         private void pictureBox1_MouseClick(object sender, MouseEventArgs e)
         {
-            tileCurosr.X = (e.X / 16) * 16;
-            tileCurosr.Y = (e.Y / 16) * 16;
+            int tw = DataManager.Instance.TileWidth;
+            int th = DataManager.Instance.TileHeight;
+
+            tileCurosr.X = (e.X / tw) * tw;
+            tileCurosr.Y = (e.Y / th) * th;
 
             pictureBox1.Invalidate();
         }
@@ -149,6 +172,27 @@ namespace Editor
                 var node = nodes.First();
                 LoadScript(node.Text);
             }
+        }
+
+        private void OpenProjectEditorDialog()
+        {
+            var projectEditor = new ProjectEditor();
+            projectEditor.ShowDialog();
+        }
+
+        private void newToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenProjectEditorDialog();
+        }
+
+        private void toolStripButton1_Click(object sender, EventArgs e)
+        {
+            OpenProjectEditorDialog();
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            OnMouseMoveToTarget(sender);
         }
     }
 }
