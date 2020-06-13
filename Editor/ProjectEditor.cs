@@ -66,6 +66,8 @@ namespace Editor
         {
             DataManager.Instance.TileWidth = int.Parse(darkTileWidth.Text);
             DataManager.Instance.TileHeight = int.Parse(darkTileHeight.Text);
+            DataManager.Instance.MapWidth = int.Parse(darkMapWidth.Text);
+            DataManager.Instance.MapHeight = int.Parse(darkMapHeight.Text);
         }
 
         private void ProjectEditor_Load(object sender, EventArgs e)
@@ -73,6 +75,20 @@ namespace Editor
             darkTextBox1.Text = DataManager.Instance.ProjectPath;
             darkTileWidth.Text = DataManager.Instance.TileWidth.ToString();
             darkTileHeight.Text = DataManager.Instance.TileHeight.ToString();
+            darkMapWidth.Text = DataManager.Instance.MapWidth.ToString();
+            darkMapHeight.Text = DataManager.Instance.MapHeight.ToString();
+            darkTileset.Text = DataManager.Instance.TilesetImage;
+        }
+
+        private void darkTilesetOpenButton_Click(object sender, EventArgs e)
+        {
+            openFileDialog1.InitialDirectory = DataManager.Instance.ProjectPath;
+
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                DataManager.Instance.TilesetImage = openFileDialog1.FileName;
+                darkTileset.Text = openFileDialog1.FileName;
+            }
         }
     }
 }

@@ -506,7 +506,7 @@
             this.darkSectionPanel4.Dock = System.Windows.Forms.DockStyle.Left;
             this.darkSectionPanel4.Location = new System.Drawing.Point(0, 52);
             this.darkSectionPanel4.Name = "darkSectionPanel4";
-            this.darkSectionPanel4.SectionHeader = "타일맵";
+            this.darkSectionPanel4.SectionHeader = "맵";
             this.darkSectionPanel4.Size = new System.Drawing.Size(640, 529);
             this.darkSectionPanel4.TabIndex = 9;
             // 

@@ -31,7 +31,8 @@ namespace Editor
                                 MapWidth = 17,
                                 MapHeight = 13,
                                 CurrentLayer = 1,
-                                Tilemap = new int[256]
+                                Tilemap = new int[256],
+                                TilesetImage = "",
                             };
                         }
                     }
@@ -48,6 +49,7 @@ namespace Editor
         public int MapHeight { get; set; }
         public int CurrentLayer { get; set; }
         public int[] Tilemap { get; set; }
+        public string TilesetImage { get; set; }
 
         private DataManager()
         {

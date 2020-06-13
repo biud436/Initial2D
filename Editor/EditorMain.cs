@@ -33,7 +33,7 @@ namespace Editor
         }
 
         /**
-         * 부모 디렉토리의 반환합니다.
+         * 부모 디렉토리의 반환합니다 (임시 코드)
          */
         public string GetParentPath()
         {
@@ -50,6 +50,7 @@ namespace Editor
 
         public void InitWithObjectView(string parentDir)
         {
+            // 오브젝트 뷰를 표시합니다 (임시 코드)
             string htmlPath = Path.Combine(parentDir, "Editor").Replace("\\", "/");
             webBrowser1.Url = new Uri(String.Format("file:///{0}/res/view/object-view.html", htmlPath));
             webBrowser1.DocumentCompleted += WebBrowser1_DocumentCompleted;
@@ -66,6 +67,17 @@ namespace Editor
          */
         private void Initialize()
         {
+            // 프로젝트 만들기 창을 엽니다.
+            OpenProjectEditorDialog();
+
+            // 타일셋 이미지가 존재한다면 타일셋에 할당해야 합니다.
+            var tilesetImage = DataManager.Instance.TilesetImage;
+            if (File.Exists(tilesetImage))
+            {
+                pictureBox1.Image = Image.FromFile(tilesetImage);
+            }
+
+            // 임시 코드
             string parentDir = GetParentPath();
             string dataPath = Path.Combine(parentDir, "resources", "tiles", "tileset16-8x13.png");
             InitWithObjectView(parentDir);
@@ -82,20 +94,29 @@ namespace Editor
         private void EditorMain_Load(object sender, EventArgs e)
         {
             CenterToScreen();
+
+            // 상태 창에 컴퓨터 명을 할당합니다 (임시 코드)
             darkStatusStrip1.Items[0].Text = Environment.UserDomainName;
+
+
             Initialize();
         }
 
         private void OnMouseMoveToTarget(object sender)
         {
+            // 프로그램의 전체를 범위로 잡는 마우스 좌표.
             var pt = PointToClient(MousePosition);
 
+            var db = DataManager.Instance;
             int mx = pt.X;
             int my = pt.Y;
-            int tw = DataManager.Instance.TileWidth;
-            int th = DataManager.Instance.TileHeight;
-            int mapX = Math.Abs(mx / tw);
-            int mapY = Math.Abs(my / th);
+            int tw = db.TileWidth;
+            int th = db.TileHeight;
+
+            // 마지막 맵 좌표를 표시한다.
+            int mapX = Math.Abs(mouse.X / tw);
+            int mapY = Math.Abs(mouse.Y / th);
+
             darkStatusStrip1.Items[0].Text = String.Format("맵 좌표 : {2}, {3} | 마우스 좌표 : {0}, {1} | 타일 크기 : {4} x {5} | 마우스 클릭 여부 : {6} | 타일 ID : {7}", mx, my, mapX, mapY, tw, th, isMouseLB.ToString(), lastTileId);
         }
 
@@ -109,6 +130,9 @@ namespace Editor
 
         }
 
+        /**
+         * 타일셋이 위치합니다.
+         */
         private void pictureBox1_MouseClick(object sender, MouseEventArgs e)
         {
             int tw = DataManager.Instance.TileWidth;
@@ -180,6 +204,12 @@ namespace Editor
                 var mapWidth = db.MapWidth;
                 var mapHeight = db.MapHeight;
 
+                // 이미지가 없는 경우에는 그릴 수 없게 합니다.
+                if(pictureBox1.Image == null)
+                {
+                    return;
+                }
+
                 var mapCols = pictureBox1.Image.Width / tw;
                 var mapRows = pictureBox1.Image.Height / th;
                 var cursorCol = tileCurosr.X / tw;
@@ -191,6 +221,7 @@ namespace Editor
                 int targetX = nx / tw;
                 int targetY = ny / th;
 
+                // 타일이 맵의 크기를 넘어서 그려지는 것을 방지합니다.
                 if (targetY < mapHeight && targetX < mapWidth)
                 {
                     tilemap.Invalidate(new Rectangle(nx, ny, tw, th), true);
@@ -212,16 +243,14 @@ namespace Editor
             }
         }
 
+        /**
+         * 맵에 그리드 라인 표시하는 함수
+         * 백버퍼에 미리 그려 놓고 복사만 하는 방식을 사용하려 했으나, 적절한 방법을 찾지 못했습니다.
+         * 따라서 타일을 그릴 때 같이 그려집니다.
+         */
         private void DrawGrid(Graphics mainGraphics)
         {
             Pen p = new Pen(Colors.BlueHighlight);
-
-            //BufferedGraphicsContext context = BufferedGraphicsManager.Current;
-            //context.MaximumBuffer = new Size(tilemap.Width + 1, tilemap.Height + 1);
-            //BufferedGraphics grafx = context.Allocate(this.CreateGraphics(),
-            //     new Rectangle(0, 0, tilemap.Width, tilemap.Height));
-
-            //var g = grafx.Graphics;
 
             var g = mainGraphics;
             var db = DataManager.Instance;
@@ -256,6 +285,7 @@ namespace Editor
             // 마우스를 클릭하지 않았다면 실패
             if (!isMouseLB)
             {
+                // 맵 그리드를 그립니다.
                 DrawGrid(g);
                 return;
             }
@@ -269,7 +299,10 @@ namespace Editor
             Rectangle srcRect = tileCurosr;
             Rectangle destRect = new Rectangle(mx, my, tw, th);
 
+            // 타일셋 이미지에서 특정 타일을 그립니다.
             g.DrawImage(tilesetImage, mx, my, srcRect, GraphicsUnit.Pixel);
+
+            // 맵 그리드를 그립니다.
             DrawGrid(g);
         }
 
