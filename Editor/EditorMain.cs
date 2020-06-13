@@ -191,7 +191,7 @@ namespace Editor
                 int targetX = nx / tw;
                 int targetY = ny / th;
 
-                if (targetY <= mapHeight && targetX <= mapWidth)
+                if (targetY < mapHeight && targetX < mapWidth)
                 {
                     tilemap.Invalidate(new Rectangle(nx, ny, tw, th), true);
                 }
