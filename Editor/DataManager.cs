@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Collections;
 
 namespace Editor
 {
@@ -27,7 +28,10 @@ namespace Editor
                                 ProjectPath = System.IO.Path.GetDirectoryName(Application.StartupPath),
                                 TileWidth = 16,
                                 TileHeight = 16,
+                                MapWidth = 17,
+                                MapHeight = 13,
                                 CurrentLayer = 1,
+                                Tilemap = new int[256]
                             };
                         }
                     }
@@ -40,7 +44,10 @@ namespace Editor
         public string ProjectPath { get; set; }
         public int TileWidth { get; set; }
         public int TileHeight { get; set; }
+        public int MapWidth { get; set; }
+        public int MapHeight { get; set; }
         public int CurrentLayer { get; set; }
+        public int[] Tilemap { get; set; }
 
         private DataManager()
         {

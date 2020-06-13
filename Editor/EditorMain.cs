@@ -14,6 +14,8 @@ using DarkUI.Controls;
 using DarkUI.Docking;
 using DarkUI.Forms;
 using DarkUI.Renderers;
+using System.Collections;
+using System.Diagnostics;
 
 namespace Editor
 {
@@ -23,7 +25,7 @@ namespace Editor
         private Rectangle tileCurosr = new Rectangle(0, 0, 16, 16);
         private bool isMouseLB = false;
         private Point mouse = new Point(0, 0);
-
+        private int lastTileId = 0;
 
         public EditorMain()
         {
@@ -94,7 +96,7 @@ namespace Editor
             int th = DataManager.Instance.TileHeight;
             int mapX = Math.Abs(mx / tw);
             int mapY = Math.Abs(my / th);
-            darkStatusStrip1.Items[0].Text = String.Format("맵 좌표 : {2}, {3} | 마우스 좌표 : {0}, {1} | 타일 크기 : {4} x {5} | 마우스 클릭 여부 : {6}", mx, my, mapX, mapY, tw, th, isMouseLB.ToString());
+            darkStatusStrip1.Items[0].Text = String.Format("맵 좌표 : {2}, {3} | 마우스 좌표 : {0}, {1} | 타일 크기 : {4} x {5} | 마우스 클릭 여부 : {6} | 타일 ID : {7}", mx, my, mapX, mapY, tw, th, isMouseLB.ToString(), lastTileId);
         }
 
         private void EditorMain_MouseMove(object sender, MouseEventArgs e)
@@ -167,12 +169,29 @@ namespace Editor
             if (e.Button == MouseButtons.Left)
             {
                 isMouseLB = true;
-                var tw = DataManager.Instance.TileWidth;
-                var th = DataManager.Instance.TileHeight;
+                var db = DataManager.Instance;
+                var tw = db.TileWidth;
+                var th = db.TileHeight;
                 int nx = (e.X / tw) * tw;
                 int ny = (e.Y / th) * th;
                 mouse.X = nx;
                 mouse.Y = ny;
+
+                var mapWidth = db.MapWidth;
+                var mapHeight = db.MapHeight;
+
+                //(tileCurosr.X / tw);
+
+                var mapCols = pictureBox1.Image.Width / tw;
+                var mapRows = pictureBox1.Image.Height / th;
+                var cursorCol = tileCurosr.X / tw;
+                var cursorRow = (tileCurosr.Y / th);
+
+                lastTileId = (cursorRow * mapCols) + cursorCol;
+                db.Tilemap[cursorRow * mapWidth + cursorCol] = lastTileId;
+
+                Debug.WriteLine("타일 ID : {0}", db.Tilemap[cursorRow * mapWidth + cursorCol]);
+
                 tilemap.Invalidate(new Rectangle(nx, ny, tw, th), true);
             }
         }
