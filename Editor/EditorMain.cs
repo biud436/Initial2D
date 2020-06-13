@@ -191,7 +191,7 @@ namespace Editor
                 int targetX = nx / tw;
                 int targetY = ny / th;
 
-                if (targetY <= mapRows && targetX <= mapCols)
+                if (targetY <= mapHeight && targetX <= mapWidth)
                 {
                     tilemap.Invalidate(new Rectangle(nx, ny, tw, th), true);
                 }
@@ -212,15 +212,53 @@ namespace Editor
             }
         }
 
+        private void DrawGrid(Graphics mainGraphics)
+        {
+            Pen p = new Pen(Colors.BlueHighlight);
+
+            //BufferedGraphicsContext context = BufferedGraphicsManager.Current;
+            //context.MaximumBuffer = new Size(tilemap.Width + 1, tilemap.Height + 1);
+            //BufferedGraphics grafx = context.Allocate(this.CreateGraphics(),
+            //     new Rectangle(0, 0, tilemap.Width, tilemap.Height));
+
+            //var g = grafx.Graphics;
+
+            var g = mainGraphics;
+            var db = DataManager.Instance;
+            List<Point> list = new List<Point>();
+
+            var maxGridX = db.MapWidth * db.TileWidth;
+            var maxGridY = db.MapHeight * db.TileHeight;
+
+            for (int y = 0; y < maxGridY + 1; y += db.TileHeight)
+            {
+                list.Clear();
+                list.Add(new Point(0, y));
+                list.Add(new Point(maxGridX, y));
+                g.DrawLines(p, list.ToArray());
+            }
+
+            for (int x = 0; x < maxGridX + 1; x += db.TileWidth)
+            {
+                list.Clear();
+                list.Add(new Point(x, 0));
+                list.Add(new Point(x, maxGridY));
+                g.DrawLines(p, list.ToArray());
+            }
+
+            
+        }
+
         private void tilemap_Paint(object sender, PaintEventArgs e)
         {
+            var g = e.Graphics;
+
             // 마우스를 클릭하지 않았다면 실패
             if (!isMouseLB)
             {
+                DrawGrid(g);
                 return;
             }
-
-            var g = e.Graphics;
 
             var mx = mouse.X;
             var my = mouse.Y;
@@ -232,6 +270,7 @@ namespace Editor
             Rectangle destRect = new Rectangle(mx, my, tw, th);
 
             g.DrawImage(tilesetImage, mx, my, srcRect, GraphicsUnit.Pixel);
+            DrawGrid(g);
         }
 
         private void tilemap_MouseMove(object sender, MouseEventArgs e)
