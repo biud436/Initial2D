@@ -180,8 +180,6 @@ namespace Editor
                 var mapWidth = db.MapWidth;
                 var mapHeight = db.MapHeight;
 
-                //(tileCurosr.X / tw);
-
                 var mapCols = pictureBox1.Image.Width / tw;
                 var mapRows = pictureBox1.Image.Height / th;
                 var cursorCol = tileCurosr.X / tw;
@@ -190,9 +188,14 @@ namespace Editor
                 lastTileId = (cursorRow * mapCols) + cursorCol;
                 db.Tilemap[cursorRow * mapWidth + cursorCol] = lastTileId;
 
-                Debug.WriteLine("타일 ID : {0}", db.Tilemap[cursorRow * mapWidth + cursorCol]);
+                int targetX = nx / tw;
+                int targetY = ny / th;
 
-                tilemap.Invalidate(new Rectangle(nx, ny, tw, th), true);
+                if (targetY <= mapRows && targetX <= mapCols)
+                {
+                    tilemap.Invalidate(new Rectangle(nx, ny, tw, th), true);
+                }
+                
             }
         }
 
