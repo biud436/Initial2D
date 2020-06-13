@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        <!-- .parent { -->
+            <!-- display: grid; -->
+            <!-- grid-template-columns: repeat(2, 1fr); -->
+            <!-- grid-template-rows: repeat(9, 1fr); -->
+            <!-- grid-column-gap: 0px; -->
+            <!-- grid-row-gap: 0px; -->
+            <!-- background-color: rgb(43, 43, 43); -->
+            <!-- color: rgb(220, 220, 220); -->
+            <!-- width: 25vw; -->
+            <!-- height: 50vh; -->
+        <!-- } -->
+
+        <!-- .div1 { -->
+            <!-- grid-area: 1 / 1 / 2 / 2; -->
+            <!-- background-color: rgb(52, 57, 66); -->
+        <!-- } -->
+
+        <!-- .div2 { -->
+            <!-- grid-area: 1 / 2 / 2 / 3; -->
+            <!-- background-color: rgb(52, 57, 66);             -->
+        <!-- } -->
+
+        <!-- .div3 { -->
+            <!-- grid-area: 2 / 1 / 3 / 2; -->
+        <!-- } -->
+
+        <!-- .div4 { -->
+            <!-- grid-area: 2 / 2 / 3 / 3; -->
+        <!-- } -->
+
+        <!-- .div5 { -->
+            <!-- grid-area: 3 / 1 / 4 / 2; -->
+        <!-- } -->
+
+        <!-- .div6 { -->
+            <!-- grid-area: 3 / 2 / 4 / 3; -->
+        <!-- } -->
+
+        <!-- .div7 { -->
+            <!-- grid-area: 4 / 1 / 5 / 2; -->
+        <!-- } -->
+
+        <!-- .div8 { -->
+            <!-- grid-area: 4 / 2 / 5 / 3; -->
+        <!-- } -->
+
+        <!-- .div9 { -->
+            <!-- grid-area: 5 / 1 / 6 / 2; -->
+        <!-- } -->
+
+        <!-- .div10 { -->
+            <!-- grid-area: 5 / 2 / 6 / 3; -->
+        <!-- } -->
+
+        <!-- .div11 { -->
+            <!-- grid-area: 6 / 1 / 7 / 2; -->
+        <!-- } -->
+
+        <!-- .div12 { -->
+            <!-- grid-area: 6 / 2 / 7 / 3; -->
+        <!-- } -->
+
+        <!-- .div13 { -->
+            <!-- grid-area: 7 / 1 / 8 / 2; -->
+        <!-- } -->
+
+        <!-- .div14 { -->
+            <!-- grid-area: 7 / 2 / 8 / 3; -->
+        <!-- } -->
+
+        <!-- .div15 { -->
+            <!-- grid-area: 8 / 1 / 9 / 2; -->
+        <!-- } -->
+
+        <!-- .div16 { -->
+            <!-- grid-area: 8 / 2 / 9 / 3; -->
+        <!-- } -->
+
+        <!-- .div17 { -->
+            <!-- grid-area: 9 / 1 / 10 / 2; -->
+        <!-- } -->
+
+        <!-- .div18 { -->
+            <!-- grid-area: 9 / 2 / 10 / 3; -->
+        <!-- } -->
+
+        <!-- input[type="text"] { -->
+            <!-- background-color: inherit; -->
+            <!-- border: 0px solid; -->
+            <!-- color: rgb(220, 220, 220); -->
+        <!-- } -->
+
+        <!-- input:focus { -->
+            <!-- background-color: rgb(49, 51, 53); -->
+        <!-- } -->
+
+        <!-- button { -->
+            <!-- background-color: rgb(69, 73, 74); -->
+            <!-- color: rgb(220, 220, 220); -->
+            <!-- border: none; -->
+            <!-- padding: 15px 32px; -->
+            <!-- text-align: center; -->
+            <!-- text-decoration: none; -->
+            <!-- display: inline-block; -->
+            <!-- font-size: 16px; -->
+            <!-- margin: 4px 2px; -->
+            <!-- cursor: pointer; -->
+        <!-- } -->
+
+/*
+* Prefixed by https://autoprefixer.github.io
+* PostCSS: v7.0.29,
+* Autoprefixer: v9.7.6
+* Browsers: last 4 version
+*/
+
+        .parent {
+            display: -ms-grid;
+            display: grid;
+            -ms-grid-columns: 1fr 0px 1fr;
+            grid-template-columns: repeat(2, 1fr);
+            -ms-grid-rows: 1fr 0px 1fr 0px 1fr 0px 1fr 0px 1fr 0px 1fr 0px 1fr 0px 1fr 0px 1fr;
+            grid-template-rows: repeat(9, 1fr);
+            grid-column-gap: 0px;
+            grid-row-gap: 0px;
+            background-color: rgb(43, 43, 43);
+            color: rgb(220, 220, 220);
+            width: 80vw;
+            height: 100vh;
+			text-align: center;
+			font-size: 8pt;
+			font-family: 나눔고딕 맑은고딕;
+        }        .parent > *:nth-child(1) {
+            -ms-grid-row: 1;
+            -ms-grid-column: 1;
+        }        .parent > *:nth-child(2) {
+            -ms-grid-row: 1;
+            -ms-grid-column: 3;
+        }        .parent > *:nth-child(3) {
+            -ms-grid-row: 3;
+            -ms-grid-column: 1;
+        }        .parent > *:nth-child(4) {
+            -ms-grid-row: 3;
+            -ms-grid-column: 3;
+        }        .parent > *:nth-child(5) {
+            -ms-grid-row: 5;
+            -ms-grid-column: 1;
+        }        .parent > *:nth-child(6) {
+            -ms-grid-row: 5;
+            -ms-grid-column: 3;
+        }        .parent > *:nth-child(7) {
+            -ms-grid-row: 7;
+            -ms-grid-column: 1;
+        }        .parent > *:nth-child(8) {
+            -ms-grid-row: 7;
+            -ms-grid-column: 3;
+        }        .parent > *:nth-child(9) {
+            -ms-grid-row: 9;
+            -ms-grid-column: 1;
+        }        .parent > *:nth-child(10) {
+            -ms-grid-row: 9;
+            -ms-grid-column: 3;
+        }        .parent > *:nth-child(11) {
+            -ms-grid-row: 11;
+            -ms-grid-column: 1;
+        }        .parent > *:nth-child(12) {
+            -ms-grid-row: 11;
+            -ms-grid-column: 3;
+        }        .parent > *:nth-child(13) {
+            -ms-grid-row: 13;
+            -ms-grid-column: 1;
+        }        .parent > *:nth-child(14) {
+            -ms-grid-row: 13;
+            -ms-grid-column: 3;
+        }        .parent > *:nth-child(15) {
+            -ms-grid-row: 15;
+            -ms-grid-column: 1;
+        }        .parent > *:nth-child(16) {
+            -ms-grid-row: 15;
+            -ms-grid-column: 3;
+        }        .parent > *:nth-child(17) {
+            -ms-grid-row: 17;
+            -ms-grid-column: 1;
+        }        .parent > *:nth-child(18) {
+            -ms-grid-row: 17;
+            -ms-grid-column: 3;
+        }
+
+        .div1 {
+            -ms-grid-row: 1;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 1;
+            -ms-grid-column-span: 1;
+            grid-area: 1 / 1 / 2 / 2;
+            background-color: rgb(52, 57, 66);
+        }
+
+        .div2 {
+            -ms-grid-row: 1;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 2;
+            -ms-grid-column-span: 1;
+            grid-area: 1 / 2 / 2 / 3;
+            background-color: rgb(52, 57, 66);            
+        }
+
+        .div3 {
+            -ms-grid-row: 2;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 1;
+            -ms-grid-column-span: 1;
+            grid-area: 2 / 1 / 3 / 2;
+        }
+
+        .div4 {
+            -ms-grid-row: 2;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 2;
+            -ms-grid-column-span: 1;
+            grid-area: 2 / 2 / 3 / 3;
+        }
+
+        .div5 {
+            -ms-grid-row: 3;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 1;
+            -ms-grid-column-span: 1;
+            grid-area: 3 / 1 / 4 / 2;
+        }
+
+        .div6 {
+            -ms-grid-row: 3;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 2;
+            -ms-grid-column-span: 1;
+            grid-area: 3 / 2 / 4 / 3;
+        }
+
+        .div7 {
+            -ms-grid-row: 4;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 1;
+            -ms-grid-column-span: 1;
+            grid-area: 4 / 1 / 5 / 2;
+        }
+
+        .div8 {
+            -ms-grid-row: 4;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 2;
+            -ms-grid-column-span: 1;
+            grid-area: 4 / 2 / 5 / 3;
+        }
+
+        .div9 {
+            -ms-grid-row: 5;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 1;
+            -ms-grid-column-span: 1;
+            grid-area: 5 / 1 / 6 / 2;
+        }
+
+        .div10 {
+            -ms-grid-row: 5;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 2;
+            -ms-grid-column-span: 1;
+            grid-area: 5 / 2 / 6 / 3;
+        }
+
+        .div11 {
+            -ms-grid-row: 6;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 1;
+            -ms-grid-column-span: 1;
+            grid-area: 6 / 1 / 7 / 2;
+        }
+
+        .div12 {
+            -ms-grid-row: 6;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 2;
+            -ms-grid-column-span: 1;
+            grid-area: 6 / 2 / 7 / 3;
+        }
+
+        .div13 {
+            -ms-grid-row: 7;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 1;
+            -ms-grid-column-span: 1;
+            grid-area: 7 / 1 / 8 / 2;
+        }
+
+        .div14 {
+            -ms-grid-row: 7;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 2;
+            -ms-grid-column-span: 1;
+            grid-area: 7 / 2 / 8 / 3;
+        }
+
+        .div15 {
+            -ms-grid-row: 8;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 1;
+            -ms-grid-column-span: 1;
+            grid-area: 8 / 1 / 9 / 2;
+        }
+
+        .div16 {
+            -ms-grid-row: 8;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 2;
+            -ms-grid-column-span: 1;
+            grid-area: 8 / 2 / 9 / 3;
+        }
+
+        .div17 {
+            -ms-grid-row: 9;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 1;
+            -ms-grid-column-span: 1;
+            grid-area: 9 / 1 / 10 / 2;
+        }
+
+        .div18 {
+            -ms-grid-row: 9;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 2;
+            -ms-grid-column-span: 1;
+            grid-area: 9 / 2 / 10 / 3;
+        }
+		
+        .div19 {
+            -ms-grid-row: 10;
+            -ms-grid-row-span: 1;
+            -ms-grid-column: 1;
+            -ms-grid-column-span: 1;
+            grid-area: 10 / 1 / 10 / 2;
+        }
+		
+
+        input {
+            background-color: #313335;
+            border: 0px solid;
+            color: rgb(220, 220, 220);
+			font-size: 8pt;
+        }
+
+        input:focus {
+            background-color: #313335;
+        }
+
+        button {
+            background-color: rgb(69, 73, 74);
+            color: rgb(220, 220, 220);
+            border: none;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+        }
+		
+		body {
+			background-color: #313335;
+		}
+
+    </style>
+</head>
+
+<body>
+    <div class="parent">
+        <div class="div1">대상</div>
+        <div class="div2">비고</div>
+        <div class="div3">텍스트1</div>
+        <div class="div4"><input id="input1" type="text"></div>
+        <div class="div5">텍스트2</div>
+        <div class="div6"><input id="input2" type="text"></div>
+        <div class="div7">텍스트3</div>
+        <div class="div8"><input id="input3" type="text"></div>
+        <div class="div9">텍스트4</div>
+        <div class="div10"><input id="input4" type="text"></div>
+        <div class="div11">텍스트5</div>
+        <div class="div12"><input id="input5" type="text"></div>
+        <div class="div13">텍스트6</div>
+        <div class="div14"><input id="input6" type="text"></div>
+        <div class="div15">텍스트7</div>
+        <div class="div16"><input id="input7" type="text"></div>
+        <div class="div17">텍스트8</div>
+        <div class="div18"><input id="input8" type="text"></div>
+    </div>
+
+    <script>
+	
+		function OK() {
+            
+			var o = {};
+			
+            for(var i = 0; i < 8; i++) {
+				var k = "텍스트" + (i + 1);
+				var v = "#input" + (i + 1);
+                o[k] = document.querySelector(v).value;
+            }
+			
+			<!-- var div = document.createElement("div"); -->
+			<!-- var span = document.createElement("span"); -->
+			<!-- span.textContent = JSON.stringify(o); -->			
+			<!-- div.appendChild(span); -->
+			<!-- document.body.appendChild(div);		 -->
+			
+			return JSON.stringify(o);
+		}
+	
+    </script>
+
+</body>
+
+</html>

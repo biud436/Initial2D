@@ -21,6 +21,9 @@ namespace Editor
     {
 
         private Rectangle tileCurosr = new Rectangle(0, 0, 16, 16);
+        private bool isMouseLB = false;
+        private Point mouse = new Point(0, 0);
+
 
         public EditorMain()
         {
@@ -43,63 +46,27 @@ namespace Editor
             return parentDir;
         }
 
+        public void InitWithObjectView(string parentDir)
+        {
+            string htmlPath = Path.Combine(parentDir, "Editor").Replace("\\", "/");
+            webBrowser1.Url = new Uri(String.Format("file:///{0}/res/view/object-view.html", htmlPath));
+            webBrowser1.DocumentCompleted += WebBrowser1_DocumentCompleted;
+            webBrowser1.ObjectForScripting = true;
+        }
+
+        private void WebBrowser1_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
+        {
+            
+        }
+
         /**
          * 프로젝트를 초기화합니다.
          */
         private void Initialize()
         {
             string parentDir = GetParentPath();
-
             string dataPath = Path.Combine(parentDir, "resources", "tiles", "tileset16-8x13.png");
-
-            // 리소스 추가
-
-            var files = Directory.EnumerateFiles(Path.Combine(parentDir, "scripts"));
-            foreach(var i in files)
-            {
-                // 스크립트 파일을 노드에 추가합니다.
-                var node = new DarkTreeNode();
-                node.Text = String.Format("{0}", Path.GetFileName(i));
-                darkScriptTreeView.Nodes.Add(node);
-            }
-
-            // 웹 브라우저
-            string htmlPath = Path.Combine(parentDir, "Editor").Replace("\\", "/");
-            webBrowser1.Url = new Uri(String.Format("file:///{0}/res/ace/editor.html", htmlPath));
-            webBrowser1.DocumentCompleted += WebBrowser1_DocumentCompleted;
-            webBrowser1.ObjectForScripting = true;
-
-            var objectNode = new DarkTreeNode();
-            objectNode.Text = String.Format("tileset:{0}", Path.GetFileName(dataPath));
-            darkObjectTree.Nodes.Add(objectNode);
-
-        }
-
-        private void WebBrowser1_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
-        {
-            LoadScript("main.lua");
-        }
-
-        public void SaveScript(string filename)
-        {
-            String text = webBrowser1.Document.InvokeScript(@"saveAs").ToString();
-            File.WriteAllText(filename, text);
-        }
-
-        /**
-         * 스크립트를 로드합니다.
-         */
-        public void LoadScript(string filename)
-        {
-            // 스크립트 파일이 있는지 확인합니다.
-            string parentDir = GetParentPath();
-            string targetFile = Path.Combine(parentDir, "scripts", filename);
-
-            if (File.Exists(targetFile))
-            {
-                string contents = File.ReadAllText(targetFile);
-                webBrowser1.Document.InvokeScript("loadScript", new object[] { contents });
-            }
+            InitWithObjectView(parentDir);
         }
 
         /**
@@ -127,7 +94,7 @@ namespace Editor
             int th = DataManager.Instance.TileHeight;
             int mapX = Math.Abs(mx / tw);
             int mapY = Math.Abs(my / th);
-            darkStatusStrip1.Items[0].Text = String.Format("맵 좌표 : {2}, {3} | 마우스 좌표 : {0}, {1} | 타일 크기 : {4} x {5}", mx, my, mapX, mapY, tw, th);
+            darkStatusStrip1.Items[0].Text = String.Format("맵 좌표 : {2}, {3} | 마우스 좌표 : {0}, {1} | 타일 크기 : {4} x {5} | 마우스 클릭 여부 : {6}", mx, my, mapX, mapY, tw, th, isMouseLB.ToString());
         }
 
         private void EditorMain_MouseMove(object sender, MouseEventArgs e)
@@ -159,21 +126,9 @@ namespace Editor
             g.DrawRectangle(p, tileCurosr);
         }
 
-        private void pictureBox1_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void darkScriptTreeView_DoubleClick(object sender, EventArgs e)
-        {
-            var nodes = darkScriptTreeView.SelectedNodes;
-            if(nodes.Count > 0)
-            {
-                var node = nodes.First();
-                LoadScript(node.Text);
-            }
-        }
-
+        /**
+         * 프로젝트 에디터를 엽니다
+         */
         private void OpenProjectEditorDialog()
         {
             var projectEditor = new ProjectEditor();
@@ -193,6 +148,73 @@ namespace Editor
         private void timer1_Tick(object sender, EventArgs e)
         {
             OnMouseMoveToTarget(sender);
+        }
+
+        private void toolStripButton3_Click(object sender, EventArgs e)
+        {
+            var scriptEditor = new ScriptEditor();
+            scriptEditor.ShowDialog();
+        }
+
+        private void darkObjectAddButton_Click(object sender, EventArgs e)
+        {
+            string contents = webBrowser1.Document.InvokeScript("OK").ToString();
+            MessageBox.Show(contents, Application.ProductName);
+        }
+
+        private void OnDrawTilemap(MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                isMouseLB = true;
+                var tw = DataManager.Instance.TileWidth;
+                var th = DataManager.Instance.TileHeight;
+                int nx = (e.X / tw) * tw;
+                int ny = (e.Y / th) * th;
+                mouse.X = nx;
+                mouse.Y = ny;
+                tilemap.Invalidate(new Rectangle(nx, ny, tw, th), true);
+            }
+        }
+
+        private void tilemap_MouseDown(object sender, MouseEventArgs e)
+        {
+            OnDrawTilemap(e);
+        }
+
+        private void tilemap_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                isMouseLB = false;
+            }
+        }
+
+        private void tilemap_Paint(object sender, PaintEventArgs e)
+        {
+            // 마우스를 클릭하지 않았다면 실패
+            if (!isMouseLB)
+            {
+                return;
+            }
+
+            var g = e.Graphics;
+
+            var mx = mouse.X;
+            var my = mouse.Y;
+            var tw = DataManager.Instance.TileWidth;
+            var th = DataManager.Instance.TileHeight;
+
+            Image tilesetImage = pictureBox1.Image;
+            Rectangle srcRect = tileCurosr;
+            Rectangle destRect = new Rectangle(mx, my, tw, th);
+
+            g.DrawImage(tilesetImage, mx, my, srcRect, GraphicsUnit.Pixel);
+        }
+
+        private void tilemap_MouseMove(object sender, MouseEventArgs e)
+        {
+            OnDrawTilemap(e);
         }
     }
 }

@@ -68,6 +68,12 @@
       <DependentUpon>ProjectEditor.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ScriptEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ScriptEditor.Designer.cs">
+      <DependentUpon>ScriptEditor.cs</DependentUpon>
+    </Compile>
     <EmbeddedResource Include="EditorMain.resx">
       <DependentUpon>EditorMain.cs</DependentUpon>
     </EmbeddedResource>
@@ -83,6 +89,9 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="ScriptEditor.resx">
+      <DependentUpon>ScriptEditor.cs</DependentUpon>
+    </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
