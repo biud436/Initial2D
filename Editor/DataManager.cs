@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Collections;
+using System.IO;
+using Newtonsoft.Json;
 
 namespace Editor
 {
@@ -23,17 +25,8 @@ namespace Editor
                     {
                         if (instance == null)
                         {
-                            instance = new DataManager
-                            {
-                                ProjectPath = System.IO.Path.GetDirectoryName(Application.StartupPath),
-                                TileWidth = 16,
-                                TileHeight = 16,
-                                MapWidth = 17,
-                                MapHeight = 13,
-                                CurrentLayer = 1,
-                                Tilemap = new int[256],
-                                TilesetImage = "",
-                            };
+                            instance = new DataManager();
+                            instance.Import();
                         }
                     }
                 }
@@ -54,6 +47,74 @@ namespace Editor
         private DataManager()
         {
 
+        }
+
+        private string GetOutputFilePath()
+        {
+            string currentPath = Path.Combine(Directory.GetCurrentDirectory(), "settings.json");
+
+            return currentPath;
+        }
+
+        private void InitWithParamters()
+        {
+            ProjectPath = System.IO.Path.GetDirectoryName(Application.StartupPath);
+            TileWidth = 16;
+            TileHeight = 16;
+            MapWidth = 17;
+            MapHeight = 13;
+            CurrentLayer = 1;
+            Tilemap = new int[256];
+            TilesetImage = "";
+        }
+
+        public void Import()
+        {
+            string path = GetOutputFilePath();
+
+            // 파일이 없으면 매개변수를 생성하고 함수를 빠져나갑니다.
+            if(!File.Exists(path))
+            {
+                InitWithParamters();
+                return;
+            }
+
+            string contents = File.ReadAllText(path, Encoding.UTF8);
+            Dictionary<string, string> option = JsonConvert.DeserializeObject<Dictionary<string, string>>(contents);
+
+            ProjectPath = option["ProjectPath"];
+            TileWidth = int.Parse(option["TileWidth"]);
+            TileHeight = int.Parse(option["TileHeight"]);
+            MapWidth = int.Parse(option["MapWidth"]);
+            MapHeight = int.Parse(option["MapHeight"]);
+            CurrentLayer = int.Parse(option["CurrentLayer"]);
+            Tilemap = JsonConvert.DeserializeObject<List<int>>(option["Tilemap"]).ToArray();
+            TilesetImage = option["TilesetImage"];
+
+        }
+
+        public void Save()
+        {
+            
+            Dictionary<string, string> option = new Dictionary<string, string>();
+
+            // 매개변수를 JSON Key/Value로 변환합니다.
+            option["ProjectPath"] = ProjectPath;
+            option["TileWidth"] = TileWidth.ToString();
+            option["TileHeight"] = TileHeight.ToString();
+            option["MapWidth"] = MapWidth.ToString();
+            option["MapHeight"] = MapHeight.ToString();
+            option["CurrentLayer"] = CurrentLayer.ToString();
+
+            // 리스트를 JSON 문자열로 변환합니다.
+            var list = new List<int>();
+            list.AddRange(Tilemap);
+            option["Tilemap"] = JsonConvert.SerializeObject(list, Formatting.Indented);
+
+            // 문자열로 변환합니다.
+            string contents = JsonConvert.SerializeObject(option);
+
+            File.WriteAllText(GetOutputFilePath(), contents);
         }
 
     }
