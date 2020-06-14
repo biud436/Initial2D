@@ -100,7 +100,7 @@
             this.darkMenuStrip1.Location = new System.Drawing.Point(0, 0);
             this.darkMenuStrip1.Name = "darkMenuStrip1";
             this.darkMenuStrip1.Padding = new System.Windows.Forms.Padding(3, 2, 0, 2);
-            this.darkMenuStrip1.Size = new System.Drawing.Size(1300, 24);
+            this.darkMenuStrip1.Size = new System.Drawing.Size(970, 24);
             this.darkMenuStrip1.TabIndex = 0;
             this.darkMenuStrip1.Text = "darkMenuStrip1";
             // 
@@ -208,7 +208,7 @@
             this.darkStatusStrip1.Location = new System.Drawing.Point(0, 581);
             this.darkStatusStrip1.Name = "darkStatusStrip1";
             this.darkStatusStrip1.Padding = new System.Windows.Forms.Padding(0, 5, 0, 3);
-            this.darkStatusStrip1.Size = new System.Drawing.Size(1300, 29);
+            this.darkStatusStrip1.Size = new System.Drawing.Size(970, 29);
             this.darkStatusStrip1.SizingGrip = false;
             this.darkStatusStrip1.TabIndex = 1;
             this.darkStatusStrip1.Text = "darkStatusStrip1";
@@ -289,7 +289,7 @@
             this.darkMenuStrip2.Location = new System.Drawing.Point(0, 0);
             this.darkMenuStrip2.Name = "darkMenuStrip2";
             this.darkMenuStrip2.Padding = new System.Windows.Forms.Padding(3, 2, 0, 2);
-            this.darkMenuStrip2.Size = new System.Drawing.Size(1300, 610);
+            this.darkMenuStrip2.Size = new System.Drawing.Size(970, 610);
             this.darkMenuStrip2.TabIndex = 6;
             this.darkMenuStrip2.Text = "darkMenuStrip2";
             // 
@@ -314,7 +314,7 @@
             this.darkToolStrip1.Location = new System.Drawing.Point(0, 24);
             this.darkToolStrip1.Name = "darkToolStrip1";
             this.darkToolStrip1.Padding = new System.Windows.Forms.Padding(5, 0, 1, 0);
-            this.darkToolStrip1.Size = new System.Drawing.Size(1300, 28);
+            this.darkToolStrip1.Size = new System.Drawing.Size(970, 28);
             this.darkToolStrip1.TabIndex = 7;
             this.darkToolStrip1.Text = "darkToolStrip1";
             // 
@@ -568,7 +568,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ControlDarkDark;
-            this.ClientSize = new System.Drawing.Size(1300, 610);
+            this.ClientSize = new System.Drawing.Size(970, 610);
             this.Controls.Add(this.darkSectionPanel4);
             this.Controls.Add(this.darkSectionPanel2);
             this.Controls.Add(this.darkToolStrip1);
@@ -579,7 +579,7 @@
             this.Controls.Add(this.darkMenuStrip2);
             this.MaximizeBox = false;
             this.Name = "EditorMain";
-            this.Text = "EditorMain";
+            this.Text = "맵 에디터";
             this.Load += new System.EventHandler(this.EditorMain_Load);
             this.darkMenuStrip1.ResumeLayout(false);
             this.darkMenuStrip1.PerformLayout();

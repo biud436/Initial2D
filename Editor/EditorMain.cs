@@ -228,11 +228,11 @@ namespace Editor
                 int targetX = nx / tw;
                 int targetY = ny / th;
 
-                DataManager.Instance.Tilemap[targetY * mapWidth + targetX] = lastTileId;
-
                 // 타일이 맵의 크기를 넘어서 그려지는 것을 방지합니다.
-                if (targetY < mapHeight && targetX < mapWidth)
+                if (targetY >= 0 && targetY < mapHeight && targetX >= 0 && targetX < mapWidth)
                 {
+                    DataManager.Instance.Layer1[targetY * mapWidth + targetX] = lastTileId;
+
                     tilemap.Invalidate(new Rectangle(nx, ny, tw, th), true);
                 }
                 
@@ -341,7 +341,7 @@ namespace Editor
             {
                 for(int x = 0; x < mapWidth; x++)
                 {
-                    var tileId = DataManager.Instance.Tilemap[y * mapWidth + x];
+                    var tileId = DataManager.Instance.Layer1[y * mapWidth + x];
                     var col = tileId % mapCols;
                     var row = Math.Abs(tileId / mapCols);
                     var nx = col * tw;
