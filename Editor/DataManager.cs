@@ -122,10 +122,8 @@ namespace Editor
 
             // 리스트를 JSON 문자열로 변환합니다.
             option["Tilemap"] = JsonConvert.SerializeObject(Tilemap);
-            MessageBox.Show(option["Tilemap"]);
 
             option["TilesetImage"] = TilesetImage.ToString();
-
 
             // 문자열로 변환합니다.
             string contents = JsonConvert.SerializeObject(option, Formatting.Indented);
