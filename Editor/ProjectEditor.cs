@@ -22,7 +22,7 @@ namespace Editor
             CenterToParent();
         }
 
-        public void SetMainForm(ref DarkForm form)
+        public void SetMainForm(DarkForm form)
         {
             mainForm = form;
         }
@@ -68,6 +68,8 @@ namespace Editor
             DataManager.Instance.TileHeight = int.Parse(darkTileHeight.Text);
             DataManager.Instance.MapWidth = int.Parse(darkMapWidth.Text);
             DataManager.Instance.MapHeight = int.Parse(darkMapHeight.Text);
+
+            DataManager.Instance.Save();
         }
 
         private void ProjectEditor_Load(object sender, EventArgs e)
@@ -88,6 +90,7 @@ namespace Editor
             {
                 DataManager.Instance.TilesetImage = openFileDialog1.FileName;
                 darkTileset.Text = openFileDialog1.FileName;
+                mainForm.Invalidate(true);
             }
         }
     }

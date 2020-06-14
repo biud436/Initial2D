@@ -75,6 +75,13 @@ namespace Editor
             if (File.Exists(tilesetImage))
             {
                 pictureBox1.Image = Image.FromFile(tilesetImage);
+            } else
+            {
+                if(pictureBox1.Image != null)
+                {
+                    pictureBox1.Image.Dispose();
+                    pictureBox1.Image = null;
+                }
             }
 
             // 임시 코드
@@ -158,6 +165,7 @@ namespace Editor
         private void OpenProjectEditorDialog()
         {
             var projectEditor = new ProjectEditor();
+            projectEditor.SetMainForm(this);
             projectEditor.ShowDialog();
         }
 

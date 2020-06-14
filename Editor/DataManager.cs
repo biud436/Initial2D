@@ -79,17 +79,26 @@ namespace Editor
                 return;
             }
 
-            string contents = File.ReadAllText(path, Encoding.UTF8);
-            Dictionary<string, string> option = JsonConvert.DeserializeObject<Dictionary<string, string>>(contents);
+            try
+            {
+                string contents = File.ReadAllText(path, Encoding.UTF8);
+                Dictionary<string, string> option = JsonConvert.DeserializeObject<Dictionary<string, string>>(contents);
 
-            ProjectPath = option["ProjectPath"];
-            TileWidth = int.Parse(option["TileWidth"]);
-            TileHeight = int.Parse(option["TileHeight"]);
-            MapWidth = int.Parse(option["MapWidth"]);
-            MapHeight = int.Parse(option["MapHeight"]);
-            CurrentLayer = int.Parse(option["CurrentLayer"]);
-            Tilemap = JsonConvert.DeserializeObject<List<int>>(option["Tilemap"]).ToArray();
-            TilesetImage = option["TilesetImage"];
+                ProjectPath = option["ProjectPath"];
+                TileWidth = int.Parse(option["TileWidth"]);
+                TileHeight = int.Parse(option["TileHeight"]);
+                MapWidth = int.Parse(option["MapWidth"]);
+                MapHeight = int.Parse(option["MapHeight"]);
+                CurrentLayer = int.Parse(option["CurrentLayer"]);
+                Tilemap = JsonConvert.DeserializeObject<List<int>>(option["Tilemap"]).ToArray();
+
+                TilesetImage = option["TilesetImage"];
+
+            } catch(Exception ex) {
+
+            }
+
+
 
         }
 
@@ -109,10 +118,12 @@ namespace Editor
             // 리스트를 JSON 문자열로 변환합니다.
             var list = new List<int>();
             list.AddRange(Tilemap);
-            option["Tilemap"] = JsonConvert.SerializeObject(list, Formatting.Indented);
+            option["Tilemap"] = JsonConvert.SerializeObject(list);
+
+            option["TilesetImage"] = TilesetImage.ToString();
 
             // 문자열로 변환합니다.
-            string contents = JsonConvert.SerializeObject(option);
+            string contents = JsonConvert.SerializeObject(option, Formatting.Indented);
 
             File.WriteAllText(GetOutputFilePath(), contents);
         }
