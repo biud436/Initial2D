@@ -41,7 +41,7 @@ namespace Editor
         public int MapWidth { get; set; }
         public int MapHeight { get; set; }
         public int CurrentLayer { get; set; }
-        public int[] Tilemap { get; set; }
+        public List<int> Tilemap { get; set; }
         public string TilesetImage { get; set; }
 
         private DataManager()
@@ -64,7 +64,14 @@ namespace Editor
             MapWidth = 17;
             MapHeight = 13;
             CurrentLayer = 1;
-            Tilemap = new int[256];
+            Tilemap = new List<int>();
+            for (var y = 0; y < MapHeight; y++)
+            {
+                for(var x = 0; x < MapWidth; x++)
+                {
+                    Tilemap.Add(0);
+                }
+            }
             TilesetImage = "";
         }
 
@@ -90,15 +97,13 @@ namespace Editor
                 MapWidth = int.Parse(option["MapWidth"]);
                 MapHeight = int.Parse(option["MapHeight"]);
                 CurrentLayer = int.Parse(option["CurrentLayer"]);
-                Tilemap = JsonConvert.DeserializeObject<List<int>>(option["Tilemap"]).ToArray();
+                Tilemap = JsonConvert.DeserializeObject<List<int>>(option["Tilemap"]);
 
                 TilesetImage = option["TilesetImage"];
 
             } catch(Exception ex) {
 
             }
-
-
 
         }
 
@@ -116,11 +121,11 @@ namespace Editor
             option["CurrentLayer"] = CurrentLayer.ToString();
 
             // 리스트를 JSON 문자열로 변환합니다.
-            var list = new List<int>();
-            list.AddRange(Tilemap);
-            option["Tilemap"] = JsonConvert.SerializeObject(list);
+            option["Tilemap"] = JsonConvert.SerializeObject(Tilemap);
+            MessageBox.Show(option["Tilemap"]);
 
             option["TilesetImage"] = TilesetImage.ToString();
+
 
             // 문자열로 변환합니다.
             string contents = JsonConvert.SerializeObject(option, Formatting.Indented);

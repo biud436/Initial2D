@@ -26,6 +26,7 @@ namespace Editor
         private bool isMouseLB = false;
         private Point mouse = new Point(0, 0);
         private int lastTileId = 0;
+        private bool isReady = false;
 
         public EditorMain()
         {
@@ -224,10 +225,10 @@ namespace Editor
                 var cursorRow = (tileCurosr.Y / th);
 
                 lastTileId = (cursorRow * mapCols) + cursorCol;
-                db.Tilemap[cursorRow * mapWidth + cursorCol] = lastTileId;
-
                 int targetX = nx / tw;
                 int targetY = ny / th;
+
+                DataManager.Instance.Tilemap[targetY * mapWidth + targetX] = lastTileId;
 
                 // 타일이 맵의 크기를 넘어서 그려지는 것을 방지합니다.
                 if (targetY < mapHeight && targetX < mapWidth)
@@ -290,6 +291,13 @@ namespace Editor
         {
             var g = e.Graphics;
 
+            if(!isReady)
+            {
+                InitWithTilemap(g);
+                isReady = true;
+                return;
+            }
+
             // 마우스를 클릭하지 않았다면 실패
             if (!isMouseLB)
             {
@@ -314,9 +322,53 @@ namespace Editor
             DrawGrid(g);
         }
 
+        private void InitWithTilemap(Graphics g)
+        {
+            int mapWidth = DataManager.Instance.MapWidth;
+            int mapHeight = DataManager.Instance.MapHeight;
+
+            var mx = mouse.X;
+            var my = mouse.Y;
+            var tw = DataManager.Instance.TileWidth;
+            var th = DataManager.Instance.TileHeight;
+
+            Image tilesetImage = pictureBox1.Image;
+            
+            var mapCols = pictureBox1.Image.Width / tw;
+            var mapRows = pictureBox1.Image.Height / th;
+
+            for (int y = 0; y < mapHeight; y++)
+            {
+                for(int x = 0; x < mapWidth; x++)
+                {
+                    var tileId = DataManager.Instance.Tilemap[y * mapWidth + x];
+                    var col = tileId % mapCols;
+                    var row = Math.Abs(tileId / mapCols);
+                    var nx = col * tw;
+                    var ny = row * th;
+
+                    Rectangle srcRect = new Rectangle(nx, ny, tw, th);
+                    g.DrawImage(tilesetImage, x * tw, y * th, srcRect, GraphicsUnit.Pixel);
+
+                }
+            }
+
+            DrawGrid(g);
+        }
+
         private void tilemap_MouseMove(object sender, MouseEventArgs e)
         {
             OnDrawTilemap(e);
+        }
+
+        private void toolStripButton2_Click(object sender, EventArgs e)
+        {
+            DataManager.Instance.Save();
+        }
+
+        private void saveToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            DataManager.Instance.Save();
         }
     }
 }

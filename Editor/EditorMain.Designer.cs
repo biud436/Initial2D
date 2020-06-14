@@ -45,8 +45,10 @@
             this.darkStatusStrip1 = new DarkUI.Controls.DarkStatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.tilemap = new System.Windows.Forms.PictureBox();
             this.darkSectionPanel3 = new DarkUI.Controls.DarkSectionPanel();
             this.panel4 = new System.Windows.Forms.Panel();
+            this.webBrowser1 = new System.Windows.Forms.WebBrowser();
             this.darkObjectAddButton = new DarkUI.Controls.DarkButton();
             this.darkMenuStrip2 = new DarkUI.Controls.DarkMenuStrip();
             this.darkToolStrip1 = new DarkUI.Controls.DarkToolStrip();
@@ -63,13 +65,11 @@
             this.toolStripButton11 = new System.Windows.Forms.ToolStripButton();
             this.toolStripButton12 = new System.Windows.Forms.ToolStripButton();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
-            this.webBrowser1 = new System.Windows.Forms.WebBrowser();
             this.darkSectionPanel2 = new DarkUI.Controls.DarkSectionPanel();
+            this.darkButton2 = new DarkUI.Controls.DarkButton();
+            this.darkButton1 = new DarkUI.Controls.DarkButton();
             this.panel3 = new System.Windows.Forms.Panel();
             this.darkTreeView1 = new DarkUI.Controls.DarkTreeView();
-            this.darkButton1 = new DarkUI.Controls.DarkButton();
-            this.darkButton2 = new DarkUI.Controls.DarkButton();
-            this.tilemap = new System.Windows.Forms.PictureBox();
             this.darkSectionPanel4 = new DarkUI.Controls.DarkSectionPanel();
             this.darkSectionPanel1 = new Editor.DarkTilesetPanel();
             this.panel1 = new System.Windows.Forms.Panel();
@@ -77,12 +77,12 @@
             this.darkMenuStrip1.SuspendLayout();
             this.darkStatusStrip1.SuspendLayout();
             this.panel2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.tilemap)).BeginInit();
             this.darkSectionPanel3.SuspendLayout();
             this.panel4.SuspendLayout();
             this.darkToolStrip1.SuspendLayout();
             this.darkSectionPanel2.SuspendLayout();
             this.panel3.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.tilemap)).BeginInit();
             this.darkSectionPanel4.SuspendLayout();
             this.darkSectionPanel1.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -106,6 +106,7 @@
             // 
             // fileToolStripMenuItem
             // 
+            this.fileToolStripMenuItem.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.newToolStripMenuItem,
             this.openToolStripMenuItem,
@@ -137,6 +138,7 @@
             this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
             this.saveToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
             this.saveToolStripMenuItem.Text = "Save";
+            this.saveToolStripMenuItem.Click += new System.EventHandler(this.saveToolStripMenuItem_Click);
             // 
             // quitToolStripMenuItem
             // 
@@ -148,6 +150,7 @@
             // 
             // layerToolStripMenuItem
             // 
+            this.layerToolStripMenuItem.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
             this.layerToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.layer1ToolStripMenuItem,
             this.layer2ToolStripMenuItem,
@@ -180,6 +183,7 @@
             // 
             // helpToolStripMenuItem
             // 
+            this.helpToolStripMenuItem.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.informationToolStripMenuItem});
             this.helpToolStripMenuItem.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
@@ -224,6 +228,19 @@
             this.panel2.Size = new System.Drawing.Size(638, 503);
             this.panel2.TabIndex = 3;
             // 
+            // tilemap
+            // 
+            this.tilemap.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tilemap.Location = new System.Drawing.Point(0, 0);
+            this.tilemap.Name = "tilemap";
+            this.tilemap.Size = new System.Drawing.Size(638, 503);
+            this.tilemap.TabIndex = 0;
+            this.tilemap.TabStop = false;
+            this.tilemap.Paint += new System.Windows.Forms.PaintEventHandler(this.tilemap_Paint);
+            this.tilemap.MouseDown += new System.Windows.Forms.MouseEventHandler(this.tilemap_MouseDown);
+            this.tilemap.MouseMove += new System.Windows.Forms.MouseEventHandler(this.tilemap_MouseMove);
+            this.tilemap.MouseUp += new System.Windows.Forms.MouseEventHandler(this.tilemap_MouseUp);
+            // 
             // darkSectionPanel3
             // 
             this.darkSectionPanel3.Controls.Add(this.panel4);
@@ -242,6 +259,16 @@
             this.panel4.Name = "panel4";
             this.panel4.Size = new System.Drawing.Size(323, 256);
             this.panel4.TabIndex = 2;
+            // 
+            // webBrowser1
+            // 
+            this.webBrowser1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.webBrowser1.Location = new System.Drawing.Point(0, 0);
+            this.webBrowser1.MinimumSize = new System.Drawing.Size(20, 20);
+            this.webBrowser1.Name = "webBrowser1";
+            this.webBrowser1.ScrollBarsEnabled = false;
+            this.webBrowser1.Size = new System.Drawing.Size(323, 256);
+            this.webBrowser1.TabIndex = 0;
             // 
             // darkObjectAddButton
             // 
@@ -293,6 +320,7 @@
             // 
             // toolStripButton1
             // 
+            this.toolStripButton1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
             this.toolStripButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.toolStripButton1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.toolStripButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton1.Image")));
@@ -305,6 +333,7 @@
             // 
             // toolStripButton2
             // 
+            this.toolStripButton2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
             this.toolStripButton2.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.toolStripButton2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.toolStripButton2.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton2.Image")));
@@ -313,9 +342,11 @@
             this.toolStripButton2.Name = "toolStripButton2";
             this.toolStripButton2.Size = new System.Drawing.Size(28, 25);
             this.toolStripButton2.Text = "toolStripButton2";
+            this.toolStripButton2.Click += new System.EventHandler(this.toolStripButton2_Click);
             // 
             // toolStripButton7
             // 
+            this.toolStripButton7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
             this.toolStripButton7.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.toolStripButton7.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.toolStripButton7.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton7.Image")));
@@ -327,6 +358,7 @@
             // 
             // toolStripButton4
             // 
+            this.toolStripButton4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
             this.toolStripButton4.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.toolStripButton4.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.toolStripButton4.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton4.Image")));
@@ -338,6 +370,7 @@
             // 
             // toolStripButton5
             // 
+            this.toolStripButton5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
             this.toolStripButton5.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.toolStripButton5.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.toolStripButton5.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton5.Image")));
@@ -349,6 +382,7 @@
             // 
             // toolStripButton6
             // 
+            this.toolStripButton6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
             this.toolStripButton6.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.toolStripButton6.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.toolStripButton6.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton6.Image")));
@@ -360,6 +394,7 @@
             // 
             // toolStripButton8
             // 
+            this.toolStripButton8.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
             this.toolStripButton8.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.toolStripButton8.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.toolStripButton8.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton8.Image")));
@@ -371,6 +406,7 @@
             // 
             // toolStripButton3
             // 
+            this.toolStripButton3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
             this.toolStripButton3.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.toolStripButton3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.toolStripButton3.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton3.Image")));
@@ -383,6 +419,7 @@
             // 
             // toolStripButton9
             // 
+            this.toolStripButton9.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
             this.toolStripButton9.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.toolStripButton9.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.toolStripButton9.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton9.Image")));
@@ -394,6 +431,7 @@
             // 
             // toolStripButton10
             // 
+            this.toolStripButton10.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
             this.toolStripButton10.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.toolStripButton10.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.toolStripButton10.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton10.Image")));
@@ -405,6 +443,7 @@
             // 
             // toolStripButton11
             // 
+            this.toolStripButton11.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
             this.toolStripButton11.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.toolStripButton11.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.toolStripButton11.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton11.Image")));
@@ -416,6 +455,7 @@
             // 
             // toolStripButton12
             // 
+            this.toolStripButton12.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
             this.toolStripButton12.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.toolStripButton12.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.toolStripButton12.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton12.Image")));
@@ -430,16 +470,6 @@
             this.timer1.Enabled = true;
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
-            // webBrowser1
-            // 
-            this.webBrowser1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.webBrowser1.Location = new System.Drawing.Point(0, 0);
-            this.webBrowser1.MinimumSize = new System.Drawing.Size(20, 20);
-            this.webBrowser1.Name = "webBrowser1";
-            this.webBrowser1.ScrollBarsEnabled = false;
-            this.webBrowser1.Size = new System.Drawing.Size(323, 256);
-            this.webBrowser1.TabIndex = 0;
-            // 
             // darkSectionPanel2
             // 
             this.darkSectionPanel2.Controls.Add(this.darkButton2);
@@ -450,6 +480,24 @@
             this.darkSectionPanel2.SectionHeader = "오브젝트 목록";
             this.darkSectionPanel2.Size = new System.Drawing.Size(323, 200);
             this.darkSectionPanel2.TabIndex = 8;
+            // 
+            // darkButton2
+            // 
+            this.darkButton2.Location = new System.Drawing.Point(241, 170);
+            this.darkButton2.Name = "darkButton2";
+            this.darkButton2.Padding = new System.Windows.Forms.Padding(5);
+            this.darkButton2.Size = new System.Drawing.Size(75, 23);
+            this.darkButton2.TabIndex = 2;
+            this.darkButton2.Text = "darkButton2";
+            // 
+            // darkButton1
+            // 
+            this.darkButton1.Location = new System.Drawing.Point(160, 170);
+            this.darkButton1.Name = "darkButton1";
+            this.darkButton1.Padding = new System.Windows.Forms.Padding(5);
+            this.darkButton1.Size = new System.Drawing.Size(75, 23);
+            this.darkButton1.TabIndex = 1;
+            this.darkButton1.Text = "darkButton1";
             // 
             // panel3
             // 
@@ -468,37 +516,6 @@
             this.darkTreeView1.Size = new System.Drawing.Size(313, 136);
             this.darkTreeView1.TabIndex = 0;
             this.darkTreeView1.Text = "darkTreeView1";
-            // 
-            // darkButton1
-            // 
-            this.darkButton1.Location = new System.Drawing.Point(160, 170);
-            this.darkButton1.Name = "darkButton1";
-            this.darkButton1.Padding = new System.Windows.Forms.Padding(5);
-            this.darkButton1.Size = new System.Drawing.Size(75, 23);
-            this.darkButton1.TabIndex = 1;
-            this.darkButton1.Text = "darkButton1";
-            // 
-            // darkButton2
-            // 
-            this.darkButton2.Location = new System.Drawing.Point(241, 170);
-            this.darkButton2.Name = "darkButton2";
-            this.darkButton2.Padding = new System.Windows.Forms.Padding(5);
-            this.darkButton2.Size = new System.Drawing.Size(75, 23);
-            this.darkButton2.TabIndex = 2;
-            this.darkButton2.Text = "darkButton2";
-            // 
-            // tilemap
-            // 
-            this.tilemap.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tilemap.Location = new System.Drawing.Point(0, 0);
-            this.tilemap.Name = "tilemap";
-            this.tilemap.Size = new System.Drawing.Size(638, 503);
-            this.tilemap.TabIndex = 0;
-            this.tilemap.TabStop = false;
-            this.tilemap.Paint += new System.Windows.Forms.PaintEventHandler(this.tilemap_Paint);
-            this.tilemap.MouseDown += new System.Windows.Forms.MouseEventHandler(this.tilemap_MouseDown);
-            this.tilemap.MouseMove += new System.Windows.Forms.MouseEventHandler(this.tilemap_MouseMove);
-            this.tilemap.MouseUp += new System.Windows.Forms.MouseEventHandler(this.tilemap_MouseUp);
             // 
             // darkSectionPanel4
             // 
@@ -569,13 +586,13 @@
             this.darkStatusStrip1.ResumeLayout(false);
             this.darkStatusStrip1.PerformLayout();
             this.panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.tilemap)).EndInit();
             this.darkSectionPanel3.ResumeLayout(false);
             this.panel4.ResumeLayout(false);
             this.darkToolStrip1.ResumeLayout(false);
             this.darkToolStrip1.PerformLayout();
             this.darkSectionPanel2.ResumeLayout(false);
             this.panel3.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.tilemap)).EndInit();
             this.darkSectionPanel4.ResumeLayout(false);
             this.darkSectionPanel1.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
