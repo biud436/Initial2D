@@ -33,9 +33,10 @@ namespace Editor
             InitializeComponent();
         }
 
-        /**
-         * 부모 디렉토리의 반환합니다 (임시 코드)
-         */
+        /// <summary>
+        /// 부모 디렉토리를 반환합니다.
+        /// </summary>
+        /// <returns></returns>
         public string GetParentPath()
         {
             string currentDir = Directory.GetCurrentDirectory();
@@ -63,9 +64,9 @@ namespace Editor
             
         }
 
-        /**
-         * 프로젝트를 초기화합니다.
-         */
+        /// <summary>
+        /// 프로젝트를 초기화합니다.
+        /// </summary>
         private void Initialize()
         {
             // 프로젝트 만들기 창을 엽니다.
@@ -138,9 +139,11 @@ namespace Editor
 
         }
 
-        /**
-         * 타일셋이 위치합니다.
-         */
+        /// <summary>
+        /// 타일의 커서를 옮깁니다.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void pictureBox1_MouseClick(object sender, MouseEventArgs e)
         {
             int tw = DataManager.Instance.TileWidth;
@@ -160,9 +163,9 @@ namespace Editor
             g.DrawRectangle(p, tileCurosr);
         }
 
-        /**
-         * 프로젝트 에디터를 엽니다
-         */
+        /// <summary>
+        /// 프로젝트 에디터를 엽니다.
+        /// </summary>
         private void OpenProjectEditorDialog()
         {
             var projectEditor = new ProjectEditor();
@@ -252,11 +255,12 @@ namespace Editor
             }
         }
 
-        /**
-         * 맵에 그리드 라인 표시하는 함수
-         * 백버퍼에 미리 그려 놓고 복사만 하는 방식을 사용하려 했으나, 적절한 방법을 찾지 못했습니다.
-         * 따라서 타일을 그릴 때 같이 그려집니다.
-         */
+        /// <summary>
+        /// 맵에 그리드 라인 표시하는 함수
+        /// 백버퍼에 미리 그려 놓고 복사만 하는 방식을 사용하려 했으나, 적절한 방법을 찾지 못했습니다.
+        /// 따라서 타일을 그릴 때 같이 그려집니다.   
+        /// </summary>
+        /// <param name="mainGraphics"></param>
         private void DrawGrid(Graphics mainGraphics)
         {
             Pen p = new Pen(Colors.BlueHighlight);
