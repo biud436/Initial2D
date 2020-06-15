@@ -580,6 +580,7 @@
             this.MaximizeBox = false;
             this.Name = "EditorMain";
             this.Text = "맵 에디터";
+            this.Activated += new System.EventHandler(this.EditorMain_Activated);
             this.Load += new System.EventHandler(this.EditorMain_Load);
             this.darkMenuStrip1.ResumeLayout(false);
             this.darkMenuStrip1.PerformLayout();

@@ -370,5 +370,11 @@ namespace Editor
         {
             DataManager.Instance.Save();
         }
+
+        private void EditorMain_Activated(object sender, EventArgs e)
+        {
+            // 타일맵을 다시 그립니다.
+            isReady = false;
+        }
     }
 }
