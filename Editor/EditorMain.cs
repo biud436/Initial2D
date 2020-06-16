@@ -269,7 +269,7 @@ namespace Editor
 
         private void EditorMain_Activated(object sender, EventArgs e)
         {
-
+            tilemapControl.Flush();
         }
     }
 }
