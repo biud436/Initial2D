@@ -135,7 +135,6 @@ namespace Editor
 
         public void Draw()
         {
-
             var g = CreateGraphics();
 
             BufferedGraphicsContext currentContext;
