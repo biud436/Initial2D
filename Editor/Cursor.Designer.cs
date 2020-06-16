@@ -1,6 +1,6 @@
 ﻿namespace Editor
 {
-    partial class Cursor
+    partial class TileCursor
     {
         /// <summary> 
         /// 필수 디자이너 변수입니다.
@@ -16,8 +16,6 @@
             if (disposing && (components != null))
             {
                 components.Dispose();
-                whitePen.Dispose();
-                blackPen.Dispose();
             }
             base.Dispose(disposing);
         }

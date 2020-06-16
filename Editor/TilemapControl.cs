@@ -21,8 +21,7 @@ namespace Editor
         private int lastTileId;
         private Rectangle tileCurosr;
         private bool isReady;
-        private Pen whitePen;
-        private Pen blackPen;
+        private TileCursor cursor;
 
         private Rectangle prevCursor;
         private Point prevMouse;
@@ -46,6 +45,15 @@ namespace Editor
             lastTileId = 0;
             Size = new Size(638, 503);
 
+            SetStyle(ControlStyles.OptimizedDoubleBuffer |
+                ControlStyles.ResizeRedraw |
+                ControlStyles.UserPaint, false);
+
+            SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
+
+            ResizeRedraw = true;
+            DoubleBuffered = true;
+
             this.Disposed += TilemapControl_Disposed;
         }
 
@@ -61,18 +69,15 @@ namespace Editor
 
         private void InitWithCursor()
         {
-            //cursor = new Cursor();
-            //this.Controls.Add(cursor);
+            cursor = new TileCursor();
+
+            this.Controls.Add(cursor);
         }
 
         public void Connect()
         {
             Init();
             InitWithCursor();
-
-            whitePen = new Pen(Color.White, 2);
-            blackPen = new Pen(Color.Black, 1);
-            whitePen.Alignment = PenAlignment.Inset;
 
             var imageName = DataManager.Instance.TilesetImage;
 
@@ -82,6 +87,7 @@ namespace Editor
             }
 
             tileset = Image.FromFile(imageName);
+
         }
 
         public void Ready()
@@ -92,6 +98,7 @@ namespace Editor
         public void Flush()
         {
             isReady = false;
+            Draw();
         }
 
         /// <summary>
@@ -126,46 +133,27 @@ namespace Editor
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void OnPaint(PaintEventArgs e)
+        public void Draw()
         {
-            base.OnPaint(e);
 
-            var g = e.Graphics;
+            var g = CreateGraphics();
 
-            if (!isReady)
-            {
-                isReady = true;
-                InitWithTilemap(g);
-                return;
-            }
+            BufferedGraphicsContext currentContext;
+            BufferedGraphics myBuffer;
 
-            // 마우스를 클릭하지 않았다면 실패
-            if (!isMouseLB)
-            {
-                // 맵 그리드를 그립니다.
-                DrawGrid(g);
-                return;
-            }
+            currentContext = BufferedGraphicsManager.Current;
 
-            var mx = mouse.X;
-            var my = mouse.Y;
-            var tw = DataManager.Instance.TileWidth;
-            var th = DataManager.Instance.TileHeight;
+            myBuffer = currentContext.Allocate(g, this.DisplayRectangle);
 
-            Image tilesetImage = tileset;
-            Rectangle srcRect = tileCurosr;
-            Rectangle destRect = new Rectangle(mx, my, tw, th);
+            myBuffer.Graphics.Clear(this.BackColor);
 
-            // 타일셋 이미지에서 특정 타일을 그립니다.
-            g.DrawImage(tilesetImage, mx, my, srcRect, GraphicsUnit.Pixel);
+            InitWithTilemap(myBuffer.Graphics);
+            cursor.Render(myBuffer.Graphics);
 
-            // 맵 그리드를 그립니다.
-            DrawGrid(g);
+            myBuffer.Render(g);
 
+            myBuffer.Graphics.Dispose();
+            g.Dispose();
         }
 
         /// <summary>
@@ -208,15 +196,6 @@ namespace Editor
         /// 
         /// </summary>
         /// <param name="e"></param>
-        protected override void OnPaintBackground(PaintEventArgs e)
-        {
-            base.OnPaintBackground(e);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="e"></param>
         private void DrawTilemap(MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
@@ -253,7 +232,9 @@ namespace Editor
                 {
                     DataManager.Instance.Layer1[targetY * mapWidth + targetX] = lastTileId;
 
-                    this.Invalidate(new Rectangle(nx, ny, tw, th), true);
+                    cursor.Location = new Point(nx, ny);
+
+                    Draw();
                 }
 
             }
