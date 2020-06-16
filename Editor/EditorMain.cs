@@ -26,11 +26,20 @@ namespace Editor
         private bool isMouseLB = false;
         private Point mouse = new Point(0, 0);
         private int lastTileId = 0;
-        private bool isReady = false;
+        private TilemapControl tilemapControl;
 
         public EditorMain()
         {
             InitializeComponent();
+        }
+
+        public void InitWithTilemapControl()
+        {
+            // 타일맵 컨트롤 생성
+            tilemapControl = new TilemapControl();
+
+            tilemap.Visible = false;
+            panel2.Controls.Add(tilemapControl);
         }
 
         /// <summary>
@@ -69,6 +78,8 @@ namespace Editor
         /// </summary>
         private void Initialize()
         {
+            InitWithTilemapControl();
+
             // 프로젝트 만들기 창을 엽니다.
             OpenProjectEditorDialog();
 
@@ -106,7 +117,6 @@ namespace Editor
 
             // 상태 창에 컴퓨터 명을 할당합니다 (임시 코드)
             darkStatusStrip1.Items[0].Text = Environment.UserDomainName;
-
 
             Initialize();
         }
@@ -152,6 +162,8 @@ namespace Editor
             tileCurosr.X = (e.X / tw) * tw;
             tileCurosr.Y = (e.Y / th) * th;
 
+            tilemapControl.TileCurosr = new Rectangle(tileCurosr.X, tileCurosr.Y, tw, th);
+
             pictureBox1.Invalidate();
         }
 
@@ -171,6 +183,10 @@ namespace Editor
             var projectEditor = new ProjectEditor();
             projectEditor.SetMainForm(this);
             projectEditor.ShowDialog();
+
+            // 타일셋 이미지를 설정합니다.
+            tilemapControl.TilesetImage = Image.FromFile(DataManager.Instance.TilesetImage);
+            tilemapControl.Connect();
         }
 
         private void newToolStripMenuItem_Click(object sender, EventArgs e)
@@ -202,57 +218,17 @@ namespace Editor
 
         private void OnDrawTilemap(MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left)
-            {
-                isMouseLB = true;
-                var db = DataManager.Instance;
-                var tw = db.TileWidth;
-                var th = db.TileHeight;
-                int nx = (e.X / tw) * tw;
-                int ny = (e.Y / th) * th;
-                mouse.X = nx;
-                mouse.Y = ny;
-
-                var mapWidth = db.MapWidth;
-                var mapHeight = db.MapHeight;
-
-                // 이미지가 없는 경우에는 그릴 수 없게 합니다.
-                if(pictureBox1.Image == null)
-                {
-                    return;
-                }
-
-                var mapCols = pictureBox1.Image.Width / tw;
-                var mapRows = pictureBox1.Image.Height / th;
-                var cursorCol = tileCurosr.X / tw;
-                var cursorRow = (tileCurosr.Y / th);
-
-                lastTileId = (cursorRow * mapCols) + cursorCol;
-                int targetX = nx / tw;
-                int targetY = ny / th;
-
-                // 타일이 맵의 크기를 넘어서 그려지는 것을 방지합니다.
-                if (targetY >= 0 && targetY < mapHeight && targetX >= 0 && targetX < mapWidth)
-                {
-                    DataManager.Instance.Layer1[targetY * mapWidth + targetX] = lastTileId;
-
-                    tilemap.Invalidate(new Rectangle(nx, ny, tw, th), true);
-                }
-                
-            }
+            
         }
 
         private void tilemap_MouseDown(object sender, MouseEventArgs e)
         {
-            OnDrawTilemap(e);
+            
         }
 
         private void tilemap_MouseUp(object sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left)
-            {
-                isMouseLB = false;
-            }
+            
         }
 
         /// <summary>
@@ -263,106 +239,22 @@ namespace Editor
         /// <param name="mainGraphics"></param>
         private void DrawGrid(Graphics mainGraphics)
         {
-            Pen p = new Pen(Colors.BlueHighlight);
-
-            var g = mainGraphics;
-            var db = DataManager.Instance;
-            List<Point> list = new List<Point>();
-
-            var maxGridX = db.MapWidth * db.TileWidth;
-            var maxGridY = db.MapHeight * db.TileHeight;
-
-            for (int y = 0; y < maxGridY + 1; y += db.TileHeight)
-            {
-                list.Clear();
-                list.Add(new Point(0, y));
-                list.Add(new Point(maxGridX, y));
-                g.DrawLines(p, list.ToArray());
-            }
-
-            for (int x = 0; x < maxGridX + 1; x += db.TileWidth)
-            {
-                list.Clear();
-                list.Add(new Point(x, 0));
-                list.Add(new Point(x, maxGridY));
-                g.DrawLines(p, list.ToArray());
-            }
-
             
         }
 
         private void tilemap_Paint(object sender, PaintEventArgs e)
         {
-            var g = e.Graphics;
 
-            if(!isReady)
-            {
-                InitWithTilemap(g);
-                isReady = true;
-                return;
-            }
-
-            // 마우스를 클릭하지 않았다면 실패
-            if (!isMouseLB)
-            {
-                // 맵 그리드를 그립니다.
-                DrawGrid(g);
-                return;
-            }
-
-            var mx = mouse.X;
-            var my = mouse.Y;
-            var tw = DataManager.Instance.TileWidth;
-            var th = DataManager.Instance.TileHeight;
-
-            Image tilesetImage = pictureBox1.Image;
-            Rectangle srcRect = tileCurosr;
-            Rectangle destRect = new Rectangle(mx, my, tw, th);
-
-            // 타일셋 이미지에서 특정 타일을 그립니다.
-            g.DrawImage(tilesetImage, mx, my, srcRect, GraphicsUnit.Pixel);
-
-            // 맵 그리드를 그립니다.
-            DrawGrid(g);
         }
 
         private void InitWithTilemap(Graphics g)
         {
-            int mapWidth = DataManager.Instance.MapWidth;
-            int mapHeight = DataManager.Instance.MapHeight;
 
-            var mx = mouse.X;
-            var my = mouse.Y;
-            var tw = DataManager.Instance.TileWidth;
-            var th = DataManager.Instance.TileHeight;
-
-            Image tilesetImage = pictureBox1.Image;
-            
-            var mapCols = pictureBox1.Image.Width / tw;
-            var mapRows = pictureBox1.Image.Height / th;
-
-            for (int y = 0; y < mapHeight; y++)
-            {
-                for(int x = 0; x < mapWidth; x++)
-                {
-                    var tileId = DataManager.Instance.Layer1[y * mapWidth + x];
-                    var col = tileId % mapCols;
-                    var row = Math.Abs(tileId / mapCols);
-                    var nx = col * tw;
-                    var ny = row * th;
-
-                    Rectangle srcRect = new Rectangle(nx, ny, tw, th);
-                    g.DrawImage(tilesetImage, x * tw, y * th, srcRect, GraphicsUnit.Pixel);
-
-                }
-            }
-
-            DrawGrid(g);
         }
 
         private void tilemap_MouseMove(object sender, MouseEventArgs e)
         {
-            OnDrawTilemap(e);
+
         }
 
         private void toolStripButton2_Click(object sender, EventArgs e)
@@ -377,8 +269,7 @@ namespace Editor
 
         private void EditorMain_Activated(object sender, EventArgs e)
         {
-            // 타일맵을 다시 그립니다.
-            isReady = false;
+
         }
     }
 }

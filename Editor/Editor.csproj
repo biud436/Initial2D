@@ -73,6 +73,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CefHelper.cs" />
+    <Compile Include="Cursor.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Cursor.Designer.cs">
+      <DependentUpon>Cursor.cs</DependentUpon>
+    </Compile>
     <Compile Include="DarkTilesetPanel.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -98,6 +104,12 @@
       <DependentUpon>ScriptEditor.cs</DependentUpon>
     </Compile>
     <Compile Include="Tilemap.cs" />
+    <Compile Include="TilemapControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="TilemapControl.Designer.cs">
+      <DependentUpon>TilemapControl.cs</DependentUpon>
+    </Compile>
     <EmbeddedResource Include="EditorMain.resx">
       <DependentUpon>EditorMain.cs</DependentUpon>
     </EmbeddedResource>
