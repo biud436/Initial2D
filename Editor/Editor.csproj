@@ -103,7 +103,6 @@
     <Compile Include="ScriptEditor.Designer.cs">
       <DependentUpon>ScriptEditor.cs</DependentUpon>
     </Compile>
-    <Compile Include="Tilemap.cs" />
     <Compile Include="TilemapControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
