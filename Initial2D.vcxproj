@@ -468,26 +468,26 @@ node tools\copydir.js ./resources ./$(Configuration)/resources --dir</Command>
       <Message>실행에 필요한 기본 DLL 파일을 복사합니다.</Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>node tools\copydir.js ./$(Configuration)/zlib1.dll ./output/zlib1.dll --file
-node tools\copydir.js ./$(Configuration)/libpng16.dll ./output/libpng16.dll --file 
-node tools\copydir.js ./$(Configuration)/libFLAC-8.dll ./output/libFLAC-8.dll --file
-node tools\copydir.js ./$(Configuration)/libmodplug-1.dll ./output/libmodplug-1.dll --file
-node tools\copydir.js ./$(Configuration)/libmpg123-0.dll ./output/libmpg123-0.dll --file
-node tools\copydir.js ./$(Configuration)/libogg-0.dll ./output/libogg-0.dll --file 
-node tools\copydir.js ./$(Configuration)/libvorbis-0.dll ./output/libvorbis-0.dll --file 
-node tools\copydir.js ./$(Configuration)/libvorbisfile-3.dll ./output/libvorbisfile-3.dll --file 
-node tools\copydir.js ./$(Configuration)/SDL2.dll ./output/SDL2.dll --file 
-node tools\copydir.js ./$(Configuration)/SDL2_mixer.dll ./output/SDL2_mixer.dll --file 
-node tools\copydir.js ./$(Configuration)/SDL2_image.dll ./output/SDL2_image.dll --file
-node tools\copydir.js ./$(Configuration)/libjpeg-9.dll ./output/libjpeg-9.dll --file
-node tools\copydir.js ./$(Configuration)/libpng16-16.dll ./output/libpng16-16.dll --file
-node tools\copydir.js ./$(Configuration)/libtiff-5.dll ./output/libtiff-5.dll --file
-node tools\copydir.js ./$(Configuration)/libwebp-7.dll ./output/libwebp-7.dll --file
-node tools\copydir.js ./$(Configuration)/libwebp-7.dll ./output/libwebp-7.dll --file
-node tools\copydir.js ./$(Configuration)/scripts ./output/scripts --dir
-node tools\copydir.js ./$(Configuration)/resources ./output/resources --dir
-node tools\copydir.js ./lib/Initial2D.exe ./output/Initial2D.exe --file
-node tools\copydir.js ./lib/Initial2D.pdb ./output/Initial2D.pdb --file</Command>
+      <Command>node tools\copydir.js ./$(Configuration)/zlib1.dll ./Editor/bin/$(Configuration)/Engine/zlib1.dll --file
+node tools\copydir.js ./$(Configuration)/libpng16.dll ./Editor/bin/$(Configuration)/Engine/libpng16.dll --file 
+node tools\copydir.js ./$(Configuration)/libFLAC-8.dll ./Editor/bin/$(Configuration)/Engine/libFLAC-8.dll --file
+node tools\copydir.js ./$(Configuration)/libmodplug-1.dll ./Editor/bin/$(Configuration)/Engine/libmodplug-1.dll --file
+node tools\copydir.js ./$(Configuration)/libmpg123-0.dll ./Editor/bin/$(Configuration)/Engine/libmpg123-0.dll --file
+node tools\copydir.js ./$(Configuration)/libogg-0.dll ./Editor/bin/$(Configuration)/Engine/libogg-0.dll --file 
+node tools\copydir.js ./$(Configuration)/libvorbis-0.dll ./Editor/bin/$(Configuration)/Engine/libvorbis-0.dll --file 
+node tools\copydir.js ./$(Configuration)/libvorbisfile-3.dll ./Editor/bin/$(Configuration)/Engine/libvorbisfile-3.dll --file 
+node tools\copydir.js ./$(Configuration)/SDL2.dll ./Editor/bin/$(Configuration)/Engine/SDL2.dll --file 
+node tools\copydir.js ./$(Configuration)/SDL2_mixer.dll ./Editor/bin/$(Configuration)/Engine/SDL2_mixer.dll --file 
+node tools\copydir.js ./$(Configuration)/SDL2_image.dll ./Editor/bin/$(Configuration)/Engine/SDL2_image.dll --file
+node tools\copydir.js ./$(Configuration)/libjpeg-9.dll ./Editor/bin/$(Configuration)/Engine/libjpeg-9.dll --file
+node tools\copydir.js ./$(Configuration)/libpng16-16.dll ./Editor/bin/$(Configuration)/Engine/libpng16-16.dll --file
+node tools\copydir.js ./$(Configuration)/libtiff-5.dll ./Editor/bin/$(Configuration)/Engine/libtiff-5.dll --file
+node tools\copydir.js ./$(Configuration)/libwebp-7.dll ./Editor/bin/$(Configuration)/Engine/libwebp-7.dll --file
+node tools\copydir.js ./$(Configuration)/libwebp-7.dll ./Editor/bin/$(Configuration)/Engine/libwebp-7.dll --file
+node tools\copydir.js ./$(Configuration)/scripts ./Editor/bin/$(Configuration)/Engine/scripts --dir
+node tools\copydir.js ./$(Configuration)/resources ./Editor/bin/$(Configuration)/Engine/resources --dir
+node tools\copydir.js ./lib/Initial2D.exe ./Editor/bin/$(Configuration)/Engine/Initial2D.exe --file
+node tools\copydir.js ./lib/Initial2D.pdb ./Editor/bin/$(Configuration)/Engine/Initial2D.pdb --file</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
