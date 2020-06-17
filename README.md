@@ -1,7 +1,7 @@
 # 소개
 [![Build status](https://ci.appveyor.com/api/projects/status/277ojyc6arrdrcxd/branch/master?svg=true)](https://ci.appveyor.com/project/biud436/initial2d/branch/master)
 
-개인적인 용도로 만든 GDI 기반 게임 엔진입니다. 
+개인적인 용도로 만든 C++ (GDI) 기반 게임 엔진입니다. 
 
 본래 선호하는 스크립트 언어는 Ruby나 JS이지만 게임에 임베디드(Embedded)하기가 까다롭기 때문에, 
 
@@ -9,9 +9,12 @@
 
 간단한 2D 게임을 만드는 데 충분한 기능이 있지만, 이건 단순 게임 엔진 제작 연습일 뿐 실제 사용하는 분은 없길 바랍니다.
 
-
 Link : https://biud436.github.io/Initial2D/html/
 
+# 맵 에디터
+맵 에디터는 현재 개발 중입니다.
+
+![IMG1](./docs/img/0.png)
 
 # 스크립트 예제
 C++ 에선 내부적으로 WinMain을 Entry Point로 삼고 초기화를 거치고, 상태 머신을 통해 순서대로 initialize, update, render 등의 메소드를 자동으로 호출할 수 있습니다. 

@@ -382,6 +382,11 @@ namespace Editor
             
         }
 
+        /// <summary>
+        /// 게임을 실행합니다.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void toolStripButton8_Click(object sender, EventArgs e)
         {
             using (var process = new Process())
