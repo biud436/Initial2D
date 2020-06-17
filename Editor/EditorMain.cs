@@ -367,7 +367,6 @@ namespace Editor
                 {
                     var scriptEditor = new ScriptEditor();
                     scriptEditor.ShowDialog();
-                    scriptEditor.OnLoadScript += ScriptEditor_OnLoadScript;
                 } else
                 {
                     MessageBox.Show(Path.Combine(GetParentPath(), firstNode.FullPath));
@@ -375,11 +374,6 @@ namespace Editor
 
             }
 
-        }
-
-        private void ScriptEditor_OnLoadScript(object sender, ScriptEditor.OnLoadScriptArgs e)
-        {
-            
         }
 
         /// <summary>

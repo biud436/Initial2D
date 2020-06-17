@@ -17,26 +17,7 @@ namespace Editor
     public partial class ScriptEditor : DarkForm
     {
 
-        /// <summary>
-        /// OnLoadScriptArgs
-        /// </summary>
-        public class OnLoadScriptArgs : EventArgs
-        {
-            private string scriptName;
-
-            public OnLoadScriptArgs(string name)
-            {
-                this.scriptName = name;
-            }
-
-            public string ScriptName
-            {
-                get { return this.scriptName; }
-            }
-        }
-
         private string lastScriptPath = null;
-        public event EventHandler<OnLoadScriptArgs> OnLoadScript;
 
         public ScriptEditor()
         {
@@ -97,7 +78,8 @@ namespace Editor
 
         public void InitWithScriptView(string parentDir)
         {
-            string htmlPath = Path.Combine(parentDir, "Editor").Replace("\\", "/");
+            var currentPath = Directory.GetParent(Directory.GetCurrentDirectory()).Parent;
+            string htmlPath = Path.Combine(currentPath.FullName).Replace("\\", "/");
             webBrowser1.Url = new Uri(String.Format("file:///{0}/res/ace/editor.html", htmlPath));
             webBrowser1.DocumentCompleted += WebBrowser1_DocumentCompleted; ;
             webBrowser1.ObjectForScripting = true;
@@ -120,8 +102,7 @@ namespace Editor
         public void LoadScript(string filename)
         {
             // 스크립트 파일이 있는지 확인합니다.
-            string parentDir = GetParentPath();
-            string targetFile = Path.Combine(parentDir, "scripts", filename);
+            string targetFile = Path.Combine(Directory.GetCurrentDirectory(), "Engine", "scripts", filename);
 
             if (File.Exists(targetFile))
             {
