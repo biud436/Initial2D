@@ -75,8 +75,8 @@ void Tilemap::initialize()
 		int	x, y, tempTileId;
 
 		Json::Value layer1 = _root["Layer1"];
-		_width = std::stoi(_root["MapWidth"].asString());
-		_height = std::stoi(_root["MapHeight"].asString());
+		_width = _root["MapWidth"].asInt();
+		_height = _root["MapHeight"].asInt();
 		
 		tempTileId = 46 - 1;
 
@@ -122,8 +122,8 @@ void Tilemap::setTile(int x, int y, int data)
 void Tilemap::createTiles()
 {
 	int cols = 8;
-	int tileWidth = std::stoi(_root["TileWidth"].asString());
-	int tileHeight = std::stoi(_root["TileHeight"].asString());
+	int tileWidth = _root["TileWidth"].asInt();
+	int tileHeight = _root["TileHeight"].asInt();
 
 	_tiles.resize(_width * _height);
 	
