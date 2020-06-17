@@ -389,6 +389,8 @@ namespace Editor
         /// <param name="e"></param>
         private void toolStripButton8_Click(object sender, EventArgs e)
         {
+            DataManager.Instance.Save();
+
             using (var process = new Process())
             {
                 string path = Path.Combine(Directory.GetCurrentDirectory(), "Engine", "Initial2D.exe");
