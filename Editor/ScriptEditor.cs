@@ -134,5 +134,10 @@ namespace Editor
         {
             Close();
         }
+
+        private void ApplyButton_Click(object sender, EventArgs e)
+        {
+            SaveScript(lastScriptPath);
+        }
     }
 }

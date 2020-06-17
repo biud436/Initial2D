@@ -29,26 +29,26 @@
         private void InitializeComponent()
         {
             this.panel1 = new System.Windows.Forms.Panel();
+            this.darkScriptTree = new DarkUI.Controls.DarkTreeView();
             this.darkMenuStrip1 = new DarkUI.Controls.DarkMenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.newToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.quitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.darkScriptTree = new DarkUI.Controls.DarkTreeView();
+            this.quitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.panel2 = new System.Windows.Forms.Panel();
             this.webBrowser1 = new System.Windows.Forms.WebBrowser();
-            this.panel3 = new System.Windows.Forms.Panel();
-            this.OkButton = new DarkUI.Controls.DarkButton();
-            this.CancelButton = new DarkUI.Controls.DarkButton();
-            this.ApplyButton = new DarkUI.Controls.DarkButton();
             this.darkStatusStrip1 = new DarkUI.Controls.DarkStatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
+            this.panel3 = new System.Windows.Forms.Panel();
+            this.ApplyButton = new DarkUI.Controls.DarkButton();
+            this.CancelButton = new DarkUI.Controls.DarkButton();
+            this.OkButton = new DarkUI.Controls.DarkButton();
             this.panel1.SuspendLayout();
             this.darkMenuStrip1.SuspendLayout();
             this.panel2.SuspendLayout();
-            this.panel3.SuspendLayout();
             this.darkStatusStrip1.SuspendLayout();
+            this.panel3.SuspendLayout();
             this.SuspendLayout();
             // 
             // panel1
@@ -59,6 +59,17 @@
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(200, 612);
             this.panel1.TabIndex = 0;
+            // 
+            // darkScriptTree
+            // 
+            this.darkScriptTree.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.darkScriptTree.Location = new System.Drawing.Point(0, 0);
+            this.darkScriptTree.MaxDragChange = 20;
+            this.darkScriptTree.Name = "darkScriptTree";
+            this.darkScriptTree.Size = new System.Drawing.Size(200, 612);
+            this.darkScriptTree.TabIndex = 0;
+            this.darkScriptTree.Text = "darkTreeView1";
+            this.darkScriptTree.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.darkScriptTree_MouseDoubleClick);
             // 
             // darkMenuStrip1
             // 
@@ -75,6 +86,7 @@
             // 
             // fileToolStripMenuItem
             // 
+            this.fileToolStripMenuItem.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.newToolStripMenuItem,
             this.openToolStripMenuItem,
@@ -89,41 +101,30 @@
             // 
             this.newToolStripMenuItem.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.newToolStripMenuItem.Name = "newToolStripMenuItem";
-            this.newToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.newToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
             this.newToolStripMenuItem.Text = "New";
             // 
             // openToolStripMenuItem
             // 
             this.openToolStripMenuItem.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.openToolStripMenuItem.Name = "openToolStripMenuItem";
-            this.openToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
             this.openToolStripMenuItem.Text = "Open";
-            // 
-            // quitToolStripMenuItem
-            // 
-            this.quitToolStripMenuItem.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
-            this.quitToolStripMenuItem.Name = "quitToolStripMenuItem";
-            this.quitToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.quitToolStripMenuItem.Text = "Quit";
-            this.quitToolStripMenuItem.Click += new System.EventHandler(this.quitToolStripMenuItem_Click);
             // 
             // saveToolStripMenuItem
             // 
             this.saveToolStripMenuItem.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
-            this.saveToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.saveToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
             this.saveToolStripMenuItem.Text = "Save";
             // 
-            // darkScriptTree
+            // quitToolStripMenuItem
             // 
-            this.darkScriptTree.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.darkScriptTree.Location = new System.Drawing.Point(0, 0);
-            this.darkScriptTree.MaxDragChange = 20;
-            this.darkScriptTree.Name = "darkScriptTree";
-            this.darkScriptTree.Size = new System.Drawing.Size(200, 612);
-            this.darkScriptTree.TabIndex = 0;
-            this.darkScriptTree.Text = "darkTreeView1";
-            this.darkScriptTree.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.darkScriptTree_MouseDoubleClick);
+            this.quitToolStripMenuItem.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
+            this.quitToolStripMenuItem.Name = "quitToolStripMenuItem";
+            this.quitToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
+            this.quitToolStripMenuItem.Text = "Quit";
+            this.quitToolStripMenuItem.Click += new System.EventHandler(this.quitToolStripMenuItem_Click);
             // 
             // panel2
             // 
@@ -144,46 +145,6 @@
             this.webBrowser1.Size = new System.Drawing.Size(1064, 579);
             this.webBrowser1.TabIndex = 0;
             // 
-            // panel3
-            // 
-            this.panel3.Controls.Add(this.ApplyButton);
-            this.panel3.Controls.Add(this.CancelButton);
-            this.panel3.Controls.Add(this.OkButton);
-            this.panel3.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.panel3.Location = new System.Drawing.Point(0, 636);
-            this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(1264, 45);
-            this.panel3.TabIndex = 3;
-            // 
-            // OkButton
-            // 
-            this.OkButton.Location = new System.Drawing.Point(981, 10);
-            this.OkButton.Name = "OkButton";
-            this.OkButton.Padding = new System.Windows.Forms.Padding(5);
-            this.OkButton.Size = new System.Drawing.Size(88, 27);
-            this.OkButton.TabIndex = 0;
-            this.OkButton.Text = "OK";
-            this.OkButton.Click += new System.EventHandler(this.OkButton_Click);
-            // 
-            // CancelButton
-            // 
-            this.CancelButton.Location = new System.Drawing.Point(1075, 10);
-            this.CancelButton.Name = "CancelButton";
-            this.CancelButton.Padding = new System.Windows.Forms.Padding(5);
-            this.CancelButton.Size = new System.Drawing.Size(88, 27);
-            this.CancelButton.TabIndex = 1;
-            this.CancelButton.Text = "Cancel";
-            this.CancelButton.Click += new System.EventHandler(this.CancelButton_Click);
-            // 
-            // ApplyButton
-            // 
-            this.ApplyButton.Location = new System.Drawing.Point(1169, 10);
-            this.ApplyButton.Name = "ApplyButton";
-            this.ApplyButton.Padding = new System.Windows.Forms.Padding(5);
-            this.ApplyButton.Size = new System.Drawing.Size(88, 27);
-            this.ApplyButton.TabIndex = 2;
-            this.ApplyButton.Text = "Apply";
-            // 
             // darkStatusStrip1
             // 
             this.darkStatusStrip1.AutoSize = false;
@@ -202,7 +163,48 @@
             // toolStripStatusLabel1
             // 
             this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
-            this.toolStripStatusLabel1.Size = new System.Drawing.Size(0, 23);
+            this.toolStripStatusLabel1.Size = new System.Drawing.Size(0, 0);
+            // 
+            // panel3
+            // 
+            this.panel3.Controls.Add(this.ApplyButton);
+            this.panel3.Controls.Add(this.CancelButton);
+            this.panel3.Controls.Add(this.OkButton);
+            this.panel3.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.panel3.Location = new System.Drawing.Point(0, 636);
+            this.panel3.Name = "panel3";
+            this.panel3.Size = new System.Drawing.Size(1264, 45);
+            this.panel3.TabIndex = 3;
+            // 
+            // ApplyButton
+            // 
+            this.ApplyButton.Location = new System.Drawing.Point(1169, 10);
+            this.ApplyButton.Name = "ApplyButton";
+            this.ApplyButton.Padding = new System.Windows.Forms.Padding(5);
+            this.ApplyButton.Size = new System.Drawing.Size(88, 27);
+            this.ApplyButton.TabIndex = 2;
+            this.ApplyButton.Text = "Apply";
+            this.ApplyButton.Click += new System.EventHandler(this.ApplyButton_Click);
+            // 
+            // CancelButton
+            // 
+            this.CancelButton.Location = new System.Drawing.Point(1075, 10);
+            this.CancelButton.Name = "CancelButton";
+            this.CancelButton.Padding = new System.Windows.Forms.Padding(5);
+            this.CancelButton.Size = new System.Drawing.Size(88, 27);
+            this.CancelButton.TabIndex = 1;
+            this.CancelButton.Text = "Cancel";
+            this.CancelButton.Click += new System.EventHandler(this.CancelButton_Click);
+            // 
+            // OkButton
+            // 
+            this.OkButton.Location = new System.Drawing.Point(981, 10);
+            this.OkButton.Name = "OkButton";
+            this.OkButton.Padding = new System.Windows.Forms.Padding(5);
+            this.OkButton.Size = new System.Drawing.Size(88, 27);
+            this.OkButton.TabIndex = 0;
+            this.OkButton.Text = "OK";
+            this.OkButton.Click += new System.EventHandler(this.OkButton_Click);
             // 
             // ScriptEditor
             // 
@@ -221,9 +223,9 @@
             this.darkMenuStrip1.ResumeLayout(false);
             this.darkMenuStrip1.PerformLayout();
             this.panel2.ResumeLayout(false);
-            this.panel3.ResumeLayout(false);
             this.darkStatusStrip1.ResumeLayout(false);
             this.darkStatusStrip1.PerformLayout();
+            this.panel3.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
