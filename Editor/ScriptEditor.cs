@@ -60,7 +60,21 @@ namespace Editor
         public string GetParentPath()
         {
             string editorRoot = DataManager.Instance.ProjectPath;
-            string mainRoot = Directory.GetParent(editorRoot).Parent.FullName;
+            string mainRoot = "";
+
+            if (String.IsNullOrEmpty(editorRoot))
+            {
+                editorRoot = Directory.GetCurrentDirectory();
+            }
+
+            if (File.Exists(Path.Combine(editorRoot, "Editor.exe")))
+            {
+                mainRoot = Directory.GetParent(editorRoot).Parent.FullName;
+            }
+            else
+            {
+                mainRoot = editorRoot;
+            }
 
             return mainRoot;
         }

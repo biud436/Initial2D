@@ -41,12 +41,68 @@ namespace Editor
         public int MapWidth { get; set; }
         public int MapHeight { get; set; }
         public int CurrentLayer { get; set; }
-        public List<int> Layer1 { get; set; }
+        public int StartMapId { get; set; }
+        public int CurrentMapId { get; set; }
         public string TilesetImage { get; set; }
+
+        public Map CurerntMap { get; set; }
+
+        public List<int> Layer1 { get; set; }
 
         private DataManager()
         {
 
+        }
+
+        private string GetOutputMapFilePath(string filename)
+        {
+            string editorRoot = DataManager.Instance.ProjectPath;
+            string mainRoot = "";
+
+            if (String.IsNullOrEmpty(editorRoot))
+            {
+                editorRoot = Directory.GetCurrentDirectory();
+            }
+
+            if (File.Exists(Path.Combine(editorRoot, "Editor.exe")))
+            {
+                mainRoot = Directory.GetParent(editorRoot).Parent.FullName;
+            }
+            else
+            {
+                mainRoot = editorRoot;
+            }
+
+            string currentPath = Path.Combine(mainRoot, "resources", "maps", filename);
+
+            return currentPath;
+        }
+
+        private string GetMainRootPath()
+        {
+            string editorRoot = DataManager.Instance.ProjectPath;
+            string mainRoot = "";
+
+            if (String.IsNullOrEmpty(editorRoot))
+            {
+                editorRoot = Directory.GetCurrentDirectory();
+            }
+
+            if (File.Exists(Path.Combine(editorRoot, "Editor.exe")))
+            {
+                mainRoot = Directory.GetParent(editorRoot).Parent.FullName;
+            }
+            else
+            {
+                mainRoot = editorRoot;
+            }
+
+            if(String.IsNullOrEmpty(mainRoot))
+            {
+                mainRoot = Directory.GetCurrentDirectory();
+            }
+
+            return mainRoot;
         }
 
         private string GetOutputFilePath()
@@ -64,6 +120,9 @@ namespace Editor
             MapWidth = 17;
             MapHeight = 13;
             CurrentLayer = 1;
+            StartMapId = 1;
+            CurrentMapId = 1;
+
             Layer1 = new List<int>();
             for (var y = 0; y < MapHeight; y++)
             {
@@ -72,7 +131,34 @@ namespace Editor
                     Layer1.Add(0);
                 }
             }
+
             TilesetImage = "";
+        }
+
+        public void ImportMapFiles()
+        {
+            // 맵 파일을 로드합니다.
+            var filename = GetOutputMapFilePath(String.Format("map{0}.json", CurrentMapId));
+
+            // 맵 파일이 없으면 처음부터 생성합니다.
+            if (!File.Exists(filename))
+            {
+                Layer1 = new List<int>();
+                for (var y = 0; y < MapHeight; y++)
+                {
+                    for (var x = 0; x < MapWidth; x++)
+                    {
+                        Layer1.Add(0);
+                    }
+                }
+                return;
+            }
+
+            string contents = File.ReadAllText(filename);
+            
+            Map mapFile = JsonConvert.DeserializeObject<Map>(contents);
+            CurrentMapId = mapFile.Id;
+            Layer1 = mapFile.Layer1;
         }
 
         public void Import()
@@ -89,7 +175,7 @@ namespace Editor
             try
             {
                 string contents = File.ReadAllText(path, Encoding.UTF8);
-                MapFile option = JsonConvert.DeserializeObject<MapFile>(contents);
+                ProjectConfigFile option = JsonConvert.DeserializeObject<ProjectConfigFile>(contents);
 
                 ProjectPath = option.ProjectPath;
                 TileWidth = option.TileWidth;
@@ -97,9 +183,11 @@ namespace Editor
                 MapWidth = option.MapWidth;
                 MapHeight = option.MapHeight;
                 CurrentLayer = option.CurrentLayer;
-                Layer1 = option.Layer1;
-
+                StartMapId = option.StartMapId;
+                CurrentMapId = option.CurrentMapId;
                 TilesetImage = option.TilesetImage;
+
+                ImportMapFiles();
 
             } catch(Exception ex) {
 
@@ -107,9 +195,23 @@ namespace Editor
 
         }
 
+        public void SaveMapFiles()
+        {
+            // 맵 파일을 저장합니다.
+            Map mapFile = new Map
+            {
+                Name = "None",
+                Id = CurrentMapId,
+                Layer1 = Layer1,
+            };
+
+            string contents = JsonConvert.SerializeObject(mapFile, Formatting.Indented);
+            File.WriteAllText(GetOutputMapFilePath("map1.json"), contents);
+        }
+
         public void Save()
         {
-            MapFile option = new MapFile()
+            ProjectConfigFile option = new ProjectConfigFile()
             {
                 ProjectPath = ProjectPath,
                 TileWidth = TileWidth,
@@ -117,14 +219,18 @@ namespace Editor
                 MapWidth = MapWidth,
                 MapHeight = MapHeight,
                 CurrentLayer = CurrentLayer,
-                Layer1 = Layer1,
+                StartMapId = StartMapId,
+                CurrentMapId = CurrentMapId,
                 TilesetImage = TilesetImage,
             };
 
-            // 문자열로 변환합니다.
+            // 프로젝트 파일을 저장합니다.
             string contents = JsonConvert.SerializeObject(option, Formatting.Indented);
-
             File.WriteAllText(GetOutputFilePath(), contents);
+            File.WriteAllText(Path.Combine(GetMainRootPath(), "settings.json"), contents);
+
+            SaveMapFiles();
+
         }
 
     }

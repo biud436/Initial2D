@@ -74,11 +74,26 @@ void Tilemap::initialize()
 
 		int	x, y, tempTileId;
 
-		Json::Value layer1 = _root["Layer1"];
 		_width = _root["MapWidth"].asInt();
 		_height = _root["MapHeight"].asInt();
 		
 		tempTileId = 46 - 1;
+
+		int startMapId = _root["StartMapId"].asInt();
+
+		// 맵 파일을 로드합니다.
+		std::ostringstream stringStream;
+		stringStream << ".\\resources\\maps\\map" << startMapId << ".json";
+		std::ifstream mapFile(stringStream.str(), std::ifstream::binary);
+
+		if (!mapFile.good()) {
+			throw new std::exception("the map file is not existed");
+		}
+
+		Json::Value map;
+		mapFile >> map;
+
+		Json::Value layer1 = map["Layer1"];
 
 		// 타일을 설정합니다 (디커플링 필요)
 		// 각 타일 ID는 불러올 타일 이미지와 연관됩니다.

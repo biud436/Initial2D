@@ -88,12 +88,12 @@ void App::Initialize()
 	// Set the App Icon from a certain image.
 	SetAppIcon(".\\resources\\icons\\icon.png");
 
-	// Lua Interpreter Initialization
-	Lua_Init();
-	
 	// 게임 상태 머신 초기화
 	m_pGameStateMachine = new GameStateMachine();
 	m_pGameStateMachine->changeState(new MenuState());
+
+	// Lua Interpreter Initialization
+	Lua_Init();
 
 //	// 프로세스 정보 출력
 //	try {

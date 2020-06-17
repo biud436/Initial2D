@@ -52,7 +52,21 @@ namespace Editor
         public string GetParentPath()
         {
             string editorRoot = DataManager.Instance.ProjectPath;
-            string mainRoot = Directory.GetParent(editorRoot).Parent.FullName;
+            string mainRoot = "";
+
+            if (String.IsNullOrEmpty(editorRoot))
+            {
+                editorRoot = Directory.GetCurrentDirectory();
+            }
+
+            if (File.Exists(Path.Combine(editorRoot, "Editor.exe")))
+            {
+                mainRoot = Directory.GetParent(editorRoot).Parent.FullName;
+            }
+            else
+            {
+                mainRoot = editorRoot;
+            }
 
             return mainRoot;
         }
@@ -97,8 +111,7 @@ namespace Editor
 
         private void InitWithMapTree()
         {
-            string editorRoot = DataManager.Instance.ProjectPath;
-            string mainRoot = Directory.GetParent(editorRoot).Parent.FullName;
+            string mainRoot = GetParentPath();
 
             // 리소스 노드
             resourceNode = new DarkTreeNode();
@@ -367,6 +380,29 @@ namespace Editor
         private void ScriptEditor_OnLoadScript(object sender, ScriptEditor.OnLoadScriptArgs e)
         {
             
+        }
+
+        private void toolStripButton8_Click(object sender, EventArgs e)
+        {
+            using (var process = new Process())
+            {
+                string path = Path.Combine(Directory.GetCurrentDirectory(), "Engine", "Initial2D.exe");
+                ProcessStartInfo info = new ProcessStartInfo()
+                {
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8,
+                    FileName = path,
+                    CreateNoWindow = false
+                };
+
+                info.WorkingDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Engine");
+
+                process.StartInfo = info;
+                process.Start();
+            }
         }
     }
 }

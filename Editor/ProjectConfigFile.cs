@@ -9,7 +9,7 @@ using Newtonsoft.Json;
 namespace Editor
 {
     [JsonObject]
-    public class MapFile
+    public class ProjectConfigFile
     {
         public string ProjectPath { get; set; }
         public int TileWidth { get; set; }
@@ -17,7 +17,16 @@ namespace Editor
         public int MapWidth { get; set; }
         public int MapHeight { get; set; }
         public int CurrentLayer { get; set; }
-        public List<int> Layer1 { get; set; }
+        public int StartMapId { get; set; }
+        public int CurrentMapId { get; set; }
         public string TilesetImage { get; set; }
+    }
+
+    [JsonObject]
+    public class Map
+    {
+        public string Name { get; set; }
+        public int Id { get; set; }
+        public List<int> Layer1 { get; set; }
     }
 }
