@@ -89,6 +89,7 @@
     <Compile Include="EditorMain.Designer.cs">
       <DependentUpon>EditorMain.cs</DependentUpon>
     </Compile>
+    <Compile Include="MapFile.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProjectEditor.cs">
       <SubType>Form</SubType>

@@ -95,15 +95,15 @@ void App::Initialize()
 	m_pGameStateMachine = new GameStateMachine();
 	m_pGameStateMachine->changeState(new MenuState());
 
-	// 프로세스 정보 출력
-	try {
-		Initial2D::Process process(L"powershell Get-Process");
-		Initial2D::Process process2(L"cmd /c \"echo wow...\"");
-	} catch(std::exception ex) {
-#ifdef _DEBUG
-		printf_s(ex.what());
-#endif // !_DEBUG
-	}
+//	// 프로세스 정보 출력
+//	try {
+//		Initial2D::Process process(L"powershell Get-Process");
+//		Initial2D::Process process2(L"cmd /c \"echo wow...\"");
+//	} catch(std::exception ex) {
+//#ifdef _DEBUG
+//		printf_s(ex.what());
+//#endif // !_DEBUG
+//	}
 }
 
 /**

@@ -51,24 +51,15 @@ namespace Editor
         /// <returns></returns>
         public string GetParentPath()
         {
-            string currentDir = Directory.GetCurrentDirectory();
-            string parentDir = Directory.GetParent(currentDir).ToString();
+            string editorRoot = DataManager.Instance.ProjectPath;
+            string mainRoot = Directory.GetParent(editorRoot).Parent.FullName;
 
-            for (int i = 0; i < 2; i++)
-            {
-                parentDir = Directory.GetParent(parentDir).ToString();
-            }
-
-            return parentDir;
+            return mainRoot;
         }
 
         public void InitWithObjectView(string parentDir)
         {
-            //// 오브젝트 뷰를 표시합니다 (임시 코드)
-            //string htmlPath = Path.Combine(parentDir, "Editor").Replace("\\", "/");
-            //webBrowser1.Url = new Uri(String.Format("file:///{0}/res/view/object-view.html", htmlPath));
-            //webBrowser1.DocumentCompleted += WebBrowser1_DocumentCompleted;
-            //webBrowser1.ObjectForScripting = true;
+
         }
 
         private void WebBrowser1_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
@@ -99,11 +90,6 @@ namespace Editor
                     pictureBox1.Image = null;
                 }
             }
-
-            // 임시 코드
-            string parentDir = GetParentPath();
-            string dataPath = Path.Combine(parentDir, "resources", "tiles", "tileset16-8x13.png");
-            InitWithObjectView(parentDir);
 
             // 맵 트리 추가
             InitWithMapTree();
@@ -353,6 +339,34 @@ namespace Editor
             {
                 
             }
+        }
+
+        private void darkMapTree_DoubleClick(object sender, EventArgs e)
+        {
+            // 선택된 노드를 찾습니다.
+            var nodes = darkMapTree.SelectedNodes;
+            var firstNode = nodes.First();
+
+            if(firstNode != null)
+            {
+                var name = firstNode.Text;
+                if(Path.GetExtension(name) == ".lua")
+                {
+                    var scriptEditor = new ScriptEditor();
+                    scriptEditor.ShowDialog();
+                    scriptEditor.OnLoadScript += ScriptEditor_OnLoadScript;
+                } else
+                {
+                    MessageBox.Show(Path.Combine(GetParentPath(), firstNode.FullPath));
+                }
+
+            }
+
+        }
+
+        private void ScriptEditor_OnLoadScript(object sender, ScriptEditor.OnLoadScriptArgs e)
+        {
+            
         }
     }
 }

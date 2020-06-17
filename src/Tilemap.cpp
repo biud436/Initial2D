@@ -3,6 +3,8 @@
 #include "GameStateMachine.h"
 #include "TextureManager.h"
 #include "File.h"
+#include <fstream>
+
 
 #ifdef TEST_MODE
 #include <iostream>
@@ -15,6 +17,7 @@ Tilemap::Tilemap(int width, int height) :
 	_width(width),
 	_height(height),
 	_isLoaded(false),
+	_root(),
 	GameObject()
 {
 	
@@ -43,8 +46,7 @@ void Tilemap::removeTiles()
 
 bool Tilemap::loadImages() 
 {
-	// 디커플링 필요
-	std::string filename = ".\\resources\\tiles\\tileset16-8x13.png";
+	std::string filename = _root["TilesetImage"].asString();
 
 	// 타일셋을 불러옵니다.
 	if (!TheTextureManager.Load(filename, "main_tileset", 0)) {
@@ -65,7 +67,16 @@ void Tilemap::initialize()
 {
 	try 
 	{
+		// settings.json 파일 로드
+		std::ifstream config("settings.json", std::ifstream::binary);
+		
+		config >> _root;
+
 		int	x, y, tempTileId;
+
+		Json::Value layer1 = _root["Layer1"];
+		_width = std::stoi(_root["MapWidth"].asString());
+		_height = std::stoi(_root["MapHeight"].asString());
 		
 		tempTileId = 46 - 1;
 
@@ -75,7 +86,7 @@ void Tilemap::initialize()
 			std::vector<int> yTiles;
 
 			for (x = 0; x < _width; x++) {
-				yTiles.push_back(tempTileId);
+				yTiles.push_back(layer1[y * _width + x].asInt());
 			}
 
 			_tileIds.push_back(yTiles);
@@ -111,8 +122,8 @@ void Tilemap::setTile(int x, int y, int data)
 void Tilemap::createTiles()
 {
 	int cols = 8;
-	int tileWidth = 16;
-	int tileHeight = 16;
+	int tileWidth = std::stoi(_root["TileWidth"].asString());
+	int tileHeight = std::stoi(_root["TileHeight"].asString());
 
 	_tiles.resize(_width * _height);
 	

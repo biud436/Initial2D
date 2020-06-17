@@ -89,17 +89,17 @@ namespace Editor
             try
             {
                 string contents = File.ReadAllText(path, Encoding.UTF8);
-                Dictionary<string, string> option = JsonConvert.DeserializeObject<Dictionary<string, string>>(contents);
+                MapFile option = JsonConvert.DeserializeObject<MapFile>(contents);
 
-                ProjectPath = option["ProjectPath"];
-                TileWidth = int.Parse(option["TileWidth"]);
-                TileHeight = int.Parse(option["TileHeight"]);
-                MapWidth = int.Parse(option["MapWidth"]);
-                MapHeight = int.Parse(option["MapHeight"]);
-                CurrentLayer = int.Parse(option["CurrentLayer"]);
-                Layer1 = JsonConvert.DeserializeObject<List<int>>(option["Layer1"]);
+                ProjectPath = option.ProjectPath;
+                TileWidth = option.TileWidth;
+                TileHeight = option.TileHeight;
+                MapWidth = option.MapWidth;
+                MapHeight = option.MapHeight;
+                CurrentLayer = option.CurrentLayer;
+                Layer1 = option.Layer1;
 
-                TilesetImage = option["TilesetImage"];
+                TilesetImage = option.TilesetImage;
 
             } catch(Exception ex) {
 
@@ -109,21 +109,17 @@ namespace Editor
 
         public void Save()
         {
-            
-            Dictionary<string, string> option = new Dictionary<string, string>();
-
-            // 매개변수를 JSON Key/Value로 변환합니다.
-            option["ProjectPath"] = ProjectPath;
-            option["TileWidth"] = TileWidth.ToString();
-            option["TileHeight"] = TileHeight.ToString();
-            option["MapWidth"] = MapWidth.ToString();
-            option["MapHeight"] = MapHeight.ToString();
-            option["CurrentLayer"] = CurrentLayer.ToString();
-
-            // 리스트를 JSON 문자열로 변환합니다.
-            option["Layer1"] = JsonConvert.SerializeObject(Layer1);
-
-            option["TilesetImage"] = TilesetImage.ToString();
+            MapFile option = new MapFile()
+            {
+                ProjectPath = ProjectPath,
+                TileWidth = TileWidth,
+                TileHeight = TileHeight,
+                MapWidth = MapWidth,
+                MapHeight = MapHeight,
+                CurrentLayer = CurrentLayer,
+                Layer1 = Layer1,
+                TilesetImage = TilesetImage,
+            };
 
             // 문자열로 변환합니다.
             string contents = JsonConvert.SerializeObject(option, Formatting.Indented);

@@ -6,6 +6,7 @@
 #include <memory>
 #include "GameObject.h"
 #include "Sprite.h"
+#include <json/json.h>
 
 class App;
 
@@ -41,6 +42,7 @@ private:
 	bool _isLoaded;
 	std::vector<std::vector<int>> _tileIds;
 	std::vector<Sprite*> _tiles;
+	Json::Value _root;
 };
 
 }

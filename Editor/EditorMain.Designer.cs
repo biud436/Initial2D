@@ -454,6 +454,7 @@
             this.darkMapTree.Size = new System.Drawing.Size(321, 493);
             this.darkMapTree.TabIndex = 0;
             this.darkMapTree.Text = "darkMapTree";
+            this.darkMapTree.DoubleClick += new System.EventHandler(this.darkMapTree_DoubleClick);
             this.darkMapTree.MouseDown += new System.Windows.Forms.MouseEventHandler(this.darkMapTree_MouseDown);
             // 
             // darkSectionPanel4

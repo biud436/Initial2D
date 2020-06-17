@@ -17,7 +17,26 @@ namespace Editor
     public partial class ScriptEditor : DarkForm
     {
 
+        /// <summary>
+        /// OnLoadScriptArgs
+        /// </summary>
+        public class OnLoadScriptArgs : EventArgs
+        {
+            private string scriptName;
+
+            public OnLoadScriptArgs(string name)
+            {
+                this.scriptName = name;
+            }
+
+            public string ScriptName
+            {
+                get { return this.scriptName; }
+            }
+        }
+
         private string lastScriptPath = null;
+        public event EventHandler<OnLoadScriptArgs> OnLoadScript;
 
         public ScriptEditor()
         {
@@ -40,15 +59,10 @@ namespace Editor
          */
         public string GetParentPath()
         {
-            string currentDir = Directory.GetCurrentDirectory();
-            string parentDir = Directory.GetParent(currentDir).ToString();
+            string editorRoot = DataManager.Instance.ProjectPath;
+            string mainRoot = Directory.GetParent(editorRoot).Parent.FullName;
 
-            for (int i = 0; i < 2; i++)
-            {
-                parentDir = Directory.GetParent(parentDir).ToString();
-            }
-
-            return parentDir;
+            return mainRoot;
         }
 
         public void Initialize()
