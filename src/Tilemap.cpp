@@ -68,7 +68,7 @@ void Tilemap::initialize()
 	try 
 	{
 		// settings.json 파일 로드
-		std::ifstream config("settings.json", std::ifstream::binary);
+		std::ifstream config(".\\resources\\maps\\settings.json", std::ifstream::binary);
 		
 		config >> _root;
 
