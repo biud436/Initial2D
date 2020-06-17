@@ -127,6 +127,7 @@ namespace Editor
 
         private void OkButton_Click(object sender, EventArgs e)
         {
+            SaveScript(lastScriptPath);
             Close();
         }
 
@@ -139,5 +140,25 @@ namespace Editor
         {
             SaveScript(lastScriptPath);
         }
+
+        /// <summary>
+        /// 단축키를 정의합니다.
+        /// 
+        /// Alt + A 를 누르면 적용 버튼을 클릭합니다.
+        /// 
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="keyData"></param>
+        /// <returns></returns>
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == (Keys.Alt | Keys.A))
+            {
+                SaveScript(lastScriptPath);
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
     }
 }

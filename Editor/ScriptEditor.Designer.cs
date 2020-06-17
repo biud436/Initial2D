@@ -184,7 +184,6 @@
             this.ApplyButton.Size = new System.Drawing.Size(88, 27);
             this.ApplyButton.TabIndex = 2;
             this.ApplyButton.Text = "Apply";
-            this.ApplyButton.Click += new System.EventHandler(this.ApplyButton_Click);
             // 
             // CancelButton
             // 
@@ -215,6 +214,7 @@
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.darkMenuStrip1);
             this.Controls.Add(this.panel3);
+            this.KeyPreview = true;
             this.MainMenuStrip = this.darkMenuStrip1;
             this.Name = "ScriptEditor";
             this.Text = "ScriptEditor";
