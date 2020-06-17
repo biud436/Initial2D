@@ -46,10 +46,6 @@
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.panel2 = new System.Windows.Forms.Panel();
             this.tilemap = new System.Windows.Forms.PictureBox();
-            this.darkSectionPanel3 = new DarkUI.Controls.DarkSectionPanel();
-            this.panel4 = new System.Windows.Forms.Panel();
-            this.webBrowser1 = new System.Windows.Forms.WebBrowser();
-            this.darkObjectAddButton = new DarkUI.Controls.DarkButton();
             this.darkMenuStrip2 = new DarkUI.Controls.DarkMenuStrip();
             this.darkToolStrip1 = new DarkUI.Controls.DarkToolStrip();
             this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
@@ -66,11 +62,12 @@
             this.toolStripButton12 = new System.Windows.Forms.ToolStripButton();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.darkSectionPanel2 = new DarkUI.Controls.DarkSectionPanel();
-            this.darkButton2 = new DarkUI.Controls.DarkButton();
-            this.darkButton1 = new DarkUI.Controls.DarkButton();
             this.panel3 = new System.Windows.Forms.Panel();
-            this.darkTreeView1 = new DarkUI.Controls.DarkTreeView();
+            this.darkMapTree = new DarkUI.Controls.DarkTreeView();
             this.darkSectionPanel4 = new DarkUI.Controls.DarkSectionPanel();
+            this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
             this.darkSectionPanel1 = new Editor.DarkTilesetPanel();
             this.panel1 = new System.Windows.Forms.Panel();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
@@ -78,12 +75,11 @@
             this.darkStatusStrip1.SuspendLayout();
             this.panel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.tilemap)).BeginInit();
-            this.darkSectionPanel3.SuspendLayout();
-            this.panel4.SuspendLayout();
             this.darkToolStrip1.SuspendLayout();
             this.darkSectionPanel2.SuspendLayout();
             this.panel3.SuspendLayout();
             this.darkSectionPanel4.SuspendLayout();
+            this.contextMenuStrip1.SuspendLayout();
             this.darkSectionPanel1.SuspendLayout();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
@@ -100,7 +96,7 @@
             this.darkMenuStrip1.Location = new System.Drawing.Point(0, 0);
             this.darkMenuStrip1.Name = "darkMenuStrip1";
             this.darkMenuStrip1.Padding = new System.Windows.Forms.Padding(3, 2, 0, 2);
-            this.darkMenuStrip1.Size = new System.Drawing.Size(970, 24);
+            this.darkMenuStrip1.Size = new System.Drawing.Size(1304, 24);
             this.darkMenuStrip1.TabIndex = 0;
             this.darkMenuStrip1.Text = "darkMenuStrip1";
             // 
@@ -208,7 +204,7 @@
             this.darkStatusStrip1.Location = new System.Drawing.Point(0, 581);
             this.darkStatusStrip1.Name = "darkStatusStrip1";
             this.darkStatusStrip1.Padding = new System.Windows.Forms.Padding(0, 5, 0, 3);
-            this.darkStatusStrip1.Size = new System.Drawing.Size(970, 29);
+            this.darkStatusStrip1.Size = new System.Drawing.Size(1304, 29);
             this.darkStatusStrip1.SizingGrip = false;
             this.darkStatusStrip1.TabIndex = 1;
             this.darkStatusStrip1.Text = "darkStatusStrip1";
@@ -241,46 +237,6 @@
             this.tilemap.MouseMove += new System.Windows.Forms.MouseEventHandler(this.tilemap_MouseMove);
             this.tilemap.MouseUp += new System.Windows.Forms.MouseEventHandler(this.tilemap_MouseUp);
             // 
-            // darkSectionPanel3
-            // 
-            this.darkSectionPanel3.Controls.Add(this.panel4);
-            this.darkSectionPanel3.Controls.Add(this.darkObjectAddButton);
-            this.darkSectionPanel3.Location = new System.Drawing.Point(969, 55);
-            this.darkSectionPanel3.Name = "darkSectionPanel3";
-            this.darkSectionPanel3.SectionHeader = "오브젝트 편집";
-            this.darkSectionPanel3.Size = new System.Drawing.Size(325, 314);
-            this.darkSectionPanel3.TabIndex = 5;
-            // 
-            // panel4
-            // 
-            this.panel4.Controls.Add(this.webBrowser1);
-            this.panel4.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel4.Location = new System.Drawing.Point(1, 25);
-            this.panel4.Name = "panel4";
-            this.panel4.Size = new System.Drawing.Size(323, 256);
-            this.panel4.TabIndex = 2;
-            // 
-            // webBrowser1
-            // 
-            this.webBrowser1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.webBrowser1.Location = new System.Drawing.Point(0, 0);
-            this.webBrowser1.MinimumSize = new System.Drawing.Size(20, 20);
-            this.webBrowser1.Name = "webBrowser1";
-            this.webBrowser1.ScrollBarsEnabled = false;
-            this.webBrowser1.Size = new System.Drawing.Size(323, 256);
-            this.webBrowser1.TabIndex = 0;
-            // 
-            // darkObjectAddButton
-            // 
-            this.darkObjectAddButton.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.darkObjectAddButton.Location = new System.Drawing.Point(1, 281);
-            this.darkObjectAddButton.Name = "darkObjectAddButton";
-            this.darkObjectAddButton.Padding = new System.Windows.Forms.Padding(5);
-            this.darkObjectAddButton.Size = new System.Drawing.Size(323, 32);
-            this.darkObjectAddButton.TabIndex = 1;
-            this.darkObjectAddButton.Text = "Add";
-            this.darkObjectAddButton.Click += new System.EventHandler(this.darkObjectAddButton_Click);
-            // 
             // darkMenuStrip2
             // 
             this.darkMenuStrip2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(63)))), ((int)(((byte)(65)))));
@@ -289,7 +245,7 @@
             this.darkMenuStrip2.Location = new System.Drawing.Point(0, 0);
             this.darkMenuStrip2.Name = "darkMenuStrip2";
             this.darkMenuStrip2.Padding = new System.Windows.Forms.Padding(3, 2, 0, 2);
-            this.darkMenuStrip2.Size = new System.Drawing.Size(970, 610);
+            this.darkMenuStrip2.Size = new System.Drawing.Size(1304, 610);
             this.darkMenuStrip2.TabIndex = 6;
             this.darkMenuStrip2.Text = "darkMenuStrip2";
             // 
@@ -314,7 +270,7 @@
             this.darkToolStrip1.Location = new System.Drawing.Point(0, 24);
             this.darkToolStrip1.Name = "darkToolStrip1";
             this.darkToolStrip1.Padding = new System.Windows.Forms.Padding(5, 0, 1, 0);
-            this.darkToolStrip1.Size = new System.Drawing.Size(970, 28);
+            this.darkToolStrip1.Size = new System.Drawing.Size(1304, 28);
             this.darkToolStrip1.TabIndex = 7;
             this.darkToolStrip1.Text = "darkToolStrip1";
             // 
@@ -472,50 +428,33 @@
             // 
             // darkSectionPanel2
             // 
-            this.darkSectionPanel2.Controls.Add(this.darkButton2);
-            this.darkSectionPanel2.Controls.Add(this.darkButton1);
             this.darkSectionPanel2.Controls.Add(this.panel3);
-            this.darkSectionPanel2.Location = new System.Drawing.Point(970, 374);
+            this.darkSectionPanel2.Location = new System.Drawing.Point(970, 55);
             this.darkSectionPanel2.Name = "darkSectionPanel2";
-            this.darkSectionPanel2.SectionHeader = "오브젝트 목록";
-            this.darkSectionPanel2.Size = new System.Drawing.Size(323, 200);
+            this.darkSectionPanel2.SectionHeader = "리소스 트리";
+            this.darkSectionPanel2.Size = new System.Drawing.Size(323, 519);
             this.darkSectionPanel2.TabIndex = 8;
-            // 
-            // darkButton2
-            // 
-            this.darkButton2.Location = new System.Drawing.Point(241, 170);
-            this.darkButton2.Name = "darkButton2";
-            this.darkButton2.Padding = new System.Windows.Forms.Padding(5);
-            this.darkButton2.Size = new System.Drawing.Size(75, 23);
-            this.darkButton2.TabIndex = 2;
-            this.darkButton2.Text = "darkButton2";
-            // 
-            // darkButton1
-            // 
-            this.darkButton1.Location = new System.Drawing.Point(160, 170);
-            this.darkButton1.Name = "darkButton1";
-            this.darkButton1.Padding = new System.Windows.Forms.Padding(5);
-            this.darkButton1.Size = new System.Drawing.Size(75, 23);
-            this.darkButton1.TabIndex = 1;
-            this.darkButton1.Text = "darkButton1";
             // 
             // panel3
             // 
-            this.panel3.Controls.Add(this.darkTreeView1);
-            this.panel3.Location = new System.Drawing.Point(3, 28);
+            this.panel3.Controls.Add(this.darkMapTree);
+            this.panel3.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panel3.Location = new System.Drawing.Point(1, 25);
             this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(313, 136);
+            this.panel3.Size = new System.Drawing.Size(321, 493);
             this.panel3.TabIndex = 0;
             // 
-            // darkTreeView1
+            // darkMapTree
             // 
-            this.darkTreeView1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.darkTreeView1.Location = new System.Drawing.Point(0, 0);
-            this.darkTreeView1.MaxDragChange = 20;
-            this.darkTreeView1.Name = "darkTreeView1";
-            this.darkTreeView1.Size = new System.Drawing.Size(313, 136);
-            this.darkTreeView1.TabIndex = 0;
-            this.darkTreeView1.Text = "darkTreeView1";
+            this.darkMapTree.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.darkMapTree.Location = new System.Drawing.Point(0, 0);
+            this.darkMapTree.MaxDragChange = 20;
+            this.darkMapTree.Name = "darkMapTree";
+            this.darkMapTree.ShowIcons = true;
+            this.darkMapTree.Size = new System.Drawing.Size(321, 493);
+            this.darkMapTree.TabIndex = 0;
+            this.darkMapTree.Text = "darkMapTree";
+            this.darkMapTree.MouseDown += new System.Windows.Forms.MouseEventHandler(this.darkMapTree_MouseDown);
             // 
             // darkSectionPanel4
             // 
@@ -526,6 +465,26 @@
             this.darkSectionPanel4.SectionHeader = "맵";
             this.darkSectionPanel4.Size = new System.Drawing.Size(640, 529);
             this.darkSectionPanel4.TabIndex = 9;
+            // 
+            // contextMenuStrip1
+            // 
+            this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripMenuItem1,
+            this.toolStripMenuItem2});
+            this.contextMenuStrip1.Name = "contextMenuStrip1";
+            this.contextMenuStrip1.Size = new System.Drawing.Size(115, 48);
+            // 
+            // toolStripMenuItem1
+            // 
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(114, 22);
+            this.toolStripMenuItem1.Text = "맵 추가";
+            // 
+            // toolStripMenuItem2
+            // 
+            this.toolStripMenuItem2.Name = "toolStripMenuItem2";
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(114, 22);
+            this.toolStripMenuItem2.Text = "맵 삭제";
             // 
             // darkSectionPanel1
             // 
@@ -568,11 +527,10 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ControlDarkDark;
-            this.ClientSize = new System.Drawing.Size(970, 610);
+            this.ClientSize = new System.Drawing.Size(1304, 610);
             this.Controls.Add(this.darkSectionPanel4);
             this.Controls.Add(this.darkSectionPanel2);
             this.Controls.Add(this.darkToolStrip1);
-            this.Controls.Add(this.darkSectionPanel3);
             this.Controls.Add(this.darkSectionPanel1);
             this.Controls.Add(this.darkStatusStrip1);
             this.Controls.Add(this.darkMenuStrip1);
@@ -588,13 +546,12 @@
             this.darkStatusStrip1.PerformLayout();
             this.panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.tilemap)).EndInit();
-            this.darkSectionPanel3.ResumeLayout(false);
-            this.panel4.ResumeLayout(false);
             this.darkToolStrip1.ResumeLayout(false);
             this.darkToolStrip1.PerformLayout();
             this.darkSectionPanel2.ResumeLayout(false);
             this.panel3.ResumeLayout(false);
             this.darkSectionPanel4.ResumeLayout(false);
+            this.contextMenuStrip1.ResumeLayout(false);
             this.darkSectionPanel1.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
@@ -623,7 +580,6 @@
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Panel panel2;
-        private DarkUI.Controls.DarkSectionPanel darkSectionPanel3;
         private DarkUI.Controls.DarkMenuStrip darkMenuStrip2;
         private DarkUI.Controls.DarkToolStrip darkToolStrip1;
         private System.Windows.Forms.ToolStripButton toolStripButton1;
@@ -638,16 +594,14 @@
         private System.Windows.Forms.ToolStripButton toolStripButton10;
         private System.Windows.Forms.ToolStripButton toolStripButton11;
         private System.Windows.Forms.ToolStripButton toolStripButton12;
-        private DarkUI.Controls.DarkButton darkObjectAddButton;
-        private System.Windows.Forms.Panel panel4;
         private System.Windows.Forms.Timer timer1;
-        private System.Windows.Forms.WebBrowser webBrowser1;
         private DarkUI.Controls.DarkSectionPanel darkSectionPanel2;
         private System.Windows.Forms.Panel panel3;
-        private DarkUI.Controls.DarkTreeView darkTreeView1;
-        private DarkUI.Controls.DarkButton darkButton2;
-        private DarkUI.Controls.DarkButton darkButton1;
+        private DarkUI.Controls.DarkTreeView darkMapTree;
         private System.Windows.Forms.PictureBox tilemap;
         private DarkUI.Controls.DarkSectionPanel darkSectionPanel4;
+        private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem2;
     }
 }

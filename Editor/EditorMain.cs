@@ -28,6 +28,9 @@ namespace Editor
         private int lastTileId = 0;
         private TilemapControl tilemapControl;
 
+        private DarkTreeNode mapNode;
+        private DarkTreeNode resourceNode;
+
         public EditorMain()
         {
             InitializeComponent();
@@ -61,11 +64,11 @@ namespace Editor
 
         public void InitWithObjectView(string parentDir)
         {
-            // 오브젝트 뷰를 표시합니다 (임시 코드)
-            string htmlPath = Path.Combine(parentDir, "Editor").Replace("\\", "/");
-            webBrowser1.Url = new Uri(String.Format("file:///{0}/res/view/object-view.html", htmlPath));
-            webBrowser1.DocumentCompleted += WebBrowser1_DocumentCompleted;
-            webBrowser1.ObjectForScripting = true;
+            //// 오브젝트 뷰를 표시합니다 (임시 코드)
+            //string htmlPath = Path.Combine(parentDir, "Editor").Replace("\\", "/");
+            //webBrowser1.Url = new Uri(String.Format("file:///{0}/res/view/object-view.html", htmlPath));
+            //webBrowser1.DocumentCompleted += WebBrowser1_DocumentCompleted;
+            //webBrowser1.ObjectForScripting = true;
         }
 
         private void WebBrowser1_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
@@ -101,6 +104,78 @@ namespace Editor
             string parentDir = GetParentPath();
             string dataPath = Path.Combine(parentDir, "resources", "tiles", "tileset16-8x13.png");
             InitWithObjectView(parentDir);
+
+            // 맵 트리 추가
+            InitWithMapTree();
+        }
+
+        private void InitWithMapTree()
+        {
+            string editorRoot = DataManager.Instance.ProjectPath;
+            string mainRoot = Directory.GetParent(editorRoot).Parent.FullName;
+
+            // 리소스 노드
+            resourceNode = new DarkTreeNode();
+            resourceNode.Text = "resources";
+
+            {
+                var dirInfo = new DirectoryInfo(Path.Combine(mainRoot, "resources"));
+                var dirs = dirInfo.GetDirectories();
+
+                dirInfo.GetFiles().ToList().ForEach((file) =>
+                {
+                    var fileNode = new DarkTreeNode(file.Name);
+                    resourceNode.Nodes.Add(fileNode);
+                });
+
+                foreach (var dir in dirs)
+                {
+                    var dirNode = new DarkTreeNode();
+                    dirNode.Text = dir.Name;
+
+                    resourceNode.Nodes.Add(dirNode);
+
+                    dir.GetFiles().ToList().ForEach((file) =>
+                    {
+                        var fileNode = new DarkTreeNode(file.Name);
+                        dirNode.Nodes.Add(fileNode);
+                    });
+                }
+            }
+
+            // 스크립트 노드
+            var scriptsNode = new DarkTreeNode();
+            scriptsNode.Text = "scripts";
+
+            {
+                var dirInfo = new DirectoryInfo(Path.Combine(mainRoot, "scripts"));
+                var dirs = dirInfo.GetDirectories();
+
+                dirInfo.GetFiles().ToList().ForEach((file) =>
+                {
+                    var fileNode = new DarkTreeNode(file.Name);
+                    scriptsNode.Nodes.Add(fileNode);
+                });
+
+                foreach (var dir in dirs)
+                {
+                    var dirNode = new DarkTreeNode();
+                    dirNode.Text = dir.Name;
+
+                    scriptsNode.Nodes.Add(dirNode);
+
+                    dir.GetFiles().ToList().ForEach((file) =>
+                    {
+                        var fileNode = new DarkTreeNode(file.Name);
+                        dirNode.Nodes.Add(fileNode);
+                    });
+                }
+            }
+
+            darkMapTree.Nodes.Add(resourceNode);
+            darkMapTree.Nodes.Add(scriptsNode);
+
+            darkMapTree.ContextMenuStrip = contextMenuStrip1;
         }
 
         /**
@@ -212,8 +287,8 @@ namespace Editor
 
         private void darkObjectAddButton_Click(object sender, EventArgs e)
         {
-            string contents = webBrowser1.Document.InvokeScript("OK").ToString();
-            MessageBox.Show(contents, Application.ProductName);
+            //string contents = webBrowser1.Document.InvokeScript("OK").ToString();
+            //MessageBox.Show(contents, Application.ProductName);
         }
 
         private void OnDrawTilemap(MouseEventArgs e)
@@ -270,6 +345,14 @@ namespace Editor
         private void EditorMain_Activated(object sender, EventArgs e)
         {
             tilemapControl.Flush();
+        }
+
+        private void darkMapTree_MouseDown(object sender, MouseEventArgs e)
+        {
+            if(e.Button == MouseButtons.Right)
+            {
+                
+            }
         }
     }
 }
