@@ -73,6 +73,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CefHelper.cs" />
+    <Compile Include="Command.cs" />
     <Compile Include="Cursor.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -89,6 +90,7 @@
     <Compile Include="EditorMain.Designer.cs">
       <DependentUpon>EditorMain.cs</DependentUpon>
     </Compile>
+    <Compile Include="GridRenderCommand.cs" />
     <Compile Include="ProjectConfigFile.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProjectEditor.cs">
@@ -110,6 +112,7 @@
     <Compile Include="TilemapControl.Designer.cs">
       <DependentUpon>TilemapControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="TilemapRenderCommand.cs" />
     <EmbeddedResource Include="EditorMain.resx">
       <DependentUpon>EditorMain.cs</DependentUpon>
     </EmbeddedResource>

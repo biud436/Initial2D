@@ -26,6 +26,8 @@ namespace Editor
         private Rectangle prevCursor;
         private Point prevMouse;
 
+        private IRenderCommand RenderCommand;
+
         public TilemapControl()
         {
             InitializeComponent();
@@ -53,6 +55,8 @@ namespace Editor
 
             ResizeRedraw = true;
             DoubleBuffered = true;
+
+            RenderCommand = new TilemapRenderCommand(new GridRenderCommand());
 
             this.Disposed += TilemapControl_Disposed;
         }
@@ -245,36 +249,12 @@ namespace Editor
         /// <param name="g"></param>
         private void InitWithTilemap(Graphics g)
         {
-            int mapWidth = DataManager.Instance.MapWidth;
-            int mapHeight = DataManager.Instance.MapHeight;
-
-            var mx = mouse.X;
-            var my = mouse.Y;
-            var tw = DataManager.Instance.TileWidth;
-            var th = DataManager.Instance.TileHeight;
-
-            Image tilesetImage = tileset;
-
-            var mapCols = tileset.Width / tw;
-            var mapRows = tileset.Height / th;
-
-            for (int y = 0; y < mapHeight; y++)
+            RenderCommand.Execute(g, new object[] 
             {
-                for (int x = 0; x < mapWidth; x++)
-                {
-                    var tileId = DataManager.Instance.Layer1[y * mapWidth + x];
-                    var col = tileId % mapCols;
-                    var row = Math.Abs(tileId / mapCols);
-                    var nx = col * tw;
-                    var ny = row * th;
-
-                    Rectangle srcRect = new Rectangle(nx, ny, tw, th);
-                    g.DrawImage(tilesetImage, x * tw, y * th, srcRect, GraphicsUnit.Pixel);
-
-                }
-            }
-
-            DrawGrid(g);
+                mouse.X,
+                mouse.Y,
+                tileset,
+            });
         }
 
         /// <summary>
@@ -285,35 +265,6 @@ namespace Editor
         /// <param name="mainGraphics"></param>
         private void DrawGrid(Graphics mainGraphics)
         {
-            Pen p = new Pen(Colors.BlueHighlight);
-
-            var g = mainGraphics;
-            var db = DataManager.Instance;
-            List<Point> list = new List<Point>();
-
-            var maxGridX = db.MapWidth * db.TileWidth;
-            var maxGridY = db.MapHeight * db.TileHeight;
-
-            var mx = mouse.X;
-            var my = mouse.Y;
-            var tw = db.TileWidth;
-            var th = db.TileHeight;
-
-            for (int y = 0; y < maxGridY + 1; y += db.TileHeight)
-            {
-                list.Clear();
-                list.Add(new Point(0, y));
-                list.Add(new Point(maxGridX, y));
-                g.DrawLines(p, list.ToArray());
-            }
-
-            for (int x = 0; x < maxGridX + 1; x += db.TileWidth)
-            {
-                list.Clear();
-                list.Add(new Point(x, 0));
-                list.Add(new Point(x, maxGridY));
-                g.DrawLines(p, list.ToArray());
-            }
 
         }
     }
