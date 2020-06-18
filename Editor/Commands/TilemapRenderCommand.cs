@@ -18,6 +18,11 @@ namespace Editor
             nextCommand = adapter;
         }
 
+        public void AddLayer()
+        {
+
+        }
+
         public void Execute(Graphics g, object[] args)
         {
             int mapWidth = DataManager.Instance.MapWidth;

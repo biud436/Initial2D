@@ -14,4 +14,9 @@ namespace Editor
         void Execute(Graphics g, object[] args);
     }
 
+    interface IControlCommand
+    {
+        void Execute(Control control, object[] args);
+    }
+
 }

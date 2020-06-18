@@ -11,6 +11,9 @@ using DarkUI.Config;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
 
+using Microsoft.DirectX;
+using Microsoft.DirectX.Direct3D;
+
 namespace Editor
 {
     public partial class TilemapControl : UserControl
@@ -19,7 +22,7 @@ namespace Editor
         private bool isMouseLB;
         private Point mouse;
         private int lastTileId;
-        private Rectangle tileCurosr;
+        private Rectangle tileCursor;
         private bool isReady;
         private TileCursor cursor;
 
@@ -43,7 +46,7 @@ namespace Editor
             mouse = new Point(0, 0);
             prevMouse = new Point(0, 0);
             prevCursor = new Rectangle(0, 0, 0, 0);
-            tileCurosr = new Rectangle(0, 0, DataManager.Instance.TileWidth, DataManager.Instance.TileHeight);
+            tileCursor = new Rectangle(0, 0, DataManager.Instance.TileWidth, DataManager.Instance.TileHeight);
             lastTileId = 0;
             Size = new Size(638, 503);
 
@@ -128,15 +131,19 @@ namespace Editor
         {
             set
             {
-                this.tileCurosr = value;
+                this.tileCursor = value;
             }
 
             get
             {
-                return this.tileCurosr;
+                return this.tileCursor;
             }
         }
 
+        /// <summary>
+        /// 타일맵 렌더링 함수입니다.
+        /// 묘화 시 더블 버퍼링을 사용하여 깜빡임을 없앱니다.
+        /// </summary>
         public void Draw()
         {
             var g = CreateGraphics();
@@ -167,7 +174,7 @@ namespace Editor
         {
             base.OnMouseDown(e);
 
-            DrawTilemap(e);
+            DrawTile(e);
         }
 
         /// <summary>
@@ -192,14 +199,62 @@ namespace Editor
         {
             base.OnMouseMove(e);
 
-            DrawTilemap(e);
+            DrawTile(e);
+        }
+
+        /// <summary>
+        /// 타일 ID를 설정합니다.
+        /// </summary>
+        /// <param name="value"></param>
+        public void SetLastTileId(int value)
+        {
+            lastTileId = value;
+        }
+
+        /// <summary>
+        /// 마지막 타일 ID를 반환합니다.
+        /// </summary>
+        /// <returns></returns>
+        public int GetLastTileId()
+        {
+            return lastTileId;
+        }
+
+        /// <summary>
+        /// 타일 커서의 위치를 설정합니다.
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        public void SetCursorPosition(int x, int y)
+        {
+            if (cursor == null)
+            {
+                return;
+            }
+
+            cursor.Location = new Point(x, y);
+        }
+
+        /// <summary>
+        /// 타일맵 범위 안에 커서가 있는지 확인합니다.
+        /// </summary>
+        /// <param name="targetX"></param>
+        /// <param name="targetY"></param>
+        /// <returns></returns>
+        public bool IsValidBoundary(int targetX, int targetY)
+        {
+            var db = DataManager.Instance;
+            var mapWidth = db.MapWidth;
+            var mapHeight = db.MapHeight;
+
+            return targetY >= 0 && targetY < mapHeight && targetX >= 0 && targetX < mapWidth;
         }
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="e"></param>
-        private void DrawTilemap(MouseEventArgs e)
+        private void DrawTile(MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {
@@ -223,23 +278,22 @@ namespace Editor
 
                 var mapCols = tileset.Width / tw;
                 var mapRows = tileset.Height / th;
-                var cursorCol = tileCurosr.X / tw;
-                var cursorRow = (tileCurosr.Y / th);
-
-                lastTileId = (cursorRow * mapCols) + cursorCol;
+                var cursorCol = tileCursor.X / tw;
+                var cursorRow = (tileCursor.Y / th);
                 int targetX = nx / tw;
                 int targetY = ny / th;
 
-                // 타일이 맵의 크기를 넘어서 그려지는 것을 방지합니다.
-                if (targetY >= 0 && targetY < mapHeight && targetX >= 0 && targetX < mapWidth)
-                {
-                    DataManager.Instance.Layer1[targetY * mapWidth + targetX] = lastTileId;
+                SetLastTileId((cursorRow * mapCols) + cursorCol);
 
-                    cursor.Location = new Point(nx, ny);
+                // 타일이 맵의 크기를 넘어서 그려지는 것을 방지합니다.
+                if (IsValidBoundary(targetX, targetY))
+                {
+                    DataManager.Instance.Layer1[targetY * mapWidth + targetX] = GetLastTileId();
+
+                    SetCursorPosition(nx, ny);
 
                     Draw();
                 }
-
             }
         }
 
@@ -257,15 +311,5 @@ namespace Editor
             });
         }
 
-        /// <summary>
-        /// 맵에 그리드 라인 표시하는 함수
-        /// 백버퍼에 미리 그려 놓고 복사만 하는 방식을 사용하려 했으나, 적절한 방법을 찾지 못했습니다.
-        /// 따라서 타일을 그릴 때 같이 그려집니다.   
-        /// </summary>
-        /// <param name="mainGraphics"></param>
-        private void DrawGrid(Graphics mainGraphics)
-        {
-
-        }
     }
 }
