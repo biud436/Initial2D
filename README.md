@@ -3,13 +3,27 @@
 
 개인적인 용도로 만든 C++ (GDI) 기반 게임 엔진입니다. 
 
-본래 선호하는 스크립트 언어는 Ruby나 JS이지만 게임에 임베디드(Embedded)하기가 까다롭기 때문에, 
-
-가볍고 임베디드(Embedded)하기도 쉬운 Lua 스크립트를 선택하였습니다.
-
-간단한 2D 게임을 만드는 데 충분한 기능이 있지만, 이건 단순 게임 엔진 제작 연습일 뿐 실제 사용하는 분은 없길 바랍니다.
-
-Link : https://biud436.github.io/Initial2D/html/
+|구분|내용|
+|:--:|:--:|
+|Version|Beta|
+|Platform|Windows|
+|사용된 언어|C++, Lua, C#|
+|Engine Type|자체 개발 엔진|
+|Graphics Device|Windows GDI 사용|
+|이미지 포맷|*.PNG(libpng), *.BMP 지원|
+|오디오 재생|*.ogg 포함 대부분 포맷 지원 (SDL Audio 사용)|
+|동영상 재생|동영상 재생 불가|
+|하드웨어 가속 여부|false|
+|Script Engine|Lua v5.0.3|
+|Map Editor|개발 중 (C# Winform, QT 5)|
+|Data Type|*.json (Game Data), *.sqlite (DB)|
+|암호화 지원|false|
+|멀티 쓰레딩 지원|false|
+|쓰레드 처리 지원|Unstable|
+|프로세스 실행|true|
+|Bitmap Font 지원|true|
+|GetGlyphOutline을 이용한 폰트 묘화 지원|true|
+|타일맵 지원|true|
 
 # 맵 에디터
 맵 에디터는 현재 개발 중입니다.
