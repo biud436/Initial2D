@@ -4,73 +4,214 @@
     <Filter Include="scripts">
       <UniqueIdentifier>{90719b4c-bbca-4201-a13c-b61f7ad8125a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{3e3fa2bc-67ac-43fc-b607-da83ea79d324}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\App.cpp" />
-    <ClCompile Include="src\Encrypt.cpp" />
-    <ClCompile Include="src\ExperimentalFont.cpp" />
-    <ClCompile Include="src\File.cpp" />
-    <ClCompile Include="src\Font.cpp" />
-    <ClCompile Include="src\GameObject.cpp" />
-    <ClCompile Include="src\GameState.cpp" />
-    <ClCompile Include="src\GameStateMachine.cpp" />
-    <ClCompile Include="src\Input.cpp" />
-    <ClCompile Include="src\lua_audio.cpp" />
-    <ClCompile Include="src\lua_font.cpp" />
-    <ClCompile Include="src\lua_input.cpp" />
-    <ClCompile Include="src\lua_prot.cpp" />
-    <ClCompile Include="src\lua_sprite.cpp" />
-    <ClCompile Include="src\lua_tbl.cpp" />
-    <ClCompile Include="src\lua_texture.cpp" />
-    <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\MapState.cpp" />
-    <ClCompile Include="src\MenuState.cpp" />
-    <ClCompile Include="src\Process.cpp" />
-    <ClCompile Include="src\SoundManager.cpp" />
-    <ClCompile Include="src\Sprite.cpp" />
-    <ClCompile Include="src\sqlite3.c" />
-    <ClCompile Include="src\StringUtils.cpp" />
-    <ClCompile Include="src\TextureManager.cpp" />
-    <ClCompile Include="src\Thread.cpp" />
-    <ClCompile Include="src\Utility.cpp" />
-    <ClCompile Include="src\win32Main.cpp" />
-    <ClCompile Include="src\Tilemap.cpp" />
-    <ClCompile Include="src\Window.cpp" />
+    <ClCompile Include="src\App.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Encrypt.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ExperimentalFont.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\File.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Font.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GameObject.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GameState.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GameStateMachine.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Input.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lua_audio.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lua_font.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lua_input.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lua_prot.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lua_sprite.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lua_tbl.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lua_texture.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MapState.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Matrix.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MenuState.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Process.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SoundManager.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sprite.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\sqlite3.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\StringUtils.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TextureManager.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Renderer.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Thread.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Tilemap.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Utility.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\win32Main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Window.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\App.h" />
-    <ClInclude Include="src\Constants.h" />
-    <ClInclude Include="src\Encrypt.h" />
-    <ClInclude Include="src\ExperimentalFont.h" />
-    <ClInclude Include="src\File.h" />
-    <ClInclude Include="src\Font.h" />
-    <ClInclude Include="src\GameObject.h" />
-    <ClInclude Include="src\GameState.h" />
-    <ClInclude Include="src\GameStateMachine.h" />
-    <ClInclude Include="src\Input.h" />
-    <ClInclude Include="src\lua_audio.h" />
-    <ClInclude Include="src\lua_font.h" />
-    <ClInclude Include="src\lua_input.h" />
-    <ClInclude Include="src\lua_prot.h" />
-    <ClInclude Include="src\lua_sprite.h" />
-    <ClInclude Include="src\lua_tbl.h" />
-    <ClInclude Include="src\lua_texture.h" />
-    <ClInclude Include="src\MapState.h" />
-    <ClInclude Include="src\MenuState.h" />
-    <ClInclude Include="src\NonCopyable.h" />
-    <ClInclude Include="src\Point.h" />
-    <ClInclude Include="src\Process.h" />
-    <ClInclude Include="src\Rectangle.h" />
-    <ClInclude Include="src\SoundManager.h" />
-    <ClInclude Include="src\Sprite.h" />
-    <ClInclude Include="src\sqlite3.h" />
-    <ClInclude Include="src\StringUtils.h" />
-    <ClInclude Include="src\TextureManager.h" />
-    <ClInclude Include="src\Thread.h" />
-    <ClInclude Include="src\Utility.h" />
-    <ClInclude Include="src\Vector2D.h" />
-    <ClInclude Include="src\Tilemap.h" />
-    <ClInclude Include="src\Window.h" />
+    <ClInclude Include="src\App.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Constants.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Encrypt.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ExperimentalFont.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\File.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Font.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\GameObject.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\GameState.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\GameStateMachine.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Input.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lua_audio.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lua_font.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lua_input.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lua_prot.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lua_sprite.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lua_tbl.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lua_texture.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MapState.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Matrix.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MenuState.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\NonCopyable.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Point.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Process.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Rectangle.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SoundManager.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Sprite.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\sqlite3.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\StringUtils.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TextureManager.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Renderer.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Thread.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Tilemap.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Utility.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vector2D.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Window.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="scripts\image.lua">
@@ -87,5 +228,6 @@
     <None Include="scripts\tilemap.lua">
       <Filter>scripts</Filter>
     </None>
+    <None Include="EditorQt\.gitignore" />
   </ItemGroup>
 </Project>

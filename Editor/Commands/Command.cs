@@ -9,9 +9,9 @@ using DarkUI.Config;
 
 namespace Editor
 {
-    interface IRenderCommand
+    abstract class IRenderCommand
     {
-        void Execute(Graphics g, object[] args);
+        public abstract void Execute(Graphics g, object[] args);
     }
 
     interface IControlCommand

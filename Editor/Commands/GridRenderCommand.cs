@@ -14,7 +14,7 @@ namespace Editor
     /// </summary>
     class GridRenderCommand : IRenderCommand
     {
-        public void Execute(Graphics g, object[] args)
+        public override void Execute(Graphics g, object[] args)
         {
             Pen p = new Pen(Colors.BlueHighlight);
 

@@ -23,7 +23,7 @@ namespace Editor
 
         }
 
-        public void Execute(Graphics g, object[] args)
+        public override void Execute(Graphics g, object[] args)
         {
             int mapWidth = DataManager.Instance.MapWidth;
             int mapHeight = DataManager.Instance.MapHeight;

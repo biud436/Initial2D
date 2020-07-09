@@ -65,7 +65,6 @@ namespace RS {
 #define RS_PLATFORM "posix"
 #define RS_POSIX
 #endif
-		/*const char* type = RS_PLATFORM;*/
 	}
 }
 

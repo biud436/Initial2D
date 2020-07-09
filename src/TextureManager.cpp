@@ -165,7 +165,12 @@ TextureData* LoadBMP(std::string fileName)
 TextureData* LoadPNG(std::string fileName)
 {
 
-	TextureData			*pTextureData =	new TextureData();  
+	TextureData			*pTextureData =	new TextureData(); 
+
+	if (pTextureData == nullptr) 
+	{
+
+	}
 
 	int					width, height;
 	png_byte			color_type;
