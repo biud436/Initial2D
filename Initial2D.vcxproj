@@ -286,8 +286,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir)external\zlib\include;$(ProjectDir)external\tinyxml\include\;$(ProjectDir)external\OpenAL\include;$(ProjectDir)external\SDL2\include;$(ProjectDir)external\SDL2_mixer\include;$(ProjectDir)external\libpng\include;$(ProjectDir)lua;$(ProjectDir)json\Json;$(ProjectDir)external\SDL2_image\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(ProjectDir)external\zlib\libs;$(ProjectDir)external\OpenAL\libs;$(ProjectDir)external\SDL2\lib\x86;$(ProjectDir)external\SDL2_mixer\libs;$(ProjectDir)external\libpng\libs;$(ProjectDir)external\tinyxml\libs;$(SolutionDir)lib;$(ProjectDir)json\Json;$(ProjectDir)external\SDL2_image\libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)external\zlib\include;$(ProjectDir)external\tinyxml\include\;$(ProjectDir)external\OpenAL\include;$(ProjectDir)external\SDL2\include;$(ProjectDir)external\SDL2_mixer\include;$(ProjectDir)external\libpng\include;$(ProjectDir)lua;$(ProjectDir)json\Json;$(ProjectDir)external\SDL2_image\include;$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)external\zlib\libs;$(ProjectDir)external\OpenAL\libs;$(ProjectDir)external\SDL2\lib\x86;$(ProjectDir)external\SDL2_mixer\libs;$(ProjectDir)external\libpng\libs;$(ProjectDir)external\tinyxml\libs;$(SolutionDir)lib;$(ProjectDir)json\Json;$(ProjectDir)external\SDL2_image\libs;$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
     <IntDir>log\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)lib\</OutDir>
     <SourcePath>$(SolutionDir)src;$(SourcePath)</SourcePath>
@@ -311,8 +311,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir)external\libpng\include;$(ProjectDir)external\zlib\include;$(ProjectDir)external\tinyxml\include;$(ProjectDir)external\OpenAL\include;$(ProjectDir)external\SDL2\include;$(ProjectDir)external\SDL2_mixer\include;$(ProjectDir)lua;$(ProjectDir)json\Json;$(ProjectDir)external\SDL2_image\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(ProjectDir)external\libpng\libs;$(ProjectDir)external\zlib\libs;$(ProjectDir)external\tinyxml\libs;$(ProjectDir)external\OpenAL\libs;$(ProjectDir)external\SDL2\lib\x86;$(ProjectDir)external\SDL2_mixer\libs;$(SolutionDir)lib;$(ProjectDir)external\SDL2_image\libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)external\libpng\include;$(ProjectDir)external\zlib\include;$(ProjectDir)external\tinyxml\include;$(ProjectDir)external\OpenAL\include;$(ProjectDir)external\SDL2\include;$(ProjectDir)external\SDL2_mixer\include;$(ProjectDir)lua;$(ProjectDir)json\Json;$(ProjectDir)external\SDL2_image\include;$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)external\libpng\libs;$(ProjectDir)external\zlib\libs;$(ProjectDir)external\tinyxml\libs;$(ProjectDir)external\OpenAL\libs;$(ProjectDir)external\SDL2\lib\x86;$(ProjectDir)external\SDL2_mixer\libs;$(SolutionDir)lib;$(ProjectDir)external\SDL2_image\libs;$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
     <IntDir>$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)lib\</OutDir>
     <SourcePath>$(SolutionDir)src;$(SourcePath)</SourcePath>

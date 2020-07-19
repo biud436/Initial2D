@@ -22,7 +22,7 @@ class Matrix
 {
 public:
 	Matrix();
-	virtual ~Matrix();
+	virtual ~Matrix() {}
 
 	Matrix(float mD11, float mD12, float mD21, float mD22, float mDX, float mDY);
 

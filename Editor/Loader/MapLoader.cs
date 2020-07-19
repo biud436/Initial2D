@@ -48,8 +48,7 @@ namespace Editor.Loader
             {
                 string contents = File.ReadAllText(mapFileName);
                 tempMap = JsonConvert.DeserializeObject<Map>(contents);
-            } 
-            else
+            }              else
             {
                 throw new InvalidDataException($"{mapFileName} 파일이 없습니다.");
             }

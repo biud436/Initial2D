@@ -40,10 +40,10 @@ void MapState::render()
 
 bool MapState::onEnter()
 {
-	Initial2D::Tilemap* tilemap = new Initial2D::Tilemap(17, 13);
-	tilemap->initialize();
+	//Initial2D::Tilemap* tilemap = new Initial2D::Tilemap(17, 13);
+	//tilemap->initialize();
 
-	addChild(tilemap);
+	//addChild(tilemap);
 
 	return true;
 }

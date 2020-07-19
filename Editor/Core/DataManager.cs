@@ -32,7 +32,11 @@ namespace Editor
                     {
                         if (instance == null)
                         {
-                            instance = new DataManager();
+                            instance = new DataManager()
+                            {
+                                MapWidth = 17,
+                                MapHeight = 13,
+                            };
                             instance.Import();
                         }
                     }

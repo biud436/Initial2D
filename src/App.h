@@ -61,6 +61,7 @@ class Input;
 class GameStateMachine;
 class TextureManager;
 class Font;
+class DXCore;
 /// @endcond
 
 using GameFont = std::unique_ptr<Font>;

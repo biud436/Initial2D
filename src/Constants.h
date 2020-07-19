@@ -74,8 +74,8 @@ namespace RS {
 
 const std::string WINDOW_NAME("test");
 const std::string CLASS_NAME("test");
-const int WINDOW_WIDTH = 640;
-const int WINDOW_HEIGHT = 480;
+const int WINDOW_WIDTH = 768;
+const int WINDOW_HEIGHT = 896;
 const std::string LINE_BREAK("\r\n");
 
 typedef float IFLOAT;
@@ -96,6 +96,8 @@ const int SPRITE_SHEET_COLS = 4;
 
 // @def SPRITE_SHEET_ROWS
 const int SPRITE_SHEET_ROWS = 4;
+
+#define RS_D3D9 true
 
 /**
 * @def SAFE_DELETE(p)

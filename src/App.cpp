@@ -19,6 +19,7 @@
 #include "Font.h"
 
 #include <thread>
+#include <chrono>
 
 extern HWND g_hWnd;
 extern LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -193,8 +194,33 @@ int App::Run(int nCmdShow)
 
 	bool done = false;
 
+	int lag = 0;
+	std::chrono::time_point<std::chrono::steady_clock> endTime = std::chrono::steady_clock::now();
+
+	long longestTime = 0;
+	m_nFPS = 0;
+	long tickCount = 0;
+	long fpsElapsedTime = 0;
+
+	/**
+	 * Game Loop (C++ 11)
+	 * https://www.gamedev.net/forums/topic/690860-60-fps-game-loop-using-stdchrono/
+	 */
 	while (!done)
 	{
+		std::chrono::time_point<std::chrono::steady_clock> startTime = std::chrono::steady_clock::now();
+		std::chrono::milliseconds elapsedTime(std::chrono::duration_cast<std::chrono::milliseconds>(startTime - endTime));
+		endTime = startTime;
+
+		lag += static_cast<int>(elapsedTime.count());
+
+		if (elapsedTime.count() == 0) 
+		{
+			Sleep(5);
+		}
+		const int fps = 60;
+		const int lengthOfFrame = 1000 / fps;
+
 		if (PeekMessage(&Message, NULL, 0, 0, PM_REMOVE))
 		{
 			if (Message.message == WM_QUIT)
@@ -204,13 +230,41 @@ int App::Run(int nCmdShow)
 			DispatchMessage(&Message);
 
 		}
-		else
+
+		std::chrono::time_point<std::chrono::steady_clock> oldTime = std::chrono::steady_clock::now();
+		while (lag >= lengthOfFrame) 
 		{
-			Update();
+			UpdateInput();
+			ObjectUpdate(elapsedTime.count());
+			lag -= lengthOfFrame;
+			
+			tickCount++;
+			m_elapsed = 1.0 / elapsedTime.count();
+		}
+
+		RenderClear();
+		RenderTransform();
+		Render();
+		RenderPresent();
+		m_nFPS++;
+
+		fpsElapsedTime += static_cast<long>(elapsedTime.count());
+
+		if (fpsElapsedTime >= 1000) 
+		{
+			std::stringstream sstr;
+			sstr << m_nFPS;
+
+			SetWindowText(m_hWnd, &sstr.str()[0]);
+
+			fpsElapsedTime = 0;
+			m_nFPS = 0;
+			m_elapsed = 0;
+			tickCount = 0;
 		}
 	}
 
-	// 이런 소멸자는 사용에 주의를 요구한다.
+	// 자기 자신을 소멸시킬 수 있나 싶은데 일단은 동작한다.
 	delete this;
 
 	return static_cast<int>(Message.wParam);
@@ -294,18 +348,15 @@ void App::Update()
 
 	m_elapsed += m_frameTime;
 	m_accumulateElapsed += m_frameTime;
-
-	m_nFrameCount++;
-
+	
 	// 프레임 속도가 정상이라면 업데이트를 진행한다.
-	if (m_frameTime >= DELAY_TIME) {
+	while (m_elapsed >= DELAY_TIME) {
 		UpdateInput();
 		ObjectUpdate(m_frameTime);
 		m_elapsed -= DELAY_TIME;
 	}
-	else {
-		Sleep(1);
-	}
+
+	m_nFrameCount++;
 
 	// 60 프레임이 지났는 지를 체크한다.
 	if (m_accumulateElapsed >= 1.0) {
