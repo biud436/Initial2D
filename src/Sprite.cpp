@@ -48,7 +48,7 @@ Sprite::Sprite() :
 
 Sprite::~Sprite()
 {
-	GameObject::~GameObject();
+
 }
 
 bool Sprite::initialize(float x, float y, int width, int height, int maxFrames, std::string textureId = "none")

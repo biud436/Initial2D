@@ -49,8 +49,6 @@ function Update(elapsed)
 		children[i].update(t)			
 	end	
 
-	print("update")
-
 end
 
 function Render()

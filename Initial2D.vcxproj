@@ -103,6 +103,7 @@
     </ClCompile>
     <ClCompile Include="src\Renderer.cpp" />
     <ClCompile Include="src\Thread.cpp" />
+    <ClCompile Include="src\Tile.cpp" />
     <ClCompile Include="src\Tilemap.cpp" />
     <ClCompile Include="src\Utility.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
@@ -192,6 +193,7 @@
     </ClInclude>
     <ClInclude Include="src\Renderer.h" />
     <ClInclude Include="src\Thread.h" />
+    <ClInclude Include="src\Tile.h" />
     <ClInclude Include="src\Tilemap.h" />
     <ClInclude Include="src\Utility.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>

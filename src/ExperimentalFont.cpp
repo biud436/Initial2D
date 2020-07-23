@@ -73,7 +73,6 @@ ExperimentalFont::ExperimentalFont(const ExperimentalFont& other)
 ExperimentalFont::~ExperimentalFont()
 {
 	release();
-	Sprite::~Sprite();
 }
 
 bool ExperimentalFont::initialize(float x, float y, int width, int height, int maxFrames, std::string textureId)
