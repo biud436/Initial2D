@@ -1,1 +1,2 @@
-docs/html/*.js linguist-documentation=false
+project-docs/* linguist-documentation
+docs/* linguist-documentation
