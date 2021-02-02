@@ -96,5 +96,6 @@
       <Filter>scripts</Filter>
     </None>
     <None Include="EditorQt\.gitignore" />
+    <None Include=".gitattributes" />
   </ItemGroup>
 </Project>
