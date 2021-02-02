@@ -1,28 +1,9 @@
-/**
- * @file SoundManager.h
- * @date 2018/03/26 11:13
- *
- * @author biud436
- * Contact: biud436@gmail.com
- *
- * @brief 
- *
- * @note
-*/
+#ifndef __FMOD_SOUND_MANAGER_H__
+#define __FMOD_SOUND_MANAGER_H__
 
-#ifndef SOUNDMANAGER_H
-#define SOUNDMANAGER_H
-
-#include <string>
-#include <map>
-#include <SDL_mixer.h>
+#include "SoundManager.h"
 #include "NonCopyable.h"
-
-/**
- * @addtogroup SoundModule
- * 사운드 모듈
- * @{
- */
+#include <fmod.hpp>
 
 /**
 * @enum sound_type
@@ -31,39 +12,28 @@ enum sound_type
 {
 	SOUND_MUSIC = 0,	/**		BGM	*/
 	SOUND_SFX			/**		SE	*/
-	//SOUND_BGS			/**		BGS	*/
 };
 
-using BGM = std::map<std::string, Mix_Music*>;
-using SE = std::map<std::string, Mix_Chunk*>; 
+using BGM = std::map<std::string, FMOD::Sound*>;
+using SE = std::map<std::string, FMOD::Sound*>;
+using BGMChannel = std::map<std::string, FMOD::Channel*>;
 
-
-class FSoundProxy
+class FMODSoundManager : private UnCopyable
 {
 private:
-	FMOD::System* system;
-};
+	FMODSoundManager();
+	~FMODSoundManager();
 
-/**
- * @class SoundManager
- * @brief 사운드 모듈
- * @details https://www.libsdl.org/projects/SDL_mixer/docs/SDL_mixer_toc.html#SEC_Contents
- */
-class SoundManager : private UnCopyable
-{
-private:
-	SoundManager();
-	~SoundManager();
 public:
-	
+
 	/**
 	* 인스턴스를 생성하거나 생성된 인스턴스를 가져옵니다.
 	*/
-	static SoundManager* Instance()
+	static FMODSoundManager* Instance()
 	{
 		if (s_pInstance == NULL)
 		{
-			s_pInstance = new SoundManager();
+			s_pInstance = new FMODSoundManager();
 			return s_pInstance;
 		}
 
@@ -88,7 +58,7 @@ public:
 	* 효과음을 재생합니다.
 	*/
 	void playSound(std::string id, int loop);
-	
+
 	/**
 	* BGM을 재생합니다.
 	*/
@@ -103,7 +73,7 @@ public:
 	* 다음 BGM을 재생합니다.
 	*/
 	void playNextMusic();
-	
+
 	/**
 	* BGM을 일시 중단합니다.
 	*/
@@ -123,7 +93,7 @@ public:
 	* BGM을 페이드 아웃합니다.
 	*/
 	void fadeOutMusic(int ms);
-	
+
 	/**
 	* BGM 재생 위치를 설정합니다.
 	*/
@@ -131,7 +101,7 @@ public:
 
 	/**
 	* BGM의 볼륨을 설정합니다.
-	* 
+	*
 	* @param volume 0 ~ 255. 0은 볼륨 없음. 255은 최대 볼륨 (범위를 0에서 128까지로 보간합니다)
 	*/
 	void setVolume(int volume);
@@ -168,31 +138,25 @@ public:
 	*/
 	void releaseSound(std::string id);
 
+
+	void update();
+
 private:
+	static FMODSoundManager* s_pInstance;
 
-	static SoundManager* s_pInstance;
+	FMODSoundManager(const FMODSoundManager&);
+	FMODSoundManager& operator=(const FMODSoundManager&);
 
-	SoundManager(const SoundManager&);
-	SoundManager& operator=(const SoundManager&);
+	FMOD::System* m_pSystem;
 
 	BGM         m_music;	// BGM
-	SE          m_sfxs;	// SE
+	SE          m_sfxs;		// SE
+	BGMChannel  m_channel;
 
 	std::string m_previousMusicID; // 이전 BGM ID
 	std::string m_currentMusicID; // 현재 BGM ID
 	std::string m_nextMusicID; // 다음 BGM ID
 	int         m_nextMusicLoop; // 다음 BGM 반복 재생 여부 
-		
 };
-
-/**
-* @def Audio
-* 싱글턴에 접근하는 것이지만, 객체 변수처럼 사용하기 위한 트릭.
-*/
-#define Audio SoundManager::Instance()
-
-/**
- * @}
- */
 
 #endif

@@ -160,7 +160,6 @@ void Tilemap::createTiles()
 			_tiles.push_back(tile);
 
 		}
-
 	}
 
 	_isLoaded = true;
