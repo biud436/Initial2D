@@ -28,12 +28,18 @@ function Tilemap(width, height)
         self.createTiles()
     end
 
-    function self.loadConfig()		
-		self.config = require("resources/maps/map")
-		
-        for k, v in pairs(self.config) do
-            print(string.format("%s - %s", k, v))
-        end
+    function self.loadConfig()
+        print(GetCurrentDirectory(True))
+        -- local path = GetCurrentDirectory() .. "/resources/maps/map.lua"
+        -- local file = io.open(path, "r")
+        -- local contents = file.read()
+
+        -- self.config = LoadScript(contents)
+        -- for k, v in pairs(self.config) do
+        --     print(string.format("%s - %s", k, v))
+        -- end
+
+        -- io.close(file)
 
     end
     
@@ -102,5 +108,3 @@ function Tilemap(width, height)
     return self
 
 end
-
-return Tilemap

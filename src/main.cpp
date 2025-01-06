@@ -34,23 +34,36 @@
 
 extern HWND g_hWnd;
 
+//inline std::string GetExecutablePath() {
+//	TCHAR szExePath[MAX_PATH];
+//	TCHAR szWorkingDir[MAX_PATH];
+//
+//	// 실행 파일 경로 가져오기
+//	GetModuleFileName(NULL, szExePath, MAX_PATH);
+//	PathRemoveFileSpec(szExePath);
+//	PathAddBackslash(szExePath);
+//
+//	// 현재 작업 디렉토리 가져오기
+//	GetCurrentDirectory(MAX_PATH, szWorkingDir);
+//
+//	// 디버깅용 출력
+//	std::wcout << L"Executable Path: " << szExePath << std::endl;
+//	std::wcout << L"Working Directory: " << szWorkingDir << std::endl;
+//
+//	return std::string(szExePath);
+//}
 inline std::string GetExecutablePath() {
+	HWND hWnd = GetForegroundWindow();
+	HINSTANCE hInstance = (HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE);
 	TCHAR szCurrentPath[MAX_PATH];
 
-	GetModuleFileName(NULL, szCurrentPath, MAX_PATH);
-
-	// 파일 이름을 제거하고 디렉토리 경로만 남깁니다
+	GetModuleFileName(NULL, szCurrentPath, sizeof(MAX_PATH));
 	PathRemoveFileSpec(szCurrentPath);
-
-	// 백슬래시를 추가합니다
 	PathAddBackslash(szCurrentPath);
 
-#ifdef UNICODE
-	std::wstring ws(szCurrentPath);
-	return std::string(ws.begin(), ws.end());
-#else
-	return std::string(szCurrentPath);
-#endif
+	std::string sCurrentPath = szCurrentPath;
+
+	return sCurrentPath;
 }
 
 /**

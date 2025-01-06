@@ -165,5 +165,3 @@ function Image(path, x, y, width, height, max_frames, id)
 	return self
 	
 end
-
-return Image
