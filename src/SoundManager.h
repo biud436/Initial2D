@@ -37,13 +37,6 @@ enum sound_type
 using BGM = std::map<std::string, Mix_Music*>;
 using SE = std::map<std::string, Mix_Chunk*>; 
 
-
-class FSoundProxy
-{
-private:
-	FMOD::System* system;
-};
-
 /**
  * @class SoundManager
  * @brief 사운드 모듈

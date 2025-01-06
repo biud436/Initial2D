@@ -1,6 +1,3 @@
-[릴리즈]
-런타임 라이브러리 : 다중 스레드 DLL(/MD)
+I have completed reading the onboarding documents. How can I access the company's GitHub repositories? Are there any specific policies regarding accounts? I am ready to add an @carnotfleet.com email to my personal account or create a new account exclusively for company use.
 
-[디버그]
-런타임 라이브러리 : 다중 스레드 디버그 DLL(/MDd)
-
+온보딩 문서를 다 읽었습니다. 회사의 GitHub 저장소에 어떻게 액세스할 수 있나요? 계정에 대한 특정 정책이 있나요? 개인 계정에 @carnotfleet.com 이메일을 추가하거나 회사에서만 사용할 새 계정을 만들 준비가 되었습니다.

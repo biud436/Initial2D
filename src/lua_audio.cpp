@@ -136,11 +136,14 @@ LUA_METHOD(PlaySound)
 	// id
 	std::string id = lua_tostring(pL, 2);
 
-	// loop (int)
-	int loop = lua_toboolean(pL, 3);
+	// loop (boolean)
+	int luaLoop = lua_toboolean(pL, 3);
+	int loop;
 
-	if (loop == 0)
-		loop = -1;
+	if (luaLoop)
+		loop = -1; // 무한 반복
+	else
+		loop = 0;  // 한 번만 재생
 
 	bool result = Audio->load(path, id, SOUND_SFX);
 

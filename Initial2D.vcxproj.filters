@@ -39,7 +39,6 @@
     <ClCompile Include="src\Utility.cpp" />
     <ClCompile Include="src\win32Main.cpp" />
     <ClCompile Include="src\Window.cpp" />
-    <ClCompile Include="src\FMODSoundManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Tile.h" />
@@ -78,7 +77,7 @@
     <ClInclude Include="src\Utility.h" />
     <ClInclude Include="src\Vector2D.h" />
     <ClInclude Include="src\Window.h" />
-    <ClInclude Include="src\FMODSoundManager.h" />
+    <ClInclude Include="src\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="scripts\image.lua">
