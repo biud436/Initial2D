@@ -35,17 +35,22 @@
 extern HWND g_hWnd;
 
 inline std::string GetExecutablePath() {
-	HWND hWnd = GetForegroundWindow();
-	HINSTANCE hInstance = (HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE);
 	TCHAR szCurrentPath[MAX_PATH];
-	
-	GetModuleFileName(NULL, szCurrentPath, sizeof(MAX_PATH));
+
+	GetModuleFileName(NULL, szCurrentPath, MAX_PATH);
+
+	// 파일 이름을 제거하고 디렉토리 경로만 남깁니다
 	PathRemoveFileSpec(szCurrentPath);
+
+	// 백슬래시를 추가합니다
 	PathAddBackslash(szCurrentPath);
 
-	std::string sCurrentPath = szCurrentPath;
-
-	return sCurrentPath;
+#ifdef UNICODE
+	std::wstring ws(szCurrentPath);
+	return std::string(ws.begin(), ws.end());
+#else
+	return std::string(szCurrentPath);
+#endif
 }
 
 /**
@@ -63,7 +68,7 @@ void App::Initialize()
 
 	sCurrentPath.append("config.setting");
 
-	std::cout << sCurrentPath << std::endl;
+	std::cout << "path:" << sCurrentPath << std::endl;
 
 	// 설정 파일 작성
 	std::ofstream configFile("config.setting");
@@ -94,16 +99,6 @@ void App::Initialize()
 
 	// Lua Interpreter Initialization
 	Lua_Init();
-
-//	// 프로세스 정보 출력
-//	try {
-//		Initial2D::Process process(L"powershell Get-Process");
-//		Initial2D::Process process2(L"cmd /c \"echo wow...\"");
-//	} catch(std::exception ex) {
-//#ifdef _DEBUG
-//		printf_s(ex.what());
-//#endif // !_DEBUG
-//	}
 }
 
 /**
