@@ -139,20 +139,41 @@ int App::Run(int nCmdShow)
 			static long s_frameCount = 0;
 			s_frameCount++;
 
-			const char* shotFrame = SDL_getenv("INITIAL2D_SCREENSHOT_FRAME");
-			const long targetFrame = (shotFrame != nullptr) ? SDL_atoi(shotFrame) : 120;
-
+			// INITIAL2D_SCREENSHOT_FRAME은 쉼표로 구분된 프레임 목록을 지원한다 (예: "12,35,60").
+			// 여러 프레임을 지정할 때 경로에 %ld를 넣으면 프레임 번호로 치환된다.
 			const char* shotPath = SDL_getenv("INITIAL2D_SCREENSHOT");
-			if (shotPath != nullptr && s_frameCount == targetFrame) {
-				int w = 0, h = 0;
-				SDL_GetRendererOutputSize(m_context.renderer, &w, &h);
-				SDL_Surface* shot = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, SDL_PIXELFORMAT_RGBA32);
-				if (shot != nullptr) {
-					if (SDL_RenderReadPixels(m_context.renderer, nullptr,
-							SDL_PIXELFORMAT_RGBA32, shot->pixels, shot->pitch) == 0) {
-						SDL_SaveBMP(shot, shotPath);
+			if (shotPath != nullptr) {
+				const char* shotFrame = SDL_getenv("INITIAL2D_SCREENSHOT_FRAME");
+				bool hit = false;
+				if (shotFrame == nullptr) {
+					hit = (s_frameCount == 120);
+				} else {
+					const char* p = shotFrame;
+					while (*p != '\0') {
+						if (SDL_atoi(p) == s_frameCount) { hit = true; break; }
+						while (*p != '\0' && *p != ',') { ++p; }
+						if (*p == ',') { ++p; }
 					}
-					SDL_FreeSurface(shot);
+				}
+
+				if (hit) {
+					char pathBuffer[1024];
+					if (SDL_strchr(shotPath, '%') != nullptr) {
+						SDL_snprintf(pathBuffer, sizeof(pathBuffer), shotPath, s_frameCount);
+					} else {
+						SDL_strlcpy(pathBuffer, shotPath, sizeof(pathBuffer));
+					}
+
+					int w = 0, h = 0;
+					SDL_GetRendererOutputSize(m_context.renderer, &w, &h);
+					SDL_Surface* shot = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, SDL_PIXELFORMAT_RGBA32);
+					if (shot != nullptr) {
+						if (SDL_RenderReadPixels(m_context.renderer, nullptr,
+								SDL_PIXELFORMAT_RGBA32, shot->pixels, shot->pitch) == 0) {
+							SDL_SaveBMP(shot, pathBuffer);
+						}
+						SDL_FreeSurface(shot);
+					}
 				}
 			}
 
