@@ -39,6 +39,16 @@ SoundManager::~SoundManager()
 
 bool SoundManager::load(std::string fileName, std::string id, sound_type type)
 {
+	// 같은 id가 이미 로드되어 있으면 다시 읽지 않는다.
+	// (PlaySound가 호출마다 load를 부르므로, 이 캐시가 없으면 재생할 때마다
+	//  디스크 I/O가 발생하고 이전 청크가 누수되어 간헐적인 프레임 히치를 만든다)
+	if (type == SOUND_MUSIC && m_music.find(id) != m_music.end()) {
+		return true;
+	}
+	if (type == SOUND_SFX && m_sfxs.find(id) != m_sfxs.end()) {
+		return true;
+	}
+
 	if (type == SOUND_MUSIC) {
 		Mix_Music* pMusic = Mix_LoadMUS(fileName.c_str());
 
