@@ -13,19 +13,21 @@ local W = 768
 local H = 896
 
 -- 튜닝 상수 (px/초)
-local GRAVITY     = 1500.0   -- 중력 가속도
-local FLAP        = -480.0   -- 날갯짓 순간 속도
-local MAX_FALL    = 820.0    -- 최대 낙하 속도
-local PIPE_SPEED  = 210.0    -- 파이프 이동 속도
-local SCROLL      = 40.0     -- 배경 스크롤 속도
-local PIPE_GAP    = 260      -- 파이프 상하 간격
-local PIPE_SPACING= 340      -- 파이프 수평 간격
-local PIPE_W      = 52
-local PIPE_H      = 271
-local GROUND_Y    = 856      -- 지면 높이 (배경 이미지 기준)
-local BIRD_X      = 170
-local BIRD_W      = 92
-local BIRD_H      = 64
+local GRAVITY      = 1500.0   -- 중력 가속도
+local FLAP         = -480.0   -- 날갯짓 순간 속도
+local MAX_FALL     = 820.0    -- 최대 낙하 속도
+local BASE_SPEED   = 210.0    -- 파이프·지면 기본 속도
+local SCROLL       = 30.0     -- 배경(원경) 스크롤 속도
+local BASE_GAP     = 280      -- 파이프 상하 간격(시작값)
+local MIN_GAP      = 195      -- 파이프 간격 하한
+local PIPE_SPACING = 340      -- 파이프 수평 간격
+local PIPE_W       = 52
+local PIPE_H       = 271
+local GROUND_H     = 64
+local GROUND_Y     = H - GROUND_H + 12  -- 충돌 기준(잔디 약간 아래)
+local BIRD_X       = 170
+local BIRD_W       = 92
+local BIRD_H       = 64
 
 local autoplay = false
 
@@ -35,11 +37,26 @@ local score = 0
 local best = 0
 local birdY = 0
 local birdVy = 0
+local birdAngle = 0
 local readyTime = 0
 local deadTime = 0
-local bgX1 = 0
-local bgX2 = 0
+local bgX1, bgX2 = 0, 0
+local gndX1, gndX2 = 0, 0
 local pipes = {}   -- { x, gapY, top(Image), bottom(Image), passed }
+
+local function speed()
+	return math.min(BASE_SPEED + score * 3.0, 320.0)
+end
+
+local function gap()
+	return math.max(BASE_GAP - score * 4, MIN_GAP)
+end
+
+local function sfx(name)
+	-- 참고: 엔진의 PlaySound는 loop=true일 때 청크를 2회 연속 재생하므로
+	-- 효과음 파일 자체가 절반 길이로 만들어져 있다 (false는 무한 반복이라 금지)
+	Audio.PlaySound("./resources/audio/" .. name .. ".wav", name, true)
+end
 
 local function flapPressed()
 	if autoplay then
@@ -48,10 +65,14 @@ local function flapPressed()
 	return Input.IsMouseDown(0) or Input.IsKeyDown(32) -- 마우스 왼쪽 / 스페이스
 end
 
+local function randomGap()
+	return 200 + math.random(0, math.max(1, math.floor(H - GROUND_H - gap() - 340)))
+end
+
 local function resetPipes()
 	for i, p in ipairs(pipes) do
-		p.x = W + 120 + (i - 1) * PIPE_SPACING
-		p.gapY = 220 + math.random(0, 280)   -- 위 파이프 하단(=간격 시작) 높이
+		p.x = W + 160 + (i - 1) * PIPE_SPACING
+		p.gapY = randomGap()
 		p.passed = false
 	end
 end
@@ -59,6 +80,7 @@ end
 local function resetGame()
 	birdY = H / 2 - BIRD_H / 2
 	birdVy = 0
+	birdAngle = 0
 	score = 0
 	readyTime = 0
 	resetPipes()
@@ -74,10 +96,10 @@ function Initialize()
 	-- 스크롤 배경 2장 (이어붙여 좌측으로 흐름)
 	bg1 = Image("./resources/background_768x896.png", 0, 0, W, H, 1, "Background")
 	bg2 = Image("./resources/background_768x896.png", 0, 0, W, H, 1, "Background")
-	bgX1 = 0
-	bgX2 = W
-	bg1.setPosition(bgX1, 0)
-	bg2.setPosition(bgX2, 0)
+
+	-- 지면 2장 (파이프와 같은 속도로 흘러 속도감을 준다)
+	gnd1 = Image("./resources/ground_768x64.png", 0, 0, W, GROUND_H, 1, "Ground")
+	gnd2 = Image("./resources/ground_768x64.png", 0, 0, W, GROUND_H, 1, "Ground")
 
 	-- 파이프 3쌍 (위 파이프는 180도 회전 — 원점 회전이므로 위치를 보정한다)
 	pipes = {}
@@ -98,8 +120,10 @@ function Initialize()
 	-- 폰트와 BGM
 	fontReady = PreparaFont("./resources/fonts/hangul.fnt")
 	Audio.PlayMusic("./resources/audio/bless.ogg", "bgm", -1)
-	Audio.SetVolume(110)
+	Audio.SetVolume(96)
 
+	bgX1, bgX2 = 0, W
+	gndX1, gndX2 = 0, W
 	resetGame()
 end
 
@@ -119,14 +143,21 @@ local function hitPipe(p)
 	if overlap(left, top, right, bottom, p.x, p.gapY - PIPE_H, p.x + PIPE_W, p.gapY) then
 		return true
 	end
-	-- 아래 파이프: (x, gapY+PIPE_GAP)..(x+PIPE_W, gapY+PIPE_GAP+PIPE_H)
-	if overlap(left, top, right, bottom, p.x, p.gapY + PIPE_GAP, p.x + PIPE_W, p.gapY + PIPE_GAP + PIPE_H) then
+	-- 아래 파이프: (x, gapY+gap)..(x+PIPE_W, gapY+gap+PIPE_H)
+	if overlap(left, top, right, bottom, p.x, p.gapY + gap(), p.x + PIPE_W, p.gapY + gap() + PIPE_H) then
 		return true
 	end
 	return false
 end
 
-local function updatePlay(dt, dtMs)
+local function die()
+	state = "dead"
+	deadTime = 0
+	if score > best then best = score end
+	sfx("hit")
+end
+
+local function updatePlay(dt)
 	-- 새 물리
 	birdVy = birdVy + GRAVITY * dt
 	if birdVy > MAX_FALL then birdVy = MAX_FALL end
@@ -140,39 +171,40 @@ local function updatePlay(dt, dtMs)
 	-- 날갯짓
 	if flapPressed() then
 		birdVy = FLAP
+		sfx("flap")
 	end
-	if autoplay and birdVy > 0 and birdY > H * 0.55 then
+	if autoplay and birdVy > 0 and birdY > H * 0.5 then
 		birdVy = FLAP -- 자동 시연: 일정 높이 아래로 떨어지면 날갯짓
 	end
 
+	-- 속도에 따른 기울기 (상승 시 -22도, 낙하 시 최대 60도)
+	birdAngle = math.max(-22.0, math.min(60.0, birdVy * 0.075))
+
 	-- 파이프 이동·리사이클·점수
 	for _, p in ipairs(pipes) do
-		p.x = p.x - PIPE_SPEED * dt
+		p.x = p.x - speed() * dt
 
 		if p.x + PIPE_W < 0 then
 			p.x = p.x + #pipes * PIPE_SPACING
-			p.gapY = 220 + math.random(0, 280)
+			p.gapY = randomGap()
 			p.passed = false
 		end
 
 		if (not p.passed) and (p.x + PIPE_W < BIRD_X) then
 			p.passed = true
 			score = score + 1
+			sfx("point")
 		end
 
 		if hitPipe(p) then
-			state = "dead"
-			deadTime = 0
-			if score > best then best = score end
+			die()
 		end
 	end
 
 	-- 지면 충돌
 	if birdY + BIRD_H >= GROUND_Y then
 		birdY = GROUND_Y - BIRD_H
-		state = "dead"
-		deadTime = 0
-		if score > best then best = score end
+		die()
 	end
 end
 
@@ -180,30 +212,39 @@ function Update(elapsed)
 	local dtMs = math.min(elapsed, 50)  -- 스파이크 방어
 	local dt = dtMs / 1000.0
 
-	-- 배경 스크롤 (모든 상태에서)
+	-- 배경(원경)은 느리게, 지면은 파이프와 같은 속도로 스크롤
+	local groundSpeed = (state == "play") and speed() or BASE_SPEED * 0.4
 	bgX1 = bgX1 - SCROLL * dt
 	bgX2 = bgX2 - SCROLL * dt
 	if bgX1 <= -W then bgX1 = bgX1 + W * 2 end
 	if bgX2 <= -W then bgX2 = bgX2 + W * 2 end
-	bg1.setPosition(bgX1, 0)
-	bg2.setPosition(bgX2, 0)
+
+	if state ~= "dead" then
+		gndX1 = gndX1 - groundSpeed * dt
+		gndX2 = gndX2 - groundSpeed * dt
+		if gndX1 <= -W then gndX1 = gndX1 + W * 2 end
+		if gndX2 <= -W then gndX2 = gndX2 + W * 2 end
+	end
 
 	if state == "ready" then
 		readyTime = readyTime + dt
 		-- 대기 중엔 새가 상하로 부유
 		birdY = (H / 2 - BIRD_H / 2) + math.sin(readyTime * 4.0) * 14.0
+		birdAngle = math.sin(readyTime * 4.0) * 6.0
 		if flapPressed() or (autoplay and readyTime > 1.0) then
 			state = "play"
 			birdVy = FLAP
+			sfx("flap")
 		end
 	elseif state == "play" then
-		updatePlay(dt, dtMs)
+		updatePlay(dt)
 	elseif state == "dead" then
 		deadTime = deadTime + dt
-		-- 게임 오버 후 새는 지면까지 낙하
+		-- 게임 오버 후 새는 고꾸라지며 지면까지 낙하
 		if birdY + BIRD_H < GROUND_Y then
 			birdVy = birdVy + GRAVITY * dt
 			birdY = birdY + birdVy * dt
+			birdAngle = math.min(90.0, birdAngle + 220.0 * dt)
 			if birdY + BIRD_H > GROUND_Y then birdY = GROUND_Y - BIRD_H end
 		end
 		if (deadTime > 0.6 and flapPressed()) or (autoplay and deadTime > 1.5) then
@@ -214,14 +255,23 @@ function Update(elapsed)
 
 	-- 스프라이트 갱신 (트랜스폼·애니메이션)
 	player.setPosition(BIRD_X, birdY)
-	player.update(dtMs)
+	player.setAngle(birdAngle)
+	player.update((state == "dead") and 0 or dtMs)
+
+	bg1.setPosition(bgX1, 0)
+	bg2.setPosition(bgX2, 0)
 	bg1.update(0)
 	bg2.update(0)
+
+	gnd1.setPosition(gndX1, H - GROUND_H)
+	gnd2.setPosition(gndX2, H - GROUND_H)
+	gnd1.update(0)
+	gnd2.update(0)
 
 	for _, p in ipairs(pipes) do
 		-- 위 파이프는 180도 원점 회전이라 (x+W, gapY)에 놓아야 (x, gapY-H)에 그려진다
 		p.top.setPosition(p.x + PIPE_W, p.gapY)
-		p.bottom.setPosition(p.x, p.gapY + PIPE_GAP)
+		p.bottom.setPosition(p.x, p.gapY + gap())
 		p.top.update(0)
 		p.bottom.update(0)
 	end
@@ -235,6 +285,9 @@ function Render()
 		p.top.draw()
 		p.bottom.draw()
 	end
+
+	gnd1.draw()
+	gnd2.draw()
 
 	player.draw()
 
@@ -257,6 +310,8 @@ end
 function Destroy()
 	bg1.dispose()
 	bg2.dispose()
+	gnd1.dispose()
+	gnd2.dispose()
 	player.dispose()
 	for _, p in ipairs(pipes) do
 		p.top.dispose()
