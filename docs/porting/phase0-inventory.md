@@ -1,6 +1,23 @@
 # macOS 컴파일 가능성 인벤토리 (Phase 진행에 따라 갱신)
 
-최초 측정: 2026-08-13 (Phase 0) / 최근 갱신: 2026-08-13 (Phase 1 완료)
+최초 측정: 2026-08-13 (Phase 0) / 최근 갱신: 2026-08-13 (**Phase 2~5 완료 — 게임 실행 파일 macOS 구동 확인**)
+
+## 최종 상태 요약 (Phase 2~5)
+
+- **PASS: 28 / 33** — `cmake --build build` 로 `Initial2D` 게임 실행 파일이 macOS에서 빌드·실행됨
+- 남은 FAIL 5개는 모두 의도적 제외: `win32Main.cpp`(Windows 엔트리), `Process.cpp`(Win32 전용,
+  `platform/posix/PosixProcess`로 대체), `Renderer.cpp`(빈 파일 — 실 렌더러는 TextureManager),
+  `Window.cpp`(미사용 실험 코드, `std::exception(msg)` MSVC 확장 포함), `FMODSoundManager.cpp`(Windows에서도 깨진 WIP)
+- 아키텍처: Win32/GDI 구현은 `RS_WINDOWS` 가드로 원형 보존, SDL2 어댑터는 `src/platform/sdl2/`,
+  공개 API 시그니처는 `platform/WinTypes.h` 심(RECT/BYTE/COLORREF/VK_* 등)으로 무변경 유지
+- 검증: 정적 테스트 씬에서 배경 + 반투명 스프라이트(opacity) + 45° 회전(XFORM→RenderCopyEx) +
+  2배 스케일 + BMFont 텍스트 렌더링을 프레임 덤프로 확인 (`INITIAL2D_SCREENSHOT` env)
+- 미검증 항목: 오디오 재생(SoundManager는 컴파일·링크만 확인 — 데모 스크립트가 오디오 미사용),
+  키보드 입력 실기 검증 (매핑 테이블은 구현됨)
+- 발견: `scripts/main.lua`가 참조하는 에셋 3종(background/object/bird PNG)은 저장소에 없음
+  (`resources/*.*`가 gitignore) — 검증은 로컬 생성 플레이스홀더로 수행, 커밋하지 않음
+- BMFont 텍스트는 fontSize(32) ≠ lineHeight(16)일 때 원본 GDI 알고리즘 그대로 아틀라스를
+  2배 영역으로 샘플링해 글자가 겹침 — SDL2 어댑터는 이를 충실히 재현 (동작 보존 원칙)
 환경: macOS (arm64), Apple clang 17, `-std=c++17`
 명령: `clang++ -fsyntax-only -Isrc -Ilua -Ijson/Json -I/opt/homebrew/include/SDL2 -D_THREAD_SAFE src/<file>.cpp`
 
