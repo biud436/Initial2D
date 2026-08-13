@@ -22,9 +22,9 @@ inline _TString GetWorkingDirectory()
 	}
 
 	TCHAR path[256];
-	// ÇÁ·Î±×·¥ ½ÇÇà °æ·Î È¹µæÇÑ´Ù.
+	// í”„ë¡œê·¸ë¨ ì‹¤í–‰ ê²½ë¡œ íšë“í•œë‹¤.
 	GetModuleFileName(hModule, path, sizeof(path));
-	// ½ÇÇà °æ·Î¿¡¼­ ÇÁ·Î±×·¥ ¸íÀ» Á¦¿ÜÇÑ´Ù.
+	// ì‹¤í–‰ ê²½ë¡œì—ì„œ í”„ë¡œê·¸ë¨ ëª…ì„ ì œì™¸í•œë‹¤.
 	PathRemoveFileSpec(path);
 	_tcscat_s(path, "");
 	

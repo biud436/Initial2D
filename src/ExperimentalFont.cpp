@@ -122,8 +122,8 @@ bool ExperimentalFont::initialize()
 
 void ExperimentalFont::init()
 {
-	// PROOF_QUALITY·Î ¼³Á¤ÇÏ¸é ÆùÆ®ÀÇ ¿ÜÇüÀ» ¾ÆÁÖ Áß¿ä½Ã ÇÏ°Ô µÈ´Ù (Æ®·ç ÆùÆ®¿¡´Â Àû¿ëµÇÁö ¾ÊÀ½)
-	// OUT_TT_PRECIS·Î ¼³Á¤ÇÏ¸é Æ®·ç Å¸ÀÔ ÆùÆ®¸¦ ¼±ÅÃÇÑ´Ù.
+	// PROOF_QUALITYë¡œ ì„¤ì •í•˜ë©´ í°íŠ¸ì˜ ì™¸í˜•ì„ ì•„ì£¼ ì¤‘ìš”ì‹œ í•˜ê²Œ ëœë‹¤ (íŠ¸ë£¨ í°íŠ¸ì—ëŠ” ì ìš©ë˜ì§€ ì•ŠìŒ)
+	// OUT_TT_PRECISë¡œ ì„¤ì •í•˜ë©´ íŠ¸ë£¨ íƒ€ìž… í°íŠ¸ë¥¼ ì„ íƒí•œë‹¤.
 	m_hFont = CreateFontW(m_nFontSize, 0, 0, 0, 0, 0, 0, 0, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, FF_DONTCARE, m_sFontFace.c_str());
 
 	initialize();
@@ -136,8 +136,8 @@ void ExperimentalFont::init()
 
 void ExperimentalFont::init(int width, int height)
 {
-	// PROOF_QUALITY·Î ¼³Á¤ÇÏ¸é ÆùÆ®ÀÇ ¿ÜÇüÀ» ¾ÆÁÖ Áß¿ä½Ã ÇÏ°Ô µÈ´Ù (Æ®·ç ÆùÆ®¿¡´Â Àû¿ëµÇÁö ¾ÊÀ½)
-	// OUT_TT_PRECIS·Î ¼³Á¤ÇÏ¸é Æ®·ç Å¸ÀÔ ÆùÆ®¸¦ ¼±ÅÃÇÑ´Ù.
+	// PROOF_QUALITYë¡œ ì„¤ì •í•˜ë©´ í°íŠ¸ì˜ ì™¸í˜•ì„ ì•„ì£¼ ì¤‘ìš”ì‹œ í•˜ê²Œ ëœë‹¤ (íŠ¸ë£¨ í°íŠ¸ì—ëŠ” ì ìš©ë˜ì§€ ì•ŠìŒ)
+	// OUT_TT_PRECISë¡œ ì„¤ì •í•˜ë©´ íŠ¸ë£¨ íƒ€ìž… í°íŠ¸ë¥¼ ì„ íƒí•œë‹¤.
 	m_hFont = CreateFontW(m_nFontSize, 0, 0, 0, 0, 0, 0, 0, DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, FF_DONTCARE, m_sFontFace.c_str());
 
 	initialize(0, 0, width, height, 1, "");
@@ -276,13 +276,13 @@ int ExperimentalFont::getTextWidth(LPWSTR lpszText)
 }
 
 /**
-* ÆùÆ® Å¬·¡½º´Â Æ®·ç Å¸ÀÔ ÆùÆ®¿¡¼­ ÆùÆ® Á¤º¸¸¦ ÃßÃâÇÏ¿© Á÷Á¢ ÆùÆ®¸¦ ·»´õ¸µÇÏ´Â ¼Ò½º·Î Windows API¿¡ ÀÇÁ¸ÇÑ´Ù.
-* ¹¦È­ÇÒ ¼ö ¾ø´Â ¿µ¿ªÀÇ ±ÛÀÚ³ª Æ¯Á¤ ¹®ÀÚ ¹üÀ§¿¡¼­ ¿À·ù°¡ ¹ß»ýÇÏ°Å³ª ±ÛÀÚ°¡ ¹¶°³Áö´Â °æ¿ìµµ ÀÖ´Ù.
+* í°íŠ¸ í´ëž˜ìŠ¤ëŠ” íŠ¸ë£¨ íƒ€ìž… í°íŠ¸ì—ì„œ í°íŠ¸ ì •ë³´ë¥¼ ì¶”ì¶œí•˜ì—¬ ì§ì ‘ í°íŠ¸ë¥¼ ë Œë”ë§í•˜ëŠ” ì†ŒìŠ¤ë¡œ Windows APIì— ì˜ì¡´í•œë‹¤.
+* ë¬˜í™”í•  ìˆ˜ ì—†ëŠ” ì˜ì—­ì˜ ê¸€ìžë‚˜ íŠ¹ì • ë¬¸ìž ë²”ìœ„ì—ì„œ ì˜¤ë¥˜ê°€ ë°œìƒí•˜ê±°ë‚˜ ê¸€ìžê°€ ë­‰ê°œì§€ëŠ” ê²½ìš°ë„ ìžˆë‹¤.
 *
 * <a href="http://eternalwindows.jp/graphics/bitmap/bitmap12.html">Link 1</a>
 *
-* ½ÇÁ¦ ¼­ºñ½ºµÇ´Â Á¦Ç°¿¡ Àû¿ëµÉ ¼ö ÀÖ´Â ÄÚµå´Â ´ÙÀ½ ¸µÅ©¿¡ ÀÖ´Ù.
-* Á¤·Ä ºÎºÐ°ú »ö»ó °ª È¹µæÇÏ´Â °úÁ¤¿¡¼­ µðÅ×ÀÏÀÌ ´Ù¸£´Ù.
+* ì‹¤ì œ ì„œë¹„ìŠ¤ë˜ëŠ” ì œí’ˆì— ì ìš©ë  ìˆ˜ ìžˆëŠ” ì½”ë“œëŠ” ë‹¤ìŒ ë§í¬ì— ìžˆë‹¤.
+* ì •ë ¬ ë¶€ë¶„ê³¼ ìƒ‰ìƒ ê°’ íšë“í•˜ëŠ” ê³¼ì •ì—ì„œ ë””í…Œì¼ì´ ë‹¤ë¥´ë‹¤.
 *
 * <a href="https://rsdn.org/forum/src/830679.1">Link 2</a>
 */
@@ -312,18 +312,18 @@ void ExperimentalFont::renderChar(HDC hdc, HBITMAP hBitmap, int xStart, int ySta
 
 	while (*lpszText)
 	{
-		// ¹öÆÛ ±æÀÌ¸¦ È¹µæÇÑ´Ù.
+		// ë²„í¼ ê¸¸ì´ë¥¼ íšë“í•œë‹¤.
 		dwBufferSize = GetGlyphOutlineW(hdc, *lpszText, GGO_GRAY8_BITMAP, &gm, 0, NULL, &mat2);
 
-		// ¹öÆÛ¸¦ ÇÒ´çÇÑ´Ù.
+		// ë²„í¼ë¥¼ í• ë‹¹í•œë‹¤.
 		lpBuffer = new (std::nothrow) BYTE[dwBufferSize];
 
-		// ¹®ÀÚÀÇ À±°û¼±À» 65 ·¹º§ÀÇ ±×·¹ÀÌ½ºÄÉÀÏ·Î È¹µæÇÑ´Ù.
+		// ë¬¸ìžì˜ ìœ¤ê³½ì„ ì„ 65 ë ˆë²¨ì˜ ê·¸ë ˆì´ìŠ¤ì¼€ì¼ë¡œ íšë“í•œë‹¤.
 		GetGlyphOutlineW(hdc, *lpszText, GGO_GRAY8_BITMAP, &gm, dwBufferSize, lpBuffer, &mat2);
 
-		// stride¶Ç´Â pitch ºÎºÐ; 
-		// ºñÆ®¸ÊÀº ÆÄÀÏ ±¸Á¶ ÀÚÃ¼°¡ 4¹ÙÀÌÆ®·Î Á¤·ÄÀ» ÇÏÁö ¾ÊÀ¸¸é Á¦´ë·Î Ç¥½Ã°¡ µÇÁö ¾Ê´Â´Ù.
-		// ¾Ë·ÁÁ®ÀÖ´Â °ø½ÄÀº ´ÙÀ½°ú °°´Ù. 
+		// strideë˜ëŠ” pitch ë¶€ë¶„; 
+		// ë¹„íŠ¸ë§µì€ íŒŒì¼ êµ¬ì¡° ìžì²´ê°€ 4ë°”ì´íŠ¸ë¡œ ì •ë ¬ì„ í•˜ì§€ ì•Šìœ¼ë©´ ì œëŒ€ë¡œ í‘œì‹œê°€ ë˜ì§€ ì•ŠëŠ”ë‹¤.
+		// ì•Œë ¤ì ¸ìžˆëŠ” ê³µì‹ì€ ë‹¤ìŒê³¼ ê°™ë‹¤. 
 		// = (gm.gmBlackBoxX + alignment - 1) / alignment * alignment
 		line = ((gm.gmBlackBoxX + 3) / 4) * 4;
 
@@ -341,8 +341,8 @@ void ExperimentalFont::renderChar(HDC hdc, HBITMAP hBitmap, int xStart, int ySta
 			y = 0;
 		}
 
-		// ASCII¿¡ µû¸£¸é 0ºÎÅÍ 32±îÁö´Â ºñ¾îÀÖ°í ÀÏºÎ Á¦¾î ¹®ÀÚµéµµ ºñÆ®¸Ê Á¤º¸°¡ ¾ø´Ù.
-		// ±ÛÀÚÀÇ À±°û¼± Á¤º¸°¡ ¾øÀ» °æ¿ì¿¡´Â ÇÈ¼¿À» Ã³¸®ÇØ¼­´Â ¾ÈµÇ¹Ç·Î Á¶°Ç¹®ÀÌ ¹Ýµå½Ã ÇÊ¿äÇÏ´Ù.
+		// ASCIIì— ë”°ë¥´ë©´ 0ë¶€í„° 32ê¹Œì§€ëŠ” ë¹„ì–´ìžˆê³  ì¼ë¶€ ì œì–´ ë¬¸ìžë“¤ë„ ë¹„íŠ¸ë§µ ì •ë³´ê°€ ì—†ë‹¤.
+		// ê¸€ìžì˜ ìœ¤ê³½ì„  ì •ë³´ê°€ ì—†ì„ ê²½ìš°ì—ëŠ” í”½ì…€ì„ ì²˜ë¦¬í•´ì„œëŠ” ì•ˆë˜ë¯€ë¡œ ì¡°ê±´ë¬¸ì´ ë°˜ë“œì‹œ í•„ìš”í•˜ë‹¤.
 		if (*lpszText > ' ') {
 			for (int my = 0; my < height; my++)
 			{
@@ -353,12 +353,12 @@ void ExperimentalFont::renderChar(HDC hdc, HBITMAP hBitmap, int xStart, int ySta
 					{
 						lp = getBits(hBitmap, x + mx, y + my);
 						if (lp) {
-							// 0-255 ´Ü°èÀÇ »ö»óÀ» 65 (0-64) ·¹º§ÀÇ ±×·¹ÀÌ½ºÄÉÀÏ(GGO_GRAY8_BITMAP)·Î º¯È¯ÇÏ´Â ºÎºÐÀÌ´Ù.
-							// ½ÇÁ¦ ¼­ºñ½ºÇÏ´Â ÇÁ·Î±×·¥¿¡¼­´Â ¼º´É ¹®Á¦·Î ¹Ì¸® °è»êÇÑ °ÍÀ» ¾ò¾î¿À°Å³ª, 
-							// ÇÈ¼¿ÀÌ ¾Æ´Ñ Æú¸®°ï Á¤º¸¸¦ Á÷Á¢ È¹µæÇÏ¿© ±×¸®´Â ¹æ½ÄÀ» ¾´´Ù.
-							// ¶ÇÇÑ ³ª´°¼ÀÀ» ÇÏÁö ¾ÊÀ¸¸ç °ö¼À È½¼öµµ ´õ Àû´Ù. Áï, ÀÌ°ÍÀº ÃßÈÄ ¼º´É ¹®Á¦°¡ »ý±æ ¼ö ÀÖ´Â ÄÚµåÀÌ´Ù.
-							// ÇÈ¼¿ ±¸Á¶Ã¼ ÆÐµùÀÇ °æ¿ì, ´ÙÀ½ ¸µÅ©¿¡ ÀÇÇÏ¸é https://en.wikipedia.org/wiki/BMP_file_format
-							// 24ºñÆ®ÀÇ °æ¿ì, BGRÀÌ¸ç, 32ºñÆ®ÀÇ °æ¿ì, BGRA´Ù.
+							// 0-255 ë‹¨ê³„ì˜ ìƒ‰ìƒì„ 65 (0-64) ë ˆë²¨ì˜ ê·¸ë ˆì´ìŠ¤ì¼€ì¼(GGO_GRAY8_BITMAP)ë¡œ ë³€í™˜í•˜ëŠ” ë¶€ë¶„ì´ë‹¤.
+							// ì‹¤ì œ ì„œë¹„ìŠ¤í•˜ëŠ” í”„ë¡œê·¸ëž¨ì—ì„œëŠ” ì„±ëŠ¥ ë¬¸ì œë¡œ ë¯¸ë¦¬ ê³„ì‚°í•œ ê²ƒì„ ì–»ì–´ì˜¤ê±°ë‚˜, 
+							// í”½ì…€ì´ ì•„ë‹Œ í´ë¦¬ê³¤ ì •ë³´ë¥¼ ì§ì ‘ íšë“í•˜ì—¬ ê·¸ë¦¬ëŠ” ë°©ì‹ì„ ì“´ë‹¤.
+							// ë˜í•œ ë‚˜ëˆ—ì…ˆì„ í•˜ì§€ ì•Šìœ¼ë©° ê³±ì…ˆ íšŸìˆ˜ë„ ë” ì ë‹¤. ì¦‰, ì´ê²ƒì€ ì¶”í›„ ì„±ëŠ¥ ë¬¸ì œê°€ ìƒê¸¸ ìˆ˜ ìžˆëŠ” ì½”ë“œì´ë‹¤.
+							// í”½ì…€ êµ¬ì¡°ì²´ íŒ¨ë”©ì˜ ê²½ìš°, ë‹¤ìŒ ë§í¬ì— ì˜í•˜ë©´ https://en.wikipedia.org/wiki/BMP_file_format
+							// 24ë¹„íŠ¸ì˜ ê²½ìš°, BGRì´ë©°, 32ë¹„íŠ¸ì˜ ê²½ìš°, BGRAë‹¤.
 							lp[0] = (GetBValue(cr) * alpha / 64) + (lp[0] * (64 - alpha) / 64);
 							lp[1] = (GetGValue(cr) * alpha / 64) + (lp[1] * (64 - alpha) / 64);
 							lp[2] = (GetRValue(cr) * alpha / 64) + (lp[2] * (64 - alpha) / 64);
@@ -371,22 +371,22 @@ void ExperimentalFont::renderChar(HDC hdc, HBITMAP hBitmap, int xStart, int ySta
 		}
 
 
-		// °³Çà ¹®ÀÚ Ã³¸®¸¦ À§ÇØ ±ÛÀÚÀÇ ³ôÀÌ¸¦ È¹µæÇÑ´Ù.
+		// ê°œí–‰ ë¬¸ìž ì²˜ë¦¬ë¥¼ ìœ„í•´ ê¸€ìžì˜ ë†’ì´ë¥¼ íšë“í•œë‹¤.
 		TEXTMETRICW tm;
 		GetTextMetricsW(hdc, &tm);
 
-		// gmCellIncX´Â ´ÙÀ½ ¹®ÀÚ±îÁöÀÇ °Å¸®
+		// gmCellIncXëŠ” ë‹¤ìŒ ë¬¸ìžê¹Œì§€ì˜ ê±°ë¦¬
 		xStart += gm.gmCellIncX;
 
-		// ÀÓ½Ã ÅØ½ºÆ® ÆøÀ» ÀúÀåÇÑ´Ù.
+		// ìž„ì‹œ í…ìŠ¤íŠ¸ í­ì„ ì €ìž¥í•œë‹¤.
 		tempLastTextWidth = xStart;
 
-		// Ä³¸®Áö ¸®ÅÏÀ» Ã³¸®ÇÑ´Ù.
+		// ìºë¦¬ì§€ ë¦¬í„´ì„ ì²˜ë¦¬í•œë‹¤.
 		if (*lpszText == '\r') {
 			xStart = lineStartX;
 		}
 		
-		// °³Çà ¹®ÀÚ¸¦ Ã³¸®ÇÑ´Ù.
+		// ê°œí–‰ ë¬¸ìžë¥¼ ì²˜ë¦¬í•œë‹¤.
 		if (*lpszText == '\n') {
 			m_nLastTextWidth = tempLastTextWidth;
 			xStart = lineStartX;
@@ -394,7 +394,7 @@ void ExperimentalFont::renderChar(HDC hdc, HBITMAP hBitmap, int xStart, int ySta
 			yStart += tm.tmHeight;
 		}
 
-		// ´ÙÀ½ ¹®ÀÚ¸¦ ÀÐ´Â´Ù.
+		// ë‹¤ìŒ ë¬¸ìžë¥¼ ì½ëŠ”ë‹¤.
 		lpszText++;
 
 		delete[] lpBuffer;
@@ -417,8 +417,8 @@ LPBYTE ExperimentalFont::getBits(HBITMAP hBMP, int x, int y)
 
 	lp = (LPBYTE)bm.bmBits;
 
-	// °ø½ÄÀº ´ÙÀ½°ú °°´Ù.
-	// ÄÄÇ»ÅÍ¿¡¼­ ¼ýÀÚ´Â 0ºÎÅÍ ½ÃÀÛÇÏ±â ¶§¹®¿¡ aligment - 1ÀÌ µÇ´Â °ÍÀ¸·Î º»´Ù.
+	// ê³µì‹ì€ ë‹¤ìŒê³¼ ê°™ë‹¤.
+	// ì»´í“¨í„°ì—ì„œ ìˆ«ìžëŠ” 0ë¶€í„° ì‹œìž‘í•˜ê¸° ë•Œë¬¸ì— aligment - 1ì´ ë˜ëŠ” ê²ƒìœ¼ë¡œ ë³¸ë‹¤.
 	// (numColor * width * aligment - 1) / aligment * aligment
 	lp += (bm.bmHeight - y - 1) * ((4 * bm.bmWidth + 3) / 4) * 4;
 	lp += 4 * x;
@@ -438,11 +438,11 @@ HBITMAP ExperimentalFont::createBackBuffer(int width, int height)
 	bmih.biWidth = width;
 	bmih.biHeight = height;
 
-	// GIFÃ³·³ ÀÌ¹ÌÁö°¡ ¿©·¯ °³ ÀÖ´Â °æ¿ì¸¦ ÁöÁ¤ÇÏ´Â °ÍÀÌÁö¸¸, ¿©±â¿¡¼­´Â 1ÀÌ´Ù.
+	// GIFì²˜ëŸ¼ ì´ë¯¸ì§€ê°€ ì—¬ëŸ¬ ê°œ ìžˆëŠ” ê²½ìš°ë¥¼ ì§€ì •í•˜ëŠ” ê²ƒì´ì§€ë§Œ, ì—¬ê¸°ì—ì„œëŠ” 1ì´ë‹¤.
 	bmih.biPlanes = 1;
 
-	// 24 ºñÆ®·Î ¼³Á¤ÇÒ °æ¿ì, BGRÀÌ¹Ç·Î Åõ¸íµµ Á¶ÀýÀ» ÇÒ ¼ö ¾ø´Ù.
-	// 32 ºñÆ®ÀÇ °æ¿ì, BGRAÀÌ¹Ç·Î Åõ¸íµµ Á¶ÀýÀÌ °¡´ÉÇÏ¸ç °¢°¢ 2^8 (256) »öÀ» Ç¥ÇöÇÒ ¼ö ÀÖ´Ù.
+	// 24 ë¹„íŠ¸ë¡œ ì„¤ì •í•  ê²½ìš°, BGRì´ë¯€ë¡œ íˆ¬ëª…ë„ ì¡°ì ˆì„ í•  ìˆ˜ ì—†ë‹¤.
+	// 32 ë¹„íŠ¸ì˜ ê²½ìš°, BGRAì´ë¯€ë¡œ íˆ¬ëª…ë„ ì¡°ì ˆì´ ê°€ëŠ¥í•˜ë©° ê°ê° 2^8 (256) ìƒ‰ì„ í‘œí˜„í•  ìˆ˜ ìžˆë‹¤.
 	bmih.biBitCount = 32; 
 
 	bmi.bmiHeader = bmih;

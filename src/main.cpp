@@ -49,7 +49,7 @@ inline std::string GetExecutablePath() {
 }
 
 /**
-* @brief °ÔÀÓ ¸ğµâÀ» ÃÊ±âÈ­ÇÕ´Ï´Ù(»ó¼Ó ½Ã ¹İµå½Ã ±¸Çö)
+* @brief ê²Œì„ ëª¨ë“ˆì„ ì´ˆê¸°í™”í•©ë‹ˆë‹¤(ìƒì† ì‹œ ë°˜ë“œì‹œ êµ¬í˜„)
 */
 void App::Initialize()
 {
@@ -57,7 +57,7 @@ void App::Initialize()
 
 	HWND hWnd = m_hWnd;
 
-	LOG_D("»ı¼ºµÇ¾ú½À´Ï´Ù.");
+	LOG_D("ìƒì„±ë˜ì—ˆìŠµë‹ˆë‹¤.");
 
 	std::string sCurrentPath = GetExecutablePath();
 
@@ -65,7 +65,7 @@ void App::Initialize()
 
 	std::cout << sCurrentPath << std::endl;
 
-	// ¼³Á¤ ÆÄÀÏ ÀÛ¼º
+	// ì„¤ì • íŒŒì¼ ì‘ì„±
 	std::ofstream configFile("config.setting");
 	if (configFile.fail()) {
 		throw new std::exception("");
@@ -82,20 +82,20 @@ void App::Initialize()
 
 	configFile << &cd[0] << "\n";
 
-	// ¸¶¿ì½º ¹× Å°º¸µå ¸ğµâ ÃÊ±âÈ­
+	// ë§ˆìš°ìŠ¤ ë° í‚¤ë³´ë“œ ëª¨ë“ˆ ì´ˆê¸°í™”
 	m_pInput->initialize(m_hWnd);
 
 	// Set the App Icon from a certain image.
 	SetAppIcon(".\\resources\\icons\\icon.png");
 
-	// °ÔÀÓ »óÅÂ ¸Ó½Å ÃÊ±âÈ­
+	// ê²Œì„ ìƒíƒœ ë¨¸ì‹  ì´ˆê¸°í™”
 	m_pGameStateMachine = new GameStateMachine();
 	m_pGameStateMachine->changeState(new MenuState());
 
 	// Lua Interpreter Initialization
 	Lua_Init();
 
-//	// ÇÁ·Î¼¼½º Á¤º¸ Ãâ·Â
+//	// í”„ë¡œì„¸ìŠ¤ ì •ë³´ ì¶œë ¥
 //	try {
 //		Initial2D::Process process(L"powershell Get-Process");
 //		Initial2D::Process process2(L"cmd /c \"echo wow...\"");
@@ -107,9 +107,9 @@ void App::Initialize()
 }
 
 /**
-* @brief »óÅÂ ¸Ó½ÅÀ» ¾÷µ¥ÀÌÆ® ÇÕ´Ï´Ù(»ó¼Ó ½Ã ¹İµå½Ã ±¸Çö)
+* @brief ìƒíƒœ ë¨¸ì‹ ì„ ì—…ë°ì´íŠ¸ í•©ë‹ˆë‹¤(ìƒì† ì‹œ ë°˜ë“œì‹œ êµ¬í˜„)
 *
-* @param elapsed ÀÌÀü ÇÁ·¹ÀÓ¿¡¼­ ¾ó¸¶¸¸Å­ Áö³µ´Â Áö¿¡ ´ëÇÑ ½Ã°£
+* @param elapsed ì´ì „ í”„ë ˆì„ì—ì„œ ì–¼ë§ˆë§Œí¼ ì§€ë‚¬ëŠ” ì§€ì— ëŒ€í•œ ì‹œê°„
 *
 */
 void App::ObjectUpdate(double elapsed)
@@ -119,7 +119,7 @@ void App::ObjectUpdate(double elapsed)
 }
 
 /**
-* @brief ÇöÀç ÇÁ·¹ÀÓÀ» ·»´õ¸µÇÕ´Ï´Ù(»ó¼Ó ½Ã ¹İµå½Ã ±¸Çö)
+* @brief í˜„ì¬ í”„ë ˆì„ì„ ë Œë”ë§í•©ë‹ˆë‹¤(ìƒì† ì‹œ ë°˜ë“œì‹œ êµ¬í˜„)
 */
 void App::Render()
 {
@@ -129,13 +129,13 @@ void App::Render()
 }
 
 /**
-* @brief ¸Ş¸ğ¸® ÇØÁ¦(»ó¼Ó ½Ã ¹İµå½Ã ±¸Çö)
+* @brief ë©”ëª¨ë¦¬ í•´ì œ(ìƒì† ì‹œ ë°˜ë“œì‹œ êµ¬í˜„)
 */
 void App::Destroy()
 {
 	Lua_Destory();
 
-	// ÀÔ·Â °´Ã¼ »èÁ¦
+	// ì…ë ¥ ê°ì²´ ì‚­ì œ
 	DestroyFont();
 	SAFE_DELETE(m_pInput);
 	SAFE_DELETE(m_pGameStateMachine);

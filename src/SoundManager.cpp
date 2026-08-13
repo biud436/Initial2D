@@ -28,7 +28,7 @@ SoundManager::SoundManager() :
 	m_nextMusicID(""),
 	m_nextMusicLoop(-1)
 {
-	// ¿Àµğ¿À ¹öÆÛÀÇ Å©±â (2048 bytes)
+	// ì˜¤ë””ì˜¤ ë²„í¼ì˜ í¬ê¸° (2048 bytes)
 	Mix_OpenAudio(22050, AUDIO_S16, 2, 4096 / 2);
 }
 
@@ -72,7 +72,7 @@ bool SoundManager::load(std::string fileName, std::string id, sound_type type)
 // -1 plays the music forever (or as close as it can get to that)
 void SoundManager::playMusic(std::string id, int loop)
 {
-	// À½¾ÇÀÌ Àç»ı ÁßÀÌ°í, Àç»ıÇÏ·Á´Â À½¾ÇÀÌ ÇöÀç À½¾Ç°ú ´Ù¸£¸é
+	// ìŒì•…ì´ ì¬ìƒ ì¤‘ì´ê³ , ì¬ìƒí•˜ë ¤ëŠ” ìŒì•…ì´ í˜„ì¬ ìŒì•…ê³¼ ë‹¤ë¥´ë©´
 	if (isPlaying() && getCurrentMusicID() != id)
 	{
 		m_previousMusicID = getCurrentMusicID();
@@ -82,7 +82,7 @@ void SoundManager::playMusic(std::string id, int loop)
 		return;
 	}
 
-	// À½¾ÇÀÌ Àç»ı ÁßÀÌ°í, Àç»ıÇÏ·Á´Â À½¾ÇÀÌ ÇöÀç À½¾Ç°ú °°À¸¸é
+	// ìŒì•…ì´ ì¬ìƒ ì¤‘ì´ê³ , ì¬ìƒí•˜ë ¤ëŠ” ìŒì•…ì´ í˜„ì¬ ìŒì•…ê³¼ ê°™ìœ¼ë©´
 	//if (isPlaying() && getCurrentMusicID() == id)
 	//	return;
 
@@ -123,7 +123,7 @@ void SoundManager::setVolume(int volume)
 	if (volume < 0) 
 		volume = 0;
 
-	// ¿¬¸³ ¹æÁ¤½ÄÀ¸·Î ±¸ÇÑ º¯È¯ ½ÄÀÌ´Ù.
+	// ì—°ë¦½ ë°©ì •ì‹ìœ¼ë¡œ êµ¬í•œ ë³€í™˜ ì‹ì´ë‹¤.
 	int n = 255;
 	int f = 0;
 	float a = 128.0f / (n - f);
@@ -185,7 +185,7 @@ void SoundManager::releaseSound(std::string id)
 
 void SoundManager::playSound(std::string id, int loop)
 {
-	// -1, ÀÓÀÇÀÇ Ã¤³Î ÇÒ´ç
-	// loop : È¿°úÀ½ÀÇ ¹İº¹ È½¼ö.
+	// -1, ì„ì˜ì˜ ì±„ë„ í• ë‹¹
+	// loop : íš¨ê³¼ìŒì˜ ë°˜ë³µ íšŸìˆ˜.
 	Mix_PlayChannel(-1, m_sfxs[id], loop);
 }

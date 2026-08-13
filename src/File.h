@@ -65,8 +65,8 @@ namespace Initial2D {
 		bool m_bIsOpen;
 		std::unique_ptr<FileInterface::FileSystem> fs;
 
-		File(const File&); // º¹»ç »ı¼ºÀÚ ¹æÁö
-		File& operator=(const File&); // ´ëÀÔ ¿¬»êÀÚ ¹æÁö
+		File(const File&); // ë³µì‚¬ ìƒì„±ì ë°©ì§€
+		File& operator=(const File&); // ëŒ€ì… ì—°ì‚°ì ë°©ì§€
 	};
 
 }

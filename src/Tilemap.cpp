@@ -48,16 +48,16 @@ bool Tilemap::loadImages()
 {
 	std::string filename = _root["TilesetImage"].asString();
 
-	// Å¸ÀÏ¼ÂÀ» ºÒ·¯¿É´Ï´Ù.
+	// íƒ€ì¼ì…‹ì„ ë¶ˆëŸ¬ì˜µë‹ˆë‹¤.
 	if (!TheTextureManager.Load(filename, "main_tileset", 0)) {
-		LOG_D("Å¸ÀÏ¼Â ÅØ½ºÃÄ ·Îµå¿¡ ½ÇÆĞÇÏ¿´½À´Ï´Ù.");
+		LOG_D("íƒ€ì¼ì…‹ í…ìŠ¤ì³ ë¡œë“œì— ì‹¤íŒ¨í•˜ì˜€ìŠµë‹ˆë‹¤.");
 		return false;
 	}
 
-	// ÆÄÀÏ ´İ±â
+	// íŒŒì¼ ë‹«ê¸°
 	//file.close();
 
-	LOG_D("Å¸ÀÏ¼Â ÀÌ¹ÌÁö¸¦ ¼º°øÀûÀ¸·Î ·ÎµåÇÏ¿´½À´Ï´Ù");
+	LOG_D("íƒ€ì¼ì…‹ ì´ë¯¸ì§€ë¥¼ ì„±ê³µì ìœ¼ë¡œ ë¡œë“œí•˜ì˜€ìŠµë‹ˆë‹¤");
 
 	return true;
 }
@@ -67,7 +67,7 @@ void Tilemap::initialize()
 {
 	try 
 	{
-		// settings.json ÆÄÀÏ ·Îµå
+		// settings.json íŒŒì¼ ë¡œë“œ
 		std::ifstream config(".\\resources\\maps\\settings.json", std::ifstream::binary);
 		
 		config >> _root;
@@ -81,7 +81,7 @@ void Tilemap::initialize()
 
 		int startMapId = _root["StartMapId"].asInt();
 
-		// ¸Ê ÆÄÀÏÀ» ·ÎµåÇÕ´Ï´Ù.
+		// ë§µ íŒŒì¼ì„ ë¡œë“œí•©ë‹ˆë‹¤.
 		std::ostringstream stringStream;
 		stringStream << ".\\resources\\maps\\map" << startMapId << ".json";
 		std::ifstream mapFile(stringStream.str(), std::ifstream::binary);
@@ -95,8 +95,8 @@ void Tilemap::initialize()
 
 		Json::Value layer1 = map["Layer1"];
 
-		// Å¸ÀÏÀ» ¼³Á¤ÇÕ´Ï´Ù (µğÄ¿ÇÃ¸µ ÇÊ¿ä)
-		// °¢ Å¸ÀÏ ID´Â ºÒ·¯¿Ã Å¸ÀÏ ÀÌ¹ÌÁö¿Í ¿¬°üµË´Ï´Ù.
+		// íƒ€ì¼ì„ ì„¤ì •í•©ë‹ˆë‹¤ (ë””ì»¤í”Œë§ í•„ìš”)
+		// ê° íƒ€ì¼ IDëŠ” ë¶ˆëŸ¬ì˜¬ íƒ€ì¼ ì´ë¯¸ì§€ì™€ ì—°ê´€ë©ë‹ˆë‹¤.
 		for (y = 0; y < _height; y++) {
 			std::vector<int> yTiles;
 
@@ -108,7 +108,7 @@ void Tilemap::initialize()
 		}
 
 		if (!loadImages()) {
-			LOG_D("Å¸ÀÏ¼Â ÀÌ¹ÌÁö¸¦ ·ÎµåÇÏ´Â µ¥ ½ÇÆĞÇß½À´Ï´Ù.");
+			LOG_D("íƒ€ì¼ì…‹ ì´ë¯¸ì§€ë¥¼ ë¡œë“œí•˜ëŠ” ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.");
 			throw new std::exception("importing tileset image is failed");
 		}
 

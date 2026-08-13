@@ -6,7 +6,7 @@
  * Contact: biud436@gmail.com
  *
  * @brief 
- * ÄÚµå°¡ »ó´çÈ÷ °³ÆÇÀÌ´Ù.
+ * ì½”ë“œê°€ ìƒë‹¹íˆ ê°œíŒì´ë‹¤.
  * @note
 */
 
@@ -34,7 +34,7 @@
 
 /** 
  * @def LOG_D(MSG)
- * µğ¹ö±× ÄÜ¼Ö¿¡ µğ¹ö±× ¸Ş½ÃÁö #MSG¸¦ Ãâ·ÂÇÕ´Ï´Ù.
+ * ë””ë²„ê·¸ ì½˜ì†”ì— ë””ë²„ê·¸ ë©”ì‹œì§€ #MSGë¥¼ ì¶œë ¥í•©ë‹ˆë‹¤.
  */
 #ifndef NDEBUG
 #define LOG_D(MSG) \
@@ -45,13 +45,13 @@
 
 /**
  * @def InputManager 
- * Input °´Ã¼ÀÇ ÀÎ½ºÅÏ½º¸¦ ¹Ù·Î È¹µæÇÕ´Ï´Ù.
+ * Input ê°ì²´ì˜ ì¸ìŠ¤í„´ìŠ¤ë¥¼ ë°”ë¡œ íšë“í•©ë‹ˆë‹¤.
  */
 #define InputManager App::GetInstance().GetInput()
 
  /**
  * @def TheTextureManager
- * TextureManagerÀÇ ÀÎ½ºÅÏ½º¸¦ ¹Ù·Î È¹µæÇÕ´Ï´Ù.
+ * TextureManagerì˜ ì¸ìŠ¤í„´ìŠ¤ë¥¼ ë°”ë¡œ íšë“í•©ë‹ˆë‹¤.
  */
 #define TheTextureManager App::GetInstance().GetTextureManager()
 
@@ -70,9 +70,9 @@ using GameFont = std::unique_ptr<Font>;
 /**
  * @class App
  * @author biud436 (biud436@gmail.com)
- * @brief °ÔÀÓ ¸ğµâ
+ * @brief ê²Œì„ ëª¨ë“ˆ
  * @details
- »ó¼Ó ½Ã Initialize, ObjectUpdate, Render, Destroy´Â ¹İµå½Ã ¿À¹ö¶óÀÌµåÇØ¾ß ÇÕ´Ï´Ù.
+ ìƒì† ì‹œ Initialize, ObjectUpdate, Render, DestroyëŠ” ë°˜ë“œì‹œ ì˜¤ë²„ë¼ì´ë“œí•´ì•¼ í•©ë‹ˆë‹¤.
  */
 class App
 {
@@ -157,16 +157,16 @@ protected:
 	double			  m_frameTime;
 	int				  m_nFrameCount;
 
-	// ÀÔ·Â
+	// ì…ë ¥
 	Input*            m_pInput;
 
-	// Àå¸é °ü¸®
+	// ì¥ë©´ ê´€ë¦¬
 	GameStateMachine* m_pGameStateMachine;
 
-	// Ã¢ Æ÷Ä¿½º
+	// ì°½ í¬ì»¤ìŠ¤
 	bool              m_bFocus;
 
-	// ÆùÆ® ¾ÆÆ²¶ó½º
+	// í°íŠ¸ ì•„í‹€ë¼ìŠ¤
 	GameFont          m_pFont;
 
 private:

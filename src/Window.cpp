@@ -32,7 +32,7 @@ void Window::destroy()
 
 void Window::start() 
 {
-	// ¿©±â¿¡ ÄÚµå Ãß°¡
+	// ì—¬ê¸°ì— ì½”ë“œ ì¶”ê°€
 	if (SDL_Init(SDL_INIT_EVERYTHING) >= 0) {
 
 		m_pWindow = SDL_CreateWindow("SDL Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_rect.width, m_rect.height, SDL_WINDOW_SHOWN);

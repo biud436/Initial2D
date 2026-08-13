@@ -9,7 +9,7 @@
 #include "Rectangle.h"
 
 /**
- * @brief »õ·Î¿î Ã¢À» ¸¸µå´Â Å¬·¡½º
+ * @brief ìƒˆë¡œìš´ ì°½ì„ ë§Œë“œëŠ” í´ë˜ìŠ¤
  */
 class Window
 {

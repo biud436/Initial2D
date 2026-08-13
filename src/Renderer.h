@@ -28,9 +28,9 @@ namespace Initial2D
 		 */
 		struct TextureData
 		{
-			int width;			/** Æø */
-			int height;			/** ³ôÀÌ */
-			HBITMAP texture;	/** ÅØ½ºÃ³ */
+			int width;			/** í­ */
+			int height;			/** ë†’ì´ */
+			HBITMAP texture;	/** í…ìŠ¤ì²˜ */
 			TextureData();
 			~TextureData();
 		};

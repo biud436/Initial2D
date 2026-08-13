@@ -10,7 +10,7 @@ std::string ConvertWideCharToMultiByte(std::wstring& wstr, UINT codePage);
 std::wstring ConvertMultiByteToWideChar(std::string& str, UINT codePage);
 
 /**
- * ¹®ÀÚ¿­À» ÀÚ¸¥ ÈÄ std::vector<std::string> ÇüÅÂ·Î ¹İÈ¯ÇÕ´Ï´Ù.
+ * ë¬¸ìì—´ì„ ìë¥¸ í›„ std::vector<std::string> í˜•íƒœë¡œ ë°˜í™˜í•©ë‹ˆë‹¤.
  * 
  * @example
  * std::vector<std::string>::iterator iter;

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  소스 파일이 CP949에서 UTF-8로 변환됨에 따라 MSVC가 소스를 UTF-8로 읽도록 지정합니다.
+  실행 문자셋(execution charset)은 지정하지 않으므로 기존과 동일하게 ANSI(CP949)로 유지되어
+  MessageBoxA 등 ANSI API에 전달되는 한글 리터럴의 런타임 동작이 변하지 않습니다.
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalOptions>/source-charset:utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+</Project>

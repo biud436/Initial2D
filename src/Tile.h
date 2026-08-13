@@ -6,29 +6,29 @@ class Tile : public Sprite
 	Tile();
 	virtual ~Tile();
 	/**
-	 * ½ºÇÁ¶óÀÌÆ®¸¦ ÃÊ±âÈ­ ÇÕ´Ï´Ù.
+	 * ìŠ¤í”„ë¼ì´íŠ¸ë¥¼ ì´ˆê¸°í™” í•©ë‹ˆë‹¤.
 	 */
 	virtual bool	initialize(float x, float y, int width, int height, int maxFrames, std::string textureId);
 
 	/**
-	 * ½ºÇÁ¶óÀÌÆ®¸¦ ¾÷µ¥ÀÌÆ® ÇÕ´Ï´Ù.
+	 * ìŠ¤í”„ë¼ì´íŠ¸ë¥¼ ì—…ë°ì´íŠ¸ í•©ë‹ˆë‹¤.
 	 *
-	 * @param elapsed Áö³­ ÇÁ·¹ÀÓÀ¸·ÎºÎÅÍ °æ°úÇÑ ½Ã°£
+	 * @param elapsed ì§€ë‚œ í”„ë ˆì„ìœ¼ë¡œë¶€í„° ê²½ê³¼í•œ ì‹œê°„
 	 */
 	virtual void	update(float elapsed);
 
 	/**
-	 * ½ºÇÁ¶óÀÌÆ®¸¦ ¹¦È­ÇÕ´Ï´Ù.
+	 * ìŠ¤í”„ë¼ì´íŠ¸ë¥¼ ë¬˜í™”í•©ë‹ˆë‹¤.
 	 */
 	virtual void	draw(void);
 
 	/**
-	 * È¸Àü, È®´ë, Ãà¼Ò, ÀÌµ¿ Çà·ÄÀ» ´Ù·ç´Â Çà·ÄÀ» ¸Å ÇÁ·¹ÀÓ ¾÷µ¥ÀÌÆ®ÇÕ´Ï´Ù.
+	 * íšŒì „, í™•ëŒ€, ì¶•ì†Œ, ì´ë™ í–‰ë ¬ì„ ë‹¤ë£¨ëŠ” í–‰ë ¬ì„ ë§¤ í”„ë ˆì„ ì—…ë°ì´íŠ¸í•©ë‹ˆë‹¤.
 	 */
 	virtual void	updateTransform();
 
 	/**
-	 * Æ®·£½ºÆû µ¥ÀÌÅÍ¸¦ ¾ò½À´Ï´Ù.
+	 * íŠ¸ëœìŠ¤í¼ ë°ì´í„°ë¥¼ ì–»ìŠµë‹ˆë‹¤.
 	 */
 	virtual	TransformData& getTransform();
 

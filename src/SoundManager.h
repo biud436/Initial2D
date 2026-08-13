@@ -20,7 +20,7 @@
 
 /**
  * @addtogroup SoundModule
- * »ç¿îµå ¸ğµâ
+ * ì‚¬ìš´ë“œ ëª¨ë“ˆ
  * @{
  */
 
@@ -46,7 +46,7 @@ private:
 
 /**
  * @class SoundManager
- * @brief »ç¿îµå ¸ğµâ
+ * @brief ì‚¬ìš´ë“œ ëª¨ë“ˆ
  * @details https://www.libsdl.org/projects/SDL_mixer/docs/SDL_mixer_toc.html#SEC_Contents
  */
 class SoundManager : private UnCopyable
@@ -57,7 +57,7 @@ private:
 public:
 	
 	/**
-	* ÀÎ½ºÅÏ½º¸¦ »ı¼ºÇÏ°Å³ª »ı¼ºµÈ ÀÎ½ºÅÏ½º¸¦ °¡Á®¿É´Ï´Ù.
+	* ì¸ìŠ¤í„´ìŠ¤ë¥¼ ìƒì„±í•˜ê±°ë‚˜ ìƒì„±ëœ ì¸ìŠ¤í„´ìŠ¤ë¥¼ ê°€ì ¸ì˜µë‹ˆë‹¤.
 	*/
 	static SoundManager* Instance()
 	{
@@ -73,98 +73,98 @@ public:
 
 	/**
 	*
-	* ¿Àµğ¿À ÆÄÀÏ¿¡¼­ BGM ¹× È¿°úÀ½À» °¡Á®¿Í »ç¿îµå ¸Ê¿¡ ÀúÀåÇÕ´Ï´Ù.
+	* ì˜¤ë””ì˜¤ íŒŒì¼ì—ì„œ BGM ë° íš¨ê³¼ìŒì„ ê°€ì ¸ì™€ ì‚¬ìš´ë“œ ë§µì— ì €ì¥í•©ë‹ˆë‹¤.
 	*
-	* @param fileName ÆÄÀÏ¸í
-	* @param id ID °ª
-	* @param type À¯Çü. È¿°úÀ½ ¶Ç´Â BGMÀ» ÁöÁ¤ÇÕ´Ï´Ù.
+	* @param fileName íŒŒì¼ëª…
+	* @param id ID ê°’
+	* @param type ìœ í˜•. íš¨ê³¼ìŒ ë˜ëŠ” BGMì„ ì§€ì •í•©ë‹ˆë‹¤.
 	*
-	* @return ¿Àµğ¿À ÆÄÀÏÀÌ Á¸ÀçÇÏ°í ·Îµå¿¡ ¼º°øÇß´Ù¸é true, ¾Æ´Ï¸é false.
+	* @return ì˜¤ë””ì˜¤ íŒŒì¼ì´ ì¡´ì¬í•˜ê³  ë¡œë“œì— ì„±ê³µí–ˆë‹¤ë©´ true, ì•„ë‹ˆë©´ false.
 	*
 	*/
 	bool load(std::string fileName, std::string id, sound_type type);
 
 	/**
-	* È¿°úÀ½À» Àç»ıÇÕ´Ï´Ù.
+	* íš¨ê³¼ìŒì„ ì¬ìƒí•©ë‹ˆë‹¤.
 	*/
 	void playSound(std::string id, int loop);
 	
 	/**
-	* BGMÀ» Àç»ıÇÕ´Ï´Ù.
+	* BGMì„ ì¬ìƒí•©ë‹ˆë‹¤.
 	*/
 	void playMusic(std::string id, int loop);
 
 	/**
-	* ´ÙÀ½¿¡ Àç»ıµÉ BGMÀ» Ãß°¡ÇÕ´Ï´Ù.
+	* ë‹¤ìŒì— ì¬ìƒë  BGMì„ ì¶”ê°€í•©ë‹ˆë‹¤.
 	*/
 	void insertNextMusic(std::string id, int loop);
 
 	/**
-	* ´ÙÀ½ BGMÀ» Àç»ıÇÕ´Ï´Ù.
+	* ë‹¤ìŒ BGMì„ ì¬ìƒí•©ë‹ˆë‹¤.
 	*/
 	void playNextMusic();
 	
 	/**
-	* BGMÀ» ÀÏ½Ã Áß´ÜÇÕ´Ï´Ù.
+	* BGMì„ ì¼ì‹œ ì¤‘ë‹¨í•©ë‹ˆë‹¤.
 	*/
 	void pauseMusic();
 
 	/**
-	* BGM Àç»ıÀ» Àç°³ÇÕ´Ï´Ù.
+	* BGM ì¬ìƒì„ ì¬ê°œí•©ë‹ˆë‹¤.
 	*/
 	void resumeMusic();
 
 	/**
-	* BGM Àç»ıÀ» ¿ÏÀüÈ÷ Áß´ÜÇÕ´Ï´Ù.
+	* BGM ì¬ìƒì„ ì™„ì „íˆ ì¤‘ë‹¨í•©ë‹ˆë‹¤.
 	*/
 	void stopMusic();
 
 	/**
-	* BGMÀ» ÆäÀÌµå ¾Æ¿ôÇÕ´Ï´Ù.
+	* BGMì„ í˜ì´ë“œ ì•„ì›ƒí•©ë‹ˆë‹¤.
 	*/
 	void fadeOutMusic(int ms);
 	
 	/**
-	* BGM Àç»ı À§Ä¡¸¦ ¼³Á¤ÇÕ´Ï´Ù.
+	* BGM ì¬ìƒ ìœ„ì¹˜ë¥¼ ì„¤ì •í•©ë‹ˆë‹¤.
 	*/
 	void setMusicPosition(double position);
 
 	/**
-	* BGMÀÇ º¼·ıÀ» ¼³Á¤ÇÕ´Ï´Ù.
+	* BGMì˜ ë³¼ë¥¨ì„ ì„¤ì •í•©ë‹ˆë‹¤.
 	* 
-	* @param volume 0 ~ 255. 0Àº º¼·ı ¾øÀ½. 255Àº ÃÖ´ë º¼·ı (¹üÀ§¸¦ 0¿¡¼­ 128±îÁö·Î º¸°£ÇÕ´Ï´Ù)
+	* @param volume 0 ~ 255. 0ì€ ë³¼ë¥¨ ì—†ìŒ. 255ì€ ìµœëŒ€ ë³¼ë¥¨ (ë²”ìœ„ë¥¼ 0ì—ì„œ 128ê¹Œì§€ë¡œ ë³´ê°„í•©ë‹ˆë‹¤)
 	*/
 	void setVolume(int volume);
 
 	/**
-	* BGMÀÇ º¼·ı °ªÀ» °¡Á®¿É´Ï´Ù.
-	* @return 0 ~ 255. 0Àº º¼·ı ¾øÀ½. 255´Â ÃÖ´ë º¼·ı.
+	* BGMì˜ ë³¼ë¥¨ ê°’ì„ ê°€ì ¸ì˜µë‹ˆë‹¤.
+	* @return 0 ~ 255. 0ì€ ë³¼ë¥¨ ì—†ìŒ. 255ëŠ” ìµœëŒ€ ë³¼ë¥¨.
 	*/
 	int getVolume();
 
 	/**
-	* ÇöÀç Àç»ı ÁßÀÎ BGM ID¸¦ ¸®¼ÂÇÕ´Ï´Ù.
+	* í˜„ì¬ ì¬ìƒ ì¤‘ì¸ BGM IDë¥¼ ë¦¬ì…‹í•©ë‹ˆë‹¤.
 	*/
 	void resetCurrentMusicID();
 
 	/**
-	* ÇöÀç Àç»ı ÁßÀÎ BGMÀÇ ID¸¦ °¡Á®¿É´Ï´Ù.
+	* í˜„ì¬ ì¬ìƒ ì¤‘ì¸ BGMì˜ IDë¥¼ ê°€ì ¸ì˜µë‹ˆë‹¤.
 	*/
 	std::string getCurrentMusicID();
 
 	/**
-	* BGMÀÌ Àç»ıµÇ°í ÀÖ´Â Áö È®ÀÎÇÕ´Ï´Ù.
-	* @return BGM Àç»ı ¿©ºÎ ¹İÈ¯
+	* BGMì´ ì¬ìƒë˜ê³  ìˆëŠ” ì§€ í™•ì¸í•©ë‹ˆë‹¤.
+	* @return BGM ì¬ìƒ ì—¬ë¶€ ë°˜í™˜
 	*/
 	bool isPlaying();
 
 	/**
-	* Æ¯Á¤ BGMÀÇ ¸Ş¸ğ¸®¸¦ ÇØÁ¦ÇÕ´Ï´Ù.
+	* íŠ¹ì • BGMì˜ ë©”ëª¨ë¦¬ë¥¼ í•´ì œí•©ë‹ˆë‹¤.
 	*/
 	void releaseMusic(std::string id);
 
 	/**
-	* Æ¯Á¤ È¿°úÀ½ÀÇ ¸Ş¸ğ¸®¸¦ ÇØÁ¦ÇÕ´Ï´Ù.
+	* íŠ¹ì • íš¨ê³¼ìŒì˜ ë©”ëª¨ë¦¬ë¥¼ í•´ì œí•©ë‹ˆë‹¤.
 	*/
 	void releaseSound(std::string id);
 
@@ -178,16 +178,16 @@ private:
 	BGM         m_music;	// BGM
 	SE          m_sfxs;	// SE
 
-	std::string m_previousMusicID; // ÀÌÀü BGM ID
-	std::string m_currentMusicID; // ÇöÀç BGM ID
-	std::string m_nextMusicID; // ´ÙÀ½ BGM ID
-	int         m_nextMusicLoop; // ´ÙÀ½ BGM ¹İº¹ Àç»ı ¿©ºÎ 
+	std::string m_previousMusicID; // ì´ì „ BGM ID
+	std::string m_currentMusicID; // í˜„ì¬ BGM ID
+	std::string m_nextMusicID; // ë‹¤ìŒ BGM ID
+	int         m_nextMusicLoop; // ë‹¤ìŒ BGM ë°˜ë³µ ì¬ìƒ ì—¬ë¶€ 
 		
 };
 
 /**
 * @def Audio
-* ½Ì±ÛÅÏ¿¡ Á¢±ÙÇÏ´Â °ÍÀÌÁö¸¸, °´Ã¼ º¯¼öÃ³·³ »ç¿ëÇÏ±â À§ÇÑ Æ®¸¯.
+* ì‹±ê¸€í„´ì— ì ‘ê·¼í•˜ëŠ” ê²ƒì´ì§€ë§Œ, ê°ì²´ ë³€ìˆ˜ì²˜ëŸ¼ ì‚¬ìš©í•˜ê¸° ìœ„í•œ íŠ¸ë¦­.
 */
 #define Audio SoundManager::Instance()
 

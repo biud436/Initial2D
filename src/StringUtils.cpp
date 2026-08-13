@@ -68,7 +68,7 @@ std::string GetParentDirectory(const char* path)
 
 	int subtract_len = strlen(pos);
 	
-	// c¿¡¼± µ¿Àû ÇÒ´ç ÇÊ¿ä, std::stringÀº ÇÊ¿ä ¾øÀ½.
+	// cì—ì„  ë™ì  í• ë‹¹ í•„ìš”, std::stringì€ í•„ìš” ì—†ìŒ.
 	std::string ret = path;
 	ret.resize(len - subtract_len);
 
@@ -97,7 +97,7 @@ std::string GetFileName(const char* path)
 }
 
 /**
- * ÆÄÀÏ È®ÀåÀÚ¸¦ ¹ÝÈ¯ÇÕ´Ï´Ù.
+ * íŒŒì¼ í™•ìž¥ìžë¥¼ ë°˜í™˜í•©ë‹ˆë‹¤.
  * std::string filename = GetFileExtension(".\\res\\mycomputer.png");
  * => .png
  */

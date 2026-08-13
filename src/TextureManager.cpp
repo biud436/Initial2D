@@ -32,9 +32,9 @@ extern HWND g_hWnd;
 	fclose(P); SAFE_DELETE(P1);
 
 /**
- * @details PNG µğÄÚµùÀ» À§ÇØ ÇÔ¼ö¸¦ ¸ÅÇÎÇÕ´Ï´Ù.
- * PNG_DYNAMIC_LIBRARY°¡ Á¤ÀÇµÇ¾îÀÖ´Ù¸é libpng16.dll ÆÄÀÏ¿¡¼­ ¸í½ÃÀûÀÎ È£ÃâÀ» ÇÏ°í,
- * Á¤ÀÇµÇ¾îÀÖÁö ¾Ê´Ù¸é libpng16.lib ÆÄÀÏÀ» ÀÌ¿ëÇÏ¿© ½ÇÇà ÆÄÀÏ¿¡ Æ÷ÇÔ(Á¤Àû ¸µÅ©)ÇÕ´Ï´Ù.
+ * @details PNG ë””ì½”ë”©ì„ ìœ„í•´ í•¨ìˆ˜ë¥¼ ë§¤í•‘í•©ë‹ˆë‹¤.
+ * PNG_DYNAMIC_LIBRARYê°€ ì •ì˜ë˜ì–´ìˆë‹¤ë©´ libpng16.dll íŒŒì¼ì—ì„œ ëª…ì‹œì ì¸ í˜¸ì¶œì„ í•˜ê³ ,
+ * ì •ì˜ë˜ì–´ìˆì§€ ì•Šë‹¤ë©´ libpng16.lib íŒŒì¼ì„ ì´ìš©í•˜ì—¬ ì‹¤í–‰ íŒŒì¼ì— í¬í•¨(ì •ì  ë§í¬)í•©ë‹ˆë‹¤.
  */
 struct libpng_func_group
 {
@@ -136,20 +136,20 @@ TextureData* LoadBMP(std::string fileName)
 
 	hFile = CreateFile(fileName.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE) {
-		MessageBox(g_hWnd, "ÆÄÀÏÀ» Ã£À» ¼ö ¾ø½À´Ï´Ù", "¿À·ù", MB_OK | MB_ICONERROR);
+		MessageBox(g_hWnd, "íŒŒì¼ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤", "ì˜¤ë¥˜", MB_OK | MB_ICONERROR);
 		return pTextureData;
 	}
 	 
-	// ÆÄÀÏ Çì´õ¿Í Á¤º¸ ±¸Á¶Ã¼ Ãëµæ
+	// íŒŒì¼ í—¤ë”ì™€ ì •ë³´ êµ¬ì¡°ì²´ ì·¨ë“
 	ReadFile(hFile, &bhFileHeader, sizeof(BITMAPFILEHEADER), &dwRead, NULL);
 	dwFileSize = bhFileHeader.bfOffBits - sizeof(BITMAPFILEHEADER);
 	ih = (BITMAPINFO *)malloc(dwFileSize);
 	ReadFile(hFile, ih, dwFileSize, &dwRead, NULL);
 
-	// DIB ¼½¼Ç ¹× ¹öÆÛ ÇÒ´ç
+	// DIB ì„¹ì…˜ ë° ë²„í¼ í• ë‹¹
 	pTextureData->texture = CreateDIBSection(NULL, ih, DIB_RGB_COLORS, &pRaster, NULL, 0);
 
-	// ·¡½ºÅÍ µ¥ÀÌÅÍ Ãëµæ
+	// ë˜ìŠ¤í„° ë°ì´í„° ì·¨ë“
 	ReadFile(hFile, pRaster, bhFileHeader.bfSize - bhFileHeader.bfOffBits, &dwRead, NULL);
 	free(ih);
 	ih = NULL;
@@ -181,28 +181,28 @@ TextureData* LoadPNG(std::string fileName)
 	
 	BITMAPINFOHEADER	bmih;
 
-	// ÆÄÀÏÀ» ºÒ·¯¿É´Ï´Ù
+	// íŒŒì¼ì„ ë¶ˆëŸ¬ì˜µë‹ˆë‹¤
 	FILE *fp = fopen(fileName.c_str(), "rb");
 
 	if (fp == NULL)
 	{
-		MessageBox(g_hWnd, "ÀÌ¹ÌÁö ÆÄÀÏÀ» Ã£À» ¼ö ¾ø½À´Ï´Ù", "¿À·ù", MB_OK | MB_ICONERROR);
-		CLOSE_PNG_FILE(fp, pTextureData,"ÆÄÀÏÀ» ºÒ·¯¿À´Âµ¥ ½ÇÆĞÇß½À´Ï´Ù")
+		MessageBox(g_hWnd, "ì´ë¯¸ì§€ íŒŒì¼ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤", "ì˜¤ë¥˜", MB_OK | MB_ICONERROR);
+		CLOSE_PNG_FILE(fp, pTextureData,"íŒŒì¼ì„ ë¶ˆëŸ¬ì˜¤ëŠ”ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤")
 		return pTextureData;
 	}
 
-	// PNG ÆÄÀÏÀ» ÀĞÀ» ±¸Á¶Ã¼¸¦ »ı¼ºÇÕ´Ï´Ù.
+	// PNG íŒŒì¼ì„ ì½ì„ êµ¬ì¡°ì²´ë¥¼ ìƒì„±í•©ë‹ˆë‹¤.
 	png_structp png_ptr = g_png_func.png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	
 	if (png_ptr == NULL) {
-		CLOSE_PNG_FILE(fp, pTextureData, "png_ptr ½ÇÆĞ")
+		CLOSE_PNG_FILE(fp, pTextureData, "png_ptr ì‹¤íŒ¨")
 		return pTextureData;
 	}
 
 	png_infop info_ptr = g_png_func.png_create_info_struct(png_ptr);
 
 	if (info_ptr == NULL) {
-		CLOSE_PNG_FILE(fp, pTextureData, "info_ptr ½ÇÆĞ")
+		CLOSE_PNG_FILE(fp, pTextureData, "info_ptr ì‹¤íŒ¨")
 		g_png_func.png_destroy_read_struct(&png_ptr, NULL, NULL);
 		return pTextureData;
 	}
@@ -213,8 +213,8 @@ TextureData* LoadPNG(std::string fileName)
 	if (setjmp(png_jmpbuf(png_ptr)))
 #endif
 	{
-		MessageBox(NULL, "setjmp ½ÇÆĞ", "", MB_OK);
-		CLOSE_PNG_FILE(fp, pTextureData, "setjmp ½ÇÆĞ")
+		MessageBox(NULL, "setjmp ì‹¤íŒ¨", "", MB_OK);
+		CLOSE_PNG_FILE(fp, pTextureData, "setjmp ì‹¤íŒ¨")
 		g_png_func.png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 		return pTextureData;
 	}
@@ -222,16 +222,16 @@ TextureData* LoadPNG(std::string fileName)
 	g_png_func.png_init_io(png_ptr, fp);
 	g_png_func.png_read_info(png_ptr, info_ptr);
 
-	// ÀÌ¹ÌÁöÀÇ Æø
+	// ì´ë¯¸ì§€ì˜ í­
 	width		= g_png_func.png_get_image_width(png_ptr, info_ptr);
 
-	// ÀÌ¹ÌÁöÀÇ ³ôÀÌ
+	// ì´ë¯¸ì§€ì˜ ë†’ì´
 	height		= g_png_func.png_get_image_height(png_ptr, info_ptr);
 
-	// ÄÃ·¯ Å¸ÀÔ
+	// ì»¬ëŸ¬ íƒ€ì…
 	color_type	= g_png_func.png_get_color_type(png_ptr, info_ptr);
 
-	// ºñÆ® ±íÀÌ
+	// ë¹„íŠ¸ ê¹Šì´
 	bit_depth	= g_png_func.png_get_bit_depth(png_ptr, info_ptr);
 
 	if (bit_depth == 16)
@@ -249,7 +249,7 @@ TextureData* LoadPNG(std::string fileName)
 		g_png_func.png_set_expand_gray_1_2_4_to_8(png_ptr);
 	}
 
-	// ¾ËÆÄ°ª Ã³¸®
+	// ì•ŒíŒŒê°’ ì²˜ë¦¬
 	if (g_png_func.png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
 	{
 		g_png_func.png_set_tRNS_to_alpha(png_ptr);
@@ -275,13 +275,13 @@ TextureData* LoadPNG(std::string fileName)
 
 	g_png_func.png_read_update_info(png_ptr, info_ptr);
 
-	// ºñÆ® ±íÀÌ
+	// ë¹„íŠ¸ ê¹Šì´
 	bit_depth = g_png_func.png_get_bit_depth(png_ptr, info_ptr);
 
-	// »ö»ó Å¸ÀÔ
+	// ìƒ‰ìƒ íƒ€ì…
 	color_type = g_png_func.png_get_color_type(png_ptr, info_ptr);
 
-	// ºñÆ®¸Ê ½ºÄµ ¶óÀÎÀ» À§ÇÑ ¸Ş¸ğ¸® ÇÒ´ç
+	// ë¹„íŠ¸ë§µ ìŠ¤ìº” ë¼ì¸ì„ ìœ„í•œ ë©”ëª¨ë¦¬ í• ë‹¹
 	row_pointers = (png_bytep*)malloc(sizeof(png_bytep) * height);
 
 	for (int y = 0; y < height; y++)
@@ -297,25 +297,25 @@ TextureData* LoadPNG(std::string fileName)
 
 	memset(&bmih, 0, sizeof(BITMAPINFOHEADER));
 
-	// ºñÆ®¸Ê ±¸Á¶Ã¼ Á¤ÀÇ
+	// ë¹„íŠ¸ë§µ êµ¬ì¡°ì²´ ì •ì˜
 	bmih.biWidth = width;
-	bmih.biHeight = -height; // ºñÆ®¸ÊÀº »óÇÏ ¹İÀüÀÌ¹Ç·Î À½¼ö °ªÀ¸·Î ¹İÀü Ã³¸®
-	bmih.biBitCount = 32; // 32ºñÆ®
+	bmih.biHeight = -height; // ë¹„íŠ¸ë§µì€ ìƒí•˜ ë°˜ì „ì´ë¯€ë¡œ ìŒìˆ˜ ê°’ìœ¼ë¡œ ë°˜ì „ ì²˜ë¦¬
+	bmih.biBitCount = 32; // 32ë¹„íŠ¸
 	bmih.biCompression = BI_RGB;
 	bmih.biSize = sizeof(BITMAPINFOHEADER);
 	bmih.biSizeImage = width * height * 4;
 	bmih.biPlanes = 1;
-	bmih.biXPelsPerMeter = 2835; // 72 DPI ¡¿ 39.3701 ÀÎÄ¡, 2834.6472
+	bmih.biXPelsPerMeter = 2835; // 72 DPI Ã— 39.3701 ì¸ì¹˜, 2834.6472
 	bmih.biYPelsPerMeter = 2835;
 
 	BITMAPINFO* bmi = (BITMAPINFO*)&bmih;
 
-	// DIB ¿µ¿ªÀ» ¸¸µç´Ù.
+	// DIB ì˜ì—­ì„ ë§Œë“ ë‹¤.
 	pTextureData->width = width;
 	pTextureData->height = height;
 	pTextureData->texture = CreateDIBSection(App::GetInstance().GetContext().mainContext, bmi, DIB_RGB_COLORS, &pvBits, NULL, 0x0);
 
-	// ºñÆ®¸ÊÀ» »ö»ó °ªÀ¸·Î Ã¤¿î´Ù.
+	// ë¹„íŠ¸ë§µì„ ìƒ‰ìƒ ê°’ìœ¼ë¡œ ì±„ìš´ë‹¤.
 	// @link MSDN - https://msdn.microsoft.com/ko-kr/library/windows/desktop/dd183353(v=vs.85).aspx
 	for (int y = 0; y < height; y++)
 	{
@@ -326,10 +326,10 @@ TextureData* LoadPNG(std::string fileName)
 		{
 			png_bytep px = &(row[x * 4]); // 4-Byte Alignments
 
-			// 4¹ÙÀÌÆ®¶ó¸é,
+			// 4ë°”ì´íŠ¸ë¼ë©´,
 			if ((x * 4) % 4 == 0) {
 
-				// ºñÆ® ÇÃ·¡±×·Î RGBA -> ARGB·Î º¯È¯ÇÑ´Ù.
+				// ë¹„íŠ¸ í”Œë˜ê·¸ë¡œ RGBA -> ARGBë¡œ ë³€í™˜í•œë‹¤.
 				((UINT32 *)pvBits)[y * width + x] = (px[3]<< 24)|(px[0]<<16)|(px[1]<<8)|(px[2]);
 
 			}
@@ -337,24 +337,24 @@ TextureData* LoadPNG(std::string fileName)
 
 	}
 
-	// ¸Ş¸ğ¸® Á¤¸®
+	// ë©”ëª¨ë¦¬ ì •ë¦¬
 	free(row_pointers);
 
 	row_pointers = NULL;
 
-	// ºñÆ®¸Ê ¹İÈ¯
+	// ë¹„íŠ¸ë§µ ë°˜í™˜
 	return pTextureData;
 
 }
 
 
 TextureManager::TextureManager() :
-	m_crTransparent(RGB(255, 255, 255)), // Åõ¸í»ö
+	m_crTransparent(RGB(255, 255, 255)), // íˆ¬ëª…ìƒ‰
 	m_bitmapColor(0, 0, 0, 255)
 
 {
 	if (!TextureManager_InitPNG()) {
-		MessageBox(NULL, "Á¦´ë·Î ÃÊ±âÈ­µÇÁö ¾Ê¾Ò½À´Ï´Ù", "", MB_OK);
+		MessageBox(NULL, "ì œëŒ€ë¡œ ì´ˆê¸°í™”ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤", "", MB_OK);
 	}
 }
 
@@ -408,19 +408,19 @@ bool TextureManager::Load(std::string fileName, std::string id, HDC *hdc)
 	
 	std::string fmt = fileName.substr(fileName.size() - 4, 4);
 
-	// ÆÄÀÏÀÌ PNGÀÎ°¡?
+	// íŒŒì¼ì´ PNGì¸ê°€?
 	if (fmt == ".png")
 	{
 		tempTexture = LoadPNG(fileName.c_str());
 	}
 
-	// ÆÄÀÏÀÌ BMPÀÎ°¡?
+	// íŒŒì¼ì´ BMPì¸ê°€?
 	if (fmt == ".bmp")
 	{
 		tempTexture = LoadBMP(fileName.c_str());
 	}
 
-	// ÅØ½ºÃ³°¡ ÀÖÀ¸¸é ÅØ½ºÃ³ ¸Ê¿¡ º¹»ç
+	// í…ìŠ¤ì²˜ê°€ ìˆìœ¼ë©´ í…ìŠ¤ì²˜ ë§µì— ë³µì‚¬
 	if (tempTexture->texture != 0) {
 		m_textureMap[id] = tempTexture;
 		return true;
@@ -437,17 +437,17 @@ void TextureManager::Draw(std::string id, int x, int y, int width, int height)
 {
 	TextureData *currentTexture = m_textureMap[id];
 
-	// µğ¹ÙÀÌ½º ÄÁÅØ½ºÆ® È¹µæ
+	// ë””ë°”ì´ìŠ¤ ì»¨í…ìŠ¤íŠ¸ íšë“
 	App::DeviceContext& context = App::GetInstance().GetContext();
 
-	// ¸Ş¸ğ¸® DC¿¡ ±×¸°´Ù
+	// ë©”ëª¨ë¦¬ DCì— ê·¸ë¦°ë‹¤
 	context.newContext = CreateCompatibleDC(context.mainContext);
 	HBITMAP hOldBitmap = (HBITMAP)SelectObject(context.newContext, currentTexture->texture);
 
-	// Åõ¸íÇÏ°Ô Ãâ·ÂÇÑ´Ù
+	// íˆ¬ëª…í•˜ê²Œ ì¶œë ¥í•œë‹¤
 	TransparentBlt(context.currentContext, x, y, width, height, context.newContext, 0, 0, width, height, m_crTransparent);
 
-	// ¸Ş¸ğ¸® DC »èÁ¦
+	// ë©”ëª¨ë¦¬ DC ì‚­ì œ
 	SelectObject(context.newContext, hOldBitmap);
 	DeleteDC(context.newContext);
 
@@ -456,17 +456,17 @@ void TextureManager::Draw(std::string id, int x, int y, int width, int height)
 void TextureManager::DrawFrame(std::string id, int x, int y, int width, int height, RECT& rect, BYTE opacity, TransformData& transform)
 {
 
-	TextureData *currentTexture = m_textureMap[id];		// ÅØ½ºÃ³ Ç®¿¡¼­ ÅØ½ºÃ³¸¦ °¡Á®¿Â´Ù
+	TextureData *currentTexture = m_textureMap[id];		// í…ìŠ¤ì²˜ í’€ì—ì„œ í…ìŠ¤ì²˜ë¥¼ ê°€ì ¸ì˜¨ë‹¤
 
-	// µğ¹ÙÀÌ½º ÄÁÅØ½ºÆ® È¹µæ
+	// ë””ë°”ì´ìŠ¤ ì»¨í…ìŠ¤íŠ¸ íšë“
 	App::DeviceContext& context = App::GetInstance().GetContext();
 	XFORM normalTransform = { 1, 0, 0, 1, 0, 0 };
 
-	// Æ®·£½ºÆû Àû¿ë
+	// íŠ¸ëœìŠ¤í¼ ì ìš©
 	SetGraphicsMode(context.currentContext, GM_ADVANCED);
 	SetWorldTransform(context.currentContext, &transform);
 
-	// ¸Ş¸ğ¸® DC¿¡ ±×¸°´Ù
+	// ë©”ëª¨ë¦¬ DCì— ê·¸ë¦°ë‹¤
 	context.newContext = CreateCompatibleDC(context.mainContext);
 	HBITMAP hOldBitmap = (HBITMAP)SelectObject(context.newContext, currentTexture->texture);
 
@@ -479,11 +479,11 @@ void TextureManager::DrawFrame(std::string id, int x, int y, int width, int heig
 	AlphaBlend(context.currentContext, 0, 0, width, height, context.newContext,
 		rect.left, rect.top, width, height, bf);
 
-	// Æ®·£½ºÆû º¹±¸
+	// íŠ¸ëœìŠ¤í¼ ë³µêµ¬
 	SetGraphicsMode(context.currentContext, GM_ADVANCED);
 	SetWorldTransform(context.currentContext, &normalTransform);
 
-	// ¸Ş¸ğ¸® DC »èÁ¦
+	// ë©”ëª¨ë¦¬ DC ì‚­ì œ
 	SelectObject(context.newContext, hOldBitmap);
 	DeleteDC(context.newContext);
 }
@@ -491,48 +491,48 @@ void TextureManager::DrawFrame(std::string id, int x, int y, int width, int heig
 void TextureManager::DrawText(std::string id, int x, int y, int width, int height, RECT& rect, TransformData& transform)
 {
 
-	TextureData *currentTexture = m_textureMap[id];		// ÅØ½ºÃ³ Ç®¿¡¼­ ÅØ½ºÃ³¸¦ °¡Á®¿Â´Ù
+	TextureData *currentTexture = m_textureMap[id];		// í…ìŠ¤ì²˜ í’€ì—ì„œ í…ìŠ¤ì²˜ë¥¼ ê°€ì ¸ì˜¨ë‹¤
 
-														// µğ¹ÙÀÌ½º ÄÁÅØ½ºÆ® È¹µæ
+														// ë””ë°”ì´ìŠ¤ ì»¨í…ìŠ¤íŠ¸ íšë“
 	App::DeviceContext& context = App::GetInstance().GetContext();
 	//XFORM normalTransform = { 1, 0, 0, 1, 0, 0 };
 
-	//// Æ®·£½ºÆû Àû¿ë
+	//// íŠ¸ëœìŠ¤í¼ ì ìš©
 	//SetGraphicsMode(context.currentContext, GM_ADVANCED);
 	//SetWorldTransform(context.currentContext, &transform);
 
-	// ¸Ş¸ğ¸® DC¿¡ ±×¸°´Ù
+	// ë©”ëª¨ë¦¬ DCì— ê·¸ë¦°ë‹¤
 	context.newContext = CreateCompatibleDC(context.mainContext);
 	HBITMAP hOldBitmap = (HBITMAP)SelectObject(context.newContext, currentTexture->texture);
 
-	// Åõ¸íÇÏ°Ô Ãâ·ÂÇÑ´Ù
+	// íˆ¬ëª…í•˜ê²Œ ì¶œë ¥í•œë‹¤
 	TransparentBlt(context.currentContext,
 		x, y, width, height,
 		context.newContext,
 		rect.left, rect.top, width, height,
 		m_crTransparent);
 
-	// Æ®·£½ºÆû º¹±¸
+	// íŠ¸ëœìŠ¤í¼ ë³µêµ¬
 	//SetGraphicsMode(context.currentContext, GM_ADVANCED);
 	//SetWorldTransform(context.currentContext, &normalTransform);
 
-	// ¸Ş¸ğ¸® DC »èÁ¦
+	// ë©”ëª¨ë¦¬ DC ì‚­ì œ
 	SelectObject(context.newContext, hOldBitmap);
 	DeleteDC(context.newContext);
 }
 
 void TextureManager::DrawPoint(int x, int y)
 {
-	// µğ¹ÙÀÌ½º ÄÁÅØ½ºÆ® È¹µæ
+	// ë””ë°”ì´ìŠ¤ ì»¨í…ìŠ¤íŠ¸ íšë“
 	App::DeviceContext& context = App::GetInstance().GetContext();
 
-	// ¸Ş¸ğ¸® DC¿¡ ±×¸°´Ù
+	// ë©”ëª¨ë¦¬ DCì— ê·¸ë¦°ë‹¤
 	context.newContext = CreateCompatibleDC(context.mainContext);
 	
 	SetPixel(context.newContext, 0, 0, m_bitmapColor.GetRGBColor());
 	BitBlt(context.currentContext, x, y, 1, 1, context.newContext, 0, 0, SRCCOPY);
 
-	// ¸Ş¸ğ¸® DC »èÁ¦
+	// ë©”ëª¨ë¦¬ DC ì‚­ì œ
 	DeleteDC(context.newContext);
 }
 

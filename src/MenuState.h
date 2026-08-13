@@ -30,27 +30,27 @@ class MenuState : public GameState
 public:
 	
 	/**
-	* ¾÷µ¥ÀÌÆ®¸¦ ¼öÇàÇÕ´Ï´Ù.
+	* ì—…ë°ì´íŠ¸ë¥¼ ìˆ˜í–‰í•©ë‹ˆë‹¤.
 	*/
 	virtual void update(float elapsed) override;
 	
 	/**
-	* ·»´õ¸µÀ» ¼öÇàÇÕ´Ï´Ù.
+	* ë Œë”ë§ì„ ìˆ˜í–‰í•©ë‹ˆë‹¤.
 	*/
 	virtual void render() override;
 	
 	/**
-	* ÁøÀÔ ½Ã¿¡ ¼öÇàµË´Ï´Ù.
+	* ì§„ì… ì‹œì— ìˆ˜í–‰ë©ë‹ˆë‹¤.
 	*/
 	virtual bool onEnter() override;
 	
 	/**
-	* Á¦°Å ½Ã¿¡ ¼öÇàµË´Ï´Ù.
+	* ì œê±° ì‹œì— ìˆ˜í–‰ë©ë‹ˆë‹¤.
 	*/
 	virtual bool onExit() override;
 
 	/**
-	* ID¸¦ ¹İÈ¯ÇÕ´Ï´Ù.
+	* IDë¥¼ ë°˜í™˜í•©ë‹ˆë‹¤.
 	*/
 	virtual std::string getStateId() const override
 	{

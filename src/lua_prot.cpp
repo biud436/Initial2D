@@ -39,11 +39,11 @@ int ShowMessageBox(HWND hWnd, LPCWCHAR text, LPCWCHAR caption, UINT type);
 
 namespace Initial2D {
 	/**
-	 * À©µµ¿ìÁî ÇÃ·§Æû¿¡¼­ ½ºÅ©¸³Æ® ÆÄÀÏÀ» ÀĞ½À´Ï´Ù.
+	 * ìœˆë„ìš°ì¦ˆ í”Œë«í¼ì—ì„œ ìŠ¤í¬ë¦½íŠ¸ íŒŒì¼ì„ ì½ìŠµë‹ˆë‹¤.
 	 */
 	std::vector<TCHAR*> ReadScriptFiles()
 	{
-		// ¿ÍÀÏµåÄ«µå(*) ¸¦ »ç¿ëÇÕ´Ï´Ù.
+		// ì™€ì¼ë“œì¹´ë“œ(*) ë¥¼ ì‚¬ìš©í•©ë‹ˆë‹¤.
 		TCHAR target[] = _T(".\\scripts\\*.lua");
 		WIN32_FIND_DATA FindFileData;
 		HANDLE hFind = INVALID_HANDLE_VALUE;
@@ -84,7 +84,7 @@ wchar_t* AllocWideChar(const char* law)
 		return L"";
 	}
 
-	// NULL ¹®ÀÚ¸¦ Æ÷ÇÔÇÏ¿© ¸Ş¸ğ¸®¸¦ ÃÊ±âÈ­ ¾ÊÀ¸¸é ¿À·ù°¡ ³­´Ù.
+	// NULL ë¬¸ìë¥¼ í¬í•¨í•˜ì—¬ ë©”ëª¨ë¦¬ë¥¼ ì´ˆê¸°í™” ì•Šìœ¼ë©´ ì˜¤ë¥˜ê°€ ë‚œë‹¤.
 	LPWSTR lpszWideChar = new WCHAR[length + 1];
 
 	if (lpszWideChar == NULL)
@@ -419,13 +419,13 @@ int Lua_Init()
 		// FontEx
 		Lua_CreateFontExImpl(g_pLuaState);
 
-		// ½ºÅ©¸³Æ® ÆÄÀÏÀ» ÀĞ½À´Ï´Ù (Windows Only)
+		// ìŠ¤í¬ë¦½íŠ¸ íŒŒì¼ì„ ì½ìŠµë‹ˆë‹¤ (Windows Only)
 		//luaL_dostring(g_pLuaState,
 		//	"for dir in io.popen([[dir \"./scripts/\" /r /b]]) :lines() do LoadScript(\"./scripts/\"..dir) end");
 
 		luaL_dostring(g_pLuaState, "LoadScript(\"./scripts/main.lua\")");
 
-		// ½ºÅ©¸³Æ® ÆÄÀÏ ³»¿¡ ¼±¾ğµÈ ÃÊ±âÈ­ ÇÔ¼ö¸¦ È£ÃâÇÕ´Ï´Ù.
+		// ìŠ¤í¬ë¦½íŠ¸ íŒŒì¼ ë‚´ì— ì„ ì–¸ëœ ì´ˆê¸°í™” í•¨ìˆ˜ë¥¼ í˜¸ì¶œí•©ë‹ˆë‹¤.
 		lua_getglobal(g_pLuaState, "Initialize");
 		lua_call(g_pLuaState, 0, 0);
 

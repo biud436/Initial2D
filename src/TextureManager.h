@@ -34,9 +34,9 @@ using Color = COLORREF;
  */
 struct TextureData
 {
-	int width;			/** Æø */
-	int height;			/** ³ôÀÌ */
-	HBITMAP texture;	/** ÅØ½ºÃ³ */
+	int width;			/** í­ */
+	int height;			/** ë†’ì´ */
+	HBITMAP texture;	/** í…ìŠ¤ì²˜ */
 	TextureData();		
 	~TextureData();
 };
@@ -93,13 +93,13 @@ namespace Initial2D {
 using TextureGroup = std::map<std::string, TextureData*>;
 
 /**
- * @brief BMP ÆÄÀÏÀ» ºÒ·¯¿É´Ï´Ù.
+ * @brief BMP íŒŒì¼ì„ ë¶ˆëŸ¬ì˜µë‹ˆë‹¤.
  * @return TextureData*
  */
 TextureData* LoadBMP(std::string fileName);
 
 /**
-* @brief PNG ÆÄÀÏÀ» ºÒ·¯¿É´Ï´Ù.
+* @brief PNG íŒŒì¼ì„ ë¶ˆëŸ¬ì˜µë‹ˆë‹¤.
 * @return TextureData*
 */
 TextureData* LoadPNG(std::string fileName);
@@ -170,7 +170,7 @@ public:
 	void DrawText(std::string id, int x, int y, int width, int height, RECT& rect, TransformData& transform);
 
 	/**
-	 * @brief À¯È¿ÇÑ TextureÀÎÁö Ã¼Å©ÇÕ´Ï´Ù.
+	 * @brief ìœ íš¨í•œ Textureì¸ì§€ ì²´í¬í•©ë‹ˆë‹¤.
 	 * 
 	 * @param id 
 	 * @return true 
@@ -187,7 +187,7 @@ public:
 	void DrawPoint(int x, int y);
 
 	/**
-	 * @brief ºñÆ®¸Ê »ö»óÀ» ¼³Á¤ÇÕ´Ï´Ù.
+	 * @brief ë¹„íŠ¸ë§µ ìƒ‰ìƒì„ ì„¤ì •í•©ë‹ˆë‹¤.
 	 * 
 	 * @param r 
 	 * @param g 

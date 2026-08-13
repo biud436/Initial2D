@@ -15,7 +15,7 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-// DLL Ãâ·Â
+// DLL ì¶œë ¥
 #ifndef _RSDLL_
 #define RSLIB __declspec(dllexport)
 #else

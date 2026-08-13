@@ -137,13 +137,13 @@ void test_run_file_system()
 {
 	Initial2D::File file;
 	file.Open("my_test_file.txt", Initial2D::TextWrite);
-	file.write(std::string("¹¹Áö ÀÌ°Ç"));
+	file.write(std::string("ë­ì§€ ì´ê±´"));
 	file.newLine();
-	file.write(std::string("¹¹Áö ÀÌ°Ç"));
+	file.write(std::string("ë­ì§€ ì´ê±´"));
 	file.newLine();
-	file.write(std::string("¹¹Áö ÀÌ°Ç"));
+	file.write(std::string("ë­ì§€ ì´ê±´"));
 	file.newLine();
-	file.write(std::string("¹¹Áö ÀÌ°Ç"));
+	file.write(std::string("ë­ì§€ ì´ê±´"));
 	file.newLine();
 	file.close();
 }
