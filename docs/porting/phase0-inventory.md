@@ -12,8 +12,9 @@
   공개 API 시그니처는 `platform/WinTypes.h` 심(RECT/BYTE/COLORREF/VK_* 등)으로 무변경 유지
 - 검증: 정적 테스트 씬에서 배경 + 반투명 스프라이트(opacity) + 45° 회전(XFORM→RenderCopyEx) +
   2배 스케일 + BMFont 텍스트 렌더링을 프레임 덤프로 확인 (`INITIAL2D_SCREENSHOT` env)
-- 미검증 항목: 오디오 재생(SoundManager는 컴파일·링크만 확인 — 데모 스크립트가 오디오 미사용),
-  키보드 입력 실기 검증 (매핑 테이블은 구현됨)
+- 오디오: `Audio.PlayMusic`으로 `resources/audio/bless.ogg` 재생 확인 (SDL2_mixer, macOS)
+- 미검증 항목: 키보드 입력 실기 검증 (스캔코드→VK 매핑 테이블은 구현됨 — 실제 키 입력은
+  사용자 플레이로 확인 필요), Tilemap 경로 (MapState의 Tilemap 생성이 원본에서 주석 처리 상태)
 - 발견: `scripts/main.lua`가 참조하는 에셋 3종(background/object/bird PNG)은 저장소에 없음
   (`resources/*.*`가 gitignore) — 검증은 로컬 생성 플레이스홀더로 수행, 커밋하지 않음
 - BMFont 텍스트는 fontSize(32) ≠ lineHeight(16)일 때 원본 GDI 알고리즘 그대로 아틀라스를
