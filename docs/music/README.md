@@ -8,6 +8,7 @@
 | Inn (Port) | 2013 | D단조/F장조 | 130(체감 65) | -8.2 LUFS | [inn-analysis.md](inn-analysis.md) |
 | Insatiable desires (끝 없는 욕망) | 2013 | A단조(프리지안 색채) | 47 | -14.4 LUFS | [insatiable-desires-analysis.md](insatiable-desires-analysis.md) |
 | Bless (Arrange) | 2014 | F장조/A단조 | ~96(루바토) | -13.3 LUFS | [bless-analysis.md](bless-analysis.md) |
+| Bless 원곡 | 2013 | A단조→F장조 | 47 | -14.6 LUFS | [bless-original-analysis.md](bless-original-analysis.md) |
 | 기억 속으로 (보컬 발라드 — 게임곡 아님) | 미상 | A단조 → 말미 D장조 전조 | ~65(루바토) | -7.1 LUFS | [into-memory-analysis.md](into-memory-analysis.md) |
 | Monotonous (Monologue) | 2014 | Em↔F–C (C장조 축) | 44 | -16.7 LUFS | [monotonous-analysis.md](monotonous-analysis.md) |
 | Sad Birthday to me (요정의 숲, 보컬) | 2013 | A장조+A단조 혼합 | 47 | -9.8 LUFS | [sad-birthday-analysis.md](sad-birthday-analysis.md) |
@@ -31,10 +32,12 @@ Monotonous의 Em↔F — 화음 단위 구현), 그리드 정밀 형식(인트�
 마스터(클리핑 0)는 세 곡으로 늘었다(Bless·Monotonous·Neuron) — 특히 Neuron은 가장
 눌러 찍기 쉬운 록에서 지켜낸 사례라 "2014년 습관 확립" 추정의 가장 강한 증거다.
 
-두 록 싱글(선인장은 죽었다·오아시스)은 **튜닝 편차가 -19.5센트로 정확히 일치**한다 —
-귀로 조율한 동일한 기타로 같은 시기에 녹음된 연작이라는 물증이며(다른 곡들은 모두
-가상악기의 A440 ±7센트 이내), 가사도 사막 이인극(고사하는 선인장 ↔ 닿을 수 없는
-신기루)을 이룬다. 저자는 이 방식을 "다른 제작 방식(연습작)"으로 기억한다.
+**연주 시기(-19.5센트 악기)**: 선인장은 죽었다·오아시스·Bless 원곡이 튜닝 편차
+-19.5센트를 공유한다 — 귀로 조율한 동일 악기로 같은 시기(2013)에 녹음된 계열이라는
+물증이다(시퀀싱 곡들은 A440 ±7센트 이내). 두 록 싱글은 가사도 사막 이인극(고사하는
+선인장 ↔ 닿을 수 없는 신기루)을 이루며, 저자는 이 방식을 "다른 제작 방식(연습작)"으로
+기억한다. **게임 BGM인 Bless (Arrange)도 -17.6센트** — 원곡의 연주 재료를 보존한
+재편곡이라, 이 악기의 소리는 지금도 게임 안에서 재생되고 있다.
 
 참고: 저자는 정규 음악 교육을 받지 않았고 자신만의 기준으로 작곡했다고 밝혔다.
 문서들의 이론 용어는 결과물에 대한 사후적 기술이며, 여러 곡에서 반복 검출되는
