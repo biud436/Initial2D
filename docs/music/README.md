@@ -13,6 +13,7 @@
 | Sad Birthday to me (요정의 숲, 보컬) | 2013 | A장조+A단조 혼합 | 47 | -9.8 LUFS | [sad-birthday-analysis.md](sad-birthday-analysis.md) |
 | 선인장은 죽었다 (동명 싱글, 록) | 2013 | Am–C–Dm–F 순환 | 152 | -5.6 LUFS | [cactus-analysis.md](cactus-analysis.md) |
 | 오아시스 (동명 싱글, 록·연습작) | 2013 | C장조 순환 | 130 | -8.2 LUFS | [oasis-analysis.md](oasis-analysis.md) |
+| Neuron (록) | 2014 | A단조 (i–VII–iv 순환) | 75 | -10.9 LUFS | [neuron-analysis.md](neuron-analysis.md) |
 
 게임에서 여러 곡을 함께 쓸 때의 레벨 보정값은 [inn-analysis.md](inn-analysis.md)의
 비교표 참조. 각 문서에는 그리드 정밀 루프 포인트(인트로/본편 경계)가 기록되어 있다.
@@ -25,8 +26,10 @@ Monotonous의 Em↔F — 화음 단위 구현), 그리드 정밀 형식(인트�
 죽었다: 사막처럼 건조한 모노·드라이 사운드), 그리고 2014년 이후 확립된 클리핑 없는
 마스터링(Bless·Monotonous).
 
-도미넌트 회피는 아홉 곡 전체에서 관찰된다(예외는 기능적 필요가 있던 곳뿐 — Inn의
-프레이즈 종지, 피눈물의 제단의 클라이맥스, 기억 속으로의 전조 피벗).
+도미넌트 회피는 열 곡 전체에서 관찰된다(예외는 기능적 필요가 있던 곳뿐 — Inn의
+프레이즈 종지, 피눈물의 제단의 클라이맥스, 기억 속으로의 전조 피벗). 2014년 클린
+마스터(클리핑 0)는 세 곡으로 늘었다(Bless·Monotonous·Neuron) — 특히 Neuron은 가장
+눌러 찍기 쉬운 록에서 지켜낸 사례라 "2014년 습관 확립" 추정의 가장 강한 증거다.
 
 두 록 싱글(선인장은 죽었다·오아시스)은 **튜닝 편차가 -19.5센트로 정확히 일치**한다 —
 귀로 조율한 동일한 기타로 같은 시기에 녹음된 연작이라는 물증이며(다른 곡들은 모두
