@@ -24,13 +24,16 @@
 
 #include <ostream>
 #include <fstream>
+#include <filesystem>
+
+#include "Encrypt.h"
+
+#ifdef RS_WINDOWS
 
 #include "Process.h"
 
 #include <Shlwapi.h>
 #pragma comment(lib, "shlwapi.lib")
-
-#include "Encrypt.h"
 
 extern HWND g_hWnd;
 
@@ -38,7 +41,7 @@ inline std::string GetExecutablePath() {
 	HWND hWnd = GetForegroundWindow();
 	HINSTANCE hInstance = (HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE);
 	TCHAR szCurrentPath[MAX_PATH];
-	
+
 	GetModuleFileName(NULL, szCurrentPath, sizeof(MAX_PATH));
 	PathRemoveFileSpec(szCurrentPath);
 	PathAddBackslash(szCurrentPath);
@@ -48,14 +51,27 @@ inline std::string GetExecutablePath() {
 	return sCurrentPath;
 }
 
+#else
+
+#include "platform/SystemPath.h"
+
+inline std::string GetExecutablePath() {
+	return Initial2D::Platform::GetExecutableDirectory() + "/";
+}
+
+#endif
+
 /**
 * @brief 게임 모듈을 초기화합니다(상속 시 반드시 구현)
 */
 void App::Initialize()
 {
+#ifdef RS_WINDOWS
 	m_context.mainContext = GetDC(m_hWnd);
 
 	HWND hWnd = m_hWnd;
+#endif
+	// (SDL2에서는 Run()에서 window/renderer가 이미 준비된다)
 
 	LOG_D("생성되었습니다.");
 
@@ -68,22 +84,30 @@ void App::Initialize()
 	// 설정 파일 작성
 	std::ofstream configFile("config.setting");
 	if (configFile.fail()) {
-		throw new std::exception("");
+		throw new std::runtime_error("");
 	}
 
 	bool isDebugMode = false;
 	configFile << isDebugMode << "\n";
 	configFile << sCurrentPath << "\n";
 
+#ifdef RS_WINDOWS
 	std::string cd;
 	cd.resize(MAX_PATH);
 	GetCurrentDirectory(MAX_PATH, &cd[0]);
 	cd.resize(MAX_PATH - 1);
 
 	configFile << &cd[0] << "\n";
+#else
+	configFile << std::filesystem::current_path().string() << "\n";
+#endif
 
 	// 마우스 및 키보드 모듈 초기화
+#ifdef RS_WINDOWS
 	m_pInput->initialize(m_hWnd);
+#else
+	m_pInput->initialize(nullptr);
+#endif
 
 	// Set the App Icon from a certain image.
 	SetAppIcon(".\\resources\\icons\\icon.png");
@@ -141,6 +165,8 @@ void App::Destroy()
 	SAFE_DELETE(m_pGameStateMachine);
 	SAFE_DELETE(m_pTextureManager);
 
+#ifdef RS_WINDOWS
 	ReleaseDC(m_hWnd, m_context.mainContext);
+#endif
 
 }

@@ -9,9 +9,8 @@
 #ifndef __EXPERIMENTALFONT_H__
 #define __EXPERIMENTALFONT_H__
 //! @endcond
-#define WIN32_LEAN_AND_MEAN
 
-#include <Windows.h>
+#include "platform/WinTypes.h"
 #include <sstream>
 #include <string>
 #include "Sprite.h"
@@ -33,9 +32,12 @@
  * 정렬 부분과 색상 값 획득하는 과정에서 디테일이 다르다.
  * 
  * <a href="https://rsdn.org/forum/src/830679.1">Link 2</a>
+ *
+ * 비-Windows에서는 GetGlyphOutline을 사용할 수 없으므로 스텁으로 동작한다
+ * (platform/sdl2/ExperimentalFontStub.cpp — SDL_ttf 기반 구현은 추후 과제).
  */
 
-using TransformData = XFORM;
+// TransformData는 Matrix.h(Sprite.h 경유)에서 플랫폼별로 정의된다.
 
 class ExperimentalFont : public Sprite
 {

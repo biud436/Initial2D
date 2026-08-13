@@ -21,15 +21,17 @@
 #include <thread>
 #include <chrono>
 
+#ifdef RS_WINDOWS
 extern HWND g_hWnd;
 extern LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+#endif
 
 App* App::s_pInstance = NULL;
 
-namespace 
+namespace
 {
 	const double DELAY_TIME = 1.0 / 60.0;
-	const char* GAME_TITLE = TEXT("Demo Game - FPS : ");
+	const char* GAME_TITLE = "Demo Game - FPS : ";
 }
 
 App& App::GetInstance(void)
@@ -54,12 +56,13 @@ App::App() :
 	m_pFont(nullptr)
 {
 
+#ifdef RS_WINDOWS
 	// 디버그 모드라면 콘솔 창을 띄운다.
 #ifndef NDEBUG
 	if (AllocConsole())
 		freopen("CON", "w", stdout);
 #endif
-	
+
 	if (!QueryPerformanceFrequency(&m_nTimeFreq)) {
 		// todo : add it.
 	}
@@ -77,10 +80,11 @@ App::App() :
 	RECT rt = { 0, };
 	GetWindowRect(hWndConsole, &rt);
 	SetWindowPos(hWndConsole, HWND_NOTOPMOST, rt.left, rt.top, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW);
-	
+
 #endif
 
 	QueryPerformanceCounter(&m_nTimeStart);
+#endif // RS_WINDOWS
 
 	// 텍스쳐 관리자 생성
 	m_pTextureManager = new TextureManager();
@@ -130,6 +134,8 @@ const int App::GetWindowHeight() const
 {
 	return m_nWindowHeight;
 }
+
+#ifdef RS_WINDOWS
 
 /**
  * @brief 게임 모듈을 초기화하고 게임 루프를 실행합니다.
@@ -295,6 +301,8 @@ LRESULT App::HandleEvent(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
+#endif // RS_WINDOWS (Run/HandleEvent — SDL2 버전은 platform/sdl2/AppSDL2.cpp)
+
 /**
 * @brief 현재 Context를 가져옵니다.
 */
@@ -326,6 +334,8 @@ Input& App::GetInput()
 {
 	return *m_pInput;
 }
+
+#ifdef RS_WINDOWS
 
 /**
 * @brief 프레임을 업데이트합니다. (내부용)
@@ -407,6 +417,8 @@ void App::Update()
 
 }
 
+#endif // RS_WINDOWS (Update)
+
 /**
 * @brief 입력 모듈을 업데이트합니다
 */
@@ -414,6 +426,8 @@ void App::UpdateInput()
 {
 	m_pInput->update();
 }
+
+#ifdef RS_WINDOWS
 
 /**
 * @brief 렌더링에 필요한 DC를 준비합니다.
@@ -452,6 +466,8 @@ void App::RenderPresent()
 	DeleteDC(m_context.currentContext);
 }
 
+#endif // RS_WINDOWS (RenderClear/RenderTransform/RenderPresent — SDL2 버전은 platform/sdl2/AppSDL2.cpp)
+
 /**
 * @brief frameTime을 업데이트 합니다.
 *
@@ -463,6 +479,7 @@ double App::UpdateTime()
 
 }
 
+#ifdef RS_WINDOWS
 /**
 * @brief 메모리 정리 후 게임을 종료합니다.
 */
@@ -470,6 +487,7 @@ void App::Quit()
 {
 	::PostQuitMessage(0);
 }
+#endif // RS_WINDOWS (Quit — SDL2 버전은 platform/sdl2/AppSDL2.cpp)
 
 /**
 * @brief 포커스를 구합니다.
@@ -525,6 +543,7 @@ int App::GetFrameCount() const
 	return m_nFPS;
 }
 
+#ifdef RS_WINDOWS
 /**
 * @brief Set the App Icon from a certain image.
 */
@@ -581,3 +600,4 @@ void App::SetAppIcon(std::string filename)
 	}
 
 }
+#endif // RS_WINDOWS (SetAppIcon — SDL2 버전은 platform/sdl2/AppSDL2.cpp)

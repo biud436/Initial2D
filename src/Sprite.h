@@ -14,14 +14,13 @@
 #ifndef SPRITE_H
 #define SPRITE_H
 
-#define WIN32_LEAN_AND_MEAN
-
-#include <Windows.h>
+#include "platform/WinTypes.h"
 #include <string>
 #include "Vector2D.h"
 #include <vector>
 #include "Constants.h"
 #include "GameObject.h"
+#include "Matrix.h"
 
 /**
  * @addtogroup Sprites
@@ -54,8 +53,7 @@ struct SpriteData
 
 };
 
-/// @typedef TransformData
-using TransformData = XFORM;
+// TransformData는 Matrix.h에서 플랫폼별로 정의된다 (Windows: XFORM, 그 외: 동일 레이아웃 구조체)
 
 /** 
  * @class Sprite

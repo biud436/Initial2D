@@ -15,14 +15,22 @@
 #include "MenuState.h"
 #include "Encrypt.h"
 
+#ifdef RS_WINDOWS
 #define WIN32_LEAN_AND_MEAN
 
 #include <Windows.h>
 #include <tchar.h>
+#include <atlconv.h>
+#else
+#include <SDL.h>
+#include <filesystem>
+#include <algorithm>
+#include "platform/Utf8.h"
+#include "platform/WinTypes.h"
+#endif
+
 #include <cstdio>
 #include <vector>
-
-#include <atlconv.h>
 
 #include "Font.h"
 
@@ -34,6 +42,8 @@
 #include <locale> 
 #include <codecvt> 
 #include <cassert>
+
+#ifdef RS_WINDOWS
 
 int ShowMessageBox(HWND hWnd, LPCWCHAR text, LPCWCHAR caption, UINT type);
 
@@ -69,8 +79,12 @@ namespace Initial2D {
 	}
 }
 
+#endif // RS_WINDOWS
+
 // Lua Global State
 lua_State* g_pLuaState;
+
+#ifdef RS_WINDOWS
 
 // HWND
 extern HWND g_hWnd;
@@ -116,11 +130,6 @@ std::string AllocMBCS(std::wstring str)
 	return raw;
 }
 
-void RemoveWideChar(const wchar_t* law)
-{
-	delete[] law;
-}
-
 /**
 * Show MessageBox
 */
@@ -131,13 +140,38 @@ int ShowMessageBox(HWND hWnd, LPCWCHAR text, LPCWCHAR caption, UINT type)
 	return 0;
 }
 
-static int Lua_MessageBox(lua_State *g_pLuaSt)
+#else // 비-Windows: UTF-8 유틸리티 기반 구현 (인터페이스 동일)
+
+wchar_t* AllocWideChar(const char* law)
+{
+	const std::wstring wide = Initial2D::Platform::Utf8ToWide(law != nullptr ? law : "");
+	wchar_t* buffer = new wchar_t[wide.size() + 1];
+	std::copy(wide.begin(), wide.end(), buffer);
+	buffer[wide.size()] = L'\0';
+	return buffer;
+}
+
+std::string AllocMBCS(std::wstring str)
+{
+	return Initial2D::Platform::WideToUtf8(str);
+}
+
+#endif // RS_WINDOWS
+
+void RemoveWideChar(const wchar_t* law)
+{
+	delete[] law;
+}
+
+// lua_prot.h의 비-static 선언과 일치시킨다 (MSVC는 불일치를 허용했으나 clang은 오류)
+int Lua_MessageBox(lua_State *g_pLuaSt)
 {
 	int n = lua_gettop(g_pLuaSt);
 
 	const char *text = lua_tostring(g_pLuaSt, 1);
 	const char *caption = lua_tostring(g_pLuaSt, 2);
 
+#ifdef RS_WINDOWS
 	WCHAR *wt = AllocWideChar(text);
 	WCHAR *wc = AllocWideChar(caption);
 
@@ -145,6 +179,12 @@ static int Lua_MessageBox(lua_State *g_pLuaSt)
 
 	RemoveWideChar(wt);
 	RemoveWideChar(wc);
+#else
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,
+		caption != nullptr ? caption : "",
+		text != nullptr ? text : "",
+		App::GetInstance().GetWindowHandle());
+#endif
 
 	return 0;
 }
@@ -292,16 +332,21 @@ int Lua_GetFrameCount(lua_State *pL)
 
 int Lua_GameExit(lua_State *pL)
 {
-	PostQuitMessage(0);
+	// Windows에서는 PostQuitMessage(0), SDL2에서는 SDL_QUIT 이벤트 푸시와 동일하다.
+	App::GetInstance().Quit();
 	return 0;
 }
 
 int Lua_GetCurrentDirectory(lua_State *pL)
 {
+#ifdef RS_WINDOWS
 	std::string s;
 	s.resize(MAX_CHAR);
 
 	GetCurrentDirectory(MAX_CHAR, &s[0]);
+#else
+	std::string s = std::filesystem::current_path().string();
+#endif
 
 	int n = lua_gettop(pL);
 	int man = 0;

@@ -13,23 +13,30 @@
 #ifndef APP_H
 #define APP_H
 
-#include <Windows.h>
-#include <vector>
 #include "Constants.h"
 
+#ifdef RS_WINDOWS
+#include <Windows.h>
+#include <tchar.h>
+#else
+#include <SDL.h>
+#include "platform/WinTypes.h"
+#endif
+
+#include <vector>
 #include <iostream>
 #include <string>
 #include <memory>
-#include <tchar.h>
 #include <sstream>
 #include "NonCopyable.h"
 #include "Window.h"
 
-
+#ifdef RS_WINDOWS
 #ifdef _UNICODE
 #define _tsprintf swprintf;
 #else
 #define _tsprintf sprintf;
+#endif
 #endif
 
 /** 
@@ -78,6 +85,7 @@ class App
 {
 public:
 
+#ifdef RS_WINDOWS
 	struct DeviceContext {
 
 		HDC mainContext;
@@ -89,6 +97,15 @@ public:
 		HBITMAP prevSurface;
 
 	} m_context;
+#else
+	/** SDL2 어댑터의 디바이스 컨텍스트 — GDI DeviceContext에 대응 */
+	struct DeviceContext {
+
+		SDL_Window*   window;
+		SDL_Renderer* renderer;
+
+	} m_context;
+#endif
 	
 	static App* s_pInstance;
 	static App& GetInstance();
@@ -97,7 +114,11 @@ public:
 	
 	int Run(int nCmdShow);
 
+#ifdef RS_WINDOWS
 	LRESULT HandleEvent(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+#else
+	void HandleEvent(const SDL_Event& event);
+#endif
 
 	const char* GetWindowName() const;
 	const char* GetClassName() const;
@@ -109,7 +130,9 @@ public:
 	GameStateMachine& GetGameStateMachine();
 	Input& GetInput();
 
+#ifdef RS_WINDOWS
 	void Update();
+#endif
 	void UpdateInput();
 	virtual void ObjectUpdate(double elapsed);
 	double UpdateTime();
@@ -133,7 +156,11 @@ public:
 
 	void SetAppIcon(std::string filename);
 
+#ifdef RS_WINDOWS
 	HWND GetWindowHandle() const { return m_hWnd;  }
+#else
+	SDL_Window* GetWindowHandle() const { return m_context.window; }
+#endif
 
 protected:
 
@@ -149,11 +176,13 @@ protected:
 
 	TextureManager*   m_pTextureManager;
 
-	HWND              m_hWnd;	
+#ifdef RS_WINDOWS
+	HWND              m_hWnd;
 
 	LARGE_INTEGER	  m_nTimeFreq;
 	LARGE_INTEGER	  m_nTimeStart;
 	LARGE_INTEGER	  m_nTimeEnd;
+#endif
 	double			  m_frameTime;
 	int				  m_nFrameCount;
 

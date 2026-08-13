@@ -2,16 +2,13 @@
 #ifndef _ENCRYPT_H_
 #define _ENCRYPT_H_
 
-#define WIN32_LEAN_AND_MEAN
-
 #include <iostream>
 #include <fstream>
 #include <cstdio>
 #include <cstring>
-#include <Windows.h>
 #include <vector>
+#include <string>
 #include "StringUtils.h"
-#include "App.h"
 
 /**
  * @file Encrypt.h

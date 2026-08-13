@@ -7,6 +7,9 @@
 */
 
 #include "ExperimentalFont.h"
+
+// GetGlyphOutline 기반 Win32 구현 전체. 비-Windows 스텁은 platform/sdl2/ExperimentalFontStub.cpp 참조.
+#ifdef RS_WINDOWS
 #include <locale>
 #include <codecvt>
 #include <cwchar>
@@ -535,3 +538,4 @@ TransformData&	ExperimentalFont::getTransform()
 {
 	return Sprite::getTransform();
 }
+#endif // RS_WINDOWS

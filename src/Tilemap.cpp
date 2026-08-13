@@ -87,7 +87,7 @@ void Tilemap::initialize()
 		std::ifstream mapFile(stringStream.str(), std::ifstream::binary);
 
 		if (!mapFile.good()) {
-			throw new std::exception("the map file is not existed");
+			throw new std::runtime_error("the map file is not existed");
 		}
 
 		Json::Value map;
@@ -109,7 +109,7 @@ void Tilemap::initialize()
 
 		if (!loadImages()) {
 			LOG_D("타일셋 이미지를 로드하는 데 실패했습니다.");
-			throw new std::exception("importing tileset image is failed");
+			throw new std::runtime_error("importing tileset image is failed");
 		}
 
 		createTiles();

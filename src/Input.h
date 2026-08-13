@@ -13,8 +13,7 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include "platform/WinTypes.h"
 #include "Vector2D.h"
 #include "Constants.h"
 #include "NonCopyable.h"

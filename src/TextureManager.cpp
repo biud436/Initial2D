@@ -12,6 +12,10 @@
 */
 
 #include "TextureManager.h"
+
+// GDI(Win32) 구현 전체. SDL2 어댑터 구현은 platform/sdl2/TextureManagerSDL2.cpp 참조.
+#ifdef RS_WINDOWS
+
 #include "App.h"
 
 #include <cstdlib>
@@ -541,3 +545,5 @@ void TextureManager::SetBitmapColor(BYTE r, BYTE g, BYTE b, BYTE a)
 	m_bitmapColor.SetRGB(r, g, b);
 	m_bitmapColor.SetAlpha(a);
 }
+
+#endif // RS_WINDOWS
