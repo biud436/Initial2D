@@ -81,3 +81,4 @@ python3 tools/analyze_audio.py resources/audio/bless.ogg
 
 레벨/대역/조성/템포/구간 RMS를 출력하고 `/tmp/bless_analysis.png`에
 스펙트로그램을 저장한다. 분석일: 2026-08-13.
+관련 문서: [blood-tears-altar-analysis.md](blood-tears-altar-analysis.md) (피눈물의 제단, 2011 — 비교 분석 포함)
