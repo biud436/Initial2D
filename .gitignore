@@ -344,3 +344,6 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database 
 healthchecksdb
+
+# CMake build output (macOS port)
+build/
