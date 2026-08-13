@@ -10,6 +10,7 @@
 | Bless (Arrange) | 2014 | F장조/A단조 | ~96(루바토) | -13.3 LUFS | [bless-analysis.md](bless-analysis.md) |
 | 기억 속으로 (보컬 발라드 — 게임곡 아님) | 미상 | A단조 → 말미 D장조 전조 | ~65(루바토) | -7.1 LUFS | [into-memory-analysis.md](into-memory-analysis.md) |
 | Monotonous (Monologue) | 2014 | Em↔F–C (C장조 축) | 44 | -16.7 LUFS | [monotonous-analysis.md](monotonous-analysis.md) |
+| Sad Birthday to me (요정의 숲, 보컬) | 2013 | A장조+A단조 혼합 | 47 | -9.8 LUFS | [sad-birthday-analysis.md](sad-birthday-analysis.md) |
 
 게임에서 여러 곡을 함께 쓸 때의 레벨 보정값은 [inn-analysis.md](inn-analysis.md)의
 비교표 참조. 각 문서에는 그리드 정밀 루프 포인트(인트로/본편 경계)가 기록되어 있다.
@@ -18,7 +19,8 @@
 Monotonous의 Em↔F — 화음 단위 구현), 그리드 정밀 형식(인트로/본편이 마디 단위로 정확히
 떨어짐), 곡 성격에 따라 달리 선택하는 마스터 강도(-8.2 ~ -16.7 LUFS), **제목의 구조적
 구현**(Insatiable desires: 해소의 거부 / Monotonous: 평탄한 다이내믹 / 기억 속으로:
-기억의 화음으로 귀결), 그리고 2014년 이후 확립된 클리핑 없는 마스터링(Bless·Monotonous).
+기억의 화음으로 귀결 / Sad Birthday to me: 형용사=단조·명사=장조의 배당), 그리고
+2014년 이후 확립된 클리핑 없는 마스터링(Bless·Monotonous).
 
 참고: 저자는 정규 음악 교육을 받지 않았고 자신만의 기준으로 작곡했다고 밝혔다.
 문서들의 이론 용어는 결과물에 대한 사후적 기술이며, 여러 곡에서 반복 검출되는
