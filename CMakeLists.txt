@@ -36,6 +36,14 @@ target_include_directories(vendored_sqlite3 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/s
 add_library(vendored_jsoncpp STATIC ${CMAKE_CURRENT_SOURCE_DIR}/json/Json/jsoncpp.cpp)
 target_include_directories(vendored_jsoncpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/json/Json)
 
+add_library(vendored_tinyxml STATIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/tinyxml/src/tinystr.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/tinyxml/src/tinyxml.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/tinyxml/src/tinyxmlerror.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/tinyxml/src/tinyxmlparser.cpp
+)
+target_include_directories(vendored_tinyxml PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/tinyxml/include)
+
 # ---------------------------------------------------------------------------
 # SDL2 (Phase 2부터 필수 — Phase 0에서는 존재 여부만 보고)
 # ---------------------------------------------------------------------------
@@ -76,8 +84,10 @@ endif()
 if(SDL2_FOUND)
   find_library(SDL2_MIXER_LIBRARY SDL2_mixer)
   # Homebrew의 SDL2 CMake 타깃은 자기 keg의 include만 내보내므로
-  # 다른 keg에 설치된 SDL_mixer.h는 별도로 찾아야 한다.
+  # 다른 keg에 설치된 SDL_mixer.h / SDL_image.h는 별도로 찾아야 한다.
   find_path(SDL2_MIXER_INCLUDE_DIR SDL_mixer.h PATH_SUFFIXES SDL2)
+  find_library(SDL2_IMAGE_LIBRARY SDL2_image)
+  find_path(SDL2_IMAGE_INCLUDE_DIR SDL_image.h PATH_SUFFIXES SDL2)
   if(SDL2_MIXER_LIBRARY AND SDL2_MIXER_INCLUDE_DIR)
     target_sources(initial2d_core PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src/SoundManager.cpp
@@ -89,6 +99,47 @@ if(SDL2_FOUND)
   else()
     message(STATUS "SDL2_mixer not found — SoundManager excluded")
   endif()
+endif()
+
+# ---------------------------------------------------------------------------
+# 게임 실행 파일 (SDL2 백엔드) — Phase 2~5
+# Windows의 Initial2D.vcxproj(GDI 백엔드)에 대응하는 macOS 빌드.
+# ---------------------------------------------------------------------------
+if(NOT WIN32 AND SDL2_FOUND AND SDL2_IMAGE_LIBRARY AND SDL2_MIXER_LIBRARY)
+  add_executable(Initial2D
+    # 게임 로직 (플랫폼 중립 — Win32 부분은 RS_WINDOWS 가드로 제외됨)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/App.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/GameObject.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/MenuState.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/MapState.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Sprite.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Tile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Tilemap.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Font.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Input.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Encrypt.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ExperimentalFont.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/TextureManager.cpp
+    # Lua 바인딩
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lua_prot.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lua_input.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lua_sprite.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lua_texture.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lua_font.cpp
+    # SDL2 어댑터
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/sdl2/AppSDL2.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/sdl2/TextureManagerSDL2.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/sdl2/InputSDL2.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/sdl2/ExperimentalFontStub.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/sdl2/sdl2Main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/Utf8.cpp
+  )
+  target_include_directories(Initial2D PRIVATE ${SDL2_IMAGE_INCLUDE_DIR})
+  target_link_libraries(Initial2D PRIVATE initial2d_core vendored_tinyxml ${SDL2_IMAGE_LIBRARY})
+  message(STATUS "Initial2D game executable enabled (SDL2 backend)")
+else()
+  message(STATUS "Initial2D game executable disabled (SDL2/SDL2_image/SDL2_mixer required)")
 endif()
 
 # ---------------------------------------------------------------------------
