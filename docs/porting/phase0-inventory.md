@@ -13,8 +13,14 @@
 - 검증: 정적 테스트 씬에서 배경 + 반투명 스프라이트(opacity) + 45° 회전(XFORM→RenderCopyEx) +
   2배 스케일 + BMFont 텍스트 렌더링을 프레임 덤프로 확인 (`INITIAL2D_SCREENSHOT` env)
 - 오디오: `Audio.PlayMusic`으로 `resources/audio/bless.ogg` 재생 확인 (SDL2_mixer, macOS)
-- 미검증 항목: 키보드 입력 실기 검증 (스캔코드→VK 매핑 테이블은 구현됨 — 실제 키 입력은
-  사용자 플레이로 확인 필요), Tilemap 경로 (MapState의 Tilemap 생성이 원본에서 주석 처리 상태)
+- **엔진 테스트 스위트**: `python3 tests/run_engine_tests.py` — Lua 테스트 씬 + 픽셀 검증 16개 체크
+  (BMFont 한글 텍스트, 프레임 애니메이션 진행, 45° 회전 좌표, opacity 128 블렌딩 값,
+  draw_point 색상, BGM+SE, 저자 tilemap.lua 모듈). 현재 전부 PASS
+- BMFont 추가 확인: `hangul.fnt`(lineHeight=32)는 텍스트가 깨끗하게 렌더링됨 — 글자 겹침은
+  `font.fnt`(lineHeight=16)와 기본 fontSize(32)의 스케일 불일치로 인한 원본 알고리즘 동작임을 실증
+- 미검증 항목: 키보드 입력 실기 검증 (스캔코드→VK 매핑 테이블은 구현됨, Lua Input API 호출은
+  테스트로 확인 — 실제 키 눌림은 사용자 플레이로 확인 필요), C++ Tilemap 클래스 경로
+  (MapState의 Tilemap 생성이 원본에서 주석 처리 상태, Lua 타일맵 모듈은 테스트됨)
 - 발견: `scripts/main.lua`가 참조하는 에셋 3종(background/object/bird PNG)은 저장소에 없음
   (`resources/*.*`가 gitignore) — 검증은 로컬 생성 플레이스홀더로 수행, 커밋하지 않음
 - BMFont 텍스트는 fontSize(32) ≠ lineHeight(16)일 때 원본 GDI 알고리즘 그대로 아틀라스를
