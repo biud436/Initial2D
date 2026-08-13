@@ -49,7 +49,14 @@ int App::Run(int nCmdShow)
 		return -1;
 	}
 
-	m_context.renderer = SDL_CreateRenderer(m_context.window, -1, SDL_RENDERER_ACCELERATED);
+	// PRESENTVSYNC: 디스플레이 주사율에 맞춰 Present를 블로킹시켜 프레임 간격을 고정한다.
+	// 이것이 없으면 루프가 0ms/13ms 사이를 널뛰며(실측 표준편차 7.9ms) 고정 16ms 스텝
+	// 업데이트와 어긋나 틱이 0~2회씩 몰리는 저더가 발생한다.
+	m_context.renderer = SDL_CreateRenderer(m_context.window, -1,
+		SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	if (m_context.renderer == nullptr) {
+		m_context.renderer = SDL_CreateRenderer(m_context.window, -1, SDL_RENDERER_ACCELERATED);
+	}
 
 	if (m_context.renderer == nullptr) {
 		std::fprintf(stderr, "SDL_CreateRenderer failed: %s\n", SDL_GetError());
