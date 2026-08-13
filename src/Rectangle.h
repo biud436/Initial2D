@@ -23,7 +23,7 @@ namespace RS {
 
 	public:
 
-		Rectangle::Rectangle(int _x = 0, int _y = 0, int _width = 0, int _height = 0) :
+		Rectangle(int _x = 0, int _y = 0, int _width = 0, int _height = 0) :
 			x(_x), 
 			y(_y),
 			width(_width),
@@ -32,7 +32,7 @@ namespace RS {
 
 		}
 
-		virtual Rectangle::~Rectangle()
+		virtual ~Rectangle()
 		{
 		}
 
