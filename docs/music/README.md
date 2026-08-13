@@ -8,6 +8,7 @@
 | Inn (Port) | 2013 | D단조/F장조 | 130(체감 65) | -8.2 LUFS | [inn-analysis.md](inn-analysis.md) |
 | Insatiable desires (끝 없는 욕망) | 2013 | A단조(프리지안 색채) | 47 | -14.4 LUFS | [insatiable-desires-analysis.md](insatiable-desires-analysis.md) |
 | Bless (Arrange) | 2014 | F장조/A단조 | ~96(루바토) | -13.3 LUFS | [bless-analysis.md](bless-analysis.md) |
+| 기억 속으로 (발라드 — 게임곡 아님) | 미상 | A단조 → 말미 D장조 전조 | ~65(루바토) | -7.1 LUFS | [into-memory-analysis.md](into-memory-analysis.md) |
 
 게임에서 여러 곡을 함께 쓸 때의 레벨 보정값은 [inn-analysis.md](inn-analysis.md)의
 비교표 참조. 각 문서에는 그리드 정밀 루프 포인트(인트로/본편 경계)가 기록되어 있다.
@@ -20,3 +21,7 @@
 나타난다: Inn은 프레이즈 끝마다 소량 배급(형식의 구두점), 피눈물의 제단은 클라이맥스까지
 아꼈다가 한 번에 지불(보상), Insatiable desires는 지불의 영구 거부(제목의 구현).
 각 문서의 코드 진행 항목에 상세 해설이 있다.
+
+유일한 비게임곡인 "기억 속으로"는 형식 언어가 완전히 다르다(벌스-후렴 극작, 마지막 후렴
+전조, 회상 코다). 단, 현존 파일이 심하게 손상된 마스터(+5dBTP, 클리핑 12.8만 샘플)라
+**원본 발굴·복구 1순위**로 기록해 둔다.
