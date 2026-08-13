@@ -47,21 +47,55 @@ else()
 endif()
 
 # ---------------------------------------------------------------------------
-# 엔진 코어 — Phase 0 시점에 macOS에서 컴파일 가능한 파일만 (실측 결과)
-# 이후 Phase가 진행되며 파일이 추가된다.
+# 엔진 코어 — macOS에서 컴파일 가능한 파일만 (실측 인벤토리 기준, Phase 진행에 따라 추가)
 # ---------------------------------------------------------------------------
 add_library(initial2d_core STATIC
+  # Phase 0
   ${CMAKE_CURRENT_SOURCE_DIR}/src/File.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/GameState.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/GameStateMachine.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/lua_tbl.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/Matrix.cpp
+  # Phase 1 — std 공통화
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Thread.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/StringUtils.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Utility.cpp
 )
 target_include_directories(initial2d_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(initial2d_core PUBLIC vendored_lua vendored_jsoncpp vendored_sqlite3)
 
+if(NOT WIN32)
+  # Phase 1 — POSIX 어댑터
+  target_sources(initial2d_core PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/posix/SystemPath.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/posix/PosixProcess.cpp
+  )
+endif()
+
+# 오디오(SoundManager)는 SDL2_mixer가 있을 때만 코어에 포함
+if(SDL2_FOUND)
+  find_library(SDL2_MIXER_LIBRARY SDL2_mixer)
+  # Homebrew의 SDL2 CMake 타깃은 자기 keg의 include만 내보내므로
+  # 다른 keg에 설치된 SDL_mixer.h는 별도로 찾아야 한다.
+  find_path(SDL2_MIXER_INCLUDE_DIR SDL_mixer.h PATH_SUFFIXES SDL2)
+  if(SDL2_MIXER_LIBRARY AND SDL2_MIXER_INCLUDE_DIR)
+    target_sources(initial2d_core PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/SoundManager.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/lua_audio.cpp
+    )
+    target_include_directories(initial2d_core PUBLIC ${SDL2_MIXER_INCLUDE_DIR})
+    target_link_libraries(initial2d_core PUBLIC SDL2::SDL2 ${SDL2_MIXER_LIBRARY})
+    message(STATUS "SoundManager enabled (SDL2_mixer: ${SDL2_MIXER_LIBRARY})")
+  else()
+    message(STATUS "SDL2_mixer not found — SoundManager excluded")
+  endif()
+endif()
+
 # ---------------------------------------------------------------------------
-# Phase 0 검증 실행 파일
+# Phase 검증 실행 파일
 # ---------------------------------------------------------------------------
 add_executable(phase0_sanity ${CMAKE_CURRENT_SOURCE_DIR}/tests/phase0_sanity.cpp)
 target_link_libraries(phase0_sanity PRIVATE vendored_lua vendored_sqlite3 vendored_jsoncpp)
+
+add_executable(phase1_sanity ${CMAKE_CURRENT_SOURCE_DIR}/tests/phase1_sanity.cpp)
+target_link_libraries(phase1_sanity PRIVATE initial2d_core)
