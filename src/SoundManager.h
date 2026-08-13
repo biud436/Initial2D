@@ -38,6 +38,10 @@ using BGM = std::map<std::string, Mix_Music*>;
 using SE = std::map<std::string, Mix_Chunk*>; 
 
 
+// fmod 헤더를 include하지 않고도 모든 플랫폼에서 컴파일되도록 전방 선언한다.
+// (기존에는 TU의 include 순서에 따라 우연히 컴파일되던 코드)
+namespace FMOD { class System; }
+
 class FSoundProxy
 {
 private:

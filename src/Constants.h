@@ -16,10 +16,14 @@
 #define CONSTANTS_H
 
 // DLL 출력
+#ifdef _WIN32
 #ifndef _RSDLL_
 #define RSLIB __declspec(dllexport)
 #else
 #define RSLIB __declspec(dllimport)
+#endif
+#else
+#define RSLIB __attribute__((visibility("default")))
 #endif
 
 /**
