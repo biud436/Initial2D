@@ -421,9 +421,9 @@ python3 tests/run_engine_tests.py
 
 포팅 상세 내역은 `docs/porting/phase0-inventory.md`를 참조하십시오.
 
-## Android (SDL2 백엔드, Gradle + NDK) — 준비 중
+## Android (SDL2 백엔드, Gradle + NDK)
 
-Android 포팅은 `feature/android-port` 브랜치에서 준비 중입니다. 해당 브랜치의 `android/` 디렉터리에 Gradle 프로젝트가 있습니다.
+Android 포팅은 `feature/android-port` 브랜치에서 진행 중이며, 실기(Galaxy S24 / Android 16)에서 게임 구동·터치 입력·오디오 재생이 확인되었습니다. 해당 브랜치의 `android/` 디렉터리에 Gradle 프로젝트가 있습니다.
 
 ```bash
 # 1. SDL2/SDL2_image/SDL2_mixer 소스 다운로드 (최초 1회)
@@ -438,9 +438,10 @@ gradle wrapper --gradle-version 8.6   # 최초 1회
 ./gradlew :app:assembleDebug
 ```
 
-요구 사항: JDK 17, Android SDK (API 34), NDK, CMake 3.22 이상.
-현재는 빌드 스캐폴딩 단계이며, 남은 포팅 작업(에셋 I/O, 터치 입력, 화면 스케일링, 수명주기 처리)은
-`feature/android-port` 브랜치의 `docs/porting/android-plan.md`를 참조하십시오.
+요구 사항: JDK 17, Android SDK (API 34), NDK r27 이상, CMake 3.22 이상.
+에셋은 최초 실행 시 APK assets에서 내부 저장소로 추출된 뒤 사용됩니다.
+남은 포팅 작업(수명주기 처리, 화면 방향 등)은 `feature/android-port` 브랜치의
+`docs/porting/android-plan.md`를 참조하십시오.
 
 
 # 코딩 스타일

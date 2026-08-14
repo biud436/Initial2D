@@ -105,6 +105,8 @@ add_library(main SHARED
   ${REPO_ROOT}/src/lua_sprite.cpp
   ${REPO_ROOT}/src/lua_texture.cpp
   ${REPO_ROOT}/src/lua_font.cpp
+  # Android 어댑터 — assets 추출 + chdir (Phase A1)
+  ${REPO_ROOT}/src/platform/android/AndroidBootstrap.cpp
   # SDL2 어댑터
   ${REPO_ROOT}/src/platform/sdl2/AppSDL2.cpp
   ${REPO_ROOT}/src/platform/sdl2/TextureManagerSDL2.cpp

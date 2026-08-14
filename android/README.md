@@ -1,12 +1,13 @@
 # Initial2D — Android 포트 (SDL2)
 
 macOS 포팅에서 만든 SDL2 어댑터(`src/platform/sdl2/`)를 그대로 재사용하는 Android 빌드입니다.
-현재는 **빌드 스캐폴딩 단계**이며, 남은 포팅 작업은 `docs/porting/android-plan.md`를 참조하십시오.
+실기(Galaxy S24 / Android 16)에서 게임 구동·터치 입력·오디오 재생이 확인되었습니다.
+남은 포팅 작업은 `docs/porting/android-plan.md`를 참조하십시오.
 
 ## 요구 사항
 
 - JDK 17
-- Android SDK (API 34) + NDK + CMake 3.22 이상 (Android Studio SDK Manager로 설치)
+- Android SDK (API 34) + NDK r27 이상 + CMake 3.22 이상 (Android Studio SDK Manager로 설치)
 
 ## 빌드
 

@@ -18,6 +18,11 @@ cp -R "$ROOT/resources" "$ASSETS/resources"
 [ -f "$ROOT/config.setting" ] && cp "$ROOT/config.setting" "$ASSETS/"
 [ -f "$ROOT/db.sqlite" ]      && cp "$ROOT/db.sqlite"      "$ASSETS/"
 
-echo "완료: $ASSETS"
+find "$ASSETS" -name .DS_Store -delete
+
+# 런타임 추출용 파일 목록 — AndroidBootstrap이 읽는다 (AAssetManager는 디렉터리 열거 불가)
+(cd "$ASSETS" && find . -type f ! -name assets_manifest.txt | sed 's|^\./||' | LC_ALL=C sort > assets_manifest.txt)
+
+echo "완료: $ASSETS ($(wc -l < "$ASSETS/assets_manifest.txt" | tr -d ' ')개 파일)"
 echo "주의: resources/ 의 일부 이미지 에셋은 저장소에 없음 —"
 echo "      python3 tools/generate_placeholder_assets.py 로 생성 가능"
