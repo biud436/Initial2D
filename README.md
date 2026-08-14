@@ -428,7 +428,7 @@ python3 tests/run_engine_tests.py
 
 ## Android (SDL2 백엔드, Gradle + NDK)
 
-Android 포팅은 `feature/android-port` 브랜치에서 진행 중이며, 실기(Galaxy S24 / Android 16)에서 게임 구동, 터치 입력, 오디오 재생이 확인되었습니다. 해당 브랜치의 `android/` 디렉터리에 Gradle 프로젝트가 있습니다.
+Android 포팅은 dev와 master에 병합되어 있으며, 실기(Galaxy S24 / Android 16)에서 풀 스크린 게임 구동, 터치 입력, 오디오 재생이 확인되었습니다. `android/` 디렉터리에 Gradle 프로젝트가 있습니다.
 
 ```bash
 # 1. SDL2/SDL2_image/SDL2_mixer 소스 다운로드 (최초 1회)
@@ -445,8 +445,12 @@ gradle wrapper --gradle-version 8.6   # 최초 1회
 
 요구 사항: JDK 17, Android SDK (API 34), NDK r27 이상, CMake 3.22 이상.
 에셋은 최초 실행 시 APK assets에서 내부 저장소로 추출된 뒤 사용됩니다.
-남은 포팅 작업(수명주기 처리, 화면 방향 등)은 `feature/android-port` 브랜치의
-`docs/porting/android-plan.md`를 참조하십시오.
+
+남은 포팅 작업은 다음과 같으며, 상세는 `docs/porting/android-plan.md`를 참조하십시오.
+
+- 수명주기 처리: 백그라운드 전환 시 BGM 일시정지와 재개, GLES 컨텍스트 유실 시 텍스처 복구 검증
+- 세이브 데이터 보존: 에셋 재추출 시 `db.sqlite`를 덮어쓰지 않도록 쓰기 파일 분리
+- 고 DPI 환경에서 텍스트 가독성 실기 확인
 
 ## 핫 리로드 (HMR)
 
