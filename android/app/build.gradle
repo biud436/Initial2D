@@ -1,0 +1,46 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'com.biud436.initial2d'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.biud436.initial2d'
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_STL=c++_shared'
+            }
+        }
+        ndk {
+            abiFilters 'arm64-v8a', 'x86_64'
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path 'jni/CMakeLists.txt'
+            version '3.22.1'
+        }
+    }
+
+    sourceSets {
+        main {
+            // SDLActivity 자바 소스는 SDL2 소스 트리에서 가져온다.
+            // (android/download_sdl.sh 실행 후 존재)
+            java.srcDirs += ['jni/SDL2/android-project/app/src/main/java']
+            // 게임 에셋은 android/prepare_assets.sh 로 스테이징한다.
+            assets.srcDirs = ['src/main/assets']
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+}

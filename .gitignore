@@ -347,3 +347,17 @@ healthchecksdb
 
 # CMake build output (macOS port)
 build/
+
+# Android port — 다운로드된 SDL 소스, 스테이징된 에셋, gradle 산출물
+android/app/jni/SDL2/
+android/app/jni/SDL2_image/
+android/app/jni/SDL2_mixer/
+android/app/src/main/assets/
+android/.gradle/
+android/build/
+android/app/build/
+android/app/.cxx/
+android/local.properties
+android/gradle/
+android/gradlew
+android/gradlew.bat

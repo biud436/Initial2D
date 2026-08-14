@@ -6,6 +6,11 @@
 
 #ifndef RS_WINDOWS
 
+#ifdef __ANDROID__
+// SDLActivity가 JNI로 호출할 수 있도록 main을 SDL_main으로 매핑한다.
+#include <SDL_main.h>
+#endif
+
 #include "App.h"
 
 int main(int argc, char* argv[])
