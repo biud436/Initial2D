@@ -55,11 +55,14 @@ bool Font::ParseFont(std::string fntName)
 {
 
 	TiXmlDocument xmlDoc;
-	
+
 	if (!xmlDoc.LoadFile(fntName))
 	{
 		return false;
 	}
+
+	// 재호출(핫 리로드 등) 시 이전 파싱 결과가 누적되지 않도록 비운다
+	m_textureNames.clear();
 
 	TiXmlElement *pRoot = xmlDoc.RootElement();
 	TiXmlElement *pCommon = nullptr;
@@ -163,7 +166,8 @@ bool Font::load()
 
 	for (TextureNames::iterator iter = m_textureNames.begin(); iter != m_textureNames.end(); iter++)
 	{
-		std::string path = resourcePath.append(iter[0]);
+		// append는 resourcePath 자체를 오염시켜 두 번째 항목부터 경로가 깨진다
+		std::string path = resourcePath + iter[0];
 		std::string id = textureId + std::to_string(i);
 		m_textureIds[i++] = id;
 		m_charsetDesc.IsTextureReady = tm.Load(path, id, NULL);
