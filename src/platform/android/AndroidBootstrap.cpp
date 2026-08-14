@@ -6,6 +6,10 @@
 
 #include <SDL.h>
 
+#include <jni.h>
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
+
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -18,24 +22,72 @@
 
 namespace {
 
-	// assets의 파일을 통째로 읽는다. 상대 경로 SDL_RWFromFile은 AAssetManager를 경유한다.
-	bool ReadAssetFile(const char* path, std::vector<char>& out)
+	// APK assets 접근자. 주의: SDL_RWFromFile은 상대 경로일 때 내부 저장소를
+	// 먼저 찾기 때문에, 한 번 추출된 뒤에는 APK가 갱신되어도 옛 사본을 읽는다.
+	// 반드시 AAssetManager로 직접 읽어야 항상 진짜 APK 내용을 본다.
+	struct ApkAssets {
+		JNIEnv* env = nullptr;
+		jobject assetManagerRef = nullptr;   // GC 방지용 전역 참조
+		AAssetManager* am = nullptr;
+
+		bool open()
+		{
+			env = static_cast<JNIEnv*>(SDL_AndroidGetJNIEnv());
+			jobject activity = static_cast<jobject>(SDL_AndroidGetActivity());
+			if (env == nullptr || activity == nullptr) {
+				return false;
+			}
+
+			jclass activityClass = env->GetObjectClass(activity);
+			jmethodID getAssets = env->GetMethodID(
+				activityClass, "getAssets", "()Landroid/content/res/AssetManager;");
+			jobject localRef = env->CallObjectMethod(activity, getAssets);
+
+			env->DeleteLocalRef(activityClass);
+			env->DeleteLocalRef(activity);
+
+			if (localRef == nullptr) {
+				return false;
+			}
+
+			assetManagerRef = env->NewGlobalRef(localRef);
+			env->DeleteLocalRef(localRef);
+			am = AAssetManager_fromJava(env, assetManagerRef);
+			return am != nullptr;
+		}
+
+		void close()
+		{
+			if (env != nullptr && assetManagerRef != nullptr) {
+				env->DeleteGlobalRef(assetManagerRef);
+				assetManagerRef = nullptr;
+			}
+			am = nullptr;
+		}
+	};
+
+	// APK assets의 파일을 통째로 읽는다.
+	bool ReadAssetFile(AAssetManager* am, const char* path, std::vector<char>& out)
 	{
-		SDL_RWops* rw = SDL_RWFromFile(path, "rb");
-		if (rw == nullptr) {
+		AAsset* asset = AAssetManager_open(am, path, AASSET_MODE_STREAMING);
+		if (asset == nullptr) {
 			return false;
 		}
 
-		const Sint64 size = SDL_RWsize(rw);
-		if (size < 0) {
-			SDL_RWclose(rw);
-			return false;
-		}
-
+		const off_t size = AAsset_getLength(asset);
 		out.resize(static_cast<size_t>(size));
-		const size_t read = out.empty() ? 0 : SDL_RWread(rw, out.data(), 1, out.size());
-		SDL_RWclose(rw);
-		return read == out.size();
+
+		size_t total = 0;
+		while (total < out.size()) {
+			const int read = AAsset_read(asset, out.data() + total, out.size() - total);
+			if (read <= 0) {
+				break;
+			}
+			total += static_cast<size_t>(read);
+		}
+
+		AAsset_close(asset);
+		return total == out.size();
 	}
 
 	bool ReadLocalFile(const std::string& path, std::vector<char>& out)
@@ -94,11 +146,18 @@ namespace Platform {
 			return false;
 		}
 
+		ApkAssets apk;
+		if (!apk.open()) {
+			SDL_Log("AndroidBootstrap: cannot access APK asset manager");
+			return false;
+		}
+
 		// 파일 목록은 prepare_assets.sh가 생성한 매니페스트로 얻는다.
-		// (AAssetManager는 디렉터리 열거에 JNI가 필요하므로 목록을 빌드 시점에 만든다)
+		// (AAssetManager는 디렉터리 열거가 서브디렉터리를 못 봐서 목록을 빌드 시점에 만든다)
 		std::vector<char> manifest;
-		if (!ReadAssetFile("assets_manifest.txt", manifest)) {
+		if (!ReadAssetFile(apk.am, "assets_manifest.txt", manifest)) {
 			SDL_Log("AndroidBootstrap: assets_manifest.txt missing — run android/prepare_assets.sh and rebuild");
+			apk.close();
 			return false;
 		}
 
@@ -131,8 +190,9 @@ namespace Platform {
 				}
 
 				std::vector<char> data;
-				if (!ReadAssetFile(line.c_str(), data)) {
+				if (!ReadAssetFile(apk.am, line.c_str(), data)) {
 					SDL_Log("AndroidBootstrap: asset not found in APK: %s", line.c_str());
+					apk.close();
 					return false;
 				}
 
@@ -140,6 +200,7 @@ namespace Platform {
 				MakeParentDirs(dst);
 				if (!WriteLocalFile(dst, data)) {
 					SDL_Log("AndroidBootstrap: cannot write %s: %s", dst.c_str(), std::strerror(errno));
+					apk.close();
 					return false;
 				}
 				copied++;
@@ -152,6 +213,8 @@ namespace Platform {
 		else {
 			SDL_Log("AndroidBootstrap: assets up to date at %s", internal);
 		}
+
+		apk.close();
 
 		if (chdir(internal) != 0) {
 			SDL_Log("AndroidBootstrap: chdir(%s) failed: %s", internal, std::strerror(errno));

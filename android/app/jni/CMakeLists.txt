@@ -128,5 +128,6 @@ target_link_libraries(main PRIVATE
   vendored_sqlite3
   vendored_jsoncpp
   vendored_tinyxml
+  android
   log
 )
