@@ -1,43 +1,45 @@
 # 소개
+
 개인적인 용도로 만든 C++ 기반 게임 엔진입니다. Windows에서는 GDI, macOS에서는 SDL2 백엔드로 렌더링합니다 (Android 포팅 준비 중).
 
-|구분|내용|
-|:--:|:--:|
-|Version|Beta|
-|Platform|Windows, macOS (Android 준비 중)|
-|사용된 언어|C++, Lua, C#|
-|Engine Type|자체 개발 엔진|
-|Graphics Device|Windows GDI / SDL2 Renderer (macOS, Android)|
-|이미지 포맷|*.PNG(libpng), *.BMP 지원|
-|오디오 재생|*.ogg 포함 대부분 포맷 지원 (SDL Audio 사용)|
-|동영상 재생|동영상 재생 불가|
-|하드웨어 가속 여부|false|
-|Script Engine|Lua v5.0.3|
-|Map Editor|개발 중 (C# Winform, QT 5)|
-|Data Type|*.json (Game Data), *.sqlite (DB)|
-|암호화 지원|false|
-|멀티 쓰레딩 지원|false|
-|쓰레드 처리 지원|Unstable|
-|프로세스 실행|true|
-|Bitmap Font 지원|true|
-|GetGlyphOutline을 이용한 폰트 묘화 지원|true|
-|타일맵 지원|true|
+|                  구분                   |                     내용                      |
+| :-------------------------------------: | :-------------------------------------------: |
+|                 Version                 |                     Beta                      |
+|                Platform                 |       Windows, macOS (Android 준비 중)        |
+|               사용된 언어               |                 C++, Lua, C#                  |
+|               Engine Type               |                자체 개발 엔진                 |
+|             Graphics Device             | Windows GDI / SDL2 Renderer (macOS, Android)  |
+|               이미지 포맷               |           _.PNG(libpng), _.BMP 지원           |
+|               오디오 재생               | \*.ogg 포함 대부분 포맷 지원 (SDL Audio 사용) |
+|               동영상 재생               |               동영상 재생 불가                |
+|           하드웨어 가속 여부            |                     false                     |
+|              Script Engine              |                  Lua v5.0.3                   |
+|               Map Editor                |          개발 중 (C# Winform, QT 5)           |
+|                Data Type                |       _.json (Game Data), _.sqlite (DB)       |
+|               암호화 지원               |                     false                     |
+|            멀티 쓰레딩 지원             |                     false                     |
+|            쓰레드 처리 지원             |                   Unstable                    |
+|              프로세스 실행              |                     true                      |
+|            Bitmap Font 지원             |                     true                      |
+| GetGlyphOutline을 이용한 폰트 묘화 지원 |                     true                      |
+|               타일맵 지원               |                     true                      |
 
 # 맵 에디터
+
 - 웹 PC 버전
 
 C# Winfrom으로 개발된 초안에 비해 상당한 UI 개선과 설계 개선이 있으며 자체 개발되었습니다. 크로스 플랫폼 에디터를 목표로 개발되었습니다. 그러나 보안 상의 문제로 바닐라 웹에서 동작하기에는 한계가 있어 Electron + Typescript 조합을 사용하였습니다.
 
-|구분|내용|
-|:--:|:--:|
-|버전|개발 중|
-|레이어 갯수|4개|
-|오브젝트 배치 가능 여부|아직 불가능|
-|오브젝트 속성 변경 가능|아직 불가능|
-|스크립트 에디터|없음|
-|맵 파일 생성|가능|
-|테스트 플레이 기능|없음|
-|다중 타일셋 처리|가능|
+|          구분           |    내용     |
+| :---------------------: | :---------: |
+|          버전           |   개발 중   |
+|       레이어 갯수       |     4개     |
+| 오브젝트 배치 가능 여부 | 아직 불가능 |
+| 오브젝트 속성 변경 가능 | 아직 불가능 |
+|     스크립트 에디터     |    없음     |
+|      맵 파일 생성       |    가능     |
+|   테스트 플레이 기능    |    없음     |
+|    다중 타일셋 처리     |    가능     |
 
 ![IMG_NEW_EDITOR](./docs/img/new_editor.png)
 
@@ -47,22 +49,22 @@ C# Winfrom으로 개발된 초안에 비해 상당한 UI 개선과 설계 개선
 
 1차원 배열로 되어있는 타일맵을 편집하고 테스트 플레이를 하면 자체 개발된 게임 엔진에 그대로 반영되는 간단한 툴로 시작하였습니다만 스크립트 에디터까지 추가하면서 차차 발전을 하였습니다. 그러나 타일맵을 직접 페인트 이벤트로 그리기에는 다양한 문제가 있는데다가 윈폼은 크로스 플랫폼도 아니기 때문에 현재는 중단되었습니다.
 
-|구분|내용|
-|:--:|:--:|
-|버전|개발 중단|
-|레이어 갯수|1개|
-|오브젝트 배치 가능 여부|아직 불가능|
-|오브젝트 속성 변경 가능|아직 불가능|
-|스크립트 에디터|있음|
-|맵 파일 생성|가능|
-|테스트 플레이 기능|있음|
-|다중 타일셋 처리|불가능|
+|          구분           |    내용     |
+| :---------------------: | :---------: |
+|          버전           |  개발 중단  |
+|       레이어 갯수       |     1개     |
+| 오브젝트 배치 가능 여부 | 아직 불가능 |
+| 오브젝트 속성 변경 가능 | 아직 불가능 |
+|     스크립트 에디터     |    있음     |
+|      맵 파일 생성       |    가능     |
+|   테스트 플레이 기능    |    있음     |
+|    다중 타일셋 처리     |   불가능    |
 
 ![IMG1](./docs/img/0.png)
 
-
 # 스크립트 예제
-C++ 에선 내부적으로 WinMain을 Entry Point로 삼고 초기화를 거치고, 상태 머신을 통해 순서대로 initialize, update, render 등의 메소드를 자동으로 호출할 수 있습니다. 
+
+C++ 에선 내부적으로 WinMain을 Entry Point로 삼고 초기화를 거치고, 상태 머신을 통해 순서대로 initialize, update, render 등의 메소드를 자동으로 호출할 수 있습니다.
 
 Initialize 함수가 유일한 Entry Point 입니다. 다음으로 중요한 함수는 Update 함수와 Render 함수로 매 프레임마다 호출되며 마지막으로 Destroy 함수에서 메모리 해제를 합니다.
 
@@ -72,13 +74,13 @@ local Image = require("scripts/image")
 local Tilemap = require("scripts/tilemap")
 
 function Initialize()
-	
+
 	-- -- Create background image
 	-- background = Image("./resources/titles/title.png", 0, 0, 640, 480, 1, "Title")
 
 	-- -- Create button text
 	buttonText = Image("./resources/titles/start_button.png" , 0, 0, 256, 30, 1, "buttonText")
-	
+
 	-- -- Create Image
 	mx = WindowWidth() / 2 - buttonText.getWidth() / 2
 	my = WindowHeight() / 2 - buttonText.getHeight() + WindowHeight() / 4
@@ -86,10 +88,10 @@ function Initialize()
 	buttonText.setAngle(0.0)
 	buttonText.setScale(1.0)
 	buttonText.setLoop(false)
-	
+
 	-- Play background music
 	Audio.PlayMusic("./resources/audio/bless.ogg", "mainBGM", true)
-	
+
 	isValid = PreparaFont("./resources/fonts/hangul.fnt")
 
 	myElapsed = 0.0
@@ -104,15 +106,15 @@ function Initialize()
 	for k, v in ipairs(res) do
 		print(v)
 	end
-	
+
 end
 
 function Update(elapsed)
 	-- background.update(elapsed)
-	
+
 	buttonText.setAngle(Input.GetMouseY())
 	buttonText.update(elapsed)
-	
+
 	tilemap.rotate(tt % 360)
 	tilemap.update(elapsed)
 
@@ -129,13 +131,13 @@ function DrawTempText()
 	local text = "2020년입니다~ 하하"
 	myFont = Font("나눔고딕", 32, 400, 440)
 	myFont.setText(text)
-	
-	-- myFont.setPosition(WindowWidth() - myFont.getTextWidth(text), 0)	
+
+	-- myFont.setPosition(WindowWidth() - myFont.getTextWidth(text), 0)
 	myFont.setTextColor(math.floor(math.random() * 255), math.floor(math.random() * 255), math.floor(math.random() * 255))
 	myFont.setOpacity( 200 )
 	myFont.setAngle(tt % 360)
 	myFont.setPosition(WindowWidth() / 2 - myFont.getTextWidth(text) / 2, WindowHeight() / 4)
-		
+
 	myFont.update(myElapsed)
 
 	myFont.draw()
@@ -147,15 +149,15 @@ function Render()
 	buttonText.draw()
 
 	tilemap.draw()
-		
+
 	DrawTempText()
-		
-	if isValid then 
+
+	if isValid then
 		DrawText(100, 0, "테스트")
 		frameCount = GetFrameCount()
 		DrawText(0, 0, tostring(frameCount))
 	end
-		
+
 end
 
 function Destroy()
@@ -164,13 +166,14 @@ function Destroy()
 
 	tilemap.dispose()
 
-	Audio.ReleaseMusic("mainBGM")	
+	Audio.ReleaseMusic("mainBGM")
 end
 ```
 
 # Image
+
 Image 객체는 Sprite Sheet를 사용하여 Character Animation을 표현하기 위한 객체입니다.
-또한 Sprite class의 Wrapper입니다. 
+또한 Sprite class의 Wrapper입니다.
 루아의 GC 대상이 아니므로 비트맵 메모리 해제를 명시적으로 호출해줘야 할 필요성이 있습니다.
 
 ```lua
@@ -178,7 +181,7 @@ Image 객체는 Sprite Sheet를 사용하여 Character Animation을 표현하기
 	image.update(elapsed) -- 프레임 업데이트
 	image.draw() -- 렌더링
 	image.dispose() -- 메모리 해제
-	image.getPosition() -- 위치 
+	image.getPosition() -- 위치
 	image.getScale() -- 스케일
 	image.getWidth() -- 가로 크기
 	image.getHeight() -- 세로 크기
@@ -207,13 +210,13 @@ Image 객체는 Sprite Sheet를 사용하여 Character Animation을 표현하기
 
 # TextureManager
 
-이미지 파일(*.png, *.bmp)을 로드하여 DIB로 변환합니다. DIB는 GDI 기반으로 렌더링 시 이용됩니다.
-PNG 파일의 경우, 내부적으로 libpng를 이용하여 색상 RAW 값을 얻은 후 DIB로 디코딩하였습니다. 
+이미지 파일(_.png, _.bmp)을 로드하여 DIB로 변환합니다. DIB는 GDI 기반으로 렌더링 시 이용됩니다.
+PNG 파일의 경우, 내부적으로 libpng를 이용하여 색상 RAW 값을 얻은 후 DIB로 디코딩하였습니다.
 
 Image 객체에서 내부적으로 호출하므로 굳이 수동으로 사용할 필요는 없습니다.
 
 ```lua
-	-- id는 문자열이어야 합니다. 
+	-- id는 문자열이어야 합니다.
 	-- "my_character"와 같은 식으로 지정하십시오.
 	TextureManager.Load(filename, id)
 	TextureManager.Remove(id)
@@ -221,7 +224,8 @@ Image 객체에서 내부적으로 호출하므로 굳이 수동으로 사용할
 ```
 
 # Audio
-OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오 파일을 재생할 수 있습니다. 
+
+OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오 파일을 재생할 수 있습니다.
 
 ```lua
 	Audio.PlayMusic(path, id, loop) -- BGM 재생
@@ -241,11 +245,12 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 음악 재생 시 오디오 파일을 자동으로 로드합니다. 하지만 메모리는 반드시 수동으로 해제해야 합니다.
 
 # Input
-키보드 및 마우스 입력을 처리합니다. 
+
+키보드 및 마우스 입력을 처리합니다.
 
 ```lua
 
-	-- vKey는 가상 키 값입니다. 
+	-- vKey는 가상 키 값입니다.
 	Input.IsKeyDown(vKey)
 	Input.IsKeyUp(vKey)
 	Input.IsKeyPress(vKey)
@@ -277,7 +282,7 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 	local vKey = string.byte("A") --65
 	if Input.IsKeyDown(vKey) then
 		-- 처리
-	end	
+	end
 
 ```
 
@@ -296,7 +301,7 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 
 # Font
 
-동적으로 폰트 텍스쳐를 생성하고 화면에 텍스트를 그립니다. 
+동적으로 폰트 텍스쳐를 생성하고 화면에 텍스트를 그립니다.
 사용자의 시스템 폰트 폴더에 있는 어떤 폰트도 사용할 수 있습니다.
 
 ```lua
@@ -325,14 +330,14 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 
 	-- 루아 스크립트 파일을 로드합니다.
 	LoadScript(luaFile)
-	
+
 	-- 창 가로 크기
 	WindowWidth()
 
 	-- 창 세로 크기
 	WindowHeight()
 
-	-- 평균 FPS 
+	-- 평균 FPS
 	-- 고정 프레임을 사용하지 않으므로
 	-- 보통 100 프레임 이상이 나와야 정상입니다.
 	GetFrameCount()
@@ -350,13 +355,13 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 
 # 브랜치 구조
 
-|브랜치|용도|
-|:--:|:--|
-|`master`|안정 브랜치|
-|`dev`|개발 통합 브랜치 (macOS 포팅 병합됨)|
-|`feature/macos-port`|macOS SDL2 포팅 작업 브랜치|
-|`feature/android-port`|Android SDL2 포팅 준비 브랜치 (dev에서 파생)|
-|`archive/windows-gdi`|Windows GDI 원형 보존 브랜치 (수정 금지)|
+|         브랜치         | 용도                                         |
+| :--------------------: | :------------------------------------------- |
+|        `master`        | 안정 브랜치                                  |
+|         `dev`          | 개발 통합 브랜치 (macOS 포팅 병합됨)         |
+|  `feature/macos-port`  | macOS SDL2 포팅 작업 브랜치                  |
+| `feature/android-port` | Android SDL2 포팅 준비 브랜치 (dev에서 파생) |
+| `archive/windows-gdi`  | Windows GDI 원형 보존 브랜치 (수정 금지)     |
 
 # 빌드 방법 (플랫폼별)
 
@@ -367,33 +372,33 @@ Visual Studio에서 `Initial2D.sln`을 열고 빌드합니다. 실행 시 필요
 빌드 시 다음 라이브러리 파일과 DLL 파일이 필요합니다.
 
 - zlib
-    - libzlib.lib
-    - zlib1.dll
-    - libpng16.lib
+  - libzlib.lib
+  - zlib1.dll
+  - libpng16.lib
 
 - Msimg32.lib
 
 - SDL2 (zlib license)
-    - SDL2.dll
-    - SDL2.lib
+  - SDL2.dll
+  - SDL2.lib
 
 - SDL2 Mixer (zlib license)
-    - SDL2_mixer.dll
-    - SDL2_mixer.lib
-    - native_midi.lib
-    - playmus.lib
-    - playwave.lib
-    - timidity.lib
-    - libFLAC-8.dll
-    - libmodplug-1.dll
-    - libmpg123-0.dll
-    - libogg-0.dll
-    - libvorbis-0.dll
-    - libvorbisfile-3.dll
+  - SDL2_mixer.dll
+  - SDL2_mixer.lib
+  - native_midi.lib
+  - playmus.lib
+  - playwave.lib
+  - timidity.lib
+  - libFLAC-8.dll
+  - libmodplug-1.dll
+  - libmpg123-0.dll
+  - libogg-0.dll
+  - libvorbis-0.dll
+  - libvorbisfile-3.dll
 
 - TinyXML (zlib license)
-    - tinyxml.lib
-    - OpenAL32.lib
+  - tinyxml.lib
+  - OpenAL32.lib
 
 ## macOS (SDL2 백엔드, CMake)
 
@@ -443,7 +448,7 @@ gradle wrapper --gradle-version 8.6   # 최초 1회
 남은 포팅 작업(수명주기 처리, 화면 방향 등)은 `feature/android-port` 브랜치의
 `docs/porting/android-plan.md`를 참조하십시오.
 
-## 핫 리로드 (HMR) — Lua 스크립트 즉시 반영
+## 핫 리로드 (HMR)
 
 APK를 다시 빌드하거나 설치하지 않고, 수정한 `scripts/*.lua`를 실행 중인 게임에 밀어 넣어 바로 반영합니다.
 HMR 서버는 게임에 내장되어 있습니다 — **Android에서는 항상 켜져 있고**(루프백 127.0.0.1:5959),
@@ -464,7 +469,6 @@ push가 도착하면 게임이 Lua VM을 재시작하고 `main.lua`부터 다시
 (**풀 리스타트** — 점수 등 게임 진행 상태는 초기화됩니다).
 동작 로그는 `adb logcat -s SDL/APP`에서 `HotReload:` 태그로 확인할 수 있습니다.
 프로토콜과 설계 상세는 `docs/porting/android-hmr-plan.md`를 참조하십시오.
-
 
 # 코딩 스타일
 
