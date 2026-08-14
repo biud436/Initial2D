@@ -29,6 +29,17 @@ gradle wrapper --gradle-version 8.6   # 최초 1회 (wrapper는 커밋하지 않
 
 APK는 `android/app/build/outputs/apk/debug/`에 생성됩니다.
 
+## 핫 리로드 (HMR)
+
+디버그 빌드는 HMR 서버가 내장되어 있어, APK 재설치 없이 Lua 스크립트를 바로 반영할 수 있습니다.
+
+```bash
+adb forward tcp:5959 tcp:5959      # 최초 1회
+python3 tools/hmr_push.py --watch  # 저장할 때마다 자동 push
+```
+
+자세한 사용법은 저장소 루트 `README.md`의 "핫 리로드 (HMR)" 섹션을 참조하십시오.
+
 ## 구조
 
 | 경로 | 역할 |

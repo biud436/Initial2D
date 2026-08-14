@@ -443,6 +443,28 @@ gradle wrapper --gradle-version 8.6   # 최초 1회
 남은 포팅 작업(수명주기 처리, 화면 방향 등)은 `feature/android-port` 브랜치의
 `docs/porting/android-plan.md`를 참조하십시오.
 
+## 핫 리로드 (HMR) — Lua 스크립트 즉시 반영
+
+APK 재빌드·재설치 없이, 수정한 `scripts/*.lua`를 실행 중인 게임에 밀어 넣어 바로 반영합니다.
+HMR 서버는 게임에 내장되어 있습니다 — **Android에서는 항상 켜져 있고**(루프백 127.0.0.1:5959),
+데스크톱(macOS)에서는 `INITIAL2D_HMR=1` 환경변수로 켭니다.
+
+```bash
+# ── Android 기기 ──
+adb forward tcp:5959 tcp:5959      # 최초 1회 (기기 연결 후)
+python3 tools/hmr_push.py          # scripts/*.lua 전체를 1회 push
+python3 tools/hmr_push.py --watch  # 저장할 때마다 자동 push (개발 중 권장)
+
+# ── macOS ──
+INITIAL2D_HMR=1 ./build/Initial2D  # HMR 서버를 켜고 게임 실행
+python3 tools/hmr_push.py          # 다른 터미널에서 push
+```
+
+push가 도착하면 게임이 Lua VM을 재시작하고 `main.lua`부터 다시 로드합니다
+(**풀 리스타트** — 점수 등 게임 진행 상태는 초기화됩니다).
+동작 로그는 `adb logcat -s SDL/APP`에서 `HotReload:` 태그로 확인할 수 있습니다.
+프로토콜·설계 상세는 `docs/porting/android-hmr-plan.md`를 참조하십시오.
+
 
 # 코딩 스타일
 
