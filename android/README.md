@@ -1,7 +1,7 @@
 # Initial2D — Android 포트 (SDL2)
 
 macOS 포팅에서 만든 SDL2 어댑터(`src/platform/sdl2/`)를 그대로 재사용하는 Android 빌드입니다.
-실기(Galaxy S24 / Android 16)에서 게임 구동·터치 입력·오디오 재생이 확인되었습니다.
+실기(Galaxy S24 / Android 16)에서 게임 구동, 터치 입력, 오디오 재생이 확인되었습니다.
 남은 포팅 작업은 `docs/porting/android-plan.md`를 참조하십시오.
 
 ## 요구 사항
@@ -28,6 +28,17 @@ gradle wrapper --gradle-version 8.6   # 최초 1회 (wrapper는 커밋하지 않
 ```
 
 APK는 `android/app/build/outputs/apk/debug/`에 생성됩니다.
+
+## 핫 리로드 (HMR)
+
+디버그 빌드는 HMR 서버가 내장되어 있어, APK 재설치 없이 Lua 스크립트를 바로 반영할 수 있습니다.
+
+```bash
+adb forward tcp:5959 tcp:5959      # 최초 1회
+python3 tools/hmr_push.py --watch  # 저장할 때마다 자동 push
+```
+
+자세한 사용법은 저장소 루트 `README.md`의 "핫 리로드 (HMR)" 섹션을 참조하십시오.
 
 ## 구조
 

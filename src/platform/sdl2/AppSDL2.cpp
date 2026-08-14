@@ -18,6 +18,7 @@
 #include "App.h"
 #include "Input.h"
 #include "TextureManager.h"
+#include "lua_prot.h"
 
 #include <SDL.h>
 #include <SDL_image.h>
@@ -25,8 +26,49 @@
 #include <chrono>
 #include <sstream>
 #include <cstdio>
+#include <vector>
+
+#include <sys/stat.h>
 
 #include "../Utf8.h"
+#include "../HotReloadServer.h"
+
+namespace {
+
+	// 수신된 Lua 번들을 cwd에 기록하고 Lua VM을 재시작한다.
+	// (docs/porting/android-hmr-plan.md — 이슈 #16)
+	void ApplyHotReload(const std::vector<Initial2D::Platform::HotReloadFile>& bundle)
+	{
+		for (const auto& file : bundle) {
+			// mkdir -p: 중간 디렉터리 생성 (경로는 서버에서 검증됨)
+			for (size_t i = 1; i < file.path.size(); ++i) {
+				if (file.path[i] == '/') {
+					mkdir(file.path.substr(0, i).c_str(), 0770);
+				}
+			}
+
+			FILE* fp = std::fopen(file.path.c_str(), "wb");
+			if (fp == nullptr) {
+				SDL_Log("HotReload: cannot write %s", file.path.c_str());
+				return;
+			}
+			if (!file.data.empty()) {
+				std::fwrite(file.data.data(), 1, file.data.size(), fp);
+			}
+			std::fclose(fp);
+		}
+
+		try {
+			Lua_Destory();
+			Lua_Init();
+			SDL_Log("HotReload: reloaded with %d files", static_cast<int>(bundle.size()));
+		}
+		catch (...) {
+			SDL_Log("HotReload: reload failed — restart the app");
+		}
+	}
+
+} // namespace
 
 int App::Run(int nCmdShow)
 {
@@ -106,6 +148,18 @@ int App::Run(int nCmdShow)
 
 	Initialize();
 
+	// 핫 리로드 서버 — Android는 상시(디버그 개발용), 데스크톱은 환경변수 옵트인
+#ifdef __ANDROID__
+	const bool hmrEnabled = true;
+#else
+	const bool hmrEnabled = SDL_getenv("INITIAL2D_HMR") != nullptr;
+#endif
+	if (hmrEnabled) {
+		if (Initial2D::Platform::HotReloadServer::Start(5959)) {
+			SDL_Log("HotReload: listening on 127.0.0.1:5959 (tools/hmr_push.py)");
+		}
+	}
+
 	bool done = false;
 
 	int lag = 0;
@@ -152,6 +206,14 @@ int App::Run(int nCmdShow)
 				done = true;
 			}
 			HandleEvent(event);
+		}
+
+		// 수신된 Lua 번들이 있으면 프레임 사이에서 반영한다
+		{
+			std::vector<Initial2D::Platform::HotReloadFile> bundle;
+			if (Initial2D::Platform::HotReloadServer::TakeBundle(bundle)) {
+				ApplyHotReload(bundle);
+			}
 		}
 
 		while (lag >= lengthOfFrame)
@@ -241,6 +303,8 @@ int App::Run(int nCmdShow)
 		}
 	}
 
+	Initial2D::Platform::HotReloadServer::Stop();
+
 	// 텍스처(SDL_Texture)는 렌더러보다 먼저 해제되어야 하므로
 	// Destroy()를 부르는 delete this 이후에 렌더러/창을 정리한다.
 	SDL_Renderer* renderer = m_context.renderer;
@@ -262,6 +326,18 @@ void App::HandleEvent(const SDL_Event& event)
 	case SDL_MOUSEWHEEL:
 		if (m_pInput != nullptr) {
 			m_pInput->setMouseZ(event.wheel.y > 0 ? 1 : -1);
+		}
+		break;
+	case SDL_MOUSEBUTTONDOWN:
+		// 짧은 클릭·탭이 고정 스텝 입력 폴링 사이에 유실되지 않도록 래치한다
+		if (m_pInput != nullptr) {
+			int index = -1;
+			if (event.button.button == SDL_BUTTON_LEFT) { index = 0; }
+			else if (event.button.button == SDL_BUTTON_RIGHT) { index = 1; }
+			else if (event.button.button == SDL_BUTTON_MIDDLE) { index = 2; }
+			if (index >= 0) {
+				m_pInput->latchMouseDown(index);
+			}
 		}
 		break;
 	case SDL_WINDOWEVENT:

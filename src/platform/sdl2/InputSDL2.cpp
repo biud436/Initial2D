@@ -118,6 +118,14 @@ void Input::updateMouse()
 	m_mbCurrent[1] = (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) ? PRESSED : RELEASED;
 	m_mbCurrent[2] = (buttons & SDL_BUTTON(SDL_BUTTON_MIDDLE)) ? PRESSED : RELEASED;
 
+	// 이벤트 래치 반영: 폴링 사이에 눌렸다 떼어진 짧은 클릭·탭도 1틱은 PRESSED로 관측된다
+	for (int i = 0; i < 3; ++i) {
+		if (m_mbEventLatch[i]) {
+			m_mbCurrent[i] = PRESSED;
+			m_mbEventLatch[i] = 0;
+		}
+	}
+
 	for (int i = 0; i < 8; ++i)
 	{
 		int old = m_mbOld[i];
@@ -145,6 +153,13 @@ void Input::updateMouse()
 	m_mouse.setY(logicalY);
 
 	setMouseZ(0);
+}
+
+void Input::latchMouseDown(int index)
+{
+	if (index >= 0 && index < 8) {
+		m_mbEventLatch[index] = 1;
+	}
 }
 
 #endif // !RS_WINDOWS

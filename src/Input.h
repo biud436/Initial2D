@@ -134,6 +134,15 @@ protected:
 
 	int m_nWheel;
 
+#ifndef RS_WINDOWS
+	// SDL 이벤트에서 래치된 마우스 다운 — 고정 스텝 폴링 사이에 눌렸다 떼어진
+	// 짧은 클릭·탭이 유실되지 않도록 update()에서 1틱 PRESSED로 반영 후 클리어된다.
+	BYTE m_mbEventLatch[8];
+
+public:
+	void latchMouseDown(int index);
+#endif
+
 private:
 
 	// 복사 및 대입 연산 불필요 (불가능하게 설정)

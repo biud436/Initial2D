@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- 개발용 Lua 핫 리로드 서버(HotReloadServer, 루프백 전용)에 필요 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- allowNativeHeapPointerTagging=false:
          엔진의 Lua 바인딩은 C++ 포인터를 lua_Number(double)로 왕복시키는데,
          Android의 힙 포인터 태깅(상위 바이트 0xb4..)이 켜져 있으면 주소가
