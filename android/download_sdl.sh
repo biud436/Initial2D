@@ -5,7 +5,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")/app/jni"
 
-SDL2_VER=2.28.5
+# 2.30.7 미만은 NDK r27에서 빌드 불가 (ALooper_pollAll 제거됨)
+SDL2_VER=2.30.9
 IMG_VER=2.8.2
 MIX_VER=2.8.0
 
