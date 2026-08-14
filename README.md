@@ -1,13 +1,13 @@
 # 소개
-개인적인 용도로 만든 C++ (GDI) 기반 게임 엔진입니다. 
+개인적인 용도로 만든 C++ 기반 게임 엔진입니다. Windows에서는 GDI, macOS에서는 SDL2 백엔드로 렌더링합니다 (Android 포팅 준비 중).
 
 |구분|내용|
 |:--:|:--:|
 |Version|Beta|
-|Platform|Windows|
+|Platform|Windows, macOS (Android 준비 중)|
 |사용된 언어|C++, Lua, C#|
 |Engine Type|자체 개발 엔진|
-|Graphics Device|Windows GDI 사용|
+|Graphics Device|Windows GDI / SDL2 Renderer (macOS, Android)|
 |이미지 포맷|*.PNG(libpng), *.BMP 지원|
 |오디오 재생|*.ogg 포함 대부분 포맷 지원 (SDL Audio 사용)|
 |동영상 재생|동영상 재생 불가|
@@ -348,7 +348,21 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 	GetResourcesFiles()
 ```
 
-# 빌드 시
+# 브랜치 구조
+
+|브랜치|용도|
+|:--:|:--|
+|`master`|안정 브랜치|
+|`dev`|개발 통합 브랜치 (macOS 포팅 병합됨)|
+|`feature/macos-port`|macOS SDL2 포팅 작업 브랜치|
+|`feature/android-port`|Android SDL2 포팅 준비 브랜치 (dev에서 파생)|
+|`archive/windows-gdi`|Windows GDI 원형 보존 브랜치 (수정 금지)|
+
+# 빌드 방법 (플랫폼별)
+
+## Windows (GDI 백엔드, Visual Studio)
+
+Visual Studio에서 `Initial2D.sln`을 열고 빌드합니다. 실행 시 필요한 DLL은 저장소 루트에 포함되어 있습니다.
 
 빌드 시 다음 라이브러리 파일과 DLL 파일이 필요합니다.
 
@@ -380,6 +394,53 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 - TinyXML (zlib license)
     - tinyxml.lib
     - OpenAL32.lib
+
+## macOS (SDL2 백엔드, CMake)
+
+Homebrew로 의존성을 설치한 뒤 CMake로 빌드합니다.
+
+```bash
+brew install cmake sdl2 sdl2_image sdl2_mixer
+
+cmake -B build
+cmake --build build
+
+# 게임 실행
+./build/Initial2D
+
+# 단계별 검증 실행 파일
+./build/phase0_sanity   # lua/sqlite/json 동작 검증
+./build/phase1_sanity   # 엔진 코어 검증
+
+# 엔진 테스트 스위트 (Lua 테스트 씬 + 픽셀 검증)
+python3 tests/run_engine_tests.py
+```
+
+`scripts/main.lua`가 참조하는 일부 이미지 에셋은 저장소에 포함되어 있지 않습니다.
+로컬 테스트용 플레이스홀더는 `python3 tools/generate_placeholder_assets.py`로 생성할 수 있습니다.
+
+포팅 상세 내역은 `docs/porting/phase0-inventory.md`를 참조하십시오.
+
+## Android (SDL2 백엔드, Gradle + NDK) — 준비 중
+
+Android 포팅은 `feature/android-port` 브랜치에서 준비 중입니다. 해당 브랜치의 `android/` 디렉터리에 Gradle 프로젝트가 있습니다.
+
+```bash
+# 1. SDL2/SDL2_image/SDL2_mixer 소스 다운로드 (최초 1회)
+./android/download_sdl.sh
+
+# 2. 게임 에셋(scripts/, resources/ 등)을 assets로 스테이징
+./android/prepare_assets.sh
+
+# 3. 빌드 (Android Studio로 android/ 디렉터리를 열거나 CLI 사용)
+cd android
+gradle wrapper --gradle-version 8.6   # 최초 1회
+./gradlew :app:assembleDebug
+```
+
+요구 사항: JDK 17, Android SDK (API 34), NDK, CMake 3.22 이상.
+현재는 빌드 스캐폴딩 단계이며, 남은 포팅 작업(에셋 I/O, 터치 입력, 화면 스케일링, 수명주기 처리)은
+`feature/android-port` 브랜치의 `docs/porting/android-plan.md`를 참조하십시오.
 
 
 # 코딩 스타일
