@@ -1,30 +1,40 @@
 #include "Thread.h"
+#include <cstdio>
 
-
+// 원본 구현의 OutputDebugString 트레이스에 대응. 디버거 대신 stderr로 출력한다.
+#ifndef NDEBUG
+#define THREAD_TRACE(MSG) std::fputs(MSG, stderr)
+#else
+#define THREAD_TRACE(MSG)
+#endif
 
 Thread::Thread() :
-	m_hMutex(NULL),
 	m_bWait(false)
 {
-	OutputDebugString("new Thread();\n");
+	THREAD_TRACE("new Thread();\n");
 	initWithLocker();
 }
 
 Thread::~Thread()
 {
-	OutputDebugString("~Thread();\n");
+	THREAD_TRACE("~Thread();\n");
+	// 원본 구현은 스레드 핸들을 회수하지 않고 방치했다.
+	// std::thread는 joinable 상태로 소멸하면 terminate되므로 동등한 동작인 detach를 수행한다.
+	if (m_thread.joinable()) {
+		m_thread.detach();
+	}
 }
 
-void Thread::initWithLocker() 
+void Thread::initWithLocker()
 {
-	m_hMutex = CreateMutex(NULL, FALSE, NULL);
+	// std::mutex는 별도의 초기화가 필요 없다. 원본 인터페이스 유지를 위해 남겨둔다.
 }
 
-UINT WINAPI Thread::Callback(LPVOID p)
+unsigned int Thread::Callback(void* p)
 {
-	OutputDebugString("Callback();\n");
+	THREAD_TRACE("Callback();\n");
 	Thread* thread = reinterpret_cast<Thread*>(p);
-	if (thread == nullptr) 
+	if (thread == nullptr)
 	{
 		return 0;
 	}
@@ -37,15 +47,19 @@ UINT WINAPI Thread::Callback(LPVOID p)
 	return 0;
 }
 
-void Thread::start() 
+void Thread::start()
 {
+	// 원본은 재시작 시 이전 핸들을 덮어썼다. joinable 상태에서의 대입은 terminate이므로 먼저 분리한다.
+	if (m_thread.joinable()) {
+		m_thread.detach();
+	}
 	m_bWait = true;
-	m_hThread = reinterpret_cast<void*>(_beginthreadex(nullptr, 0, Callback, static_cast<void*>(this), NULL, &m_nThreadId));
+	m_thread = std::thread(&Thread::Callback, static_cast<void*>(this));
 }
-	
+
 void Thread::lock()
 {
-	WaitForSingleObject(m_hMutex, INFINITE);
+	m_mutex.lock();
 }
 
 void Thread::run()
@@ -54,14 +68,15 @@ void Thread::run()
 
 void Thread::unlock()
 {
-	ReleaseMutex(m_hMutex);
+	m_mutex.unlock();
 	m_bWait = false;
 }
 
 void Thread::join() {
-	while (isWaiting()) {
-		Sleep(1);
+	if (m_thread.joinable()) {
+		m_thread.join();
 	}
+	m_bWait = false;
 }
 
 bool Thread::isWaiting() const {

@@ -1,13 +1,13 @@
 # 소개
-개인적인 용도로 만든 C++ (GDI) 기반 게임 엔진입니다. 
+개인적인 용도로 만든 C++ 기반 게임 엔진입니다. Windows에서는 GDI, macOS에서는 SDL2 백엔드로 렌더링합니다 (Android 포팅 준비 중).
 
 |구분|내용|
 |:--:|:--:|
 |Version|Beta|
-|Platform|Windows|
+|Platform|Windows, macOS (Android 준비 중)|
 |사용된 언어|C++, Lua, C#|
 |Engine Type|자체 개발 엔진|
-|Graphics Device|Windows GDI 사용|
+|Graphics Device|Windows GDI / SDL2 Renderer (macOS, Android)|
 |이미지 포맷|*.PNG(libpng), *.BMP 지원|
 |오디오 재생|*.ogg 포함 대부분 포맷 지원 (SDL Audio 사용)|
 |동영상 재생|동영상 재생 불가|
@@ -348,7 +348,21 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 	GetResourcesFiles()
 ```
 
-# 빌드 시
+# 브랜치 구조
+
+|브랜치|용도|
+|:--:|:--|
+|`master`|안정 브랜치|
+|`dev`|개발 통합 브랜치 (macOS 포팅 병합됨)|
+|`feature/macos-port`|macOS SDL2 포팅 작업 브랜치|
+|`feature/android-port`|Android SDL2 포팅 준비 브랜치 (dev에서 파생)|
+|`archive/windows-gdi`|Windows GDI 원형 보존 브랜치 (수정 금지)|
+
+# 빌드 방법 (플랫폼별)
+
+## Windows (GDI 백엔드, Visual Studio)
+
+Visual Studio에서 `Initial2D.sln`을 열고 빌드합니다. 실행 시 필요한 DLL은 저장소 루트에 포함되어 있습니다.
 
 빌드 시 다음 라이브러리 파일과 DLL 파일이 필요합니다.
 
@@ -380,6 +394,76 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 - TinyXML (zlib license)
     - tinyxml.lib
     - OpenAL32.lib
+
+## macOS (SDL2 백엔드, CMake)
+
+Homebrew로 의존성을 설치한 뒤 CMake로 빌드합니다.
+
+```bash
+brew install cmake sdl2 sdl2_image sdl2_mixer
+
+cmake -B build
+cmake --build build
+
+# 게임 실행
+./build/Initial2D
+
+# 단계별 검증 실행 파일
+./build/phase0_sanity   # lua/sqlite/json 동작 검증
+./build/phase1_sanity   # 엔진 코어 검증
+
+# 엔진 테스트 스위트 (Lua 테스트 씬 + 픽셀 검증)
+python3 tests/run_engine_tests.py
+```
+
+`scripts/main.lua`가 참조하는 일부 이미지 에셋은 저장소에 포함되어 있지 않습니다.
+로컬 테스트용 플레이스홀더는 `python3 tools/generate_placeholder_assets.py`로 생성할 수 있습니다.
+
+포팅 상세 내역은 `docs/porting/phase0-inventory.md`를 참조하십시오.
+
+## Android (SDL2 백엔드, Gradle + NDK)
+
+Android 포팅은 `feature/android-port` 브랜치에서 진행 중이며, 실기(Galaxy S24 / Android 16)에서 게임 구동, 터치 입력, 오디오 재생이 확인되었습니다. 해당 브랜치의 `android/` 디렉터리에 Gradle 프로젝트가 있습니다.
+
+```bash
+# 1. SDL2/SDL2_image/SDL2_mixer 소스 다운로드 (최초 1회)
+./android/download_sdl.sh
+
+# 2. 게임 에셋(scripts/, resources/ 등)을 assets로 스테이징
+./android/prepare_assets.sh
+
+# 3. 빌드 (Android Studio로 android/ 디렉터리를 열거나 CLI 사용)
+cd android
+gradle wrapper --gradle-version 8.6   # 최초 1회
+./gradlew :app:assembleDebug
+```
+
+요구 사항: JDK 17, Android SDK (API 34), NDK r27 이상, CMake 3.22 이상.
+에셋은 최초 실행 시 APK assets에서 내부 저장소로 추출된 뒤 사용됩니다.
+남은 포팅 작업(수명주기 처리, 화면 방향 등)은 `feature/android-port` 브랜치의
+`docs/porting/android-plan.md`를 참조하십시오.
+
+## 핫 리로드 (HMR) — Lua 스크립트 즉시 반영
+
+APK를 다시 빌드하거나 설치하지 않고, 수정한 `scripts/*.lua`를 실행 중인 게임에 밀어 넣어 바로 반영합니다.
+HMR 서버는 게임에 내장되어 있습니다 — **Android에서는 항상 켜져 있고**(루프백 127.0.0.1:5959),
+데스크톱(macOS)에서는 `INITIAL2D_HMR=1` 환경변수로 켭니다.
+
+```bash
+# ── Android 기기 ──
+adb forward tcp:5959 tcp:5959      # 최초 1회 (기기 연결 후)
+python3 tools/hmr_push.py          # scripts/*.lua 전체를 1회 push
+python3 tools/hmr_push.py --watch  # 저장할 때마다 자동 push (개발 중 권장)
+
+# ── macOS ──
+INITIAL2D_HMR=1 ./build/Initial2D  # HMR 서버를 켜고 게임 실행
+python3 tools/hmr_push.py          # 다른 터미널에서 push
+```
+
+push가 도착하면 게임이 Lua VM을 재시작하고 `main.lua`부터 다시 로드합니다
+(**풀 리스타트** — 점수 등 게임 진행 상태는 초기화됩니다).
+동작 로그는 `adb logcat -s SDL/APP`에서 `HotReload:` 태그로 확인할 수 있습니다.
+프로토콜과 설계 상세는 `docs/porting/android-hmr-plan.md`를 참조하십시오.
 
 
 # 코딩 스타일

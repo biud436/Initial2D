@@ -9,7 +9,7 @@
  * 
  *
  * @todo
- * Å¸ÀÏ¸Ê ·Î´õ
+ * íƒ€ì¼ë§µ ë¡œë”
 */
 
 #ifndef MAPSTATE_H
@@ -32,31 +32,31 @@ class MapState :
 public:
 
 	/**
-	* ÇÁ·¹ÀÓÀ» ¾÷µ¥ÀÌÆ®ÇÕ´Ï´Ù.
+	* í”„ë ˆì„ì„ ì—…ë°ì´íŠ¸í•©ë‹ˆë‹¤.
 	*/
 	virtual void update(float elapsed) override;
 
 
 	/**
-	* ·»´õ¸µÀ» ¼öÇàÇÕ´Ï´Ù.
+	* ë Œë”ë§ì„ ìˆ˜í–‰í•©ë‹ˆë‹¤.
 	*/
 	virtual void render() override;
 
 
 	/**
-	* ÁøÀÔ ½Ã¿¡ ¼öÇàµË´Ï´Ù.
+	* ì§„ì… ì‹œì— ìˆ˜í–‰ë©ë‹ˆë‹¤.
 	*/
 	virtual bool onEnter() override;
 
 
 	/**
-	* Á¦°Å ½Ã¿¡ ¼öÇàµË´Ï´Ù.
+	* ì œê±° ì‹œì— ìˆ˜í–‰ë©ë‹ˆë‹¤.
 	*/
 	virtual bool onExit() override;
 
 
 	/**
-	* »óÅÂ ID °ªÀ» ¹İÈ¯ÇÕ´Ï´Ù.
+	* ìƒíƒœ ID ê°’ì„ ë°˜í™˜í•©ë‹ˆë‹¤.
 	* @return   std::string
 	*/
 	virtual std::string getStateId() const override

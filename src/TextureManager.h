@@ -14,32 +14,55 @@
 #ifndef TEXTUREMANAGER_H
 #define TEXTUREMANAGER_H
 
-#define WIN32_LEAN_AND_MEAN
-
 #include <map>
 #include <string>
-#include <Windows.h>
 #include "Constants.h"
 #include "NonCopyable.h"
+#include "platform/WinTypes.h"
+#include "Matrix.h"
 
 //class Texture;
 
-using TransformData = XFORM;
+// TransformData는 Matrix.h에서 플랫폼별로 정의된다.
 using Color = COLORREF;
+
+#ifdef RS_WINDOWS
 
 /**
  * @struct TextureData
- * @brief 
- * 
+ * @brief
+ *
  */
 struct TextureData
 {
-	int width;			/** �� */
-	int height;			/** ���� */
-	HBITMAP texture;	/** �ؽ�ó */
-	TextureData();		
+	int width;			/** 폭 */
+	int height;			/** 높이 */
+	HBITMAP texture;	/** 텍스처 */
+	TextureData();
 	~TextureData();
 };
+
+#else
+
+#include <SDL.h>
+
+/**
+ * @struct TextureData
+ * @brief SDL2 어댑터용 텍스처 데이터.
+ * @details surface는 컬러 키(TransparentBlt 대응) 파생 텍스처 생성을 위해 보관한다.
+ */
+struct TextureData
+{
+	int width;			/** 폭 */
+	int height;			/** 높이 */
+	SDL_Texture* texture;	/** 텍스처 (per-pixel alpha) */
+	SDL_Surface* surface;	/** 원본 서피스 */
+	std::map<Uint32, SDL_Texture*> keyedTextures; /** 컬러 키별 파생 텍스처 캐시 */
+	TextureData();
+	~TextureData();
+};
+
+#endif
 
 namespace Initial2D {
 
@@ -92,17 +115,19 @@ namespace Initial2D {
 
 using TextureGroup = std::map<std::string, TextureData*>;
 
+#ifdef RS_WINDOWS
 /**
- * @brief BMP ������ �ҷ��ɴϴ�.
+ * @brief BMP 파일을 불러옵니다.
  * @return TextureData*
  */
 TextureData* LoadBMP(std::string fileName);
 
 /**
-* @brief PNG ������ �ҷ��ɴϴ�.
+* @brief PNG 파일을 불러옵니다.
 * @return TextureData*
 */
 TextureData* LoadPNG(std::string fileName);
+#endif
 
 /**
  * @class TextureManager
@@ -170,7 +195,7 @@ public:
 	void DrawText(std::string id, int x, int y, int width, int height, RECT& rect, TransformData& transform);
 
 	/**
-	 * @brief ��ȿ�� Texture���� üũ�մϴ�.
+	 * @brief 유효한 Texture인지 체크합니다.
 	 * 
 	 * @param id 
 	 * @return true 
@@ -187,7 +212,7 @@ public:
 	void DrawPoint(int x, int y);
 
 	/**
-	 * @brief ��Ʈ�� ������ �����մϴ�.
+	 * @brief 비트맵 색상을 설정합니다.
 	 * 
 	 * @param r 
 	 * @param g 

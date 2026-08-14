@@ -15,14 +15,22 @@
 #include "MenuState.h"
 #include "Encrypt.h"
 
+#ifdef RS_WINDOWS
 #define WIN32_LEAN_AND_MEAN
 
 #include <Windows.h>
 #include <tchar.h>
+#include <atlconv.h>
+#else
+#include <SDL.h>
+#include <filesystem>
+#include <algorithm>
+#include "platform/Utf8.h"
+#include "platform/WinTypes.h"
+#endif
+
 #include <cstdio>
 #include <vector>
-
-#include <atlconv.h>
 
 #include "Font.h"
 
@@ -35,15 +43,17 @@
 #include <codecvt> 
 #include <cassert>
 
+#ifdef RS_WINDOWS
+
 int ShowMessageBox(HWND hWnd, LPCWCHAR text, LPCWCHAR caption, UINT type);
 
 namespace Initial2D {
 	/**
-	 * À©µµ¿ìÁî ÇÃ·§Æû¿¡¼­ ½ºÅ©¸³Æ® ÆÄÀÏÀ» ÀĞ½À´Ï´Ù.
+	 * ìœˆë„ìš°ì¦ˆ í”Œë«í¼ì—ì„œ ìŠ¤í¬ë¦½íŠ¸ íŒŒì¼ì„ ì½ìŠµë‹ˆë‹¤.
 	 */
 	std::vector<TCHAR*> ReadScriptFiles()
 	{
-		// ¿ÍÀÏµåÄ«µå(*) ¸¦ »ç¿ëÇÕ´Ï´Ù.
+		// ì™€ì¼ë“œì¹´ë“œ(*) ë¥¼ ì‚¬ìš©í•©ë‹ˆë‹¤.
 		TCHAR target[] = _T(".\\scripts\\*.lua");
 		WIN32_FIND_DATA FindFileData;
 		HANDLE hFind = INVALID_HANDLE_VALUE;
@@ -69,8 +79,12 @@ namespace Initial2D {
 	}
 }
 
+#endif // RS_WINDOWS
+
 // Lua Global State
 lua_State* g_pLuaState;
+
+#ifdef RS_WINDOWS
 
 // HWND
 extern HWND g_hWnd;
@@ -84,7 +98,7 @@ wchar_t* AllocWideChar(const char* law)
 		return L"";
 	}
 
-	// NULL ¹®ÀÚ¸¦ Æ÷ÇÔÇÏ¿© ¸Ş¸ğ¸®¸¦ ÃÊ±âÈ­ ¾ÊÀ¸¸é ¿À·ù°¡ ³­´Ù.
+	// NULL ë¬¸ìë¥¼ í¬í•¨í•˜ì—¬ ë©”ëª¨ë¦¬ë¥¼ ì´ˆê¸°í™” ì•Šìœ¼ë©´ ì˜¤ë¥˜ê°€ ë‚œë‹¤.
 	LPWSTR lpszWideChar = new WCHAR[length + 1];
 
 	if (lpszWideChar == NULL)
@@ -116,11 +130,6 @@ std::string AllocMBCS(std::wstring str)
 	return raw;
 }
 
-void RemoveWideChar(const wchar_t* law)
-{
-	delete[] law;
-}
-
 /**
 * Show MessageBox
 */
@@ -131,13 +140,38 @@ int ShowMessageBox(HWND hWnd, LPCWCHAR text, LPCWCHAR caption, UINT type)
 	return 0;
 }
 
-static int Lua_MessageBox(lua_State *g_pLuaSt)
+#else // ë¹„-Windows: UTF-8 ìœ í‹¸ë¦¬í‹° ê¸°ë°˜ êµ¬í˜„ (ì¸í„°í˜ì´ìŠ¤ ë™ì¼)
+
+wchar_t* AllocWideChar(const char* law)
+{
+	const std::wstring wide = Initial2D::Platform::Utf8ToWide(law != nullptr ? law : "");
+	wchar_t* buffer = new wchar_t[wide.size() + 1];
+	std::copy(wide.begin(), wide.end(), buffer);
+	buffer[wide.size()] = L'\0';
+	return buffer;
+}
+
+std::string AllocMBCS(std::wstring str)
+{
+	return Initial2D::Platform::WideToUtf8(str);
+}
+
+#endif // RS_WINDOWS
+
+void RemoveWideChar(const wchar_t* law)
+{
+	delete[] law;
+}
+
+// lua_prot.hì˜ ë¹„-static ì„ ì–¸ê³¼ ì¼ì¹˜ì‹œí‚¨ë‹¤ (MSVCëŠ” ë¶ˆì¼ì¹˜ë¥¼ í—ˆìš©í–ˆìœ¼ë‚˜ clangì€ ì˜¤ë¥˜)
+int Lua_MessageBox(lua_State *g_pLuaSt)
 {
 	int n = lua_gettop(g_pLuaSt);
 
 	const char *text = lua_tostring(g_pLuaSt, 1);
 	const char *caption = lua_tostring(g_pLuaSt, 2);
 
+#ifdef RS_WINDOWS
 	WCHAR *wt = AllocWideChar(text);
 	WCHAR *wc = AllocWideChar(caption);
 
@@ -145,6 +179,12 @@ static int Lua_MessageBox(lua_State *g_pLuaSt)
 
 	RemoveWideChar(wt);
 	RemoveWideChar(wc);
+#else
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,
+		caption != nullptr ? caption : "",
+		text != nullptr ? text : "",
+		App::GetInstance().GetWindowHandle());
+#endif
 
 	return 0;
 }
@@ -292,16 +332,21 @@ int Lua_GetFrameCount(lua_State *pL)
 
 int Lua_GameExit(lua_State *pL)
 {
-	PostQuitMessage(0);
+	// Windowsì—ì„œëŠ” PostQuitMessage(0), SDL2ì—ì„œëŠ” SDL_QUIT ì´ë²¤íŠ¸ í‘¸ì‹œì™€ ë™ì¼í•˜ë‹¤.
+	App::GetInstance().Quit();
 	return 0;
 }
 
 int Lua_GetCurrentDirectory(lua_State *pL)
 {
+#ifdef RS_WINDOWS
 	std::string s;
 	s.resize(MAX_CHAR);
 
 	GetCurrentDirectory(MAX_CHAR, &s[0]);
+#else
+	std::string s = std::filesystem::current_path().string();
+#endif
 
 	int n = lua_gettop(pL);
 	int man = 0;
@@ -419,13 +464,13 @@ int Lua_Init()
 		// FontEx
 		Lua_CreateFontExImpl(g_pLuaState);
 
-		// ½ºÅ©¸³Æ® ÆÄÀÏÀ» ÀĞ½À´Ï´Ù (Windows Only)
+		// ìŠ¤í¬ë¦½íŠ¸ íŒŒì¼ì„ ì½ìŠµë‹ˆë‹¤ (Windows Only)
 		//luaL_dostring(g_pLuaState,
 		//	"for dir in io.popen([[dir \"./scripts/\" /r /b]]) :lines() do LoadScript(\"./scripts/\"..dir) end");
 
 		luaL_dostring(g_pLuaState, "LoadScript(\"./scripts/main.lua\")");
 
-		// ½ºÅ©¸³Æ® ÆÄÀÏ ³»¿¡ ¼±¾ğµÈ ÃÊ±âÈ­ ÇÔ¼ö¸¦ È£ÃâÇÕ´Ï´Ù.
+		// ìŠ¤í¬ë¦½íŠ¸ íŒŒì¼ ë‚´ì— ì„ ì–¸ëœ ì´ˆê¸°í™” í•¨ìˆ˜ë¥¼ í˜¸ì¶œí•©ë‹ˆë‹¤.
 		lua_getglobal(g_pLuaState, "Initialize");
 		lua_call(g_pLuaState, 0, 0);
 

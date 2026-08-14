@@ -1,17 +1,22 @@
 #include "Encrypt.h"
 
+#ifdef _WIN32
+
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+
 namespace Initial2D {
 
 	/**
-	* @author ¾îÁø¼®
-	* @brief Æ¯Á¤ Æú´õ¿¡ ÀÖ´Â ¸ğµç ÆÄÀÏÀ» ¹İÈ¯ÇÕ´Ï´Ù.
+	* @author ì–´ì§„ì„
+	* @brief íŠ¹ì • í´ë”ì— ìˆëŠ” ëª¨ë“  íŒŒì¼ì„ ë°˜í™˜í•©ë‹ˆë‹¤.
 	*/
 	void ReadDirectory(std::vector<std::string>& dirs, std::string parent)
 	{
 		WIN32_FIND_DATA findData;
 		HANDLE hFind = FindFirstFile(parent.data(), &findData);
 
-		// ºÎ¸ğ Æú´õ¸¦ ¹İÈ¯ÇÕ´Ï´Ù.
+		// ë¶€ëª¨ í´ë”ë¥¼ ë°˜í™˜í•©ë‹ˆë‹¤.
 		std::string root = GetParentDirectory(parent.c_str());
 
 		while (FindNextFile(hFind, &findData) != 0)
@@ -29,7 +34,7 @@ namespace Initial2D {
 				subDirectories += filename;
 				subDirectories += "\\*.*";
 
-				// Àç±ÍÀû Å½»ö
+				// ì¬ê·€ì  íƒìƒ‰
 				ReadDirectory(dirs, subDirectories);
 			}
 			else {
@@ -44,3 +49,34 @@ namespace Initial2D {
 	}
 
 }
+
+#else // ë¹„-Windows: std::filesystem ê¸°ë°˜ êµ¬í˜„ (ë™ì‘ ë™ì¼ â€” í•˜ìœ„ ë””ë ‰í„°ë¦¬ ì¬ê·€ íƒìƒ‰)
+
+#include <filesystem>
+#include "platform/Utf8.h"
+
+namespace Initial2D {
+
+	void ReadDirectory(std::vector<std::string>& dirs, std::string parent)
+	{
+		// Win32 í˜¸ì¶œ ê·œì•½ì˜ ".\\res\\*.*" í˜•íƒœ íŒ¨í„´ì—ì„œ ë””ë ‰í„°ë¦¬ ë¶€ë¶„ë§Œ ì·¨í•œë‹¤.
+		std::string root = Platform::NormalizePath(parent);
+		const std::size_t wildcard = root.find('*');
+		if (wildcard != std::string::npos) {
+			root = root.substr(0, wildcard);
+		}
+		if (root.empty()) {
+			root = ".";
+		}
+
+		std::error_code ec;
+		for (std::filesystem::recursive_directory_iterator it(root, ec), end; it != end && !ec; it.increment(ec)) {
+			if (it->is_regular_file(ec)) {
+				dirs.push_back(it->path().string());
+			}
+		}
+	}
+
+}
+
+#endif // _WIN32

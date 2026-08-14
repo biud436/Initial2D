@@ -1,10 +1,13 @@
 #ifndef _UTILITY_H_
 #define _UTILITY_H_
 
+#include <string>
+
+#ifdef _WIN32
+
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <Shlwapi.h>
-#include <string>
 #include <tchar.h>
 
 #ifdef _UNICODE
@@ -16,20 +19,29 @@ using _TString = std::string;
 inline _TString GetWorkingDirectory()
 {
 	HMODULE hModule = GetModuleHandle(nullptr);
-	if (!hModule) 
+	if (!hModule)
 	{
 		return "";
 	}
 
 	TCHAR path[256];
-	// ÇÁ·Î±×·¥ ½ÇÇà °æ·Î È¹µæÇÑ´Ù.
+	// í”„ë¡œê·¸ë¨ ì‹¤í–‰ ê²½ë¡œ íšë“í•œë‹¤.
 	GetModuleFileName(hModule, path, sizeof(path));
-	// ½ÇÇà °æ·Î¿¡¼­ ÇÁ·Î±×·¥ ¸íÀ» Á¦¿ÜÇÑ´Ù.
+	// ì‹¤í–‰ ê²½ë¡œì—ì„œ í”„ë¡œê·¸ë¨ ëª…ì„ ì œì™¸í•œë‹¤.
 	PathRemoveFileSpec(path);
 	_tcscat_s(path, "");
-	
+
 	return path;
 }
+
+#else
+
+using _TString = std::string;
+
+// ë¹„-Windowsì—ì„œì˜ ì‹¤í–‰ ê²½ë¡œ íšë“ì€ platform/SystemPath.hì˜
+// Initial2D::Platform::GetExecutableDirectory()ë¥¼ ì‚¬ìš©í•œë‹¤.
+
+#endif // _WIN32
 
 class Utility
 {

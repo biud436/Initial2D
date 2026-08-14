@@ -55,11 +55,14 @@ bool Font::ParseFont(std::string fntName)
 {
 
 	TiXmlDocument xmlDoc;
-	
+
 	if (!xmlDoc.LoadFile(fntName))
 	{
 		return false;
 	}
+
+	// ì¬í˜¸ì¶œ(í•« ë¦¬ë¡œë“œ ë“±) ì‹œ ì´ì „ íŒŒì‹± ê²°ê³¼ê°€ ëˆ„ì ë˜ì§€ ì•Šë„ë¡ ë¹„ìš´ë‹¤
+	m_textureNames.clear();
 
 	TiXmlElement *pRoot = xmlDoc.RootElement();
 	TiXmlElement *pCommon = nullptr;
@@ -163,7 +166,8 @@ bool Font::load()
 
 	for (TextureNames::iterator iter = m_textureNames.begin(); iter != m_textureNames.end(); iter++)
 	{
-		std::string path = resourcePath.append(iter[0]);
+		// appendëŠ” resourcePath ìì²´ë¥¼ ì˜¤ì—¼ì‹œì¼œ ë‘ ë²ˆì§¸ í•­ëª©ë¶€í„° ê²½ë¡œê°€ ê¹¨ì§„ë‹¤
+		std::string path = resourcePath + iter[0];
 		std::string id = textureId + std::to_string(i);
 		m_textureIds[i++] = id;
 		m_charsetDesc.IsTextureReady = tm.Load(path, id, NULL);
@@ -211,7 +215,7 @@ int Font::drawText(int x, int y, std::wstring text)
 
 	TextureManager &tm = App::GetInstance().GetTextureManager();
 
-	// °ËÁ¤»öÀ» Åõ¸í»öÀ¸·Î ¼³Á¤ÇÑ´Ù.
+	// ê²€ì •ìƒ‰ì„ íˆ¬ëª…ìƒ‰ìœ¼ë¡œ ì„¤ì •í•œë‹¤.
 	COLORREF tempColor = tm.m_crTransparent;
 	tm.m_crTransparent = RGB(0, 0, 0);
 	
@@ -279,10 +283,10 @@ int Font::drawText(int x, int y, std::wstring text)
 		}
 	}
 
-	// Åõ¸í»ö ¼³Á¤À» ÀÌÀüÀ¸·Î µÇµ¹¸°´Ù.
+	// íˆ¬ëª…ìƒ‰ ì„¤ì •ì„ ì´ì „ìœ¼ë¡œ ë˜ëŒë¦°ë‹¤.
 	tm.m_crTransparent = tempColor;
 
-	// ÃÖ´ë ÅØ½ºÆ® ÆøÀ» ¹İÈ¯ÇÕ´Ï´Ù.
+	// ìµœëŒ€ í…ìŠ¤íŠ¸ í­ì„ ë°˜í™˜í•©ë‹ˆë‹¤.
 	std::vector<int>::iterator iter = std::max_element(lineWidth.begin(), lineWidth.end());
 
 	return *iter;
@@ -293,7 +297,7 @@ int Font::getTextWidth(int x, int y, std::wstring text)
 {
 	int width = 0;
 
-	// Draw CallÀ» ÁÙÀÌ±â À§ÇØ, isUsedTextWidth ÇÃ·¡±×¸¦ ¼³Á¤ÇÑ´Ù.
+	// Draw Callì„ ì¤„ì´ê¸° ìœ„í•´, isUsedTextWidth í”Œë˜ê·¸ë¥¼ ì„¤ì •í•œë‹¤.
 	isUsedTextWidth = true;
 	width = drawText(x, y, text);
 	isUsedTextWidth = false;

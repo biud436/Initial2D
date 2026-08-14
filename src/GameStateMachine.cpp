@@ -35,7 +35,7 @@ void GameStateMachine::changeState(GameState* pNewState)
 {
 	if (!m_gameStates.empty())
 	{
-		// °°Àº ¾ÀÀ¸·Î´Â ÀÌµ¿ÇÒ ¼ö ¾ø´Ù.
+		// ê°™ì€ ì”¬ìœ¼ë¡œëŠ” ì´ë™í•  ìˆ˜ ì—†ë‹¤.
 		if (m_gameStates.back()->getStateId() == pNewState->getStateId())
 		{
 			return;

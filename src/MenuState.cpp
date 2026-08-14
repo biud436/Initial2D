@@ -27,8 +27,8 @@ const std::string MenuState::m_strMenuId = "MENU";
 
 bool MenuState::onEnter()
 {
-	//AntiAliasingFont* pFont = new AntiAliasingFont(L"³ª´®°íµñ", 36);
-	//pFont->setText(L"¾È³çÇÏ¼¼¿ä?")
+	//AntiAliasingFont* pFont = new AntiAliasingFont(L"ë‚˜ëˆ”ê³ ë”•", 36);
+	//pFont->setText(L"ì•ˆë…•í•˜ì„¸ìš”?")
 	//	.setPosition(100, 100)
 	//	.setTextColor(255, 0, 0);
 
@@ -42,7 +42,7 @@ bool MenuState::onEnter()
 
 bool MenuState::onExit()
 {
-	// °ÔÀÓ ¿ÀºêÁ§Æ® Á¦°Å
+	// ê²Œì„ ì˜¤ë¸Œì íŠ¸ ì œê±°
 	for (auto i : m_gameObjects)
 	{
 		delete i;

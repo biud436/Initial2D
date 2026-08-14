@@ -1,71 +1,59 @@
-local Font = require("scripts/Font")
-local Image = require("scripts/image")
-local Tilemap = require("scripts/tilemap")
+-- Initial2D 미니 게임 허브
+--
+-- 첫 스테이지는 미니 게임 목록(scripts/scenes/menu.lua)이며,
+-- 항목을 누르면 해당 미니 게임(scripts/games/*.lua)으로 전환된다.
+--
+-- 씬 계약: init() / update(elapsedMs) / render() / destroy()
+-- 씬 전환: 씬 안에서 SwitchScene("이름") 호출 — 실제 전환은 다음 update 직전에 수행
+-- INITIAL2D_AUTOPLAY 환경 변수를 설정하면 자동 시연 모드로 동작한다 (테스트/CI용).
+
+require("scripts/scenes/menu")
+require("scripts/games/flappy")
+
+local scenes = {
+	menu = MenuScene,
+	flappy = FlappyScene,
+}
+
+local current = nil
+local pending = nil
+
+-- 전역: 씬에서 호출하는 씬 전환 요청
+function SwitchScene(name)
+	if scenes[name] ~= nil then
+		pending = name
+	end
+end
 
 function Initialize()
-	
-	-- -- Create background image
-	background = Image("./resources/background_768x896.png", 0, 0, 768, 896, 1, "Background")
-
-	children = {}
+	AUTOPLAY = (os.getenv ~= nil) and (os.getenv("INITIAL2D_AUTOPLAY") ~= nil)
 	math.randomseed(os.time())
-	
-	for i=1, 3 do
-		children[i] = Image("./resources/object_52x271.png", 0, 0, 52, 271, 1, "pipe")
-		children[i].setPosition(math.random(1,WindowHeight()), WindowHeight() / 2.0)
-		children[i].setAngle(180.0)
-	end
 
-	player = Image("./resources/bird_276x64.png", 0, 0, 276 / 3.0, 64, 3, "Player")
-	player.setPosition(0, WindowHeight() / 2 - player.getHeight() / 2)
-	player.setLoop(true)
-	player.setFrames(0, 3)
-	player.setAnimComplete(false)
-	player.setFrameDelay(15.0)
+	-- 폰트·BGM은 씬 공용 자원이라 허브에서 한 번만 준비한다
+	FontReady = PreparaFont("./resources/fonts/hangul.fnt")
+	Audio.PlayMusic("./resources/audio/bless.ogg", "bgm", -1)
+	Audio.SetVolume(96)
 
-	t = 0.0
-	player_power = 2.5
-
+	current = scenes.menu
+	current.init()
 end
 
 function Update(elapsed)
-	t = elapsed
-
-	background.update(t)		
-
-	if Input.IsMousePress(0) then
-		player_power = -2.5
-	else
-		player_power = 2.5
+	if pending ~= nil then
+		current.destroy()
+		current = scenes[pending]
+		pending = nil
+		current.init()
 	end
 
-	px, py = player.getPosition()
-	player.setPosition(px, py + t * player_power)
-	player.update(t)		
-
-	for i=1, 3 do
-		x, y = children[i].getPosition()
-		children[i].setPosition(x + t, y)	
-		children[i].update(t)			
-	end	
-
+	current.update(elapsed)
 end
 
 function Render()
-	background.draw()
-
-	for i=1, 3 do	
-		children[i].draw()
-	end
-
-	player.draw()
+	current.render()
 end
 
 function Destroy()
-	background.dispose()
-	for i=1, 3 do
-		children[i].dispose()
-	end
-
-	player.dispose()
+	current.destroy()
+	Audio.ReleaseMusic("bgm")
 end

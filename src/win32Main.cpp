@@ -39,6 +39,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 #else
 
+#ifdef _WIN32
+// TEST_MODE 구성은 Windows에서도 이 분기를 컴파일한다.
+// 기존에는 Thread.h가 Windows.h를 전이 포함했으나 Thread가 std로 공통화되며 직접 include가 필요해졌다.
+#include <Windows.h>
+#endif
+
 #include <iostream>
 #include <string>
 #include "Thread.h"
@@ -137,13 +143,13 @@ void test_run_file_system()
 {
 	Initial2D::File file;
 	file.Open("my_test_file.txt", Initial2D::TextWrite);
-	file.write(std::string("���� �̰�"));
+	file.write(std::string("뭐지 이건"));
 	file.newLine();
-	file.write(std::string("���� �̰�"));
+	file.write(std::string("뭐지 이건"));
 	file.newLine();
-	file.write(std::string("���� �̰�"));
+	file.write(std::string("뭐지 이건"));
 	file.newLine();
-	file.write(std::string("���� �̰�"));
+	file.write(std::string("뭐지 이건"));
 	file.newLine();
 	file.close();
 }

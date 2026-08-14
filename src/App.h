@@ -6,35 +6,42 @@
  * Contact: biud436@gmail.com
  *
  * @brief 
- * ÄÚµå°¡ »ó´çÈ÷ °³ÆÇÀÌ´Ù.
+ * ì½”ë“œê°€ ìƒë‹¹íˆ ê°œíŒì´ë‹¤.
  * @note
 */
 
 #ifndef APP_H
 #define APP_H
 
-#include <Windows.h>
-#include <vector>
 #include "Constants.h"
 
+#ifdef RS_WINDOWS
+#include <Windows.h>
+#include <tchar.h>
+#else
+#include <SDL.h>
+#include "platform/WinTypes.h"
+#endif
+
+#include <vector>
 #include <iostream>
 #include <string>
 #include <memory>
-#include <tchar.h>
 #include <sstream>
 #include "NonCopyable.h"
 #include "Window.h"
 
-
+#ifdef RS_WINDOWS
 #ifdef _UNICODE
 #define _tsprintf swprintf;
 #else
 #define _tsprintf sprintf;
 #endif
+#endif
 
 /** 
  * @def LOG_D(MSG)
- * µğ¹ö±× ÄÜ¼Ö¿¡ µğ¹ö±× ¸Ş½ÃÁö #MSG¸¦ Ãâ·ÂÇÕ´Ï´Ù.
+ * ë””ë²„ê·¸ ì½˜ì†”ì— ë””ë²„ê·¸ ë©”ì‹œì§€ #MSGë¥¼ ì¶œë ¥í•©ë‹ˆë‹¤.
  */
 #ifndef NDEBUG
 #define LOG_D(MSG) \
@@ -45,13 +52,13 @@
 
 /**
  * @def InputManager 
- * Input °´Ã¼ÀÇ ÀÎ½ºÅÏ½º¸¦ ¹Ù·Î È¹µæÇÕ´Ï´Ù.
+ * Input ê°ì²´ì˜ ì¸ìŠ¤í„´ìŠ¤ë¥¼ ë°”ë¡œ íšë“í•©ë‹ˆë‹¤.
  */
 #define InputManager App::GetInstance().GetInput()
 
  /**
  * @def TheTextureManager
- * TextureManagerÀÇ ÀÎ½ºÅÏ½º¸¦ ¹Ù·Î È¹µæÇÕ´Ï´Ù.
+ * TextureManagerì˜ ì¸ìŠ¤í„´ìŠ¤ë¥¼ ë°”ë¡œ íšë“í•©ë‹ˆë‹¤.
  */
 #define TheTextureManager App::GetInstance().GetTextureManager()
 
@@ -70,14 +77,15 @@ using GameFont = std::unique_ptr<Font>;
 /**
  * @class App
  * @author biud436 (biud436@gmail.com)
- * @brief °ÔÀÓ ¸ğµâ
+ * @brief ê²Œì„ ëª¨ë“ˆ
  * @details
- »ó¼Ó ½Ã Initialize, ObjectUpdate, Render, Destroy´Â ¹İµå½Ã ¿À¹ö¶óÀÌµåÇØ¾ß ÇÕ´Ï´Ù.
+ ìƒì† ì‹œ Initialize, ObjectUpdate, Render, DestroyëŠ” ë°˜ë“œì‹œ ì˜¤ë²„ë¼ì´ë“œí•´ì•¼ í•©ë‹ˆë‹¤.
  */
 class App
 {
 public:
 
+#ifdef RS_WINDOWS
 	struct DeviceContext {
 
 		HDC mainContext;
@@ -89,6 +97,15 @@ public:
 		HBITMAP prevSurface;
 
 	} m_context;
+#else
+	/** SDL2 ì–´ëŒ‘í„°ì˜ ë””ë°”ì´ìŠ¤ ì»¨í…ìŠ¤íŠ¸ â€” GDI DeviceContextì— ëŒ€ì‘ */
+	struct DeviceContext {
+
+		SDL_Window*   window;
+		SDL_Renderer* renderer;
+
+	} m_context;
+#endif
 	
 	static App* s_pInstance;
 	static App& GetInstance();
@@ -97,7 +114,11 @@ public:
 	
 	int Run(int nCmdShow);
 
+#ifdef RS_WINDOWS
 	LRESULT HandleEvent(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+#else
+	void HandleEvent(const SDL_Event& event);
+#endif
 
 	const char* GetWindowName() const;
 	const char* GetClassName() const;
@@ -109,7 +130,9 @@ public:
 	GameStateMachine& GetGameStateMachine();
 	Input& GetInput();
 
+#ifdef RS_WINDOWS
 	void Update();
+#endif
 	void UpdateInput();
 	virtual void ObjectUpdate(double elapsed);
 	double UpdateTime();
@@ -133,7 +156,11 @@ public:
 
 	void SetAppIcon(std::string filename);
 
+#ifdef RS_WINDOWS
 	HWND GetWindowHandle() const { return m_hWnd;  }
+#else
+	SDL_Window* GetWindowHandle() const { return m_context.window; }
+#endif
 
 protected:
 
@@ -149,24 +176,26 @@ protected:
 
 	TextureManager*   m_pTextureManager;
 
-	HWND              m_hWnd;	
+#ifdef RS_WINDOWS
+	HWND              m_hWnd;
 
 	LARGE_INTEGER	  m_nTimeFreq;
 	LARGE_INTEGER	  m_nTimeStart;
 	LARGE_INTEGER	  m_nTimeEnd;
+#endif
 	double			  m_frameTime;
 	int				  m_nFrameCount;
 
-	// ÀÔ·Â
+	// ì…ë ¥
 	Input*            m_pInput;
 
-	// Àå¸é °ü¸®
+	// ì¥ë©´ ê´€ë¦¬
 	GameStateMachine* m_pGameStateMachine;
 
-	// Ã¢ Æ÷Ä¿½º
+	// ì°½ í¬ì»¤ìŠ¤
 	bool              m_bFocus;
 
-	// ÆùÆ® ¾ÆÆ²¶ó½º
+	// í°íŠ¸ ì•„í‹€ë¼ìŠ¤
 	GameFont          m_pFont;
 
 private:

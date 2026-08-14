@@ -44,7 +44,7 @@ namespace Initial2D {
 	{
 		std::string filemode = "rb";
 
-		// ÆÄÀÏ ¸ðµå¸¦ ¼³Á¤ÇÕ´Ï´Ù.
+		// íŒŒì¼ ëª¨ë“œë¥¼ ì„¤ì •í•©ë‹ˆë‹¤.
 		switch (mode) {
 		case FileMode::BinaryWrite:
 			filemode = "wb";
@@ -60,7 +60,7 @@ namespace Initial2D {
 			break;
 		}
 
-		// ÆÄÀÏÀ» ¿ÀÇÂÇÕ´Ï´Ù.
+		// íŒŒì¼ì„ ì˜¤í”ˆí•©ë‹ˆë‹¤.
 		m_pFilePointer = fs->Open(filename.c_str(), filemode.c_str());
 		m_bIsOpen = true;
 	}

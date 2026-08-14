@@ -1,0 +1,54 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'com.biud436.initial2d'
+    compileSdk 34
+
+    // 16KB 페이지 크기 호환: r27부터 ANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES로
+    // 모든 네이티브 라이브러리를 16KB 정렬로 링크할 수 있다 (r28+는 기본값).
+    ndkVersion '27.1.12297006'
+
+    defaultConfig {
+        applicationId 'com.biud436.initial2d'
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+
+        externalNativeBuild {
+            cmake {
+                // c++_static: C++ STL을 쓰는 것은 libmain.so 하나뿐이라 정적 링크가 안전하며,
+                // 16KB 정렬이 보장되지 않는 프리빌트 libc++_shared.so를 APK에서 제거한다.
+                // (C++을 쓰는 공유 라이브러리가 늘어나면 c++_shared로 되돌릴 것)
+                arguments '-DANDROID_STL=c++_static',
+                          '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
+            }
+        }
+        ndk {
+            abiFilters 'arm64-v8a', 'x86_64'
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path 'jni/CMakeLists.txt'
+            version '3.22.1'
+        }
+    }
+
+    sourceSets {
+        main {
+            // SDLActivity 자바 소스는 SDL2 소스 트리에서 가져온다.
+            // (android/download_sdl.sh 실행 후 존재)
+            java.srcDirs += ['jni/SDL2/android-project/app/src/main/java']
+            // 게임 에셋은 android/prepare_assets.sh 로 스테이징한다.
+            assets.srcDirs = ['src/main/assets']
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+}

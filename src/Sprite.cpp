@@ -101,7 +101,7 @@ void Sprite::update(float elapsed)
 	{
 		m_fAnimationTime += elapsed;
 
-		// ÇÁ·¹ÀÓ µô·¹ÀÌ Ã³¸® ÀÌÈÄ ´ÙÀ½ ÇÁ·¹ÀÓÀ¸·Î ÀüÈ¯
+		// í”„ë ˆì„ ë”œë ˆì´ ì²˜ë¦¬ ì´í›„ ë‹¤ìŒ í”„ë ˆì„ìœ¼ë¡œ ì „í™˜
 		if (m_fAnimationTime > delay)
 		{
 			m_fAnimationTime -= delay;
@@ -128,7 +128,7 @@ void Sprite::update(float elapsed)
 void Sprite::draw(void)
 {
 
-	// ÃÊ±âÈ­ ¿©ºÎ È®ÀÎ
+	// ì´ˆê¸°í™” ì—¬ë¶€ í™•ì¸
 	if (m_bInitialized == false)
 		return;
 
@@ -302,7 +302,7 @@ void Sprite::setCurrentFrame(int currentFrame)
 
 void Sprite::setRect()
 {
-	// ¹Ù²Ù·Á¸é »ó¼Ó ¹Ş¾Æ¼­ º¯°æ...
+	// ë°”ê¾¸ë ¤ë©´ ìƒì† ë°›ì•„ì„œ ë³€ê²½...
 	m_spriteData.rect.left = (m_nCurrentFrame % SPRITE_SHEET_COLS) * m_spriteData.width;
 	m_spriteData.rect.right = m_spriteData.rect.left + m_spriteData.width;
 	m_spriteData.rect.top = (m_nCurrentFrame / SPRITE_SHEET_ROWS) * m_spriteData.height;
@@ -334,7 +334,7 @@ void Sprite::setAnimComplete(bool isComplete)
 
 void Sprite::updateTransform()
 {
-	// È¸Àü, ÀÌµ¿, ½ºÄÉÀÏÀÌ ¸ğµÎ Æ÷ÇÔµÈ Çà·Ä
+	// íšŒì „, ì´ë™, ìŠ¤ì¼€ì¼ì´ ëª¨ë‘ í¬í•¨ëœ í–‰ë ¬
 	m_transform.eM11 = cos(m_spriteData.rotation) * m_spriteData.scale;
 	m_transform.eM12 = sin(m_spriteData.rotation) * m_spriteData.scale;
 	m_transform.eM21 = -sin(m_spriteData.rotation) * m_spriteData.scale;
