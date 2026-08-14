@@ -1,7 +1,7 @@
 # Initial2D — Android 포트 (SDL2)
 
 macOS 포팅에서 만든 SDL2 어댑터(`src/platform/sdl2/`)를 그대로 재사용하는 Android 빌드입니다.
-실기(Galaxy S24 / Android 16)에서 게임 구동·터치 입력·오디오 재생이 확인되었습니다.
+실기(Galaxy S24 / Android 16)에서 게임 구동, 터치 입력, 오디오 재생이 확인되었습니다.
 남은 포팅 작업은 `docs/porting/android-plan.md`를 참조하십시오.
 
 ## 요구 사항

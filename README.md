@@ -423,7 +423,7 @@ python3 tests/run_engine_tests.py
 
 ## Android (SDL2 백엔드, Gradle + NDK)
 
-Android 포팅은 `feature/android-port` 브랜치에서 진행 중이며, 실기(Galaxy S24 / Android 16)에서 게임 구동·터치 입력·오디오 재생이 확인되었습니다. 해당 브랜치의 `android/` 디렉터리에 Gradle 프로젝트가 있습니다.
+Android 포팅은 `feature/android-port` 브랜치에서 진행 중이며, 실기(Galaxy S24 / Android 16)에서 게임 구동, 터치 입력, 오디오 재생이 확인되었습니다. 해당 브랜치의 `android/` 디렉터리에 Gradle 프로젝트가 있습니다.
 
 ```bash
 # 1. SDL2/SDL2_image/SDL2_mixer 소스 다운로드 (최초 1회)
@@ -445,7 +445,7 @@ gradle wrapper --gradle-version 8.6   # 최초 1회
 
 ## 핫 리로드 (HMR) — Lua 스크립트 즉시 반영
 
-APK 재빌드·재설치 없이, 수정한 `scripts/*.lua`를 실행 중인 게임에 밀어 넣어 바로 반영합니다.
+APK를 다시 빌드하거나 설치하지 않고, 수정한 `scripts/*.lua`를 실행 중인 게임에 밀어 넣어 바로 반영합니다.
 HMR 서버는 게임에 내장되어 있습니다 — **Android에서는 항상 켜져 있고**(루프백 127.0.0.1:5959),
 데스크톱(macOS)에서는 `INITIAL2D_HMR=1` 환경변수로 켭니다.
 
@@ -463,7 +463,7 @@ python3 tools/hmr_push.py          # 다른 터미널에서 push
 push가 도착하면 게임이 Lua VM을 재시작하고 `main.lua`부터 다시 로드합니다
 (**풀 리스타트** — 점수 등 게임 진행 상태는 초기화됩니다).
 동작 로그는 `adb logcat -s SDL/APP`에서 `HotReload:` 태그로 확인할 수 있습니다.
-프로토콜·설계 상세는 `docs/porting/android-hmr-plan.md`를 참조하십시오.
+프로토콜과 설계 상세는 `docs/porting/android-hmr-plan.md`를 참조하십시오.
 
 
 # 코딩 스타일
