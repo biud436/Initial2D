@@ -22,6 +22,14 @@ namespace Platform {
 
 	bool PosixProcess::create(const std::string& command)
 	{
+#ifdef __ANDROID__
+		// Android에서는 외부 프로세스 실행을 지원하지 않는다 (no-op 스텁).
+		// posix_spawn은 bionic API 28+ 전용이며, 앱 샌드박스에서 셸 실행은 의미가 없다.
+		// 상세: docs/porting/android-plan.md Phase A4
+		(void)command;
+		m_lastError = "process execution is not supported on Android";
+		return false;
+#else
 		const char* argv[] = { "/bin/sh", "-c", command.c_str(), nullptr };
 
 		pid_t pid = -1;
@@ -35,6 +43,7 @@ namespace Platform {
 
 		m_pid = pid;
 		return true;
+#endif
 	}
 
 	std::string PosixProcess::catchError()

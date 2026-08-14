@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 카메라 컷아웃(펀치홀) 영역까지 게임 서피스를 확장한다.
+         확장하지 않으면 가로 모드에서 컷아웃 폭만큼 검은 띠가 남는다. -->
+    <style name="Initial2DTheme" parent="@android:style/Theme.NoTitleBar.Fullscreen">
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+</resources>

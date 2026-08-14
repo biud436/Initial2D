@@ -37,17 +37,46 @@ int App::Run(int nCmdShow)
 		return -1;
 	}
 
+#ifdef __ANDROID__
+	// SDLActivity는 창의 가로/세로 비율만 보고 화면 방향을 강제하므로(768x896 → 세로)
+	// 매니페스트의 landscape 설정이 무시된다. 힌트로 가로 모드를 명시한다.
+	SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+#endif
+
+	Uint32 windowFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI;
+#ifdef __ANDROID__
+	// FULLSCREEN이어야 SDLActivity가 몰입 모드로 전환해 상태바/내비바를 숨긴다.
+	windowFlags |= SDL_WINDOW_FULLSCREEN;
+#endif
+
 	m_context.window = SDL_CreateWindow(
 		GetWindowName(),
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 		GetWindowWidth(), GetWindowHeight(),
-		SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
+		windowFlags);
 
 	if (m_context.window == nullptr) {
 		std::fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());
 		SDL_Quit();
 		return -1;
 	}
+
+#ifdef __ANDROID__
+	// 풀 화면: 논리 해상도의 가로를 실제 화면 비율에 맞춰 확장한다 (세로는 기존 값 고정).
+	// 게임 씬(scripts/*.lua)은 WindowWidth/Height 기준으로 배치되므로
+	// 레터박스 없이 화면을 가득 채우고 게임 오브젝트 크기는 유지된다.
+	{
+		int dw = 0, dh = 0;
+		SDL_GetWindowSize(m_context.window, &dw, &dh);
+		if (dw < dh) {
+			// 가로 모드 강제 직후 회전이 끝나기 전이면 세로 크기가 올 수 있다.
+			const int t = dw; dw = dh; dh = t;
+		}
+		if (dw > 0 && dh > 0) {
+			m_nWindowWidth = (m_nWindowHeight * dw) / dh;
+		}
+	}
+#endif
 
 	// PRESENTVSYNC: 디스플레이 주사율에 맞춰 Present를 블로킹시켜 프레임 간격을 고정한다.
 	// 이것이 없으면 루프가 0ms/13ms 사이를 널뛰며(실측 표준편차 7.9ms) 고정 16ms 스텝
@@ -128,7 +157,10 @@ int App::Run(int nCmdShow)
 		while (lag >= lengthOfFrame)
 		{
 			UpdateInput();
-			ObjectUpdate(elapsedTime.count());
+			// 고정 스텝에는 고정 delta를 전달한다. 프레임 elapsed를 그대로 넘기면
+			// 120Hz 디스플레이(모바일 등)에서 elapsed≈8ms가 60Hz 게이트와 결합해
+			// 게임이 절반 속도로 진행된다. 60Hz에서는 elapsed≈16ms라 기존과 동일.
+			ObjectUpdate(lengthOfFrame);
 			lag -= lengthOfFrame;
 
 			tickCount++;
@@ -245,15 +277,23 @@ void App::HandleEvent(const SDL_Event& event)
 
 void App::RenderClear()
 {
+	// 레터박스 여백은 검게 두고, 게임 영역(논리 좌표)만
 	// GDI 백버퍼의 창 배경(WHITE_BRUSH)에 맞춰 흰색으로 지운다.
-	SDL_SetRenderDrawColor(m_context.renderer, 255, 255, 255, 255);
+	// 데스크톱처럼 창 크기 == 논리 크기이면 화면 전체가 흰색이라 기존과 동일하다.
+	SDL_SetRenderDrawColor(m_context.renderer, 0, 0, 0, 255);
 	SDL_RenderClear(m_context.renderer);
+
+	SDL_SetRenderDrawColor(m_context.renderer, 255, 255, 255, 255);
+	SDL_Rect gameArea = { 0, 0, GetWindowWidth(), GetWindowHeight() };
+	SDL_RenderFillRect(m_context.renderer, &gameArea);
 }
 
 void App::RenderTransform()
 {
-	// SetMapMode(MM_ANISOTROPIC) + SetWindowExtEx/SetViewportExtEx 대응
-	SDL_RenderSetLogicalSize(m_context.renderer, WINDOW_WIDTH, WINDOW_HEIGHT);
+	// SetMapMode(MM_ANISOTROPIC) + SetWindowExtEx/SetViewportExtEx 대응.
+	// 데스크톱에서는 상수와 동일하지만, Android에서는 화면 비율에 맞춰
+	// 확장된 논리 해상도를 써야 하므로 getter를 사용한다.
+	SDL_RenderSetLogicalSize(m_context.renderer, GetWindowWidth(), GetWindowHeight());
 }
 
 void App::RenderPresent()

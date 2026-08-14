@@ -1,0 +1,18 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // 8.5.1 미만은 APK 패키징 시 비압축 .so를 4KB로만 zip 정렬하므로
+        // Android 16의 16KB 페이지 크기 호환성 검사를 통과하지 못한다.
+        classpath 'com.android.tools.build:gradle:8.7.3'
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}

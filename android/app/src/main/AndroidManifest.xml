@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- allowNativeHeapPointerTagging=false:
+         엔진의 Lua 바인딩은 C++ 포인터를 lua_Number(double)로 왕복시키는데,
+         Android의 힙 포인터 태깅(상위 바이트 0xb4..)이 켜져 있으면 주소가
+         double의 정수 정밀도(53비트)를 넘어 하위 비트가 유실되어 SIGSEGV가 난다.
+         태깅을 끄면 힙 주소가 53비트 안에 들어와 기존 바인딩이 무수정으로 동작한다. -->
+    <application
+        android:label="@string/app_name"
+        android:allowBackup="true"
+        android:allowNativeHeapPointerTagging="false"
+        android:hardwareAccelerated="true">
+
+        <activity
+            android:name=".Initial2DActivity"
+            android:exported="true"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|density|uiMode"
+            android:screenOrientation="landscape"
+            android:theme="@style/Initial2DTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
