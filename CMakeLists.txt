@@ -134,6 +134,8 @@ if(NOT WIN32 AND SDL2_FOUND AND SDL2_IMAGE_LIBRARY AND SDL2_MIXER_LIBRARY)
     ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/sdl2/ExperimentalFontStub.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/sdl2/sdl2Main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/Utf8.cpp
+    # 개발용 Lua 핫 리로드 (INITIAL2D_HMR=1 옵트인)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/HotReloadServer.cpp
   )
   target_include_directories(Initial2D PRIVATE ${SDL2_IMAGE_INCLUDE_DIR})
   target_link_libraries(Initial2D PRIVATE initial2d_core vendored_tinyxml ${SDL2_IMAGE_LIBRARY})
