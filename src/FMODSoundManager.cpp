@@ -16,7 +16,7 @@ FMODSoundManager::FMODSoundManager() :
 	m_nextMusicID(""),
 	m_nextMusicLoop(-1)
 {
-	// FMOD ÃÊ±âÈ­
+	// FMOD ì´ˆê¸°í™”
 	FMOD_RESULT result;
 	unsigned int version;
 	void* extradriverdata = 0;
@@ -24,7 +24,7 @@ FMODSoundManager::FMODSoundManager() :
 	result = FMOD::System_Create(&m_pSystem);
 	if (result != FMOD_OK) 
 	{
-		throw new std::exception("FMOD System ÃÊ±âÈ­ ½ÇÆÐ");
+		throw new std::exception("FMOD System ì´ˆê¸°í™” ì‹¤íŒ¨");
 	}
 
 	result = m_pSystem->getVersion(&version);
@@ -114,7 +114,7 @@ void FMODSoundManager::playMusic(std::string id, int loop)
 {
 	FMOD::Channel* channel = 0;
 
-	// À½¾ÇÀÌ Àç»ý ÁßÀÌ°í, Àç»ýÇÏ·Á´Â À½¾ÇÀÌ ÇöÀç À½¾Ç°ú ´Ù¸£¸é
+	// ìŒì•…ì´ ìž¬ìƒ ì¤‘ì´ê³ , ìž¬ìƒí•˜ë ¤ëŠ” ìŒì•…ì´ í˜„ìž¬ ìŒì•…ê³¼ ë‹¤ë¥´ë©´
 	if (isPlaying() && getCurrentMusicID() != id)
 	{
 		m_previousMusicID = getCurrentMusicID();
@@ -128,7 +128,7 @@ void FMODSoundManager::playMusic(std::string id, int loop)
 		return;
 	}
 
-	// À½¾ÇÀÌ Àç»ý ÁßÀÌ°í, Àç»ýÇÏ·Á´Â À½¾ÇÀÌ ÇöÀç À½¾Ç°ú °°À¸¸é
+	// ìŒì•…ì´ ìž¬ìƒ ì¤‘ì´ê³ , ìž¬ìƒí•˜ë ¤ëŠ” ìŒì•…ì´ í˜„ìž¬ ìŒì•…ê³¼ ê°™ìœ¼ë©´
 	//if (isPlaying() && getCurrentMusicID() == id)
 	//	return;
 
@@ -158,11 +158,11 @@ void FMODSoundManager::pauseMusic()
 		
 		if (m_channel[id] != nullptr) {
 
-			// pause »óÅÂÀÎ°¡?
+			// pause ìƒíƒœì¸ê°€?
 			bool paused = false;
 			result = m_channel[id]->getPaused(&paused);
 
-			// pause Åä±Û
+			// pause í† ê¸€
 			m_channel[id]->setPaused(!paused);
 		}
 	}
@@ -184,7 +184,7 @@ void FMODSoundManager::setVolume(int volume)
 	if (volume < 0)
 		volume = 0;
 
-	// ¿¬¸³ ¹æÁ¤½ÄÀ¸·Î ±¸ÇÑ º¯È¯ ½ÄÀÌ´Ù.
+	// ì—°ë¦½ ë°©ì •ì‹ìœ¼ë¡œ êµ¬í•œ ë³€í™˜ ì‹ì´ë‹¤.
 	int n = 255;
 	int f = 0;
 	float a = 128.0f / (n - f);
@@ -265,8 +265,8 @@ void FMODSoundManager::releaseSound(std::string id)
 
 void FMODSoundManager::playSound(std::string id, int loop)
 {
-	// -1, ÀÓÀÇÀÇ Ã¤³Î ÇÒ´ç
-	// loop : È¿°úÀ½ÀÇ ¹Ýº¹ È½¼ö.
+	// -1, ìž„ì˜ì˜ ì±„ë„ í• ë‹¹
+	// loop : íš¨ê³¼ìŒì˜ ë°˜ë³µ íšŸìˆ˜.
 	// Mix_PlayChannel(-1, m_sfxs[id], loop);
 
 	FMOD::Sound* sound = m_sfxs[id];

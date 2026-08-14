@@ -1,3 +1,4 @@
+#include <cstdint>
 #include "lua_sprite.h"
 #include "Sprite.h"
 
@@ -74,7 +75,7 @@ LUA_METHOD(CreateSprite)
 	Sprite* pSprite = new Sprite();
 	pSprite->initialize(x, y, width, height, maxFrames, textureId);
 
-	DWORD d = (DWORD)pSprite;
+	uintptr_t d = (uintptr_t)pSprite;
 
 	lua_pushnumber(pL, d);
 
@@ -88,7 +89,7 @@ LUA_METHOD(CreateSprite)
 LUA_METHOD(UpdateSprite)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	if (!p)
@@ -109,7 +110,7 @@ LUA_METHOD(UpdateSprite)
 LUA_METHOD(DrawSprite)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	if (!p)
@@ -129,7 +130,7 @@ LUA_METHOD(DrawSprite)
 LUA_CLASS(Get, Sprite, Position)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	if (!p)
@@ -151,7 +152,7 @@ LUA_CLASS(Get, Sprite, Position)
 LUA_CLASS(Get, Sprite, Scale)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	if (!p)
@@ -171,7 +172,7 @@ LUA_CLASS(Get, Sprite, Scale)
 LUA_CLASS(Get, Sprite, Width)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	if (!p)
@@ -187,7 +188,7 @@ LUA_CLASS(Get, Sprite, Width)
 LUA_CLASS(Get, Sprite, Height)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	if (!p)
@@ -203,7 +204,7 @@ LUA_CLASS(Get, Sprite, Height)
 LUA_CLASS(Get, Sprite, Angle)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	if (!p)
@@ -219,7 +220,7 @@ LUA_CLASS(Get, Sprite, Angle)
 LUA_CLASS(Get, Sprite, Radians)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	if (!p)
@@ -235,7 +236,7 @@ LUA_CLASS(Get, Sprite, Radians)
 LUA_CLASS(Get, Sprite, Visible)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	if (!p)
@@ -251,7 +252,7 @@ LUA_CLASS(Get, Sprite, Visible)
 LUA_CLASS(Get, Sprite, Opacity)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	if (!p)
@@ -267,7 +268,7 @@ LUA_CLASS(Get, Sprite, Opacity)
 LUA_CLASS(Get, Sprite, FrameDelay)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	if (!p)
@@ -283,7 +284,7 @@ LUA_CLASS(Get, Sprite, FrameDelay)
 LUA_CLASS(Get, Sprite, StartFrame)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	if (!p)
@@ -299,7 +300,7 @@ LUA_CLASS(Get, Sprite, StartFrame)
 LUA_CLASS(Get, Sprite, EndFrame)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	if (!p)
@@ -315,7 +316,7 @@ LUA_CLASS(Get, Sprite, EndFrame)
 LUA_CLASS(Get, Sprite, CurrentFrame)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	if (!p)
@@ -333,7 +334,7 @@ LUA_CLASS(Get, Sprite, Rect)
 	int n = lua_gettop(pL);
 
 	// Sprite Pointer (1) (-1)
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	if (!p)
@@ -375,7 +376,7 @@ LUA_CLASS(Get, Sprite, Rect)
 LUA_CLASS(Get, Sprite, AnimComplete)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	if (!p)
@@ -391,7 +392,7 @@ LUA_CLASS(Get, Sprite, AnimComplete)
 LUA_CLASS(Set, Sprite, Position)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	float x = luaL_checknumber(pL, 2);
@@ -412,7 +413,7 @@ LUA_CLASS(Set, Sprite, Position)
 LUA_CLASS(Set, Sprite, Scale)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	float scale = luaL_checknumber(pL, 2);
@@ -430,7 +431,7 @@ LUA_CLASS(Set, Sprite, Scale)
 LUA_CLASS(Set, Sprite, Angle)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	float angle = luaL_checknumber(pL, 2);
@@ -448,7 +449,7 @@ LUA_CLASS(Set, Sprite, Angle)
 LUA_CLASS(Set, Sprite, Radians)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	float radians = luaL_checknumber(pL, 2);
@@ -466,7 +467,7 @@ LUA_CLASS(Set, Sprite, Radians)
 LUA_CLASS(Set, Sprite, Visible)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	int b = lua_toboolean(pL, 2);
@@ -484,7 +485,7 @@ LUA_CLASS(Set, Sprite, Visible)
 LUA_CLASS(Set, Sprite, Opacity)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	int opacity = luaL_checkinteger(pL, 2);
@@ -502,7 +503,7 @@ LUA_CLASS(Set, Sprite, Opacity)
 LUA_CLASS(Set, Sprite, FrameDelay)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	double value = luaL_checknumber(pL, 2);
@@ -520,7 +521,7 @@ LUA_CLASS(Set, Sprite, FrameDelay)
 LUA_CLASS(Set, Sprite, Frames)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	int startFrame = luaL_checkinteger(pL, 2);
@@ -539,7 +540,7 @@ LUA_CLASS(Set, Sprite, Frames)
 LUA_CLASS(Set, Sprite, CurrentFrame)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	int currentFrame = luaL_checkinteger(pL, 2);
@@ -558,7 +559,7 @@ LUA_CLASS(Set, Sprite, Rect)
 {
 	int x = 0, y = 0, width = 1, height = 1;
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	// STACK TOP
@@ -618,7 +619,7 @@ LUA_CLASS(Set, Sprite, Rect)
 LUA_CLASS(Set, Sprite, Loop)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	int b = lua_toboolean(pL, 2);
@@ -636,7 +637,7 @@ LUA_CLASS(Set, Sprite, Loop)
 LUA_CLASS(Set, Sprite, AnimComplete)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
 	int b = lua_toboolean(pL, 2);

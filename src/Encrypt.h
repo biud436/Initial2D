@@ -2,20 +2,17 @@
 #ifndef _ENCRYPT_H_
 #define _ENCRYPT_H_
 
-#define WIN32_LEAN_AND_MEAN
-
 #include <iostream>
 #include <fstream>
 #include <cstdio>
 #include <cstring>
-#include <Windows.h>
 #include <vector>
+#include <string>
 #include "StringUtils.h"
-#include "App.h"
 
 /**
  * @file Encrypt.h
- * @brief ¸®¼Ò½º ÆÄÀÏÀ» ÇÏ³ªÀÇ ÆĞÅ°Áö ÆÄÀÏ·Î ¸¸µå´Â ±â´ÉÀ» Á¦°øÇÕ´Ï´Ù.
+ * @brief ë¦¬ì†ŒìŠ¤ íŒŒì¼ì„ í•˜ë‚˜ì˜ íŒ¨í‚¤ì§€ íŒŒì¼ë¡œ ë§Œë“œëŠ” ê¸°ëŠ¥ì„ ì œê³µí•©ë‹ˆë‹¤.
  */
 
 namespace Initial2D {
@@ -47,8 +44,8 @@ namespace Initial2D {
 	} RES_HEADER;
 
 	/**
-	* @author ¾îÁø¼®
-	* @brief Æ¯Á¤ Æú´õ¿¡ ÀÖ´Â ¸ğµç ÆÄÀÏÀ» ¹İÈ¯ÇÕ´Ï´Ù.
+	* @author ì–´ì§„ì„
+	* @brief íŠ¹ì • í´ë”ì— ìˆëŠ” ëª¨ë“  íŒŒì¼ì„ ë°˜í™˜í•©ë‹ˆë‹¤.
 	*/
 	void ReadDirectory(std::vector<std::string>& dirs, std::string parent = ".\\res\\");
 

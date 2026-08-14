@@ -14,7 +14,9 @@
 #include "Input.h"
 #include "App.h"
 
+#ifdef RS_WINDOWS
 extern HWND g_hWnd;
+#endif
 
 Input::Input() : m_nWheel(0)
 {
@@ -61,6 +63,9 @@ void Input::setMouseZ(int value)
 {
 	m_nWheel = value;
 }
+
+#ifdef RS_WINDOWS
+// Win32 키보드/마우스 폴링. SDL2 어댑터는 platform/sdl2/InputSDL2.cpp 참조.
 
 void Input::updateKeyboard()
 {
@@ -123,6 +128,8 @@ void Input::updateMouse()
 	setMouseZ(0);
 
 }
+
+#endif // RS_WINDOWS (updateKeyboard/updateMouse)
 
 bool Input::isKeyDown(int vKey) const
 {

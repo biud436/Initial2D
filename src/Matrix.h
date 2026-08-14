@@ -7,7 +7,7 @@
 #include <Windows.h>
 using TransformData = XFORM;
 #else
-typedef sturct _TRANSFORM_DATA
+typedef struct _TRANSFORM_DATA
 {
 	float eM11;
 	float eM12;

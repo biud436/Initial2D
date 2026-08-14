@@ -21,15 +21,17 @@
 #include <thread>
 #include <chrono>
 
+#ifdef RS_WINDOWS
 extern HWND g_hWnd;
 extern LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+#endif
 
 App* App::s_pInstance = NULL;
 
-namespace 
+namespace
 {
 	const double DELAY_TIME = 1.0 / 60.0;
-	const char* GAME_TITLE = TEXT("Demo Game - FPS : ");
+	const char* GAME_TITLE = "Demo Game - FPS : ";
 }
 
 App& App::GetInstance(void)
@@ -54,12 +56,13 @@ App::App() :
 	m_pFont(nullptr)
 {
 
-	// µğ¹ö±× ¸ğµå¶ó¸é ÄÜ¼Ö Ã¢À» ¶ç¿î´Ù.
+#ifdef RS_WINDOWS
+	// ë””ë²„ê·¸ ëª¨ë“œë¼ë©´ ì½˜ì†” ì°½ì„ ë„ìš´ë‹¤.
 #ifndef NDEBUG
 	if (AllocConsole())
 		freopen("CON", "w", stdout);
 #endif
-	
+
 	if (!QueryPerformanceFrequency(&m_nTimeFreq)) {
 		// todo : add it.
 	}
@@ -68,27 +71,28 @@ App::App() :
 	const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	const HWND hWndConsole = GetConsoleWindow();
 
-	// ÄÜ¼Ö À©µµ¿ì ÀÌ¸§ ¼³Á¤
+	// ì½˜ì†” ìœˆë„ìš° ì´ë¦„ ì„¤ì •
 	std::string sClassName = WINDOW_NAME;
 	sClassName += " - Console";
 	SetConsoleTitle(sClassName.c_str());
 
-	// ÄÜ¼Ö À©µµ¿ì À§Ä¡ ¼³Á¤
+	// ì½˜ì†” ìœˆë„ìš° ìœ„ì¹˜ ì„¤ì •
 	RECT rt = { 0, };
 	GetWindowRect(hWndConsole, &rt);
 	SetWindowPos(hWndConsole, HWND_NOTOPMOST, rt.left, rt.top, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW);
-	
+
 #endif
 
 	QueryPerformanceCounter(&m_nTimeStart);
+#endif // RS_WINDOWS
 
-	// ÅØ½ºÃÄ °ü¸®ÀÚ »ı¼º
+	// í…ìŠ¤ì³ ê´€ë¦¬ì ìƒì„±
 	m_pTextureManager = new TextureManager();
 
-	// ÀÔ·Â °ü¸®ÀÚ »ı¼º
+	// ì…ë ¥ ê´€ë¦¬ì ìƒì„±
 	m_pInput = new Input();
 
-	// ÆùÆ® »ı¼º
+	// í°íŠ¸ ìƒì„±
 	m_pFont = std::make_unique<Font>();
 
 }
@@ -100,7 +104,7 @@ App::~App()
 }
 
 /**
-* @brief WindowNameÀ» ±¸ÇÕ´Ï´Ù.
+* @brief WindowNameì„ êµ¬í•©ë‹ˆë‹¤.
 */
 const char* App::GetWindowName() const
 {
@@ -108,7 +112,7 @@ const char* App::GetWindowName() const
 }
 
 /**
-* @brief ClassNameÀ» ±¸ÇÕ´Ï´Ù.
+* @brief ClassNameì„ êµ¬í•©ë‹ˆë‹¤.
 */
 const char* App::GetClassName() const
 {
@@ -116,7 +120,7 @@ const char* App::GetClassName() const
 }
 
 /**
-* @brief Ã¢ÀÇ ÆøÀ» ±¸ÇÕ´Ï´Ù.
+* @brief ì°½ì˜ í­ì„ êµ¬í•©ë‹ˆë‹¤.
 */
 const int App::GetWindowWidth() const
 {
@@ -124,15 +128,17 @@ const int App::GetWindowWidth() const
 }
 
 /**
-* @brief Ã¢ÀÇ ³ôÀÌ¸¦ ±¸ÇÕ´Ï´Ù.
+* @brief ì°½ì˜ ë†’ì´ë¥¼ êµ¬í•©ë‹ˆë‹¤.
 */
 const int App::GetWindowHeight() const
 {
 	return m_nWindowHeight;
 }
 
+#ifdef RS_WINDOWS
+
 /**
- * @brief °ÔÀÓ ¸ğµâÀ» ÃÊ±âÈ­ÇÏ°í °ÔÀÓ ·çÇÁ¸¦ ½ÇÇàÇÕ´Ï´Ù.
+ * @brief ê²Œì„ ëª¨ë“ˆì„ ì´ˆê¸°í™”í•˜ê³  ê²Œì„ ë£¨í”„ë¥¼ ì‹¤í–‰í•©ë‹ˆë‹¤.
  */
 int App::Run(int nCmdShow)
 {
@@ -264,14 +270,14 @@ int App::Run(int nCmdShow)
 		}
 	}
 
-	// ÀÚ±â ÀÚ½ÅÀ» ¼Ò¸ê½ÃÅ³ ¼ö ÀÖ³ª ½ÍÀºµ¥ ÀÏ´ÜÀº µ¿ÀÛÇÑ´Ù.
+	// ìê¸° ìì‹ ì„ ì†Œë©¸ì‹œí‚¬ ìˆ˜ ìˆë‚˜ ì‹¶ì€ë° ì¼ë‹¨ì€ ë™ì‘í•œë‹¤.
 	delete this;
 
 	return static_cast<int>(Message.wParam);
 }
 
 /**
-* @brief ¸Ş½ÃÁö¸¦ Ã³¸®ÇÕ´Ï´Ù.
+* @brief ë©”ì‹œì§€ë¥¼ ì²˜ë¦¬í•©ë‹ˆë‹¤.
 */
 LRESULT App::HandleEvent(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -295,8 +301,10 @@ LRESULT App::HandleEvent(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
+#endif // RS_WINDOWS (Run/HandleEvent â€” SDL2 ë²„ì „ì€ platform/sdl2/AppSDL2.cpp)
+
 /**
-* @brief ÇöÀç Context¸¦ °¡Á®¿É´Ï´Ù.
+* @brief í˜„ì¬ Contextë¥¼ ê°€ì ¸ì˜µë‹ˆë‹¤.
 */
 App::DeviceContext& App::GetContext()
 {
@@ -304,7 +312,7 @@ App::DeviceContext& App::GetContext()
 }
 
 /**
-* @brief TextureManagerÀÇ ÀÎ½ºÅÏ½º¸¦ °¡Á®¿É´Ï´Ù.
+* @brief TextureManagerì˜ ì¸ìŠ¤í„´ìŠ¤ë¥¼ ê°€ì ¸ì˜µë‹ˆë‹¤.
 */
 TextureManager& App::GetTextureManager()
 {
@@ -312,7 +320,7 @@ TextureManager& App::GetTextureManager()
 }
 
 /**
-* @brief »óÅÂ ¸Ó½ÅÀ» È¹µæÇÕ´Ï´Ù.
+* @brief ìƒíƒœ ë¨¸ì‹ ì„ íšë“í•©ë‹ˆë‹¤.
 */
 GameStateMachine& App::GetGameStateMachine()
 {
@@ -320,17 +328,19 @@ GameStateMachine& App::GetGameStateMachine()
 }
 
 /**
-* @brief ÀÔ·Â ¸ğµâÀÇ ÀÎ½ºÅÏ½º¸¦ °¡Á®¿É´Ï´Ù.
+* @brief ì…ë ¥ ëª¨ë“ˆì˜ ì¸ìŠ¤í„´ìŠ¤ë¥¼ ê°€ì ¸ì˜µë‹ˆë‹¤.
 */
 Input& App::GetInput()
 {
 	return *m_pInput;
 }
 
+#ifdef RS_WINDOWS
+
 /**
-* @brief ÇÁ·¹ÀÓÀ» ¾÷µ¥ÀÌÆ®ÇÕ´Ï´Ù. (³»ºÎ¿ë)
+* @brief í”„ë ˆì„ì„ ì—…ë°ì´íŠ¸í•©ë‹ˆë‹¤. (ë‚´ë¶€ìš©)
 * @details
-* Note: ¾÷µ¥ÀÌÆ® ¼ø¼­´Â ´ÙÀ½°ú °°½À´Ï´Ù.
+* Note: ì—…ë°ì´íŠ¸ ìˆœì„œëŠ” ë‹¤ìŒê³¼ ê°™ìŠµë‹ˆë‹¤.
 * 1. UpdateInput();
 * 2. ObjectUpdate(UpdateTime());
 * 3. RenderClear();
@@ -340,16 +350,16 @@ Input& App::GetInput()
 */
 void App::Update()
 {
-	// ¸¶Áö¸· ÇÁ·¹ÀÓ ½Ã°£ ÃøÁ¤
+	// ë§ˆì§€ë§‰ í”„ë ˆì„ ì‹œê°„ ì¸¡ì •
 	QueryPerformanceCounter(&m_nTimeEnd);
 
-	// ÇÁ·¹ÀÓ ½Ã°£
+	// í”„ë ˆì„ ì‹œê°„
 	m_frameTime = (double)(m_nTimeEnd.QuadPart - m_nTimeStart.QuadPart) / ((double)(m_nTimeFreq.QuadPart));
 
 	m_elapsed += m_frameTime;
 	m_accumulateElapsed += m_frameTime;
 	
-	// ÇÁ·¹ÀÓ ¼Óµµ°¡ Á¤»óÀÌ¶ó¸é ¾÷µ¥ÀÌÆ®¸¦ ÁøÇàÇÑ´Ù.
+	// í”„ë ˆì„ ì†ë„ê°€ ì •ìƒì´ë¼ë©´ ì—…ë°ì´íŠ¸ë¥¼ ì§„í–‰í•œë‹¤.
 	while (m_elapsed >= DELAY_TIME) {
 		UpdateInput();
 		ObjectUpdate(m_frameTime);
@@ -358,10 +368,10 @@ void App::Update()
 
 	m_nFrameCount++;
 
-	// 60 ÇÁ·¹ÀÓÀÌ Áö³µ´Â Áö¸¦ Ã¼Å©ÇÑ´Ù.
+	// 60 í”„ë ˆì„ì´ ì§€ë‚¬ëŠ” ì§€ë¥¼ ì²´í¬í•œë‹¤.
 	if (m_accumulateElapsed >= 1.0) {
 
-		// ¸ğµç ÇÁ·¹ÀÓ °ªÀÇ ´©Àû ½Ã°£ / 1 ÇÁ·¹ÀÓ ½Ã°£
+		// ëª¨ë“  í”„ë ˆì„ ê°’ì˜ ëˆ„ì  ì‹œê°„ / 1 í”„ë ˆì„ ì‹œê°„
 		m_nFPS = static_cast<int>(m_accumulateElapsed / DELAY_TIME);
 
 		m_nFrameCount = 0;
@@ -407,16 +417,20 @@ void App::Update()
 
 }
 
+#endif // RS_WINDOWS (Update)
+
 /**
-* @brief ÀÔ·Â ¸ğµâÀ» ¾÷µ¥ÀÌÆ®ÇÕ´Ï´Ù
+* @brief ì…ë ¥ ëª¨ë“ˆì„ ì—…ë°ì´íŠ¸í•©ë‹ˆë‹¤
 */
 void App::UpdateInput()
 {
 	m_pInput->update();
 }
 
+#ifdef RS_WINDOWS
+
 /**
-* @brief ·»´õ¸µ¿¡ ÇÊ¿äÇÑ DC¸¦ ÁØºñÇÕ´Ï´Ù.
+* @brief ë Œë”ë§ì— í•„ìš”í•œ DCë¥¼ ì¤€ë¹„í•©ë‹ˆë‹¤.
 */
 void App::RenderClear()
 {
@@ -428,7 +442,7 @@ void App::RenderClear()
 }
 
 /**
-* @brief È­¸é ¸ÊÇÎ ¸ğµå¸¦ º¯°æÇÕ´Ï´Ù.
+* @brief í™”ë©´ ë§µí•‘ ëª¨ë“œë¥¼ ë³€ê²½í•©ë‹ˆë‹¤.
 */
 void App::RenderTransform()
 {
@@ -440,20 +454,22 @@ void App::RenderTransform()
 }
 
 /**
-* @brief ·»´õ¸µ °á°ú¸¦ È­¸é¿¡ Ãâ·ÂÇÏ°í ¸Ş¸ğ¸®¸¦ Á¤¸®ÇÕ´Ï´Ù.
+* @brief ë Œë”ë§ ê²°ê³¼ë¥¼ í™”ë©´ì— ì¶œë ¥í•˜ê³  ë©”ëª¨ë¦¬ë¥¼ ì •ë¦¬í•©ë‹ˆë‹¤.
 */
 void App::RenderPresent()
 {
 	SetStretchBltMode(m_context.mainContext, COLORONCOLOR);
 	BitBlt(m_context.mainContext, 0, 0, GetWindowWidth(), GetWindowHeight(), m_context.currentContext, 0, 0, SRCCOPY);
 
-	DeleteObject(SelectObject(m_context.currentContext, m_context.prevSurface)); // ÀÌÀü »óÅÂ·Î º¹¿ø
-	DeleteObject(m_context.currentSurface); // º¹»çµÈ DC »èÁ¦
+	DeleteObject(SelectObject(m_context.currentContext, m_context.prevSurface)); // ì´ì „ ìƒíƒœë¡œ ë³µì›
+	DeleteObject(m_context.currentSurface); // ë³µì‚¬ëœ DC ì‚­ì œ
 	DeleteDC(m_context.currentContext);
 }
 
+#endif // RS_WINDOWS (RenderClear/RenderTransform/RenderPresent â€” SDL2 ë²„ì „ì€ platform/sdl2/AppSDL2.cpp)
+
 /**
-* @brief frameTimeÀ» ¾÷µ¥ÀÌÆ® ÇÕ´Ï´Ù.
+* @brief frameTimeì„ ì—…ë°ì´íŠ¸ í•©ë‹ˆë‹¤.
 *
 * @return double
 */
@@ -463,16 +479,18 @@ double App::UpdateTime()
 
 }
 
+#ifdef RS_WINDOWS
 /**
-* @brief ¸Ş¸ğ¸® Á¤¸® ÈÄ °ÔÀÓÀ» Á¾·áÇÕ´Ï´Ù.
+* @brief ë©”ëª¨ë¦¬ ì •ë¦¬ í›„ ê²Œì„ì„ ì¢…ë£Œí•©ë‹ˆë‹¤.
 */
 void App::Quit()
 {
 	::PostQuitMessage(0);
 }
+#endif // RS_WINDOWS (Quit â€” SDL2 ë²„ì „ì€ platform/sdl2/AppSDL2.cpp)
 
 /**
-* @brief Æ÷Ä¿½º¸¦ ±¸ÇÕ´Ï´Ù.
+* @brief í¬ì»¤ìŠ¤ë¥¼ êµ¬í•©ë‹ˆë‹¤.
 */
 bool App::GetFocus() const
 {
@@ -480,7 +498,7 @@ bool App::GetFocus() const
 }
 
 /**
-* @brief ÆùÆ®¸¦ ±¸ÇÕ´Ï´Ù.
+* @brief í°íŠ¸ë¥¼ êµ¬í•©ë‹ˆë‹¤.
 */
 GameFont* App::GetFont()
 {
@@ -488,7 +506,7 @@ GameFont* App::GetFont()
 }
 
 /**
-* @brief ÆùÆ®¸¦ ·ÎµåÇÕ´Ï´Ù.
+* @brief í°íŠ¸ë¥¼ ë¡œë“œí•©ë‹ˆë‹¤.
 */
 bool App::LoadFont(std::string fontName)
 {
@@ -500,7 +518,7 @@ bool App::LoadFont(std::string fontName)
 }
 
 /**
-* @brief ÆùÆ® ¸Ş¸ğ¸® ÇØÁ¦
+* @brief í°íŠ¸ ë©”ëª¨ë¦¬ í•´ì œ
 *
 * @return true
 * @return false
@@ -525,6 +543,7 @@ int App::GetFrameCount() const
 	return m_nFPS;
 }
 
+#ifdef RS_WINDOWS
 /**
 * @brief Set the App Icon from a certain image.
 */
@@ -581,3 +600,4 @@ void App::SetAppIcon(std::string filename)
 	}
 
 }
+#endif // RS_WINDOWS (SetAppIcon â€” SDL2 ë²„ì „ì€ platform/sdl2/AppSDL2.cpp)

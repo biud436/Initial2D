@@ -1,6 +1,12 @@
 #include "StringUtils.h"
+#include <cstring>
 
-std::string ConvertWideCharToMultiByte(std::wstring& wstr, UINT codePage)
+#ifdef _WIN32
+
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+
+std::string ConvertWideCharToMultiByte(std::wstring& wstr, unsigned int codePage)
 {
 	int size = WideCharToMultiByte(codePage, 0, wstr.data(), wstr.size(), NULL, 0, NULL, NULL);
 	if (size == 0) {
@@ -15,7 +21,7 @@ std::string ConvertWideCharToMultiByte(std::wstring& wstr, UINT codePage)
 	return raw;
 }
 
-std::wstring ConvertMultiByteToWideChar(std::string& str, UINT codePage)
+std::wstring ConvertMultiByteToWideChar(std::string& str, unsigned int codePage)
 {
 	int size = MultiByteToWideChar(codePage, 0, str.data(), str.size(), NULL, 0);
 	if (size == 0) {
@@ -29,6 +35,8 @@ std::wstring ConvertMultiByteToWideChar(std::string& str, UINT codePage)
 
 	return wstr;
 }
+
+#endif // _WIN32
 
 std::vector<std::string> StrSplit(std::string data, std::string find_at)
 {
@@ -67,8 +75,8 @@ std::string GetParentDirectory(const char* path)
 	pos++;
 
 	int subtract_len = strlen(pos);
-	
-	// c¿¡¼± µ¿Àû ÇÒ´ç ÇÊ¿ä, std::stringÀº ÇÊ¿ä ¾øÀ½.
+
+	// cì—ì„  ë™ì  í• ë‹¹ í•„ìš”, std::stringì€ í•„ìš” ì—†ìŒ.
 	std::string ret = path;
 	ret.resize(len - subtract_len);
 
@@ -97,7 +105,7 @@ std::string GetFileName(const char* path)
 }
 
 /**
- * ÆÄÀÏ È®ÀåÀÚ¸¦ ¹ÝÈ¯ÇÕ´Ï´Ù.
+ * íŒŒì¼ í™•ìž¥ìžë¥¼ ë°˜í™˜í•©ë‹ˆë‹¤.
  * std::string filename = GetFileExtension(".\\res\\mycomputer.png");
  * => .png
  */

@@ -1,3 +1,4 @@
+#include <cstdint>
 #include "lua_font.h"
 #include "ExperimentalFont.h"
 #include <clocale>
@@ -72,7 +73,7 @@ static int Lua_CreateFontEx(lua_State *pL)
 
 		AntiAliasingFont* pFont = new AntiAliasingFont(sFontFace, fontSize, width, height);
 
-		DWORD d = (DWORD)pFont;
+		uintptr_t d = (uintptr_t)pFont;
 
 		lua_pushnumber(pL, d);
 
@@ -94,7 +95,7 @@ static int Lua_CreateFontEx(lua_State *pL)
 LUA_METHOD(UpdateFontEx)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 
 	AntiAliasingFont* p = (AntiAliasingFont*)d;
 
@@ -121,7 +122,7 @@ LUA_METHOD(UpdateFontEx)
 LUA_METHOD(DrawFontEx)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 
 	AntiAliasingFont* p = (AntiAliasingFont*)d;
 
@@ -140,7 +141,7 @@ LUA_METHOD(DrawFontEx)
 LUA_METHOD(ReleaseFontEx)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 
 	AntiAliasingFont* p = (AntiAliasingFont*)d;
 
@@ -159,7 +160,7 @@ LUA_METHOD(ReleaseFontEx)
 LUA_CLASS(Set, FontEx, Text)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 
 	AntiAliasingFont* p = (AntiAliasingFont*)d;
 
@@ -181,7 +182,7 @@ LUA_CLASS(Set, FontEx, Text)
 LUA_CLASS(Set, FontEx, Position)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 
 	AntiAliasingFont* p = (AntiAliasingFont*)d;
 
@@ -202,7 +203,7 @@ LUA_CLASS(Set, FontEx, Position)
 LUA_CLASS(Set, FontEx, TextColor)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 
 	AntiAliasingFont* p = (AntiAliasingFont*)d;
 
@@ -224,7 +225,7 @@ LUA_CLASS(Set, FontEx, TextColor)
 LUA_CLASS(Set, FontEx, Opacity)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 
 	AntiAliasingFont* p = (AntiAliasingFont*)d;
 
@@ -243,7 +244,7 @@ LUA_CLASS(Set, FontEx, Opacity)
 LUA_CLASS(Get, FontEx, TextWidth)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	int w = 0;
 
 	AntiAliasingFont* p = (AntiAliasingFont*)d;
@@ -267,7 +268,7 @@ LUA_CLASS(Get, FontEx, TextWidth)
 LUA_CLASS(Set, FontEx, Angle)
 {
 	int n = lua_gettop(pL);
-	DWORD d = (DWORD)lua_tonumber(pL, 1);
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	AntiAliasingFont* p = (AntiAliasingFont*)d;
 
 	float angle = luaL_checknumber(pL, 2);

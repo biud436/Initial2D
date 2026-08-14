@@ -80,7 +80,7 @@ namespace Initial2D {
 		std::string sWindowName = App::GetInstance().GetWindowName();
 		m_hWnd = FindWindowA(NULL, &sWindowName[0]);
 
-		// MBCS -> WBCS·Î º¯È¯
+		// MBCS -> WBCSë¡œ ë³€í™˜
 		int size = MultiByteToWideChar(CP_UTF8, 0, &sWindowName[0], sWindowName.size(), NULL, NULL);
 
 		std::wstring swWindowName;
