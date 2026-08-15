@@ -19,19 +19,19 @@
 
 ### A. Lua API 확장 (모두 범용)
 
-- [ ] `GetTextWidth(text)` 바인딩 추가. C++의 `Font::getTextWidth`는 이미 있으므로 노출만 하면 된다 (`src/lua_prot.cpp`).
-- [ ] `Json.Load(path)` → Lua 테이블 변환 바인딩 추가 (새 파일 `src/lua_json.cpp` 권장). jsoncpp는 `initial2d_core`에 이미 링크되어 있다.
-- [ ] `Sprite.SetSheetGrid(handle, cols, rows)` 추가. 기본값은 기존 호환을 위해 4x4 유지.
-- [ ] `Sprite.Dispose(handle)` 추가. 현재 스프라이트는 해제 방법이 없어 누수된다 (`scripts/image.lua`의 `dispose()`는 텍스처만 지운다).
+- [x] `GetTextWidth(text)` 바인딩 추가 (2026-08-15, Lua 테스트 12건)
+- [x] `Json.Load(path)` → Lua 테이블 변환 바인딩 (`src/lua_json.cpp`, 실패 시 nil + 오류 메시지, Lua 테스트 17건)
+- [x] `Sprite.SetSheetGrid(handle, cols, rows)` 추가, 기본 4x4 유지. 겸사겸사 `setRect`의 행 계산이 행 수로 나누던 잠복 버그(4x4에서만 우연히 동작)도 수정
+- [x] `Sprite.Dispose(handle)` 추가. `Sprite.GetRect`의 lua_settable 인덱스 오류(호출 즉시 런타임 오류)도 발견해 수정
 - [ ] 화면 설정을 게임이 정하게 한다. `config.setting` 또는 Lua 초기화 시점에 논리 해상도(폭, 높이)를 지정할 수 있어야 한다. 기존 게임(플래피버드)은 768x896을 명시해서 동작 유지.
 
 ### B. 버그 수정
 
-- [ ] `Font.h:45` 배열 크기 `[55203]` → 한글 마지막 글자 '힣'(0xD7A3 = 55203)에서 범위 초과. 크기를 `0xD7A4`로 수정. 겸사겸사 인스턴스당 약 4.4MB인 `Charset` 구조도 가능하면 맵 기반으로 줄인다.
-- [ ] `Font::open()`이 첫 호출에서 파싱을 건너뛰는 문제 수정 (`Font.cpp:42-44`, 현재 `Lua_PreparaFont`가 우회 중).
-- [ ] `src/Tilemap.cpp`의 백슬래시 경로가 `NormalizePath` 없이 사용되어 맥과 안드로이드에서 파일 열기가 실패하는 문제. (2단계에서 재작성하며 함께 해결해도 된다.)
-- [ ] `Rectangle.h`의 `operator=`에 return 문이 없는 미정의 동작 (`docs/porting/phase0-inventory.md`에 이미 기록됨).
-- [ ] `Lua_PlayMusic`의 루프 플래그 반전 문제 (`src/lua_audio.cpp:78-80`, `false`가 무한 반복이 됨). 스크립트 호환에 주의해서 정리.
+- [x] 글리프 테이블 크기 `[55203]` → `[0xD7A4]` 수정. 추가 발견: ParseFont가 fnt의 id를 경계 검사 없이 쓰던 문제, drawText가 빈 문자열에서 빈 벡터 max_element를 역참조하던 UB도 수정. (`Charset` 구조의 4.4MB 메모리 최적화는 보류 — 동작 문제가 아님)
+- [x] `Font::open()`의 반전된 guard 수정 (첫 호출이 파싱을 건너뛰던 문제)
+- [ ] `src/Tilemap.cpp`의 백슬래시 경로 문제 — 2단계 재작성에서 해결하기로 결정
+- [x] `Rectangle.h`의 `operator=` return 누락 수정 (연쇄 대입 회귀 테스트 포함)
+- [ ] `Lua_PlayMusic`의 루프 플래그 반전 문제 (`false`가 무한 반복). flappy.lua의 우회 코드와 함께 고쳐야 하므로 별도 작업으로.
 
 ### C. 결정 사항 (구현 전에 확정)
 

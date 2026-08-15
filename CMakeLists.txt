@@ -163,6 +163,7 @@ target_link_libraries(phase1_sanity PRIVATE initial2d_core)
 add_executable(engine_unit_tests
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/main.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/utf8_test.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/rectangle_test.cpp
   # 코어 라이브러리에 없는 플랫폼 중립 소스는 여기서 직접 포함한다
   ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/Utf8.cpp
 )

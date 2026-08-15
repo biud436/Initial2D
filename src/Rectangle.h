@@ -43,6 +43,7 @@ namespace RS {
 			y = ref.y;
 			width = ref.width;
 			height = ref.height;
+			return *this;
 		}
 
 		Rectangle operator+(const Rectangle& v) const
