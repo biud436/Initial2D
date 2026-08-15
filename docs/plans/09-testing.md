@@ -117,7 +117,7 @@ CI는 GitHub Actions macOS 러너에서 "빌드 → 단위 → 골든 → 시나
 - [ ] 입력 시퀀스 재생기 (`AUTOPLAY` 확장)와 시나리오 형식 정의
 - [x] `rpg.rng` 시드 규칙을 5단계 문서에 반영 (구현 시 강제)
 - [x] 통합 실행 스크립트 `tests/run_all.sh` (빌드 + C++ 단위 + Lua 단위 + 픽셀 검증 + 골든)
-- [ ] GitHub Actions 워크플로우 — `.github/workflows/tests.yml` 작성됨, **푸시 후 첫 실행이 성공해야 완료**. 주의: 골든이 로컬(Retina, 가속 렌더러)에서 생성되어 CI(1배율, 소프트웨어 렌더러)에서 허용 오차를 넘을 수 있음 — 첫 실행에서 실측 후 조정. 브리지 Node 잡은 3단계에서 추가
+- [x] GitHub Actions 워크플로우 — `.github/workflows/tests.yml`, macOS 헤드리스로 전체 검수 실행. 첫 실행에서 예견대로 골든 소음(로컬 Retina 가속 대 CI 1배율 소프트웨어 렌더러)이 1.04%로 실측되어 허용 오차를 2%로 보정, 두 번째 실행 통과 (2026-08-15). 브리지 Node 잡은 3단계에서 추가
 - [ ] 포맷 픽스처 디렉터리 `tests/fixtures/maps/`와 첫 픽스처 (2단계 포맷 확정 직후)
 - [x] 사용법을 README.md에 정리 (테스트 실행법, 골든 갱신 절차, 헤드리스 실행)
 
