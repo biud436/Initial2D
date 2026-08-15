@@ -43,6 +43,9 @@ Sprite::Sprite() :
 	m_transform.eM22 = 1.0f;
 	m_transform.eDx = 0.0f;
 	m_transform.eDy = 0.0f;
+
+	m_nSheetCols = SPRITE_SHEET_COLS;
+	m_nSheetRows = SPRITE_SHEET_ROWS;
 }
 
 
@@ -300,12 +303,24 @@ void Sprite::setCurrentFrame(int currentFrame)
 	}
 }
 
+void Sprite::setSheetGrid(int cols, int rows)
+{
+	if (cols < 1 || rows < 1)
+	{
+		return;
+	}
+	m_nSheetCols = cols;
+	m_nSheetRows = rows;
+	setRect();
+}
+
 void Sprite::setRect()
 {
-	// 바꾸려면 상속 받아서 변경...
-	m_spriteData.rect.left = (m_nCurrentFrame % SPRITE_SHEET_COLS) * m_spriteData.width;
+	// 행 인덱스는 (프레임 / 열 수)다. 기존 코드는 행 수로 나눴는데
+	// 4x4에서만 우연히 같은 값이라 동작했다.
+	m_spriteData.rect.left = (m_nCurrentFrame % m_nSheetCols) * m_spriteData.width;
 	m_spriteData.rect.right = m_spriteData.rect.left + m_spriteData.width;
-	m_spriteData.rect.top = (m_nCurrentFrame / SPRITE_SHEET_ROWS) * m_spriteData.height;
+	m_spriteData.rect.top = (m_nCurrentFrame / m_nSheetCols) * m_spriteData.height;
 	m_spriteData.rect.bottom = m_spriteData.rect.top + m_spriteData.height;
 }
 

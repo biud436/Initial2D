@@ -34,6 +34,8 @@ LuaObjectToken luaj_Sprite[LUA_SPRITE_MEMBERS] = {
 	{ "SetRect", LUA_METHOD_P1(SetSpriteRect) },
 	{ "SetLoop", LUA_METHOD_P1(SetSpriteLoop) },
 	{ "SetAnimComplete", LUA_METHOD_P1(SetSpriteAnimComplete) },
+	{ "SetSheetGrid", LUA_METHOD_P1(SetSpriteSheetGrid) },
+	{ "Dispose", LUA_METHOD_P1(DisposeSprite) },
 };
 
 LUA_METHOD(CreateSpriteImpl)
@@ -368,7 +370,9 @@ LUA_CLASS(Get, Sprite, Rect)
 
 	lua_pushstring(pL, "height");
 	lua_pushnumber(pL, rect.bottom);
-	lua_settable(pL, -2);
+	// 테이블은 키와 값 아래(-3)에 있다. 기존 -2는 키 문자열을 인덱싱해
+	// 호출 즉시 런타임 오류를 내던 버그.
+	lua_settable(pL, -3);
 
 	return 1;
 }
@@ -387,6 +391,46 @@ LUA_CLASS(Get, Sprite, AnimComplete)
 
 	lua_pushboolean(pL, p->getAnimComplete());
 	return 1;
+}
+
+/**
+ * Sprite.SetSheetGrid(spriteId, cols, rows)
+ * 시트 분할을 설정한다 (기본 4x4, R2K3 CharSet은 3x4).
+ */
+LUA_CLASS(Set, Sprite, SheetGrid)
+{
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
+	Sprite* p = (Sprite*)d;
+
+	if (!p)
+	{
+		return 0;
+	}
+
+	int cols = luaL_checkinteger(pL, 2);
+	int rows = luaL_checkinteger(pL, 3);
+	p->setSheetGrid(cols, rows);
+
+	return 0;
+}
+
+/**
+ * Sprite.Dispose(spriteId)
+ * 스프라이트를 해제한다. 해제 후 같은 핸들 사용은 금지.
+ * (텍스처는 TextureManager가 소유하므로 함께 해제되지 않는다)
+ */
+LUA_METHOD(DisposeSprite)
+{
+	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
+	Sprite* p = (Sprite*)d;
+
+	if (!p)
+	{
+		return 0;
+	}
+
+	delete p;
+	return 0;
 }
 
 LUA_CLASS(Set, Sprite, Position)

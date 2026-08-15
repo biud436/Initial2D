@@ -6,7 +6,7 @@
 #define LUA_AUDIO_MEMBERS 12
 #define LUA_INPUT_MEMBERS 12
 #define LUA_TM_MEMBERS 3
-#define LUA_SPRITE_MEMBERS 29
+#define LUA_SPRITE_MEMBERS 31
 #define LUA_JSON_MEMBERS 1
 
 struct LuaObjectToken

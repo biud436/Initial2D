@@ -9,4 +9,5 @@ return {
     "scripts/luatests/cases/input_replay_test",
     "scripts/luatests/cases/font_text_test",
     "scripts/luatests/cases/json_load_test",
+    "scripts/luatests/cases/sprite_sheet_test",
 }

@@ -9,6 +9,7 @@ LUA_METHOD(CreateSpriteImpl);
 LUA_METHOD(CreateSprite);
 LUA_METHOD(UpdateSprite);
 LUA_METHOD(DrawSprite);
+LUA_METHOD(DisposeSprite);
 
 LUA_CLASS(Get, Sprite, Position);
 LUA_CLASS(Get, Sprite, Scale);
@@ -36,5 +37,6 @@ LUA_CLASS(Set, Sprite, CurrentFrame);
 LUA_CLASS(Set, Sprite, Rect);
 LUA_CLASS(Set, Sprite, Loop);
 LUA_CLASS(Set, Sprite, AnimComplete);
+LUA_CLASS(Set, Sprite, SheetGrid);
 
 #endif

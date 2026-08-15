@@ -210,6 +210,15 @@ Image 객체는 Sprite Sheet를 사용하여 Character Animation을 표현하기
 	image.setAnimComplete(isCompletedAnimation)
 ```
 
+Image가 감싸는 저수준 `Sprite.*` API에는 다음도 있습니다.
+
+```lua
+	-- 스프라이트 시트 분할 설정 (기본 4x4. R2K3 CharSet처럼 3x4 시트에 필요)
+	Sprite.SetSheetGrid(spriteId, cols, rows)
+	-- 스프라이트 해제. 텍스처는 TextureManager가 소유하므로 별도로 Remove
+	Sprite.Dispose(spriteId)
+```
+
 # TextureManager
 
 이미지 파일(_.png, _.bmp)을 로드하여 DIB로 변환합니다. DIB는 GDI 기반으로 렌더링 시 이용됩니다.
@@ -299,6 +308,19 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 	PreparaFont(fontFilePath)
 	--텍스트 묘화 (Bitmap Text 기반입니다.)
 	DrawText(x, y, text)
+	-- 그리지 않고 텍스트의 픽셀 폭만 측정 (가운데 정렬, 자동 줄바꿈용)
+	local w = GetTextWidth(text)
+```
+
+# Json
+
+JSON 파일을 Lua 테이블로 읽습니다. 객체는 문자열 키 테이블, 배열은 1부터 시작하는 테이블, null은 nil이 됩니다. 실패하면 nil과 오류 메시지를 돌려줍니다.
+
+```lua
+	local data, err = Json.Load("./resources/maps/map1.json")
+	if data then
+		print(data.name, #data.layers)
+	end
 ```
 
 # Font

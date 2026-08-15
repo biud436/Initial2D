@@ -21,9 +21,10 @@ local MODULES = {
               "FadeOutMusic", "SetMusicPosition", "ReleaseMusic" },
     TextureManager = { "Load", "Remove", "IsValid" },
     Json = { "Load" },
-    Sprite = { "Create", "Update", "Draw", "SetPosition", "GetPosition",
+    Sprite = { "Create", "Update", "Draw", "Dispose", "SetPosition", "GetPosition",
                "SetScale", "SetAngle", "SetVisible", "SetOpacity",
-               "SetFrames", "SetCurrentFrame", "SetRect", "SetLoop" },
+               "SetFrames", "SetCurrentFrame", "SetRect", "SetLoop",
+               "SetSheetGrid", "GetRect" },
 }
 
 function M.run(t)

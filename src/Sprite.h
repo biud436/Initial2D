@@ -223,6 +223,12 @@ public:
 	void	setRect();
 
 	/**
+	* 스프라이트 시트의 분할(열과 행)을 설정합니다. 기본값은 4x4.
+	* 프레임 -> 아틀라스 좌표 계산에 사용된다 (R2K3 CharSet은 3x4).
+	*/
+	void	setSheetGrid(int cols, int rows);
+
+	/**
 	* 스프라이트 영역을 설정합니다.
 	*/
 	void	setRect(RECT rect);
@@ -260,6 +266,8 @@ protected:
 	bool	        m_bLoop;
 	int	            m_nCurrentFrame;
 	int	            m_nMaxFrames;
+	int	            m_nSheetCols;
+	int	            m_nSheetRows;
 	double	        m_fAnimationTime;
 	bool	        m_bInitialized;
 
