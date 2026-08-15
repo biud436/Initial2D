@@ -63,16 +63,17 @@ InitialEditor에는 Ace 기반 Lua 에디터가 이미 있다 (`packages/rendere
 - [x] 불러오기 (`OpenFileCommand`, Ctrl+O): `resources/maps/*.json` 목록에서 골라 복원. 에디터가 편집하지 못하는 데이터(통행 레이어, 레이어 이름)도 들고 있다가 저장할 때 되돌려준다
 - [x] 알려진 에디터 버그 중 연동에 물리는 것 수정: `drawTile`과 `collectAutoTileID`가 y좌표에 `getMapX`를 쓰던 문제. 메뉴 단축키가 전부 빈 문자열에 묶이던 `MenuService` 버그도 함께 수정(구현된 명령만 허용 목록으로 묶고, 기본 동작은 막는다)
 
-### 마일스톤 3 (후순위): 이벤트 배치와 통행 편집
+### 마일스톤 3 (후순위, 6단계와 함께): 이벤트 배치와 통행 편집
 
 - [ ] 통행(collision) 레이어 편집 모드 — `ModeRegionCommand` 스텁 자리를 활용
 - [ ] 이벤트 배치 모드 (`ModeEventCommand` 스텁 자리) — 맵 좌표에 이벤트 마커를 놓고, 해당 이벤트의 Lua 핸들러 파일을 Ace 에디터로 바로 여는 흐름 (6단계의 이벤트 정의 방식과 맞물림)
+- [ ] 빈 칸 표시를 0이 아닌 값으로 바꿔 첫 타일셋의 첫 타일을 되살린다 (구현 노트의 알려진 한계)
 
 ## 완료 기준
 
 - [x] 브라우저에서 `scripts/games/flappy.lua`를 고치고 저장하면 실행 중인 게임이 다시 시작된다 (마일스톤 1). — 2026-08-15 확인 (Chrome, 헤드리스 엔진)
 - [x] 에디터에서 그린 맵이 Ctrl+E로 `resources/maps/*.json`(포맷 v1)에 저장되고, 엔진 데모 씬이 그 맵을 그대로 그린다 (마일스톤 2). — 2026-08-15 확인: 브라우저에서 두 타일셋으로 칠한 50x38 맵을 내보내고(`2k_town05.png` 자동 업로드), `INITIAL2D_SCENE=tilemap INITIAL2D_MAP=... INITIAL2D_SCREENSHOT=...`으로 헤드리스 실행해 같은 위치에 타일이 그려짐을 스크린샷으로 확인
-- [ ] 사용법이 두 저장소의 README에 정리된다 (브리지 서버 실행법 포함).
+- [x] 사용법이 두 저장소의 README에 정리된다 (브리지 서버 실행법 포함). — Initial2D README "에디터 브리지 서버" 절(API 표, 에디터 기능 표, 내보낸 맵 확인 방법), InitialEditor README "Working with an Initial2D project" 절
 
 ## 의존 관계
 
