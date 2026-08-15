@@ -20,6 +20,7 @@ local MODULES = {
               "PauseMusic", "StopMusic", "ResumeMusic", "IsPlayingMusic",
               "FadeOutMusic", "SetMusicPosition", "ReleaseMusic" },
     TextureManager = { "Load", "Remove", "IsValid" },
+    Json = { "Load" },
     Sprite = { "Create", "Update", "Draw", "SetPosition", "GetPosition",
                "SetScale", "SetAngle", "SetVisible", "SetOpacity",
                "SetFrames", "SetCurrentFrame", "SetRect", "SetLoop" },

@@ -1,6 +1,7 @@
 #include "lua_tbl.h"
 #include "lua_audio.h"
 #include "lua_input.h"
+#include "lua_json.h"
 #include "lua_sprite.h"
 #include "lua_texture.h"
 #include "lua_font.h"
@@ -475,6 +476,9 @@ int Lua_Init()
 
 		// Input
 		Lua_CreateInputObject(g_pLuaState);
+
+		// Json
+		Lua_CreateJsonObject(g_pLuaState);
 
 		// Sprite
 		Lua_CreateSpriteImpl(g_pLuaState);

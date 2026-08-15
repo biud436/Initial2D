@@ -125,6 +125,7 @@ if(NOT WIN32 AND SDL2_FOUND AND SDL2_IMAGE_LIBRARY AND SDL2_MIXER_LIBRARY)
     ${CMAKE_CURRENT_SOURCE_DIR}/src/lua_prot.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/lua_input.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/lua_sprite.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lua_json.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/lua_texture.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/lua_font.cpp
     # SDL2 어댑터
