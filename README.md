@@ -1,53 +1,37 @@
 # 소개
 
-개인적인 용도로 만든 C++ 기반 게임 엔진입니다. Windows에서는 GDI, macOS에서는 SDL2 백엔드로 렌더링합니다 (Android 포팅 준비 중).
+개인적인 용도로 만든 C++ 기반 게임 엔진입니다. Windows에서는 GDI, macOS와 Android에서는 SDL2 백엔드로 렌더링합니다.
 
-> **개발 로드맵**: 롤플레잉 게임 제작이 가능한 범용 엔진을 향한 단계별 계획과 현재 진행 상황은 [docs/plans/index.md](./docs/plans/index.md)에서 관리합니다. InitialEditor 연동(Node 브리지 서버), R2K3 리소스 파이프라인, RPG 프레임워크(Lua) 계획이 여기에 있습니다.
+|      구분      |                    내용                     |
+| :------------: | :-----------------------------------------: |
+|    Version     |                    Beta                     |
+|    Platform    |           Windows, macOS, Android           |
+|   사용 언어    |                  C++, Lua                   |
+|  Engine Type   |               자체 개발 엔진                |
+|    Graphics    | Windows GDI / SDL2 Renderer (macOS, Android) |
+|  이미지 포맷   |  PNG, BMP (GDI는 libpng, SDL2는 SDL2_image)  |
+|  오디오 재생   |        OGG, WAV 등 (SDL2_mixer 사용)        |
+| Script Engine  |                 Lua v5.3.5                  |
+|  하드웨어 가속 |       SDL2 백엔드 지원 (GDI는 미지원)       |
+|  Bitmap Font   |        지원 (BMFont, 한글 렌더링 포함)        |
+| 동적 폰트 묘화 |       지원 (GetGlyphOutline, Windows 전용)       |
+|   핫 리로드    |     지원 (실행 중인 게임에 Lua 스크립트 push)     |
+|     테스트     | C++/Lua 단위 테스트, 픽셀 검증, GitHub Actions CI |
+|   Map Editor   | [InitialEditor](https://github.com/biud436/InitialEditor) (웹 기반, 별도 저장소) |
+|   Data Type    |      \*.json (Game Data), \*.sqlite (DB)      |
+|     타일맵     |                   개발 중                   |
+|  동영상 재생   |                   미지원                    |
+|     암호화     |                   미지원                    |
 
-|                  구분                   |                     내용                      |
-| :-------------------------------------: | :-------------------------------------------: |
-|                 Version                 |                     Beta                      |
-|                Platform                 |       Windows, macOS (Android 준비 중)        |
-|               사용된 언어               |                 C++, Lua, C#                  |
-|               Engine Type               |                자체 개발 엔진                 |
-|             Graphics Device             | Windows GDI / SDL2 Renderer (macOS, Android)  |
-|               이미지 포맷               |           _.PNG(libpng), _.BMP 지원           |
-|               오디오 재생               | \*.ogg 포함 대부분 포맷 지원 (SDL Audio 사용) |
-|               동영상 재생               |               동영상 재생 불가                |
-|           하드웨어 가속 여부            |                     false                     |
-|              Script Engine              |                  Lua v5.0.3                   |
-|               Map Editor                |          개발 중 (C# Winform, QT 5)           |
-|                Data Type                |       _.json (Game Data), _.sqlite (DB)       |
-|               암호화 지원               |                     false                     |
-|            멀티 쓰레딩 지원             |                     false                     |
-|            쓰레드 처리 지원             |                   Unstable                    |
-|              프로세스 실행              |                     true                      |
-|            Bitmap Font 지원             |                     true                      |
-| GetGlyphOutline을 이용한 폰트 묘화 지원 |                     true                      |
-|               타일맵 지원               |                     true                      |
+# 개발 히스토리
 
-# 맵 에디터
+엔진과 에디터의 발전 과정을 시간 순으로 정리합니다. 초기의 엔진과 에디터는 전부 손수 개발했으며, 최근의 포팅과 검수 자동화부터는 AI와의 협업으로 진행하고 있습니다.
 
-- 웹 PC 버전
+## Windows GDI 엔진 (원형, 2018~)
 
-C# Winfrom으로 개발된 초안에 비해 상당한 UI 개선과 설계 개선이 있으며 자체 개발되었습니다. 크로스 플랫폼 에디터를 목표로 개발되었습니다. 그러나 보안 상의 문제로 바닐라 웹에서 동작하기에는 한계가 있어 Electron + Typescript 조합을 사용하였습니다.
+Win32 GDI로 렌더링하는 엔진 원형입니다. Lua 스크립트로 게임 로직을 작성하는 구조, 비트맵 폰트 한글 렌더링, GetGlyphOutline 기반 동적 폰트, SDL2_mixer 오디오 등 핵심 구조가 이 시기에 만들어졌습니다. 전부 직접 설계하고 구현했습니다.
 
-|          구분           |    내용     |
-| :---------------------: | :---------: |
-|          버전           |   개발 중   |
-|       레이어 갯수       |     4개     |
-| 오브젝트 배치 가능 여부 | 아직 불가능 |
-| 오브젝트 속성 변경 가능 | 아직 불가능 |
-|     스크립트 에디터     |    없음     |
-|      맵 파일 생성       |    가능     |
-|   테스트 플레이 기능    |    없음     |
-|    다중 타일셋 처리     |    가능     |
-
-![IMG_NEW_EDITOR](./docs/img/new_editor.png)
-
----
-
-- C# Winfrom PC 버전 (초안)
+## C# Winform 맵 에디터 (초안, 개발 중단)
 
 1차원 배열로 되어있는 타일맵을 편집하고 테스트 플레이를 하면 자체 개발된 게임 엔진에 그대로 반영되는 간단한 툴로 시작하였습니다만 스크립트 에디터까지 추가하면서 차차 발전을 하였습니다. 그러나 타일맵을 직접 페인트 이벤트로 그리기에는 다양한 문제가 있는데다가 윈폼은 크로스 플랫폼도 아니기 때문에 현재는 중단되었습니다.
 
@@ -63,6 +47,40 @@ C# Winfrom으로 개발된 초안에 비해 상당한 UI 개선과 설계 개선
 |    다중 타일셋 처리     |   불가능    |
 
 ![IMG1](./docs/img/0.png)
+
+## 웹 맵 에디터 InitialEditor (개발 중)
+
+C# Winform 초안에 비해 상당한 UI 개선과 설계 개선이 있으며 자체 개발되었습니다. 크로스 플랫폼 에디터를 목표로 TypeScript와 PIXI.js 기반으로 개발하고 있습니다. 저장소는 [InitialEditor](https://github.com/biud436/InitialEditor)입니다.
+
+|          구분           |    내용     |
+| :---------------------: | :---------: |
+|          버전           |   개발 중   |
+|       레이어 갯수       |     4개     |
+| 오브젝트 배치 가능 여부 | 아직 불가능 |
+| 오브젝트 속성 변경 가능 | 아직 불가능 |
+|     스크립트 에디터     |    없음     |
+|      맵 파일 생성       |    가능     |
+|   테스트 플레이 기능    |    없음     |
+|    다중 타일셋 처리     |    가능     |
+
+![IMG_NEW_EDITOR](./docs/img/new_editor.png)
+
+## macOS 포팅 (SDL2, 2026)
+
+Windows GDI 전용이던 엔진을 SDL2 백엔드로 포팅하여 macOS에서 구동됩니다. 이 작업부터는 AI(Claude)와의 협업으로 진행하였으며, 게임 로직과 Lua 스크립트는 손대지 않고 플랫폼 차이를 어댑터 계층에서 흡수하는 원칙을 지켰습니다. GDI 원형은 `archive/windows-gdi` 브랜치에 그대로 보존되어 있습니다.
+
+## Android 포팅 (SDL2, 2026)
+
+macOS 포팅을 기반으로 Android까지 확장하였습니다. 역시 AI와의 협업으로 진행하였고, 실기(Galaxy S24)에서 풀 스크린 구동, 터치 입력, 오디오 재생을 확인했습니다. APK를 다시 설치하지 않고 Lua 스크립트를 실행 중인 게임에 밀어 넣는 핫 리로드(HMR)도 이때 추가되었습니다. 이후 검수 자동화(단위 테스트, 픽셀 검증, CI)도 같은 방식으로 구축하고 있습니다.
+
+# 앞으로의 계획
+
+롤플레잉 게임 제작이 가능한 수준까지 엔진을 확장하는 것이 다음 목표입니다. 단계별 계획과 진행 상황은 [docs/plans](./docs/plans/index.md)에서 관리합니다.
+
+- 타일맵 시스템과 맵 파일 포맷 정리
+- InitialEditor 연동: 로컬 브리지 서버를 통한 맵 저장과 스크립트 편집
+- Lua로 작성하는 RPG 프레임워크: 캐릭터 이동, 이벤트, 대화창
+- 위 요소를 모두 사용하는 데모 게임 제작
 
 # 스크립트 예제
 
@@ -210,12 +228,12 @@ Image 객체는 Sprite Sheet를 사용하여 Character Animation을 표현하기
 	image.setAnimComplete(isCompletedAnimation)
 ```
 
-Image가 감싸는 저수준 `Sprite.*` API에는 다음도 있습니다.
+저수준 `Sprite.*` API로는 다음 기능도 사용할 수 있습니다.
 
 ```lua
-	-- 스프라이트 시트 분할 설정 (기본 4x4. R2K3 CharSet처럼 3x4 시트에 필요)
+	-- 스프라이트 시트의 분할을 지정합니다. 기본값은 4x4입니다.
 	Sprite.SetSheetGrid(spriteId, cols, rows)
-	-- 스프라이트 해제. 텍스처는 TextureManager가 소유하므로 별도로 Remove
+	-- 스프라이트 메모리를 해제합니다. 텍스처는 TextureManager.Remove로 따로 해제합니다.
 	Sprite.Dispose(spriteId)
 ```
 
@@ -308,13 +326,13 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 	PreparaFont(fontFilePath)
 	--텍스트 묘화 (Bitmap Text 기반입니다.)
 	DrawText(x, y, text)
-	-- 그리지 않고 텍스트의 픽셀 폭만 측정 (가운데 정렬, 자동 줄바꿈용)
-	local w = GetTextWidth(text)
+	-- 텍스트를 그리지 않고 픽셀 단위 폭을 반환합니다.
+	local width = GetTextWidth(text)
 ```
 
 # Json
 
-JSON 파일을 Lua 테이블로 읽습니다. 객체는 문자열 키 테이블, 배열은 1부터 시작하는 테이블, null은 nil이 됩니다. 실패하면 nil과 오류 메시지를 돌려줍니다.
+JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시작하는 테이블이 되고, null은 nil이 됩니다. 로드에 실패하면 nil과 오류 메시지를 반환합니다.
 
 ```lua
 	local data, err = Json.Load("./resources/maps/map1.json")
@@ -362,8 +380,7 @@ JSON 파일을 Lua 테이블로 읽습니다. 객체는 문자열 키 테이블,
 	WindowHeight()
 
 	-- 평균 FPS
-	-- 고정 프레임을 사용하지 않으므로
-	-- 보통 100 프레임 이상이 나와야 정상입니다.
+	-- SDL2 백엔드는 고정 16ms 스텝과 vsync를 사용하므로 보통 60이 나옵니다.
 	GetFrameCount()
 
 
@@ -441,34 +458,12 @@ cmake --build build
 ./build/phase0_sanity   # lua/sqlite/json 동작 검증
 ./build/phase1_sanity   # 엔진 코어 검증
 
-# 엔진 테스트 스위트 (Lua 테스트 씬 + 픽셀 검증)
-python3 tests/run_engine_tests.py
 ```
 
 `scripts/main.lua`가 참조하는 일부 이미지 에셋은 저장소에 포함되어 있지 않습니다.
 로컬 테스트용 플레이스홀더는 `python3 tools/generate_placeholder_assets.py`로 생성할 수 있습니다.
 
 포팅 상세 내역은 `docs/porting/phase0-inventory.md`를 참조하십시오.
-
-## 테스트 (통합 검수)
-
-전체 검수는 한 줄로 실행합니다. 상세 전략은 `docs/plans/09-testing.md`를 참조하십시오.
-
-```bash
-# 빌드 + C++ 단위 테스트 + Lua 단위 테스트 + 픽셀 검증 + 골든 스크린샷 비교
-tests/run_all.sh
-
-# 헤드리스 실행 (CI와 동일, 창을 띄우지 않음 — 소프트웨어 렌더러 폴백)
-SDL_VIDEODRIVER=dummy tests/run_all.sh
-
-# 렌더링을 의도적으로 바꿨을 때: 골든 스크린샷 갱신
-tests/run_all.sh --update-golden   # 갱신된 tests/golden/*.png 를 눈으로 확인한 뒤 커밋
-```
-
-- **C++ 단위 테스트**: `tests/unit/`에 파일을 추가하고 `CMakeLists.txt`의 `engine_unit_tests` 목록에 명시합니다. 프레임워크는 `tests/unit/test_framework.h` (외부 의존 없음).
-- **Lua 단위 테스트**: `tests/lua/cases/`에 케이스를 추가하고 `tests/lua/manifest.lua` 목록에 명시합니다. 엔진 바이너리의 Lua VM에서 실행됩니다.
-- **골든 스크린샷**: `tests/golden/`의 기준 이미지와 캡처를 논리 해상도로 정규화해 비교합니다 (채널 오차 24, 차이 픽셀 1% 허용). 갱신은 반드시 `--update-golden`으로만 합니다.
-- CI는 `.github/workflows/tests.yml`이 macOS 러너에서 위와 동일한 검수를 헤드리스로 실행합니다.
 
 ## Android (SDL2 백엔드, Gradle + NDK)
 
@@ -517,6 +512,29 @@ push가 도착하면 게임이 Lua VM을 재시작하고 `main.lua`부터 다시
 (**풀 리스타트** — 점수 등 게임 진행 상태는 초기화됩니다).
 동작 로그는 `adb logcat -s SDL/APP`에서 `HotReload:` 태그로 확인할 수 있습니다.
 프로토콜과 설계 상세는 `docs/porting/android-hmr-plan.md`를 참조하십시오.
+
+# 테스트
+
+전체 검수는 스크립트 하나로 실행합니다. C++ 단위 테스트, Lua 단위 테스트, 픽셀 검증, 골든 스크린샷 비교가 순서대로 수행됩니다.
+
+```bash
+# 빌드부터 전체 테스트까지 한 번에 실행
+tests/run_all.sh
+
+# 헤드리스 실행 (CI와 동일한 방식, 창을 띄우지 않습니다)
+SDL_VIDEODRIVER=dummy tests/run_all.sh
+
+# 렌더링 결과를 의도적으로 바꾼 경우 골든 스크린샷을 갱신합니다.
+# 갱신된 tests/golden/*.png 파일을 눈으로 확인한 뒤 커밋하십시오.
+tests/run_all.sh --update-golden
+```
+
+테스트를 추가하는 방법은 다음과 같습니다.
+
+- C++ 단위 테스트는 `tests/unit/`에 파일을 만들고 `CMakeLists.txt`의 `engine_unit_tests` 목록에 추가합니다.
+- Lua 단위 테스트는 `tests/lua/cases/`에 파일을 만들고 `tests/lua/manifest.lua` 목록에 추가합니다. 엔진에 내장된 Lua VM에서 실행됩니다.
+
+푸시할 때마다 GitHub Actions(macOS 러너)가 같은 검수를 헤드리스로 실행합니다.
 
 # 코딩 스타일
 
