@@ -114,7 +114,7 @@ CI는 GitHub Actions macOS 러너에서 "빌드 → 단위 → 골든 → 시나
 - [x] `engine_unit_tests` CMake 타겟과 assert 헬퍼 (`tests/unit/test_framework.h`, 2026-08-15. 소스는 GLOB이 아니라 명시 목록 — 파일 삭제 시 스테일 오브젝트가 링크에 남는 것을 실측으로 확인)
 - [x] Lua 테스트 러너 `tests/lua/run_tests.lua`와 엔진 헤드리스 실행 검증 — `SDL_VIDEODRIVER=dummy` 동작 확인. 가속 렌더러가 없는 환경을 위해 소프트웨어 렌더러 폴백을 `AppSDL2.cpp`에 추가
 - [x] 골든 스크린샷 러너 (`tests/run_engine_tests.py`: 논리 해상도 정규화, 채널 오차 24, 차이 픽셀 1%, `--update-golden`. 첫 골든 2장 생성과 눈 확인 완료)
-- [ ] 입력 시퀀스 재생기 (`AUTOPLAY` 확장)와 시나리오 형식 정의
+- [x] 입력 시퀀스 재생기 (`tests/lua/input_replay.lua`) — 엔진 4-상태 머신과 동일한 전이 의미(rising/held/falling)를 순수 Lua로 재현, 프레임 인덱스 시나리오 형식 정의, 전이 의미 단위 테스트 21건 (2026-08-15)
 - [x] `rpg.rng` 시드 규칙을 5단계 문서에 반영 (구현 시 강제)
 - [x] 통합 실행 스크립트 `tests/run_all.sh` (빌드 + C++ 단위 + Lua 단위 + 픽셀 검증 + 골든)
 - [x] GitHub Actions 워크플로우 — `.github/workflows/tests.yml`, macOS 헤드리스로 전체 검수 실행. 첫 실행에서 예견대로 골든 소음(로컬 Retina 가속 대 CI 1배율 소프트웨어 렌더러)이 1.04%로 실측되어 허용 오차를 2%로 보정, 두 번째 실행 통과 (2026-08-15). 브리지 Node 잡은 3단계에서 추가

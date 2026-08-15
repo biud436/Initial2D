@@ -6,4 +6,5 @@
 return {
     "scripts/luatests/cases/framework_selftest",
     "scripts/luatests/cases/api_surface_test",
+    "scripts/luatests/cases/input_replay_test",
 }
