@@ -26,7 +26,11 @@ GOLDEN_DIR = os.path.join(REPO, "tests", "golden")
 UPDATE_GOLDEN = "--update-golden" in sys.argv
 LOGICAL_SIZE = (768, 896)          # 논리 해상도 — Retina 배율 차이를 정규화한다
 GOLDEN_PIXEL_TOL = 24              # 채널당 허용 오차
-GOLDEN_DIFF_RATIO = 0.01           # 초과 픽셀 허용 비율 (실제 소음을 보고 조정)
+# 초과 픽셀 허용 비율. 실측 근거(2026-08-15 CI 첫 실행):
+#   로컬(Retina 2배, 가속) 골든 대 CI(1배, 소프트웨어 렌더러) 캡처의 소음 = 1.04%
+#   서로 다른 씬(진짜 차이)의 비율 = 25.77%
+# → 소음의 약 2배, 신호의 1/12 지점인 2%로 설정.
+GOLDEN_DIFF_RATIO = 0.02
 
 PASSES = []
 FAILS = []
