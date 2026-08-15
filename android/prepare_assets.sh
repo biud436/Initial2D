@@ -16,6 +16,7 @@ mkdir -p "$ASSETS"
 cp -R "$ROOT/scripts"   "$ASSETS/scripts"
 cp -R "$ROOT/resources" "$ASSETS/resources"
 [ -f "$ROOT/config.setting" ] && cp "$ROOT/config.setting" "$ASSETS/"
+[ -f "$ROOT/game.json" ] && cp "$ROOT/game.json" "$ASSETS/"
 [ -f "$ROOT/db.sqlite" ]      && cp "$ROOT/db.sqlite"      "$ASSETS/"
 
 find "$ASSETS" -name .DS_Store -delete

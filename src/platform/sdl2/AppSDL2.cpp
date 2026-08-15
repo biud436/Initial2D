@@ -27,11 +27,56 @@
 #include <sstream>
 #include <cstdio>
 #include <vector>
+#include <fstream>
 
 #include <sys/stat.h>
 
 #include "../Utf8.h"
 #include "../HotReloadServer.h"
+
+#include "json/json.h"
+
+/**
+ * @brief 게임별 해상도 설정을 읽는다 (1단계, docs/plans/01-engine-core.md).
+ *
+ * 우선순위: INITIAL2D_WINDOW=WxH 환경 변수 > 프로젝트 루트의 game.json >
+ * Constants.h 기본값(768x896). game.json 예:
+ *   { "windowWidth": 320, "windowHeight": 240 }
+ */
+void App::LoadDisplaySettings()
+{
+	int width = GetWindowWidth();
+	int height = GetWindowHeight();
+
+	std::ifstream file("./game.json", std::ifstream::binary);
+	if (file.good())
+	{
+		try
+		{
+			Json::Value root;
+			file >> root;
+			width = root.get("windowWidth", width).asInt();
+			height = root.get("windowHeight", height).asInt();
+		}
+		catch (const std::exception& e)
+		{
+			std::fprintf(stderr, "game.json parse error: %s\n", e.what());
+		}
+	}
+
+	const char* env = SDL_getenv("INITIAL2D_WINDOW");
+	if (env != nullptr)
+	{
+		int w = 0, h = 0;
+		if (std::sscanf(env, "%dx%d", &w, &h) == 2)
+		{
+			width = w;
+			height = h;
+		}
+	}
+
+	SetWindowSize(width, height);
+}
 
 namespace {
 
@@ -84,6 +129,11 @@ int App::Run(int nCmdShow)
 	// 매니페스트의 landscape 설정이 무시된다. 힌트로 가로 모드를 명시한다.
 	SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
 #endif
+
+	// 게임별 해상도 설정. 프로젝트 루트의 game.json에서 읽고,
+	// 없으면 기본값(Constants.h의 WINDOW_WIDTH x WINDOW_HEIGHT)을 쓴다.
+	// INITIAL2D_WINDOW=WxH 환경 변수가 있으면 그것이 우선한다 (개발과 테스트용).
+	LoadDisplaySettings();
 
 	Uint32 windowFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI;
 #ifdef __ANDROID__

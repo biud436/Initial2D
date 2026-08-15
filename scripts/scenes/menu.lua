@@ -69,7 +69,7 @@ function MenuScene.update(elapsed)
 		b.img.update(0)
 
 		if inside and Input.IsMouseDown(0) then
-			Audio.PlaySound("./resources/audio/point.wav", "uiSelect", true)
+			Audio.PlaySound("./resources/audio/point.wav", "uiSelect", 1)
 			SwitchScene(b.scene)
 		end
 	end

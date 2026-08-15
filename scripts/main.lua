@@ -31,7 +31,7 @@ function Initialize()
 
 	-- 폰트·BGM은 씬 공용 자원이라 허브에서 한 번만 준비한다
 	FontReady = PreparaFont("./resources/fonts/hangul.fnt")
-	Audio.PlayMusic("./resources/audio/bless.ogg", "bgm", -1)
+	Audio.PlayMusic("./resources/audio/bless.ogg", "bgm", true)
 	Audio.SetVolume(96)
 
 	current = scenes.menu

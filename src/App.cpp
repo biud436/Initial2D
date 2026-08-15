@@ -135,6 +135,19 @@ const int App::GetWindowHeight() const
 	return m_nWindowHeight;
 }
 
+/**
+* @brief 창(논리 해상도) 크기를 설정합니다. 창 생성 전에 호출해야 합니다.
+*/
+void App::SetWindowSize(int width, int height)
+{
+	if (width <= 0 || height <= 0)
+	{
+		return;
+	}
+	m_nWindowWidth = width;
+	m_nWindowHeight = height;
+}
+
 #ifdef RS_WINDOWS
 
 /**

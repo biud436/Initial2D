@@ -54,9 +54,9 @@ local function gap()
 end
 
 local function sfx(name)
-	-- 참고: 엔진의 PlaySound는 loop=true일 때 청크를 2회 연속 재생하므로
-	-- 효과음 파일 자체가 절반 길이로 만들어져 있다 (false는 무한 반복이라 금지)
-	Audio.PlaySound("./resources/audio/" .. name .. ".wav", name, true)
+	-- loop에 숫자를 주면 추가 반복 횟수다 (1 = 2회 연속 재생).
+	-- 효과음 파일이 절반 길이로 만들어져 있어 2회 재생이 정상 길이가 된다.
+	Audio.PlaySound("./resources/audio/" .. name .. ".wav", name, 1)
 end
 
 local function flapPressed()

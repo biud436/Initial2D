@@ -235,6 +235,29 @@ def test_tilemap_scene():
         shutil.copy(os.path.join(work, "shot_0030.bmp"), "/tmp/initial2d_tilemap_scene.bmp")
 
 
+def test_resolution():
+    """game.json과 INITIAL2D_WINDOW의 해상도 설정을 검증한다 (1단계)."""
+    print("\n[3] resolution_scene — 게임별 해상도 설정")
+    work = make_workdir("resolution_scene.lua")
+    with open(os.path.join(work, "game.json"), "w") as f:
+        f.write('{ "windowWidth": 320, "windowHeight": 240 }')
+
+    env = dict(os.environ)
+    env.pop("INITIAL2D_WINDOW", None)
+    env["INITIAL2D_EXIT_AFTER"] = "10"
+    r1 = subprocess.run([GAME], cwd=work, env=env,
+                        capture_output=True, text=True, timeout=60)
+    log1 = r1.stdout + r1.stderr
+    check("game.json 해상도 적용 (320x240)", "resolution:320x240" in log1, log1[-200:])
+
+    env["INITIAL2D_WINDOW"] = "200x100"
+    r2 = subprocess.run([GAME], cwd=work, env=env,
+                        capture_output=True, text=True, timeout=60)
+    log2 = r2.stdout + r2.stderr
+    check("INITIAL2D_WINDOW가 game.json보다 우선 (200x100)",
+          "resolution:200x100" in log2, log2[-200:])
+
+
 def main():
     if not os.path.exists(GAME):
         print(f"실행 파일이 없습니다: {GAME} — 먼저 cmake --build build 를 실행하세요")
@@ -243,6 +266,7 @@ def main():
     test_lua_units()
     test_assert_scene()
     test_tilemap_scene()
+    test_resolution()
 
     print(f"\n결과: {len(PASSES)} PASS / {len(FAILS)} FAIL")
     if FAILS:

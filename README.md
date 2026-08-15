@@ -257,6 +257,8 @@ Image 객체에서 내부적으로 호출하므로 굳이 수동으로 사용할
 OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오 파일을 재생할 수 있습니다.
 
 ```lua
+	-- loop: true = 무한 반복, false = 한 번 재생
+	-- 숫자를 주면 SDL_mixer의 루프 값을 그대로 사용합니다.
 	Audio.PlayMusic(path, id, loop) -- BGM 재생
 	Audio.PlaySound(path, id, loop) -- SE 재생
 	Audio.SetVolume(vol) -- BGM 볼륨 설정
@@ -393,6 +395,16 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 	-- 리소스 파일 목록을 반환합니다 (암호화 X)
 	GetResourcesFiles()
 ```
+
+# 게임 설정
+
+프로젝트 루트에 `game.json` 파일을 두면 게임별 설정을 지정할 수 있습니다. 파일이 없으면 기본 해상도(768x896)를 사용합니다.
+
+```json
+{ "windowWidth": 320, "windowHeight": 240 }
+```
+
+개발 중에는 `INITIAL2D_WINDOW=320x240` 환경 변수로 해상도를 임시로 바꿀 수 있습니다. 환경 변수가 `game.json`보다 우선합니다. (SDL2 백엔드 전용)
 
 # 브랜치 구조
 

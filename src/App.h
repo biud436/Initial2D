@@ -125,6 +125,17 @@ public:
 	const int GetWindowWidth() const;
 	const int GetWindowHeight() const;
 
+	/**
+	* @brief 창(논리 해상도) 크기를 설정합니다. 창 생성 전에 호출해야 합니다.
+	*/
+	void SetWindowSize(int width, int height);
+
+	/**
+	* @brief game.json과 INITIAL2D_WINDOW 환경 변수에서 해상도 설정을 읽습니다.
+	*        SDL2 백엔드 전용 (구현: platform/sdl2/AppSDL2.cpp).
+	*/
+	void LoadDisplaySettings();
+
 	DeviceContext& GetContext();
 	TextureManager& GetTextureManager();
 	GameStateMachine& GetGameStateMachine();

@@ -18,6 +18,25 @@ LuaObjectToken luaj_Audio[LUA_AUDIO_MEMBERS] = {
 	{ "ReleaseMusic",  Lua_ReleaseMusic },
 };
 
+/**
+ * @brief loop 인자를 SDL_mixer 루프 값으로 해석한다.
+ *
+ * 불리언이면 true = 무한 반복(-1), false = 한 번 재생.
+ * 숫자면 SDL_mixer 값을 그대로 쓴다 (음악: 재생 횟수, 효과음: 추가 반복 횟수 —
+ * 예를 들어 효과음에 1을 주면 두 번 재생된다).
+ *
+ * 기존 코드는 lua_toboolean 결과가 0일 때 -1로 바꿨는데, Lua에서는 숫자 0도
+ * 참이라 false만 무한 반복이 되는 반전된 동작이었다 (1단계 버그 수정).
+ */
+static int ResolveLoopArg(lua_State* pL, int index, int onceValue)
+{
+	if (lua_type(pL, index) == LUA_TBOOLEAN)
+	{
+		return lua_toboolean(pL, index) ? -1 : onceValue;
+	}
+	return static_cast<int>(luaL_optinteger(pL, index, onceValue));
+}
+
 LUA_METHOD(CreateAudioObject)
 {
 	lua_newtable(pL);
@@ -74,11 +93,8 @@ LUA_METHOD(PlayMusic)
 	// id
 	std::string id = lua_tostring(pL, 2);
 
-	// loop (int)
-	int loop = lua_toboolean(pL, 3);
-
-	if (loop == 0)
-		loop = -1;
+	// loop: true = 무한 반복, false = 한 번 (Mix_FadeInMusic은 1이 한 번)
+	int loop = ResolveLoopArg(pL, 3, 1);
 
 	bool result = Audio->load(path, id, SOUND_MUSIC);
 
@@ -105,11 +121,8 @@ LUA_METHOD(InsertNextMusic)
 	// id
 	std::string id = lua_tostring(pL, 2);
 
-	// loop (int)
-	int loop = lua_toboolean(pL, 3);
-
-	if (loop == 0)
-		loop = -1;
+	// loop: true = 무한 반복, false = 한 번
+	int loop = ResolveLoopArg(pL, 3, 1);
 
 	bool result = Audio->load(path, id, SOUND_MUSIC);
 
@@ -136,11 +149,8 @@ LUA_METHOD(PlaySound)
 	// id
 	std::string id = lua_tostring(pL, 2);
 
-	// loop (int)
-	int loop = lua_toboolean(pL, 3);
-
-	if (loop == 0)
-		loop = -1;
+	// loop: true = 무한 반복, false = 한 번 (Mix_PlayChannel은 0이 한 번)
+	int loop = ResolveLoopArg(pL, 3, 0);
 
 	bool result = Audio->load(path, id, SOUND_SFX);
 

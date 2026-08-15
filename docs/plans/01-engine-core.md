@@ -23,7 +23,7 @@
 - [x] `Json.Load(path)` → Lua 테이블 변환 바인딩 (`src/lua_json.cpp`, 실패 시 nil + 오류 메시지, Lua 테스트 17건)
 - [x] `Sprite.SetSheetGrid(handle, cols, rows)` 추가, 기본 4x4 유지. 겸사겸사 `setRect`의 행 계산이 행 수로 나누던 잠복 버그(4x4에서만 우연히 동작)도 수정
 - [x] `Sprite.Dispose(handle)` 추가. `Sprite.GetRect`의 lua_settable 인덱스 오류(호출 즉시 런타임 오류)도 발견해 수정
-- [ ] 화면 설정을 게임이 정하게 한다. `config.setting` 또는 Lua 초기화 시점에 논리 해상도(폭, 높이)를 지정할 수 있어야 한다. 기존 게임(플래피버드)은 768x896을 명시해서 동작 유지.
+- [x] 화면 설정을 게임이 정하게 한다 — 프로젝트 루트의 `game.json`(`windowWidth`, `windowHeight`)에서 읽고, `INITIAL2D_WINDOW=WxH` 환경 변수가 우선한다 (개발과 테스트용). 파일이 없으면 기존 기본값 768x896 유지. `config.setting`은 엔진이 쓰는 출력 파일이라 쓰지 않기로 결정.
 
 ### B. 버그 수정
 
@@ -31,7 +31,7 @@
 - [x] `Font::open()`의 반전된 guard 수정 (첫 호출이 파싱을 건너뛰던 문제)
 - [ ] `src/Tilemap.cpp`의 백슬래시 경로 문제 — 2단계 재작성에서 해결하기로 결정
 - [x] `Rectangle.h`의 `operator=` return 누락 수정 (연쇄 대입 회귀 테스트 포함)
-- [ ] `Lua_PlayMusic`의 루프 플래그 반전 문제 (`false`가 무한 반복). flappy.lua의 우회 코드와 함께 고쳐야 하므로 별도 작업으로.
+- [x] 오디오 루프 플래그 정리 — 원인은 반전이 아니라 `lua_toboolean` 뒤 `0이면 -1` 변환이었고, Lua에서는 숫자 0도 참이라 사실상 false만 무한 반복이 되는 구조였다. 새 계약: 불리언 true = 무한, false = 1회, 숫자 = SDL_mixer 원시 루프 값. flappy와 menu의 효과음은 "절반 길이 파일을 2회 재생"하던 기존 소리를 보존하기 위해 숫자 1로 변경. `PlayMusic`, `PlaySound`, `InsertNextMusic` 모두 적용.
 
 ### C. 결정 사항 (구현 전에 확정)
 
@@ -40,11 +40,11 @@
 
 ## 완료 기준
 
-- [ ] 한글 문자열의 폭을 Lua에서 측정해 화면 가운데 정렬하는 테스트 씬이 동작한다 ('힣' 포함).
-- [ ] Lua에서 JSON 파일을 읽어 테이블로 순회하는 테스트가 통과한다.
-- [ ] 3x4 시트의 스프라이트가 올바른 프레임으로 애니메이션된다.
-- [ ] 플래피버드가 기존과 동일하게 동작한다 (회귀 없음, `tests/run_engine_tests.py` 통과).
-- [ ] macOS와 Android 양쪽에서 확인.
+- [x] 한글 문자열의 폭을 Lua에서 측정할 수 있다 ('힣' 경계 포함, DrawText 반환 폭과 일치 검증). font_text_test 12건.
+- [x] Lua에서 JSON 파일을 읽어 테이블로 순회하는 테스트가 통과한다. json_load_test 17건.
+- [x] 3x4 시트의 프레임이 올바른 아틀라스 좌표로 계산된다 (GetRect 검증). sprite_sheet_test 12건.
+- [x] 플래피버드가 기존과 동일하게 동작한다 (골든 스크린샷 포함 전체 스위트 통과).
+- [ ] macOS와 Android 양쪽에서 확인 — macOS 완료, **Android 실기 확인 남음** (빌드와 실행, 해상도와 오디오 동작).
 
 ## 의존 관계
 
