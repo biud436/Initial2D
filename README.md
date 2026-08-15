@@ -589,6 +589,38 @@ push가 도착하면 게임이 Lua VM을 재시작하고 `main.lua`부터 다시
 동작 로그는 `adb logcat -s SDL/APP`에서 `HotReload:` 태그로 확인할 수 있습니다.
 프로토콜과 설계 상세는 `docs/porting/android-hmr-plan.md`를 참조하십시오.
 
+## 에디터 브리지 서버 (InitialEditor 연동)
+
+웹 앱인 [InitialEditor](https://github.com/biud436/InitialEditor)가 이 프로젝트의 `scripts/`와 `resources/`를
+직접 읽고 쓰게 하는 작은 Node 서버입니다 (`tools/bridge/`, Node 20 이상, 외부 의존성 없음).
+브라우저에서 스크립트를 고쳐 저장하면 브리지가 파일을 쓰고, 이어서 위의 HMR 서버로 push 해
+실행 중인 게임이 즉시 다시 뜹니다.
+
+```bash
+# 1. 게임을 HMR 켜고 실행 (macOS 예시, Android는 adb forward 후 동일)
+INITIAL2D_HMR=1 ./build/Initial2D
+
+# 2. 브리지 서버 실행 (기본: 이 저장소를 프로젝트로, 127.0.0.1:5960)
+node tools/bridge/server.js
+node tools/bridge/server.js --project ~/mygame --port 5960 --hmr-port 5959
+
+# 3. InitialEditor 실행 (에디터 저장소에서) 후 브라우저에서 스크립트 편집 → Ctrl+S
+yarn dev
+```
+
+| 메서드와 경로 | 역할 |
+|---|---|
+| `GET /api/project` | 프로젝트 정보 (스크립트, 맵, 타일셋 목록) |
+| `GET /api/files/<path>` | 파일 읽기 (`scripts/`, `resources/` 아래만) |
+| `PUT /api/files/<path>` | 파일 쓰기 (원자적 쓰기, 상위 폴더 자동 생성) |
+| `DELETE /api/files/<path>` | 파일 삭제 |
+| `POST /api/reload` | `scripts/**/*.lua`를 게임 HMR 서버로 push |
+| WebSocket `/ws` | 파일 변경 알림 (`origin`이 `external`이면 다른 편집기가 고친 것) |
+
+- 127.0.0.1에만 바인드하며, 브라우저 origin은 루프백(`localhost`, `127.0.0.1`)만 허용합니다 (`--allow-origin`으로 추가 가능).
+- 화이트리스트 밖 경로와 `..` 탈출은 403으로 거부합니다.
+- 테스트: `node --test tools/bridge/test/*.test.js` (전체 검수 `tests/run_all.sh`에도 포함).
+
 # 테스트
 
 전체 검수는 스크립트 하나로 실행합니다. C++ 단위 테스트, Lua 단위 테스트, 픽셀 검증, 골든 스크린샷 비교가 순서대로 수행됩니다.

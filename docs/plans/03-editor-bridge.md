@@ -47,7 +47,7 @@ graph LR
 
 InitialEditor에는 Ace 기반 Lua 에디터가 이미 있다 (`packages/renderer/src/components/CodeEditor.tsx`, mode-lua 로드됨). 지금은 빈 문자열이 하드코딩되어 있고 저장 기능이 없다. 이것을 브리지에 연결하는 것만으로 에디터의 첫 실용 가치가 나온다.
 
-- [ ] 브리지 서버 골격: 파일 읽기와 쓰기 API, 화이트리스트, CORS(에디터 dev 서버 origin만 허용)
+- [x] 브리지 서버 골격: 파일 읽기와 쓰기 API, 화이트리스트, CORS(에디터 dev 서버 origin만 허용) — `tools/bridge/server.js` (의존성 없음, `lib/files.js` 화이트리스트, `lib/hmr.js` I2DH push, `lib/ws.js` 최소 WebSocket). 테스트 `tools/bridge/test/`가 `tests/run_all.sh` 4단계로 편입. 종단 확인: 헤드리스 엔진(`INITIAL2D_HMR=1`)에 PUT 후 `POST /api/reload` → `HotReload: reloaded with 8 files`
 - [ ] InitialEditor에 `BridgeFileProvider` 추가 — 기존 `FileProvider`(localStorage 심)와 같은 인터페이스로 브리지 HTTP를 호출 (axios 의존성이 이미 있음)
 - [ ] Lua 에디터에 파일 목록, 열기, 저장(Ctrl+S) 연결
 - [ ] 저장 시 자동 HMR push 옵션 (`POST /api/reload`) — 브라우저에서 스크립트를 고치면 실행 중인 게임이 즉시 반영
