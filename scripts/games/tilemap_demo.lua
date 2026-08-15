@@ -34,7 +34,9 @@ function TilemapDemoScene.init()
 	t = 0
 	fpsAvg = 0
 
-	map, mapError = Tilemap.Load("./resources/maps/sample.json")
+	-- INITIAL2D_MAP 으로 다른 맵 파일을 열 수 있다 (에디터가 내보낸 맵 확인용)
+	local mapPath = (os.getenv ~= nil) and os.getenv("INITIAL2D_MAP") or nil
+	map, mapError = Tilemap.Load(mapPath or "./resources/maps/sample.json")
 	if map ~= nil then
 		mapW, mapH, tileW, tileH, layerCount = Tilemap.GetSize(map)
 		-- 시작 카메라: 맵 중앙 (마을 구역)

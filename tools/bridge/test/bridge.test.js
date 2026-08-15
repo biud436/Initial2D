@@ -169,6 +169,15 @@ describe('bridge server', () => {
     assert.equal(png.body.length, 4);
   });
 
+  it('HEAD /api/files answers existence without a body', async () => {
+    const hit = await fetch(`${base}/api/files/resources/tiles/a.png`, { method: 'HEAD' });
+    assert.equal(hit.status, 200);
+    assert.equal(hit.headers.get('content-length'), '4');
+    assert.equal((await hit.arrayBuffer()).byteLength, 0);
+    const miss = await fetch(`${base}/api/files/resources/tiles/missing.png`, { method: 'HEAD' });
+    assert.equal(miss.status, 404);
+  });
+
   it('GET missing file → 404, path escape → 403, other roots → 403', async () => {
     assert.equal((await api(base, 'GET', '/api/files/scripts/nope.lua')).status, 404);
     assert.equal((await api(base, 'GET', '/api/files/scripts/../secret.txt')).status, 403);

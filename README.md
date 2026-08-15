@@ -612,14 +612,34 @@ yarn dev
 |---|---|
 | `GET /api/project` | 프로젝트 정보 (스크립트, 맵, 타일셋 목록) |
 | `GET /api/files/<path>` | 파일 읽기 (`scripts/`, `resources/` 아래만) |
+| `HEAD /api/files/<path>` | 파일 존재 여부와 크기 |
 | `PUT /api/files/<path>` | 파일 쓰기 (원자적 쓰기, 상위 폴더 자동 생성) |
 | `DELETE /api/files/<path>` | 파일 삭제 |
 | `POST /api/reload` | `scripts/**/*.lua`를 게임 HMR 서버로 push |
 | WebSocket `/ws` | 파일 변경 알림 (`origin`이 `external`이면 다른 편집기가 고친 것) |
 
+에디터에서 할 수 있는 일은 다음과 같습니다.
+
+| 기능 | 조작 | 결과 |
+|---|---|---|
+| 스크립트 편집 | Tools → Script Editor | `scripts/**/*.lua`를 열고 Ctrl+S로 저장, 저장 직후 게임 리로드 |
+| 맵 내보내기 | Ctrl+E | 맵 포맷 v1로 `resources/maps/<이름>.json` 저장, 필요한 타일셋 이미지도 함께 복사 |
+| 맵 열기 | Ctrl+O | `resources/maps/*.json`을 에디터로 불러오기 |
+| 맵 저장 | Ctrl+S | 열려 있는 맵을 같은 경로에 다시 저장 (경로가 없으면 내보내기 대화상자) |
+| 새 맵 | Ctrl+N | 이름, ID, 크기를 정해 빈 맵 만들기 |
+
 - 127.0.0.1에만 바인드하며, 브라우저 origin은 루프백(`localhost`, `127.0.0.1`)만 허용합니다 (`--allow-origin`으로 추가 가능).
 - 화이트리스트 밖 경로와 `..` 탈출은 403으로 거부합니다.
 - 테스트: `node --test tools/bridge/test/*.test.js` (전체 검수 `tests/run_all.sh`에도 포함).
+
+에디터가 내보낸 맵은 다음과 같이 확인합니다. 시작 씬과 맵 파일을 환경 변수로 지정할 수 있습니다.
+
+```bash
+# 타일맵 데모를 바로 열고, 에디터가 내보낸 맵을 그리게 합니다 (헤드리스 + 스크린샷)
+SDL_VIDEODRIVER=dummy INITIAL2D_SCENE=tilemap INITIAL2D_MAP=./resources/maps/my_map.json \
+  INITIAL2D_SCREENSHOT=/tmp/shot_%04ld.bmp INITIAL2D_SCREENSHOT_FRAME=40 \
+  INITIAL2D_EXIT_AFTER=60 ./build/Initial2D
+```
 
 # 테스트
 

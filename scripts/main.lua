@@ -36,7 +36,9 @@ function Initialize()
 	Audio.PlayMusic("./resources/audio/bless.ogg", "bgm", true)
 	Audio.SetVolume(96)
 
-	current = scenes.menu
+	-- 시작 씬은 메뉴. INITIAL2D_SCENE 으로 특정 씬을 바로 열 수 있다 (검증과 스크린샷용)
+	local startScene = (os.getenv ~= nil) and os.getenv("INITIAL2D_SCENE") or nil
+	current = (startScene ~= nil and scenes[startScene]) or scenes.menu
 	current.init()
 end
 

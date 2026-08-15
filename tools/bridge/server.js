@@ -13,6 +13,7 @@
 //   GET    /api/health           서버 상태
 //   GET    /api/project          프로젝트 정보 (스크립트, 맵, 타일셋 목록)
 //   GET    /api/files/<path>     파일 읽기 (텍스트와 바이너리, Content-Type은 확장자로)
+//   HEAD   /api/files/<path>     존재 여부와 크기만 (본문 없음)
 //   PUT    /api/files/<path>     파일 쓰기 (본문이 파일 내용, 상위 폴더 자동 생성)
 //   DELETE /api/files/<path>     파일 삭제
 //   POST   /api/reload           scripts/**/*.lua 를 엔진 HMR 서버로 push (본문 JSON {host, port} 선택)
@@ -109,7 +110,7 @@ export function createBridge(options = {}) {
     if (!origin) return {};
     return {
       'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, HEAD, PUT, POST, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, X-Requested-With',
       'Access-Control-Expose-Headers': 'X-Bridge-Mtime, Content-Type',
       'Access-Control-Max-Age': '600',
@@ -198,7 +199,7 @@ export function createBridge(options = {}) {
 
     if (pathname.startsWith('/api/files/')) {
       const rel = pathname.slice('/api/files/'.length);
-      if (method === 'GET') {
+      if (method === 'GET' || method === 'HEAD') {
         const { rel: normalized, data, mtimeMs } = await files.read(rel);
         res.writeHead(200, {
           'Content-Type': contentTypeFor(normalized),
@@ -207,7 +208,8 @@ export function createBridge(options = {}) {
           'X-Bridge-Mtime': String(Math.floor(mtimeMs)),
           ...cors,
         });
-        res.end(data);
+        // HEAD: 존재 여부와 크기만 (에디터가 타일셋 이미지 유무를 확인할 때)
+        res.end(method === 'HEAD' ? undefined : data);
         return;
       }
       if (method === 'PUT') {
