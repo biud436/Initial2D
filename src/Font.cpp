@@ -38,8 +38,10 @@ bool Font::isValid()
 
 bool Font::open(std::string fntName)
 {
-
-	if (!isValid()) {
+	// 이미 파싱이 끝났으면 다시 하지 않는다.
+	// (기존에는 조건이 반대로 되어 있어 첫 호출이 파싱 없이 true를 반환했고,
+	//  Lua_PreparaFont가 App::LoadFont를 먼저 불러 우회하고 있었다.)
+	if (isValid()) {
 		return true;
 	}
 
@@ -112,6 +114,9 @@ bool Font::ParseFont(std::string fntName)
 		{
 			int id;
 			e->Attribute("id", &id);
+			if (id < 0 || id >= GLYPH_TABLE_SIZE) {
+				continue;
+			}
 			e->Attribute("x", &m_charsetDesc.Chars[id].x);
 			e->Attribute("y", &m_charsetDesc.Chars[id].y);
 			e->Attribute("width", &m_charsetDesc.Chars[id].Width);
@@ -131,7 +136,10 @@ bool Font::ParseFont(std::string fntName)
 			e->Attribute("first", &first);
 			e->Attribute("second", &second);
 			e->Attribute("amount", &amount);
-			
+
+			if (second < 0 || second >= GLYPH_TABLE_SIZE) {
+				continue;
+			}
 			m_charsetDesc.Chars[second].kerning[first] = amount;
 		}
 	}
@@ -286,7 +294,11 @@ int Font::drawText(int x, int y, std::wstring text)
 	// 투명색 설정을 이전으로 되돌린다.
 	tm.m_crTransparent = tempColor;
 
-	// 최대 텍스트 폭을 반환합니다.
+	// 최대 텍스트 폭을 반환합니다. 빈 문자열이면 시작 위치를 그대로 반환한다
+	// (기존에는 빈 벡터의 max_element를 역참조하는 미정의 동작이었다).
+	if (lineWidth.empty()) {
+		return x;
+	}
 	std::vector<int>::iterator iter = std::max_element(lineWidth.begin(), lineWidth.end());
 
 	return *iter;

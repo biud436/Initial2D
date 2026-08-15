@@ -13,6 +13,10 @@ class Sprite;
 #define MIN_CHAR 32
 #define MAX_CHAR 255
 
+// 글리프 테이블 크기. 한글 음절 마지막 글자 '힣'(U+D7A3 = 55203)을 포함해야
+// 하므로 상한은 0xD7A4다. 배열 크기와 ParseFont의 경계 검사가 함께 쓴다.
+#define GLYPH_TABLE_SIZE 0xD7A4
+
 /**
  * @brief 
  * 
@@ -42,7 +46,7 @@ struct Charset
 	int		Base;
 	int		Width, Height;
 	int		Pages;
-	CharDescriptor Chars[55203];
+	CharDescriptor Chars[GLYPH_TABLE_SIZE];
 	
 	bool    IsReady;
 	bool	IsTextureReady;

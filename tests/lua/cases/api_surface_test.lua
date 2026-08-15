@@ -6,6 +6,7 @@ local M = {}
 
 local GLOBALS = {
     "print", "MessageBox", "LoadScript", "PreparaFont", "DrawText",
+    "GetTextWidth",
     "WindowWidth", "WindowHeight", "GetFrameCount", "GameExit",
     "draw_text", "draw_point", "draw_set_color",
     "GetCurrentDirectory", "SetAppIcon", "GetResourcesFiles",

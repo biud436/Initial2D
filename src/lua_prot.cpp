@@ -312,6 +312,26 @@ int Lua_DrawText(lua_State *pL)
 	return 1;
 }
 
+/**
+ * @brief 그리지 않고 텍스트의 픽셀 폭만 잰다 (자동 줄바꿈과 가운데 정렬용).
+ * Lua: GetTextWidth(text) -> number
+ */
+int Lua_GetTextWidth(lua_State *pL)
+{
+	GameFont* pFont = App::GetInstance().GetFont();
+
+	int width = 0;
+	if (pFont->get()->isValid())
+	{
+		const char *text = luaL_checkstring(pL, 1);
+		const wchar_t *c = AllocWideChar(text);
+		width = pFont->get()->getTextWidth(0, 0, c);
+		RemoveWideChar(c);
+	}
+	lua_pushnumber(pL, width);
+	return 1;
+}
+
 int Lua_WindowWidth(lua_State *pL)
 {
 	lua_pushinteger(pL, App::GetInstance().GetWindowWidth());
@@ -433,6 +453,7 @@ int Lua_Init()
 		lua_register(g_pLuaState, "LoadScript", Lua_LoadScript);
 		lua_register(g_pLuaState, "PreparaFont", Lua_PreparaFont);
 		lua_register(g_pLuaState, "DrawText", Lua_DrawText);
+		lua_register(g_pLuaState, "GetTextWidth", Lua_GetTextWidth);
 		lua_register(g_pLuaState, "WindowWidth", Lua_WindowWidth);
 		lua_register(g_pLuaState, "WindowHeight", Lua_WindowHeight);
 		lua_register(g_pLuaState, "GetFrameCount", Lua_GetFrameCount);
