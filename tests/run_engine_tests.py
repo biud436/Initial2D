@@ -51,7 +51,7 @@ def make_workdir(scene):
     scripts = os.path.join(work, "scripts")
     os.makedirs(scripts)
     # 저자의 Lua 모듈은 그대로 사용한다
-    for module in ("image.lua", "tilemap.lua", "Font.lua"):
+    for module in ("image.lua", "Font.lua"):
         src = os.path.join(REPO, "scripts", module)
         if os.path.exists(src):
             shutil.copy(src, scripts)
@@ -60,9 +60,11 @@ def make_workdir(scene):
     return work
 
 
-def run_scene(scene, frames, exit_after):
+def run_scene(scene, frames, exit_after, extra_env=None):
     work = make_workdir(scene)
     env = dict(os.environ)
+    if extra_env:
+        env.update(extra_env)
     env["INITIAL2D_SCREENSHOT"] = os.path.join(work, "shot_%04ld.bmp")
     env["INITIAL2D_SCREENSHOT_FRAME"] = ",".join(str(f) for f in frames)
     env["INITIAL2D_EXIT_AFTER"] = str(exit_after)
@@ -185,6 +187,9 @@ def test_lua_units():
     print("\n[0] lua_unit_tests — Lua 단위 테스트 (엔진 VM에서 실행)")
     work = tempfile.mkdtemp(prefix="initial2d-luatest-")
     os.symlink(os.path.join(REPO, "resources"), os.path.join(work, "resources"))
+    # 포맷 계약 픽스처 (09-testing.md 3.5절) — 에디터 저장소와 공유하는 파일
+    shutil.copytree(os.path.join(REPO, "tests", "fixtures"),
+                    os.path.join(work, "fixtures"))
     scripts = os.path.join(work, "scripts")
     luatests = os.path.join(scripts, "luatests")
     shutil.copytree(os.path.join(REPO, "tests", "lua"), luatests)
@@ -212,27 +217,63 @@ def test_lua_units():
               f"{m.group(1)} PASS / {m.group(2)} FAIL")
 
 
-def test_tilemap_scene():
-    print("\n[2] tilemap_scene — 저자 Lua 타일맵 모듈 (회전·반투명 타일 16개)")
-    work, result, shots = run_scene("tilemap_scene.lua", [30], 40)
+FENCE_BROWN = (128, 88, 88)    # 울타리·바위 밝은 갈색
+POND_TEAL = (112, 192, 160)    # 연못 내부 밝은 청록
+POND_SAND = (216, 200, 128)    # 연못 모래 테두리
+GRASS_BASE = (64, 176, 128)    # 잔디 기본색
 
+
+def test_tilemap_scene():
+    """새 Tilemap API (C++ 렌더러): 샘플 맵 80x70, 카메라 오프셋과 컬링.
+
+    같은 씬을 카메라 고정값만 바꿔 두 번 실행한다 (INITIAL2D_TEST_CAM).
+    """
+    print("\n[2] tilemap_scene — Tilemap.* API (샘플 맵, 카메라 오프셋, 컬링)")
+
+    # [A] 카메라 (0,0): 좌상단 — 외곽 울타리 윗줄과 연못 (8,6)
+    work, result, shots = run_scene("tilemap_scene.lua", [30], 40)
     log = result.stdout + result.stderr
     check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode}")
     check("Lua 오류 없음", "PANIC" not in log and "attempt to" not in log, log[-200:])
-    check("프레임 덤프 생성", 30 in shots)
+    check("맵 로드와 크기", "tilemapSize:80x70 tile:16x16 layers:2" in log, log[:300])
+    check("IsPassable 잔디=true", "passableGrass:true" in log)
+    check("IsPassable 울타리=false", "passableFence:false" in log)
+    check("IsPassable 범위 밖=false", "passableOut:false" in log)
+    check("GetTileId 울타리 gid=73", "fenceGid:73" in log)
+    check("좌상단 프레임 덤프 생성", 30 in shots)
 
     if 30 in shots:
         img = shots[30]
         scale = img.width / 768.0
-        # 타일 영역(0..192 논리)에 비-배경 픽셀이 충분히 존재해야 함
-        tiles = 0
-        for yy in range(0, int(192 * scale), 3):
-            for xx in range(0, int(192 * scale), 3):
-                if not near(img.getpixel((xx, yy)), WHITE, 10):
-                    tiles += 1
-        check("타일 렌더링(비-배경 픽셀)", tiles > 300, f"px={tiles}")
-        check_golden("tilemap_scene_f30", img)
-        shutil.copy(os.path.join(work, "shot_0030.bmp"), "/tmp/initial2d_tilemap_scene.bmp")
+        fence = count_color_in(img, scale, 150, 32, 760, 48, FENCE_BROWN)
+        check("좌상단: 외곽 울타리 갈색 픽셀", fence > 150, f"px={fence}")
+        teal = count_color_in(img, scale, 128, 96, 160, 128, POND_TEAL)
+        sand = count_color_in(img, scale, 128, 96, 160, 128, POND_SAND)
+        check("좌상단: 연못(8,6) 내부 청록", teal > 15, f"px={teal}")
+        check("좌상단: 연못(8,6) 모래 테두리", sand > 10, f"px={sand}")
+        grass = count_color_in(img, scale, 296, 296, 360, 360, GRASS_BASE)
+        check("좌상단: 잔디 기본색 영역", grass > 300, f"px={grass}")
+        check_golden("tilemap_scene_topleft", img)
+        shutil.copy(os.path.join(work, "shot_0030.bmp"), "/tmp/initial2d_tilemap_topleft.bmp")
+
+    # [B] 카메라 우하단 끝 (512,224): 오른쪽·아래 울타리와 연못 (60,52) — 컬링 검증
+    work2, result2, shots2 = run_scene("tilemap_scene.lua", [30], 40,
+                                       extra_env={"INITIAL2D_TEST_CAM": "bottomright"})
+    log2 = result2.stdout + result2.stderr
+    check("우하단 실행 정상 종료", result2.returncode == 0, f"rc={result2.returncode}")
+    check("우하단 프레임 덤프 생성", 30 in shots2)
+
+    if 30 in shots2:
+        img2 = shots2[30]
+        scale2 = img2.width / 768.0
+        rfence = count_color_in(img2, scale2, 720, 272, 736, 304, FENCE_BROWN)
+        check("우하단: 오른쪽 울타리 기둥", rfence > 10, f"px={rfence}")
+        bfence = count_color_in(img2, scale2, 200, 848, 700, 864, FENCE_BROWN)
+        check("우하단: 아래 울타리", bfence > 150, f"px={bfence}")
+        teal2 = count_color_in(img2, scale2, 448, 608, 480, 640, POND_TEAL)
+        check("우하단: 연못(60,52) 내부 청록", teal2 > 15, f"px={teal2}")
+        check_golden("tilemap_scene_bottomright", img2)
+        shutil.copy(os.path.join(work2, "shot_0030.bmp"), "/tmp/initial2d_tilemap_bottomright.bmp")
 
 
 def test_resolution():

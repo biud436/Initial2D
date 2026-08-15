@@ -4,6 +4,7 @@
 #include "lua_json.h"
 #include "lua_sprite.h"
 #include "lua_texture.h"
+#include "lua_tilemap.h"
 #include "lua_font.h"
 
 #include "App.h"
@@ -482,6 +483,9 @@ int Lua_Init()
 
 		// Sprite
 		Lua_CreateSpriteImpl(g_pLuaState);
+
+		// Tilemap
+		Lua_CreateTilemapObject(g_pLuaState);
 
 		// Texture
 		Lua_CreateTextureManagerObject(g_pLuaState);

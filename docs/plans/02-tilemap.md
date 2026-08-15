@@ -45,24 +45,33 @@
 
 ## 작업 항목
 
-- [ ] 맵 포맷 v1을 위 명세로 확정하고, 샘플 맵 파일을 수작업으로 하나 만든다 (에디터보다 먼저, 엔진 개발용).
-- [ ] `src/Tilemap.cpp` 재작성:
+- [x] 맵 포맷 v1을 위 명세로 확정하고, 샘플 맵 파일을 수작업으로 하나 만든다 (에디터보다 먼저, 엔진 개발용). — `resources/maps/sample.json` (80x70, ground+deco 2층, tileset16-8x13). 계약 픽스처는 `tests/fixtures/maps/sample_v1.json` (4x3, 09-testing.md 3.5절)
+- [x] `src/Tilemap.cpp` 재작성:
   - JSON 로드 (jsoncpp), 다층 지원, gid 해석, 타일셋 텍스처 로드
   - 그리기: 타일마다 `Sprite`를 만들지 않고 렌더러에 직접 소스 사각형 복사, **카메라 오프셋 인자**를 받아 화면 밖 타일은 건너뛴다 (컬링)
   - 경로는 반드시 `NormalizePath`를 통과시킨다
-- [ ] Lua 바인딩 `Tilemap.*` (새 파일 `src/lua_tilemap.cpp`):
+- [x] Lua 바인딩 `Tilemap.*` (새 파일 `src/lua_tilemap.cpp`):
   - `Load(path)` → 핸들, `Dispose(handle)`
   - `Draw(handle, layerFrom, layerTo, camX, camY)` — 레이어 범위를 나눠 그릴 수 있어야 캐릭터를 층 사이에 끼워 그릴 수 있다 (5단계에서 사용)
   - `GetSize(handle)`, `GetTileId(handle, x, y, layer)`, `SetTileId(...)`
   - `IsPassable(handle, x, y)` — collision 레이어 조회
-- [ ] 기존 죽은 코드 정리: `scripts/tilemap.lua` 데모를 새 API 기반 예제로 교체, `resources/maps/map.lua`(Tiled 잔재)와 `settings.json`의 절대 경로 정리.
-- [ ] 픽셀 검증 테스트 추가 (`tests/run_engine_tests.py` 방식): 샘플 맵을 그린 스크린샷 비교.
+- [x] 기존 죽은 코드 정리: `scripts/tilemap.lua` 데모를 새 API 기반 예제로 교체(`scripts/games/tilemap_demo.lua`, 메뉴 허브에 등록), `resources/maps/map.lua`(Tiled 잔재)와 `settings.json`(절대 경로) 삭제.
+- [x] 픽셀 검증 테스트 추가 (`tests/run_engine_tests.py` 방식): 샘플 맵을 그린 스크린샷 비교. — 카메라 좌상단/우하단 두 실행, 골든 2장 + 특징색 영역 카운트, Lua 단위 테스트 49건
 
 ## 완료 기준
 
-- [ ] 화면보다 큰 샘플 맵(예: 50x38)을 2개 층으로 그리고, 방향키로 카메라를 스크롤하는 데모 씬이 60fps로 동작한다.
-- [ ] `IsPassable`이 Lua에서 올바른 값을 돌려준다.
-- [ ] macOS와 Android 양쪽에서 확인.
+- [x] 화면보다 큰 샘플 맵을 2개 층으로 그리고, 방향키로 카메라를 스크롤하는 데모 씬이 60fps로 동작한다. — 2026-08-15 확인: 300프레임 6.1초(vsync 상한 ~59fps), CPU 프레임당 약 5.7ms. 샘플은 50x38 대신 80x70으로: 기본 논리 해상도 768x896보다 양 축 모두 커야 스크롤이 검증된다
+- [x] `IsPassable`이 Lua에서 올바른 값을 돌려준다.
+- [ ] macOS와 Android 양쪽에서 확인. — macOS 완료. Android는 빌드 소스 목록에 `lua_tilemap.cpp`를 추가했고(빠져 있던 `lua_json.cpp`도 함께 수정), 실기 확인은 1단계와 묶어 진행
+
+## 구현 노트 (2026-08-15)
+
+- **좌표 규약**: `x`, `y`는 0 기준 타일 좌표(맵 데이터·에디터와 동일), `layer`는 1 기준 인덱스(Lua 배열 관례), `camX`, `camY`는 월드 픽셀. C++ 내부는 레이어도 0 기준이고 바인딩에서 변환한다.
+- **범위 밖 계약**: `GetTileId`는 0, `IsPassable`은 false(맵 밖으로 못 나감), `SetTileId`는 false를 돌려준다. `collision`이 없는 맵은 전부 통행 가능.
+- **그리기 경로**: 플랫폼 코드를 새로 만들지 않고 기존 `TextureManager::DrawFrame`에 항등 트랜스폼(+이동)을 넘긴다. GDI와 SDL2 어댑터가 이미 있으므로 Tilemap은 플랫폼 중립으로 유지된다.
+- **텍스처 소유권**: 타일셋 텍스처의 ID는 정규화된 이미지 경로다. `TextureManager`가 소유하고 캐시하므로 `Dispose` 후에도 남아 같은 타일셋을 쓰는 다른 맵이 재사용한다.
+- **테스트 씬의 카메라 전환은 환경 변수로 한다** (`INITIAL2D_TEST_CAM`): 고정 스텝 루프에서 Lua `Update`는 렌더 프레임당 0~N회 실행되므로 Update 횟수 기반 전환은 스크린샷 프레임과 어긋난다. `GetFrameCount()`도 초마다 리셋되는 값(m_nFPS)이라 대안이 못 된다 (09-testing.md 4절).
+- `src/win32Main.cpp`(RS_WINDOWS 전용, 무수정 원칙)는 옛 Tilemap API를 참조하지만 master의 어느 CMake 타겟에도 들어가지 않는다. Windows GDI 빌드는 `archive/windows-gdi` 브랜치가 보존한다.
 
 ## 의존 관계
 

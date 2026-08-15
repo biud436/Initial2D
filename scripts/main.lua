@@ -9,10 +9,12 @@
 
 require("scripts/scenes/menu")
 require("scripts/games/flappy")
+require("scripts/games/tilemap_demo")
 
 local scenes = {
 	menu = MenuScene,
 	flappy = FlappyScene,
+	tilemap = TilemapDemoScene,
 }
 
 local current = nil

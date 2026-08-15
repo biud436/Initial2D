@@ -19,7 +19,7 @@
 |     테스트     | C++/Lua 단위 테스트, 픽셀 검증, GitHub Actions CI |
 |   Map Editor   | [InitialEditor](https://github.com/biud436/InitialEditor) (웹 기반, 별도 저장소) |
 |   Data Type    |      \*.json (Game Data), \*.sqlite (DB)      |
-|     타일맵     |                   개발 중                   |
+|     타일맵     |    지원 (JSON 맵 포맷 v1, 다층, 컬링)     |
 |  동영상 재생   |                   미지원                    |
 |     암호화     |                   미지원                    |
 
@@ -77,7 +77,7 @@ macOS 포팅을 기반으로 Android까지 확장하였습니다. 역시 AI와�
 
 롤플레잉 게임 제작이 가능한 수준까지 엔진을 확장하는 것이 다음 목표입니다. 단계별 계획과 진행 상황은 [docs/plans](./docs/plans/index.md)에서 관리합니다.
 
-- 타일맵 시스템과 맵 파일 포맷 정리
+- 타일맵 시스템과 맵 파일 포맷 정리 — 완료 (2026-08)
 - InitialEditor 연동: 로컬 브리지 서버를 통한 맵 저장과 스크립트 편집
 - Lua로 작성하는 RPG 프레임워크: 캐릭터 이동, 이벤트, 대화창
 - 위 요소를 모두 사용하는 데모 게임 제작
@@ -91,7 +91,6 @@ Initialize 함수가 유일한 Entry Point 입니다. 다음으로 중요한 함
 ```lua
 local Font = require("scripts/Font")
 local Image = require("scripts/image")
-local Tilemap = require("scripts/tilemap")
 
 function Initialize()
 
@@ -119,8 +118,7 @@ function Initialize()
 
 	print("hi...",  "안녕하십니까")
 
-	tilemap = Tilemap(17, 13)
-	tilemap.init()
+	tilemap = Tilemap.Load("./resources/maps/sample.json")
 
 	local res = GetResourcesFiles()
 	for k, v in ipairs(res) do
@@ -134,9 +132,6 @@ function Update(elapsed)
 
 	buttonText.setAngle(Input.GetMouseY())
 	buttonText.update(elapsed)
-
-	tilemap.rotate(tt % 360)
-	tilemap.update(elapsed)
 
 	tt = tt + 1
 	if tt > WindowWidth() then
@@ -168,7 +163,8 @@ function Render()
 	-- background.draw()
 	buttonText.draw()
 
-	tilemap.draw()
+	-- 두 레이어를 카메라 오프셋과 함께 그립니다 (오른쪽으로 흐르는 스크롤)
+	Tilemap.Draw(tilemap, 1, 2, tt, 0)
 
 	DrawTempText()
 
@@ -184,7 +180,7 @@ function Destroy()
 	-- background.dispose()
 	buttonText.dispose()
 
-	tilemap.dispose()
+	Tilemap.Dispose(tilemap)
 
 	Audio.ReleaseMusic("mainBGM")
 end
@@ -337,10 +333,40 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시작하는 테이블이 되고, null은 nil이 됩니다. 로드에 실패하면 nil과 오류 메시지를 반환합니다.
 
 ```lua
-	local data, err = Json.Load("./resources/maps/map1.json")
+	local data, err = Json.Load("./resources/maps/sample.json")
 	if data then
 		print(data.name, #data.layers)
 	end
+```
+
+# Tilemap
+
+맵 포맷 v1(JSON)을 로드해 그리는 다층 타일맵입니다. 화면에 보이는 타일만 그리므로(컬링) 화면보다 큰 맵을 카메라 오프셋으로 스크롤할 수 있습니다. 포맷 명세는 `docs/plans/02-tilemap.md`, 샘플 맵은 `resources/maps/sample.json`에 있으며, 게임 메뉴의 **타일맵 데모**(`scripts/games/tilemap_demo.lua`)가 사용 예제입니다.
+
+좌표 규약: `x`, `y`는 0부터 시작하는 타일 좌표, `layer`는 1부터 시작하는 레이어 번호, `camX`, `camY`는 월드 픽셀 단위 카메라 좌상단입니다.
+
+```lua
+	-- 로드. 실패하면 nil과 오류 메시지를 반환합니다.
+	local map, err = Tilemap.Load("./resources/maps/sample.json")
+
+	-- 크기 조회
+	local w, h, tileW, tileH, layerCount = Tilemap.GetSize(map)
+
+	-- 그리기: 레이어 범위(양 끝 포함)와 카메라 오프셋.
+	-- 범위를 나눠 부르면 캐릭터를 층 사이에 끼워 그릴 수 있습니다.
+	Tilemap.Draw(map, 1, 1, camX, camY)   -- 바닥층
+	-- (여기서 캐릭터 스프라이트를 그린다)
+	Tilemap.Draw(map, 2, layerCount, camX, camY)   -- 장식층
+
+	-- 타일 조회와 변경 (gid, 0은 빈 칸. 범위 밖 조회는 0)
+	local gid = Tilemap.GetTileId(map, x, y, 1)
+	Tilemap.SetTileId(map, x, y, 2, 56)
+
+	-- 충돌 레이어 조회 (맵 범위 밖은 항상 false)
+	if Tilemap.IsPassable(map, x, y) then --[[ 이동 ]] end
+
+	-- 해제. 타일셋 텍스처는 TextureManager 캐시에 남아 재사용됩니다.
+	Tilemap.Dispose(map)
 ```
 
 # Font
