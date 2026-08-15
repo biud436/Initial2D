@@ -2,6 +2,8 @@
 
 개인적인 용도로 만든 C++ 기반 게임 엔진입니다. Windows에서는 GDI, macOS에서는 SDL2 백엔드로 렌더링합니다 (Android 포팅 준비 중).
 
+> **개발 로드맵**: 롤플레잉 게임 제작이 가능한 범용 엔진을 향한 단계별 계획과 현재 진행 상황은 [docs/plans/index.md](./docs/plans/index.md)에서 관리합니다. InitialEditor 연동(Node 브리지 서버), R2K3 리소스 파이프라인, RPG 프레임워크(Lua) 계획이 여기에 있습니다.
+
 |                  구분                   |                     내용                      |
 | :-------------------------------------: | :-------------------------------------------: |
 |                 Version                 |                     Beta                      |
@@ -425,6 +427,26 @@ python3 tests/run_engine_tests.py
 로컬 테스트용 플레이스홀더는 `python3 tools/generate_placeholder_assets.py`로 생성할 수 있습니다.
 
 포팅 상세 내역은 `docs/porting/phase0-inventory.md`를 참조하십시오.
+
+## 테스트 (통합 검수)
+
+전체 검수는 한 줄로 실행합니다. 상세 전략은 `docs/plans/09-testing.md`를 참조하십시오.
+
+```bash
+# 빌드 + C++ 단위 테스트 + Lua 단위 테스트 + 픽셀 검증 + 골든 스크린샷 비교
+tests/run_all.sh
+
+# 헤드리스 실행 (CI와 동일, 창을 띄우지 않음 — 소프트웨어 렌더러 폴백)
+SDL_VIDEODRIVER=dummy tests/run_all.sh
+
+# 렌더링을 의도적으로 바꿨을 때: 골든 스크린샷 갱신
+tests/run_all.sh --update-golden   # 갱신된 tests/golden/*.png 를 눈으로 확인한 뒤 커밋
+```
+
+- **C++ 단위 테스트**: `tests/unit/`에 파일을 추가하고 `CMakeLists.txt`의 `engine_unit_tests` 목록에 명시합니다. 프레임워크는 `tests/unit/test_framework.h` (외부 의존 없음).
+- **Lua 단위 테스트**: `tests/lua/cases/`에 케이스를 추가하고 `tests/lua/manifest.lua` 목록에 명시합니다. 엔진 바이너리의 Lua VM에서 실행됩니다.
+- **골든 스크린샷**: `tests/golden/`의 기준 이미지와 캡처를 논리 해상도로 정규화해 비교합니다 (채널 오차 24, 차이 픽셀 1% 허용). 갱신은 반드시 `--update-golden`으로만 합니다.
+- CI는 `.github/workflows/tests.yml`이 macOS 러너에서 위와 동일한 검수를 헤드리스로 실행합니다.
 
 ## Android (SDL2 백엔드, Gradle + NDK)
 

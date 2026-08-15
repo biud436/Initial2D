@@ -17,7 +17,16 @@ import tempfile
 from PIL import Image
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-GAME = sys.argv[1] if len(sys.argv) > 1 else os.path.join(REPO, "build", "Initial2D")
+_args = [a for a in sys.argv[1:] if not a.startswith("--")]
+GAME = _args[0] if _args else os.path.join(REPO, "build", "Initial2D")
+
+# 골든 스크린샷 (docs/plans/09-testing.md 3.3절)
+# 갱신은 의도적 절차로만: --update-golden 을 명시하고, 갱신된 이미지를 눈으로 확인한 뒤 커밋한다.
+GOLDEN_DIR = os.path.join(REPO, "tests", "golden")
+UPDATE_GOLDEN = "--update-golden" in sys.argv
+LOGICAL_SIZE = (768, 896)          # 논리 해상도 — Retina 배율 차이를 정규화한다
+GOLDEN_PIXEL_TOL = 24              # 채널당 허용 오차
+GOLDEN_DIFF_RATIO = 0.01           # 초과 픽셀 허용 비율 (실제 소음을 보고 조정)
 
 PASSES = []
 FAILS = []
@@ -82,6 +91,31 @@ def count_color_in(img, scale, x0, y0, x1, y1, target, tol=28):
     return n
 
 
+def check_golden(name, img):
+    """캡처를 논리 해상도로 정규화해 tests/golden/<name>.png 와 비교한다."""
+    norm = img.resize(LOGICAL_SIZE, Image.BILINEAR)
+    path = os.path.join(GOLDEN_DIR, f"{name}.png")
+    if UPDATE_GOLDEN or not os.path.exists(path):
+        os.makedirs(GOLDEN_DIR, exist_ok=True)
+        newly = not os.path.exists(path)
+        norm.save(path)
+        print(f"  GOLDEN {'생성' if newly else '갱신'}: {os.path.relpath(path, REPO)}"
+              f" — 눈으로 확인한 뒤 커밋할 것")
+        return
+    golden = Image.open(path).convert("RGB")
+    a, b = norm.tobytes(), golden.tobytes()
+    total = len(a) // 3
+    bad = 0
+    for i in range(0, len(a), 3):
+        if (abs(a[i] - b[i]) > GOLDEN_PIXEL_TOL
+                or abs(a[i + 1] - b[i + 1]) > GOLDEN_PIXEL_TOL
+                or abs(a[i + 2] - b[i + 2]) > GOLDEN_PIXEL_TOL):
+            bad += 1
+    ratio = bad / total
+    check(f"골든 일치: {name}", ratio <= GOLDEN_DIFF_RATIO,
+          f"차이 픽셀 {ratio:.2%} (허용 {GOLDEN_DIFF_RATIO:.0%}) — 의도된 변경이면 --update-golden")
+
+
 WHITE = (255, 255, 255)
 TILE1 = (216, 145, 37)   # tile1.png 단색
 RED = (255, 0, 0)
@@ -138,7 +172,40 @@ def test_assert_scene():
     dot = px(img, scale, 703, 63)
     check("draw_set_color + draw_point", near(dot, RED, 12), str(dot))
 
+    check_golden("assert_scene_f35", img)
     shutil.copy(os.path.join(work, "shot_0035.bmp"), "/tmp/initial2d_assert_scene.bmp")
+
+
+def test_lua_units():
+    """tests/lua/ 의 Lua 단위 테스트를 엔진 바이너리로 실행한다 (09-testing.md 3.2절)."""
+    print("\n[0] lua_unit_tests — Lua 단위 테스트 (엔진 VM에서 실행)")
+    work = tempfile.mkdtemp(prefix="initial2d-luatest-")
+    os.symlink(os.path.join(REPO, "resources"), os.path.join(work, "resources"))
+    scripts = os.path.join(work, "scripts")
+    luatests = os.path.join(scripts, "luatests")
+    shutil.copytree(os.path.join(REPO, "tests", "lua"), luatests)
+    shutil.move(os.path.join(luatests, "run_tests.lua"),
+                os.path.join(scripts, "main.lua"))
+
+    env = dict(os.environ)
+    env["INITIAL2D_EXIT_AFTER"] = "10"  # GameExit() 미동작 시의 안전망
+
+    result = subprocess.run([GAME], cwd=work, env=env,
+                            capture_output=True, text=True, timeout=60)
+    log = result.stdout + result.stderr
+    for line in log.splitlines():
+        if line.startswith(("  PASS", "  FAIL", "[")):
+            print("   " + line)
+
+    check("Lua 테스트 프로세스 정상 종료", result.returncode == 0,
+          f"rc={result.returncode}")
+    import re
+    m = re.search(r"LUA_TESTS_RESULT: (\d+) PASS / (\d+) FAIL", log)
+    check("Lua 테스트 결과 요약 존재", m is not None, log[-300:])
+    if m:
+        check("Lua 테스트 전부 통과",
+              int(m.group(2)) == 0 and int(m.group(1)) > 0,
+              f"{m.group(1)} PASS / {m.group(2)} FAIL")
 
 
 def test_tilemap_scene():
@@ -160,6 +227,7 @@ def test_tilemap_scene():
                 if not near(img.getpixel((xx, yy)), WHITE, 10):
                     tiles += 1
         check("타일 렌더링(비-배경 픽셀)", tiles > 300, f"px={tiles}")
+        check_golden("tilemap_scene_f30", img)
         shutil.copy(os.path.join(work, "shot_0030.bmp"), "/tmp/initial2d_tilemap_scene.bmp")
 
 
@@ -168,6 +236,7 @@ def main():
         print(f"실행 파일이 없습니다: {GAME} — 먼저 cmake --build build 를 실행하세요")
         sys.exit(2)
 
+    test_lua_units()
     test_assert_scene()
     test_tilemap_scene()
 

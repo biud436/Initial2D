@@ -1,0 +1,34 @@
+# Initial2D 검수 CI (docs/plans/09-testing.md 5절)
+# macOS 러너에서 헤드리스(SDL dummy 드라이버 + 소프트웨어 렌더러 폴백)로
+# 전체 검수(tests/run_all.sh)를 실행한다. 실패 시 프레임 덤프를 아티팩트로 남긴다.
+name: tests
+
+on:
+  push:
+    branches: [master, dev]
+  pull_request:
+
+jobs:
+  engine-macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 의존성 설치
+        run: |
+          brew install sdl2 sdl2_image sdl2_mixer
+          python3 -m pip install --break-system-packages pillow
+
+      - name: 플레이스홀더 리소스 생성 (gitignore된 최상위 PNG)
+        run: python3 tools/generate_placeholder_assets.py
+
+      - name: 전체 검수 (헤드리스)
+        run: SDL_VIDEODRIVER=dummy tests/run_all.sh
+
+      - name: 실패 시 프레임 덤프 수집
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frame-dumps
+          path: /tmp/initial2d_*.bmp
+          if-no-files-found: ignore

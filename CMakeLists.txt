@@ -152,3 +152,17 @@ target_link_libraries(phase0_sanity PRIVATE vendored_lua vendored_sqlite3 vendor
 
 add_executable(phase1_sanity ${CMAKE_CURRENT_SOURCE_DIR}/tests/phase1_sanity.cpp)
 target_link_libraries(phase1_sanity PRIVATE initial2d_core)
+
+# ---------------------------------------------------------------------------
+# 단위 테스트 (검수 인프라 — docs/plans/09-testing.md 3.1절)
+# 새 테스트 파일은 이 목록에 명시적으로 추가한다.
+# (GLOB을 쓰지 않는 이유: 파일 삭제 시 스테일 오브젝트가 링크에 남아
+#  삭제된 테스트가 계속 실행되는 문제를 실측으로 확인함)
+# ---------------------------------------------------------------------------
+add_executable(engine_unit_tests
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/main.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/utf8_test.cpp
+  # 코어 라이브러리에 없는 플랫폼 중립 소스는 여기서 직접 포함한다
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/Utf8.cpp
+)
+target_link_libraries(engine_unit_tests PRIVATE initial2d_core)

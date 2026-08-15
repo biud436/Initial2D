@@ -128,6 +128,11 @@ int App::Run(int nCmdShow)
 	if (m_context.renderer == nullptr) {
 		m_context.renderer = SDL_CreateRenderer(m_context.window, -1, SDL_RENDERER_ACCELERATED);
 	}
+	if (m_context.renderer == nullptr) {
+		// 헤드리스 환경(SDL_VIDEODRIVER=dummy 등)에는 가속 드라이버가 없다.
+		// CI에서 테스트를 돌리기 위한 최후 폴백 (docs/plans/09-testing.md 3.2절).
+		m_context.renderer = SDL_CreateRenderer(m_context.window, -1, SDL_RENDERER_SOFTWARE);
+	}
 
 	if (m_context.renderer == nullptr) {
 		std::fprintf(stderr, "SDL_CreateRenderer failed: %s\n", SDL_GetError());
