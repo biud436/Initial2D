@@ -55,6 +55,7 @@ def make_workdir(scene):
         src = os.path.join(REPO, "scripts", module)
         if os.path.exists(src):
             shutil.copy(src, scripts)
+    shutil.copytree(os.path.join(REPO, "scripts", "ui"), os.path.join(scripts, "ui"))
     shutil.copy(os.path.join(REPO, "tests", "engine", "scenes", scene),
                 os.path.join(scripts, "main.lua"))
     return work
@@ -195,6 +196,9 @@ def test_lua_units():
     shutil.copytree(os.path.join(REPO, "tests", "lua"), luatests)
     shutil.move(os.path.join(luatests, "run_tests.lua"),
                 os.path.join(scripts, "main.lua"))
+    # 테스트 대상 공용 Lua 모듈 (scripts/image.lua, scripts/ui/*)
+    shutil.copy(os.path.join(REPO, "scripts", "image.lua"), scripts)
+    shutil.copytree(os.path.join(REPO, "scripts", "ui"), os.path.join(scripts, "ui"))
 
     env = dict(os.environ)
     env["INITIAL2D_EXIT_AFTER"] = "10"  # GameExit() 미동작 시의 안전망

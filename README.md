@@ -219,6 +219,7 @@ Image 객체는 Sprite Sheet를 사용하여 Character Animation을 표현하기
 	image.setFrameDelay(delay)
 	image.setFrames(s, e)
 	image.setCurrentFrame(currentFrame)
+	image.setSheetGrid(cols, rows) -- 시트 분할 (기본 4x4, 가로 한 줄 시트는 (frames, 1))
 	image.setRect(x, y, width, height)
 	image.setLoop(isLooping)
 	image.setAnimComplete(isCompletedAnimation)
@@ -420,7 +421,35 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 
 	-- 리소스 파일 목록을 반환합니다 (암호화 X)
 	GetResourcesFiles()
+
+	-- 실행 중인 플랫폼 이름: "windows", "macos", "linux", "android", "ios"
+	-- 터치 조작 UI 표시 여부 등을 스크립트에서 결정할 때 씁니다.
+	GetPlatform()
 ```
+
+# 가상 패드 (터치 조작)
+
+키보드가 없는 플랫폼에서 방향 입력을 화면 위 D-패드로 받는 공용 Lua 모듈입니다 (`scripts/ui/vpad.lua`). 엔진의 마우스 API를 그대로 쓰므로 별도 터치 API 없이 동작하며, Android와 iOS에서는 자동으로 표시하고 데스크톱에서는 `INITIAL2D_VPAD=1` 환경 변수로 띄워 확인할 수 있습니다. 타일맵 데모가 사용 예제입니다. Android 뒤로가기 버튼은 ESC(키 코드 27)로 전달됩니다.
+
+```lua
+	local VirtualPad = require("scripts/ui/vpad")
+
+	if VirtualPad.shouldShow() then
+		pad = VirtualPad.new{ x = 24, y = WindowHeight() - 184, size = 160 }
+	end
+
+	-- 매 프레임 (Input 갱신 뒤)
+	pad.update()
+	if pad.isPressed("left") then --[[ 왼쪽 ]] end   -- "up", "down", "left", "right"
+
+	-- 게임 쪽 탭 처리에서 패드 위 터치를 제외할 때
+	if not pad.contains(Input.GetMouseX(), Input.GetMouseY()) then --[[ 탭 처리 ]] end
+
+	pad.draw()      -- HUD 위에 마지막으로 그립니다
+	pad.dispose()
+```
+
+패드 이미지(`resources/ui/dpad.png`)와 버튼 이미지는 `python3 tools/generate_ui_assets.py`로 다시 만들 수 있습니다.
 
 # 게임 설정
 
@@ -521,7 +550,16 @@ gradle wrapper --gradle-version 8.6   # 최초 1회
 ```
 
 요구 사항: JDK 17, Android SDK (API 34), NDK r27 이상, CMake 3.22 이상.
-에셋은 최초 실행 시 APK assets에서 내부 저장소로 추출된 뒤 사용됩니다.
+에셋은 최초 실행 시 APK assets에서 내부 저장소로 추출된 뒤 사용됩니다. `prepare_assets.sh`는 `resources/RTP.zip`(런타임 미사용, 재배포 불가)과 닷파일을 APK에서 제외합니다.
+
+무선 디버깅으로 연결한 기기에 설치하고 실행하는 예입니다.
+
+```bash
+adb connect 192.168.0.10:33319          # 기기의 무선 디버깅 화면에 표시된 주소
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb shell am start -n com.biud436.initial2d/.Initial2DActivity
+adb logcat -s SDL/APP                    # 엔진 로그만 보기
+```
 
 남은 포팅 작업은 다음과 같으며, 상세는 `docs/porting/android-plan.md`를 참조하십시오.
 
@@ -556,11 +594,11 @@ push가 도착하면 게임이 Lua VM을 재시작하고 `main.lua`부터 다시
 전체 검수는 스크립트 하나로 실행합니다. C++ 단위 테스트, Lua 단위 테스트, 픽셀 검증, 골든 스크린샷 비교가 순서대로 수행됩니다.
 
 ```bash
-# 빌드부터 전체 테스트까지 한 번에 실행
+# 빌드부터 전체 테스트까지 한 번에 실행 (기본은 헤드리스 — 창을 띄우지 않습니다. CI와 동일)
 tests/run_all.sh
 
-# 헤드리스 실행 (CI와 동일한 방식, 창을 띄우지 않습니다)
-SDL_VIDEODRIVER=dummy tests/run_all.sh
+# 실제 창을 띄워 실행하고 싶을 때
+SDL_VIDEODRIVER= tests/run_all.sh
 
 # 렌더링 결과를 의도적으로 바꾼 경우 골든 스크린샷을 갱신합니다.
 # 갱신된 tests/golden/*.png 파일을 눈으로 확인한 뒤 커밋하십시오.

@@ -143,6 +143,12 @@ function Image(path, x, y, width, height, max_frames, id)
 	function self.setCurrentFrame(currentFrame)
 		if isReady == false then return end
 		Sprite.SetCurrentFrame(self.spriteId, currentFrame)
+	end
+
+	-- 시트 분할(열, 행)을 지정한다. 기본 4x4. 가로 한 줄 시트는 (frames, 1)
+	function self.setSheetGrid(cols, rows)
+		if isReady == false then return end
+		Sprite.SetSheetGrid(self.spriteId, cols, rows)
 	end			
 	
 	function self.setRect(x, y, width, height)

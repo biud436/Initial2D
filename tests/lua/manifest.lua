@@ -11,4 +11,5 @@ return {
     "scripts/luatests/cases/json_load_test",
     "scripts/luatests/cases/sprite_sheet_test",
     "scripts/luatests/cases/tilemap_test",
+    "scripts/luatests/cases/vpad_test",
 }

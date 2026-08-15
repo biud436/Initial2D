@@ -29,7 +29,7 @@
 
 - [x] 글리프 테이블 크기 `[55203]` → `[0xD7A4]` 수정. 추가 발견: ParseFont가 fnt의 id를 경계 검사 없이 쓰던 문제, drawText가 빈 문자열에서 빈 벡터 max_element를 역참조하던 UB도 수정. (`Charset` 구조의 4.4MB 메모리 최적화는 보류 — 동작 문제가 아님)
 - [x] `Font::open()`의 반전된 guard 수정 (첫 호출이 파싱을 건너뛰던 문제)
-- [ ] `src/Tilemap.cpp`의 백슬래시 경로 문제 — 2단계 재작성에서 해결하기로 결정
+- [x] `src/Tilemap.cpp`의 백슬래시 경로 문제 — 2단계 재작성에서 해결 (모든 경로가 `NormalizePath`를 거친다)
 - [x] `Rectangle.h`의 `operator=` return 누락 수정 (연쇄 대입 회귀 테스트 포함)
 - [x] 오디오 루프 플래그 정리 — 원인은 반전이 아니라 `lua_toboolean` 뒤 `0이면 -1` 변환이었고, Lua에서는 숫자 0도 참이라 사실상 false만 무한 반복이 되는 구조였다. 새 계약: 불리언 true = 무한, false = 1회, 숫자 = SDL_mixer 원시 루프 값. flappy와 menu의 효과음은 "절반 길이 파일을 2회 재생"하던 기존 소리를 보존하기 위해 숫자 1로 변경. `PlayMusic`, `PlaySound`, `InsertNextMusic` 모두 적용.
 
@@ -44,7 +44,7 @@
 - [x] Lua에서 JSON 파일을 읽어 테이블로 순회하는 테스트가 통과한다. json_load_test 17건.
 - [x] 3x4 시트의 프레임이 올바른 아틀라스 좌표로 계산된다 (GetRect 검증). sprite_sheet_test 12건.
 - [x] 플래피버드가 기존과 동일하게 동작한다 (골든 스크린샷 포함 전체 스위트 통과).
-- [ ] macOS와 Android 양쪽에서 확인 — macOS 완료, **Android 실기 확인 남음** (빌드와 실행, 해상도와 오디오 동작).
+- [x] macOS와 Android 양쪽에서 확인 — 2026-08-15 Galaxy S24(Android 16) 실기: 빌드, 설치, 구동, 메뉴 터치, 해상도(논리 높이 896에 기기 비율 맞춤, 2340x1080 풀 스크린), 오디오 재생(AAudio 플레이어 started) 확인. 발견 사항: `prepare_assets.sh`가 닷파일(`resources/.gitignore`)을 매니페스트에 넣어 첫 실행이 즉시 종료되던 문제와, JNI 소스 목록에 `lua_json.cpp`가 빠져 있던 문제를 함께 수정.
 
 ## 의존 관계
 

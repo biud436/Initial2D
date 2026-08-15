@@ -1,13 +1,15 @@
 -- 타일맵 데모 — 2단계 산출물 (docs/plans/02-tilemap.md)
 --
 -- 화면보다 큰 샘플 맵(80x70, 2레이어)을 그리고 방향키로 카메라를 스크롤한다.
---   방향키: 카메라 이동 / 마우스: 커서 아래 타일의 gid와 통행 가능 여부 표시
---   왼쪽 클릭: 통행 가능한 잔디에 꽃 심기 (Tilemap.SetTileId 시연)
---   ESC: 메뉴로
+--   방향키 또는 화면 왼쪽 아래 가상 D-패드(터치 플랫폼): 카메라 이동
+--   마우스/터치 위치: 그 아래 타일의 gid와 통행 가능 여부 표시
+--   왼쪽 클릭/탭: 통행 가능한 잔디에 꽃 심기 (Tilemap.SetTileId 시연)
+--   ESC 또는 Android 뒤로가기: 메뉴로
 -- 레이어를 1층(ground)과 2층(deco)으로 나눠 그리고 그 사이에 새를 끼워
 -- 그린다 — 5단계에서 캐릭터를 층 사이에 그릴 때와 같은 방식이다.
 
 local Image = require("scripts/image")
+local VirtualPad = require("scripts/ui/vpad")
 
 TilemapDemoScene = {}
 
@@ -18,6 +20,7 @@ local mapW, mapH, tileW, tileH, layerCount = 0, 0, 16, 16, 0
 local camX, camY = 0, 0
 local t = 0
 local bird = nil
+local pad = nil       -- 가상 D-패드 (터치 플랫폼에서만)
 local fpsAvg = 0
 
 local SCROLL_SPEED = 480 -- px/s
@@ -45,6 +48,10 @@ function TilemapDemoScene.init()
 	bird.setFrames(0, 3)
 	bird.setFrameDelay(140.0)
 	bird.setAnimComplete(false)
+
+	if VirtualPad.shouldShow() then
+		pad = VirtualPad.new{ x = 24, y = H - 184, size = 160 }
+	end
 end
 
 local function clampCamera()
@@ -65,21 +72,29 @@ function TilemapDemoScene.update(elapsed)
 		return
 	end
 
+	if pad ~= nil then
+		pad.update()
+	end
+
 	local step = SCROLL_SPEED * elapsed / 1000.0
 	if AUTOPLAY then
 		-- 자동 시연: 카메라가 맵을 크게 돌며 훑는다
 		camX = (mapW * tileW - W) / 2 + math.sin(t * 0.7) * (mapW * tileW - W) / 2
 		camY = (mapH * tileH - H) / 2 + math.cos(t * 0.5) * (mapH * tileH - H) / 2
 	else
-		if Input.IsKeyPress(VK_LEFT) then camX = camX - step end
-		if Input.IsKeyPress(VK_RIGHT) then camX = camX + step end
-		if Input.IsKeyPress(VK_UP) then camY = camY - step end
-		if Input.IsKeyPress(VK_DOWN) then camY = camY + step end
+		local function held(vk, dir)
+			return Input.IsKeyPress(vk) or (pad ~= nil and pad.isPressed(dir))
+		end
+		if held(VK_LEFT, "left") then camX = camX - step end
+		if held(VK_RIGHT, "right") then camX = camX + step end
+		if held(VK_UP, "up") then camY = camY - step end
+		if held(VK_DOWN, "down") then camY = camY + step end
 	end
 	clampCamera()
 
-	-- 왼쪽 클릭: 통행 가능한 빈 잔디에 꽃 심기 (SetTileId 시연)
-	if Input.IsMouseDown(0) then
+	-- 왼쪽 클릭/탭: 통행 가능한 빈 잔디에 꽃 심기 (SetTileId 시연). 패드 위 탭은 제외
+	local onPad = pad ~= nil and pad.contains(Input.GetMouseX(), Input.GetMouseY())
+	if Input.IsMouseDown(0) and not onPad then
 		local tx = math.floor((camX + Input.GetMouseX()) / tileW)
 		local ty = math.floor((camY + Input.GetMouseY()) / tileH)
 		if Tilemap.IsPassable(map, tx, ty) and Tilemap.GetTileId(map, tx, ty, 2) == 0 then
@@ -121,7 +136,15 @@ function TilemapDemoScene.render()
 		local gid = Tilemap.GetTileId(map, tx, ty, 1)
 		DrawText(16, 16, string.format("FPS %d  카메라 %d,%d", math.floor(fpsAvg + 0.5), cx, cy))
 		DrawText(16, 56, string.format("타일 %d,%d  gid %d  통행 %s", tx, ty, gid, passable and "가능" or "불가"))
-		DrawText(16, H - 56, "방향키 스크롤, 클릭 꽃심기, ESC 메뉴")
+		if pad ~= nil then
+			DrawText(W / 2 - 200, H - 56, "패드 스크롤, 탭 꽃심기, 뒤로가기 메뉴")
+		else
+			DrawText(16, H - 56, "방향키 스크롤, 클릭 꽃심기, ESC 메뉴")
+		end
+	end
+
+	if pad ~= nil then
+		pad.draw()
 	end
 end
 
@@ -133,6 +156,10 @@ function TilemapDemoScene.destroy()
 	if bird ~= nil then
 		bird.dispose()
 		bird = nil
+	end
+	if pad ~= nil then
+		pad.dispose()
+		pad = nil
 	end
 end
 

@@ -62,7 +62,7 @@
 
 - [x] 화면보다 큰 샘플 맵을 2개 층으로 그리고, 방향키로 카메라를 스크롤하는 데모 씬이 60fps로 동작한다. — 2026-08-15 확인: 300프레임 6.1초(vsync 상한 ~59fps), CPU 프레임당 약 5.7ms. 샘플은 50x38 대신 80x70으로: 기본 논리 해상도 768x896보다 양 축 모두 커야 스크롤이 검증된다
 - [x] `IsPassable`이 Lua에서 올바른 값을 돌려준다.
-- [ ] macOS와 Android 양쪽에서 확인. — macOS 완료. Android는 빌드 소스 목록에 `lua_tilemap.cpp`를 추가했고(빠져 있던 `lua_json.cpp`도 함께 수정), 실기 확인은 1단계와 묶어 진행
+- [x] macOS와 Android 양쪽에서 확인. — 2026-08-15 Galaxy S24 실기: 타일맵 데모 진입, 62fps, 탭으로 꽃 심기, 가상 D-패드 홀드로 카메라 스크롤(112→224→47), 뒤로가기로 메뉴 복귀 확인. **실기 검수에서 드러난 것**: 키보드가 없는 플랫폼에서 방향키 데모는 쓸 수 없으므로 터치 D-패드 공용 모듈 `scripts/ui/vpad.lua`(에셋 `resources/ui/dpad.png`, 생성기 `tools/generate_ui_assets.py`)를 만들고 데모에 연결했다. 5단계 캐릭터 이동에서 같은 모듈을 쓴다
 
 ## 구현 노트 (2026-08-15)
 
@@ -72,6 +72,9 @@
 - **텍스처 소유권**: 타일셋 텍스처의 ID는 정규화된 이미지 경로다. `TextureManager`가 소유하고 캐시하므로 `Dispose` 후에도 남아 같은 타일셋을 쓰는 다른 맵이 재사용한다.
 - **테스트 씬의 카메라 전환은 환경 변수로 한다** (`INITIAL2D_TEST_CAM`): 고정 스텝 루프에서 Lua `Update`는 렌더 프레임당 0~N회 실행되므로 Update 횟수 기반 전환은 스크린샷 프레임과 어긋난다. `GetFrameCount()`도 초마다 리셋되는 값(m_nFPS)이라 대안이 못 된다 (09-testing.md 4절).
 - `src/win32Main.cpp`(RS_WINDOWS 전용, 무수정 원칙)는 옛 Tilemap API를 참조하지만 master의 어느 CMake 타겟에도 들어가지 않는다. Windows GDI 빌드는 `archive/windows-gdi` 브랜치가 보존한다.
+- **터치 입력은 별도 API 없이 마우스 API로 받는다.** SDL이 첫 손가락 터치를 마우스로 매핑하므로 단일 터치 D-패드는 `Input.GetMouseX/Y`, `IsMousePress`로 충분하다. 방향 이동과 동시에 누르는 액션 버튼(6단계 말 걸기)이 필요해지면 그때 `Input`에 다중 터치 API를 더한다. 표시 여부는 `GetPlatform()`(신규 Lua 유틸)이 android/ios일 때, 또는 `INITIAL2D_VPAD=1`(데스크톱 확인용).
+- Android 뒤로가기(SDL `AC_BACK`)는 `InputSDL2`에서 `VK_ESCAPE`로 매핑했다. 스크립트는 ESC 하나만 다루면 된다.
+- **알려진 한계**: 키보드 상태는 프레임마다 SDL 상태 배열을 샘플링하므로 한 프레임(16ms)보다 짧은 누름은 놓친다. 사람 손가락은 문제없지만 `adb shell input keyevent` 같은 합성 입력은 `--longpress`로 보내야 잡힌다 (실기 검수 중 확인). 이벤트 래칭이 필요해지면 `Input`에 추가한다.
 
 ## 의존 관계
 

@@ -32,6 +32,7 @@
 #endif
 
 #include <cstdio>
+#include <cctype>
 #include <vector>
 
 #include "Font.h"
@@ -359,6 +360,28 @@ int Lua_GameExit(lua_State *pL)
 	return 0;
 }
 
+/**
+ * local name = GetPlatform()
+ * "windows" | "macos" | "linux" | "android" | "ios" | 그 외 SDL이 보고하는 이름(소문자)
+ * 스크립트가 터치 조작 UI(가상 패드) 표시 여부 등을 결정할 때 쓴다.
+ */
+int Lua_GetPlatform(lua_State *pL)
+{
+#ifdef RS_WINDOWS
+	lua_pushstring(pL, "windows");
+#else
+	std::string name = SDL_GetPlatform();
+	if (name == "Mac OS X") name = "macos";
+	else if (name == "Windows") name = "windows";
+	else if (name == "Linux") name = "linux";
+	else if (name == "Android") name = "android";
+	else if (name == "iOS") name = "ios";
+	else std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+	lua_pushstring(pL, name.c_str());
+#endif
+	return 1;
+}
+
 int Lua_GetCurrentDirectory(lua_State *pL)
 {
 #ifdef RS_WINDOWS
@@ -467,6 +490,7 @@ int Lua_Init()
 		lua_register(g_pLuaState, "draw_set_color", Lua_DrawSetColor);
 
 		lua_register(g_pLuaState, "GetCurrentDirectory", Lua_GetCurrentDirectory);
+		lua_register(g_pLuaState, "GetPlatform", Lua_GetPlatform);
 
 		lua_register(g_pLuaState, "SetAppIcon", Lua_SetAppIcon);
 
