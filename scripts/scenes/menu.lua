@@ -9,6 +9,7 @@ local Image = require("scripts/image")
 MenuScene = {}
 
 local W, H = 768, 896
+local VK_ESCAPE = 27
 local t = 0
 local bg, icon
 local buttons = {}
@@ -77,6 +78,11 @@ function MenuScene.update(elapsed)
 
 	if AUTOPLAY and t > 1.0 then
 		SwitchScene("flappy") -- 자동 시연: 첫 게임으로 진입
+	end
+
+	-- ESC (Android 뒤로가기): 최상위 씬이므로 게임 종료
+	if Input.IsKeyDown(VK_ESCAPE) then
+		GameExit()
 	end
 end
 

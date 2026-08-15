@@ -8,6 +8,8 @@
 
 local Image = require("scripts/image")
 
+local VK_ESCAPE = 27
+
 FlappyScene = {}
 
 -- 화면 크기
@@ -207,6 +209,12 @@ end
 function FlappyScene.update(elapsed)
 	local dtMs = math.min(elapsed, 50)  -- 스파이크 방어
 	local dt = dtMs / 1000.0
+
+	-- ESC (Android 뒤로가기): 어느 상태에서든 미니 게임 목록으로
+	if Input.IsKeyDown(VK_ESCAPE) then
+		SwitchScene("menu")
+		return
+	end
 
 	-- 배경(원경)은 느리게, 지면은 파이프와 같은 속도로 스크롤
 	local groundSpeed = (state == "play") and speed() or BASE_SPEED * 0.4
