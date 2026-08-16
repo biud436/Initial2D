@@ -41,12 +41,17 @@
  *
  * 우선순위: INITIAL2D_WINDOW=WxH 환경 변수 > 프로젝트 루트의 game.json >
  * Constants.h 기본값(768x896). game.json 예:
- *   { "windowWidth": 320, "windowHeight": 240 }
+ *   { "windowWidth": 320, "windowHeight": 240, "renderScale": 2 }
+ *
+ * renderScale은 픽셀 확대 배율이다 (기본 1). 창 크기는 그대로 두고 논리
+ * 해상도만 1/배율로 줄여 화면 전체를 크게 그린다. 스크립트에서 씬마다
+ * SetRenderScale로 바꿀 수도 있다 (INITIAL2D_SCALE 환경 변수는 초기값).
  */
 void App::LoadDisplaySettings()
 {
-	int width = GetWindowWidth();
-	int height = GetWindowHeight();
+	int width = GetBaseWidth();
+	int height = GetBaseHeight();
+	int scale = GetRenderScale();
 
 	std::ifstream file("./game.json", std::ifstream::binary);
 	if (file.good())
@@ -57,6 +62,7 @@ void App::LoadDisplaySettings()
 			file >> root;
 			width = root.get("windowWidth", width).asInt();
 			height = root.get("windowHeight", height).asInt();
+			scale = root.get("renderScale", scale).asInt();
 		}
 		catch (const std::exception& e)
 		{
@@ -75,7 +81,18 @@ void App::LoadDisplaySettings()
 		}
 	}
 
+	const char* scaleEnv = SDL_getenv("INITIAL2D_SCALE");
+	if (scaleEnv != nullptr)
+	{
+		int s = 0;
+		if (std::sscanf(scaleEnv, "%d", &s) == 1)
+		{
+			scale = s;
+		}
+	}
+
 	SetWindowSize(width, height);
+	SetRenderScale(scale);
 }
 
 namespace {
@@ -141,10 +158,12 @@ int App::Run(int nCmdShow)
 	windowFlags |= SDL_WINDOW_FULLSCREEN;
 #endif
 
+	// 창은 배율을 적용하기 전 크기로 만든다. 논리 해상도(GetWindowWidth)는
+	// 그 1/배율이며, 확대는 SDL_RenderSetLogicalSize가 맡는다 (RenderTransform).
 	m_context.window = SDL_CreateWindow(
 		GetWindowName(),
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-		GetWindowWidth(), GetWindowHeight(),
+		GetBaseWidth(), GetBaseHeight(),
 		windowFlags);
 
 	if (m_context.window == nullptr) {
@@ -165,7 +184,8 @@ int App::Run(int nCmdShow)
 			const int t = dw; dw = dh; dh = t;
 		}
 		if (dw > 0 && dh > 0) {
-			m_nWindowWidth = (m_nWindowHeight * dw) / dh;
+			// 배율은 그대로 두고 기준 크기만 화면 비율에 맞춘다
+			SetWindowSize((m_nBaseHeight * dw) / dh, m_nBaseHeight);
 		}
 	}
 #endif

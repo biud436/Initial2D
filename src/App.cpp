@@ -45,6 +45,9 @@ App::App() :
 	m_szClassName(CLASS_NAME.c_str()),
 	m_nWindowWidth(WINDOW_WIDTH),
 	m_nWindowHeight(WINDOW_HEIGHT),
+	m_nBaseWidth(WINDOW_WIDTH),
+	m_nBaseHeight(WINDOW_HEIGHT),
+	m_nRenderScale(1),
 	m_frameTime(0.0),
 	m_pInput(NULL),
 	m_pGameStateMachine(NULL),
@@ -144,8 +147,55 @@ void App::SetWindowSize(int width, int height)
 	{
 		return;
 	}
-	m_nWindowWidth = width;
-	m_nWindowHeight = height;
+	m_nBaseWidth = width;
+	m_nBaseHeight = height;
+	SetRenderScale(m_nRenderScale);
+}
+
+/**
+* @brief 배율을 적용하기 전의 창 크기입니다.
+*/
+const int App::GetBaseWidth() const
+{
+	return m_nBaseWidth;
+}
+
+const int App::GetBaseHeight() const
+{
+	return m_nBaseHeight;
+}
+
+/**
+* @brief 픽셀 확대 배율. 논리 해상도를 창 크기의 1/배율로 줄여, 같은 화면을
+*        그만큼 크게 그린다 (16px 타일을 32px로 보이게 하는 식).
+*
+* 창 크기와 논리 해상도를 분리하는 것이 요점이다. 확대는 렌더러가 하므로
+* 타일맵, 스프라이트, 비트맵 폰트가 한꺼번에 같은 비율로 커지고, 마우스 좌표도
+* 논리 좌표로 변환되어 들어온다 (platform/sdl2/InputSDL2.cpp).
+*
+* 나누어떨어지지 않는 배율은 남는 픽셀만큼 여백이 생기므로, 창 크기의 약수를
+* 쓰는 것이 좋다 (768x896이면 2, 4).
+*/
+void App::SetRenderScale(int scale)
+{
+	if (scale < 1)
+	{
+		scale = 1;
+	}
+	// 상한은 안전장치다. 이보다 크면 논리 해상도가 몇 십 픽셀로 줄어 화면이 무의미해진다.
+	if (scale > 16)
+	{
+		scale = 16;
+	}
+
+	m_nRenderScale = scale;
+	m_nWindowWidth = m_nBaseWidth / scale;
+	m_nWindowHeight = m_nBaseHeight / scale;
+}
+
+const int App::GetRenderScale() const
+{
+	return m_nRenderScale;
 }
 
 #ifdef RS_WINDOWS

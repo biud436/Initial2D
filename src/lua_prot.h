@@ -13,6 +13,8 @@ int Lua_DrawSetColor(lua_State *pL);
 int Lua_DrawText(lua_State *pL);
 int Lua_WindowWidth(lua_State *pL);
 int Lua_WindowHeight(lua_State *pL);
+int Lua_SetRenderScale(lua_State *pL);
+int Lua_GetRenderScale(lua_State *pL);
 int Lua_GetFrameCount(lua_State *pL);
 int Lua_GameExit(lua_State *pL);
 int Lua_GetCurrentDirectory(lua_State *pL);

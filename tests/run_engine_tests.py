@@ -282,6 +282,19 @@ def test_tilemap_scene():
         check_golden("tilemap_scene_bottomright", img2)
         shutil.copy(os.path.join(work2, "shot_0030.bmp"), "/tmp/initial2d_tilemap_bottomright.bmp")
 
+    # [C] 렌더 배율 2: 창 크기는 그대로고 논리 해상도가 절반이라 같은 내용이 2배로
+    #     그려진다. 맵 3번째 줄의 울타리(월드 y 32..48)가 화면 y 64..96으로 내려온다.
+    _, result3, shots3 = run_scene("tilemap_scene.lua", [30], 40,
+                                   extra_env={"INITIAL2D_SCALE": "2"})
+    check("배율 2 실행 정상 종료", result3.returncode == 0, f"rc={result3.returncode}")
+    if 30 in shots3:
+        img3 = shots3[30]
+        s3 = img3.width / 768.0
+        doubled = count_color_in(img3, s3, 300, 64, 760, 96, FENCE_BROWN)
+        original = count_color_in(img3, s3, 300, 32, 760, 48, FENCE_BROWN)
+        check("배율 2: 울타리가 2배 위치(y 64~96)에 그려진다", doubled > 150, f"px={doubled}")
+        check("배율 2: 원래 위치(y 32~48)에는 울타리가 없다", original == 0, f"px={original}")
+
 
 # 플레이스홀더 CharSet(tools/generate_charset.py)의 색. 맵 팔레트와 겹치지 않는
 # 색을 골라 두었기 때문에 색 카운트만으로 캐릭터를 특정할 수 있다.
@@ -346,19 +359,27 @@ def test_rpg_walk_scene():
 
 
 def test_resolution():
-    """game.json과 INITIAL2D_WINDOW의 해상도 설정을 검증한다 (1단계)."""
-    print("\n[3] resolution_scene — 게임별 해상도 설정")
+    """game.json과 INITIAL2D_WINDOW의 해상도 설정, 렌더 배율을 검증한다 (1단계)."""
+    print("\n[3] resolution_scene — 게임별 해상도 설정과 렌더 배율")
     work = make_workdir("resolution_scene.lua")
     with open(os.path.join(work, "game.json"), "w") as f:
         f.write('{ "windowWidth": 320, "windowHeight": 240 }')
 
     env = dict(os.environ)
     env.pop("INITIAL2D_WINDOW", None)
+    env.pop("INITIAL2D_SCALE", None)
     env["INITIAL2D_EXIT_AFTER"] = "10"
     r1 = subprocess.run([GAME], cwd=work, env=env,
                         capture_output=True, text=True, timeout=60)
     log1 = r1.stdout + r1.stderr
     check("game.json 해상도 적용 (320x240)", "resolution:320x240" in log1, log1[-200:])
+    check("기본 렌더 배율은 1", "scale:1" in log1, log1[-200:])
+    # 배율은 창이 아니라 논리 해상도를 나눈다 (320x240 → 160x120)
+    check("SetRenderScale(2)가 논리 해상도를 절반으로",
+          "scaled2:160x120 scale:2" in log1, log1[-300:])
+    check("배율 하한 클램프 (0 → 1)", "clampLow:1" in log1, log1[-300:])
+    check("배율 상한 클램프 (999 → 16)", "clampHigh:16" in log1, log1[-300:])
+    check("배율을 되돌리면 원래 해상도", "restored:320x240" in log1, log1[-300:])
 
     env["INITIAL2D_WINDOW"] = "200x100"
     r2 = subprocess.run([GAME], cwd=work, env=env,
@@ -366,6 +387,14 @@ def test_resolution():
     log2 = r2.stdout + r2.stderr
     check("INITIAL2D_WINDOW가 game.json보다 우선 (200x100)",
           "resolution:200x100" in log2, log2[-200:])
+
+    # INITIAL2D_SCALE은 시작 배율이다 — 창은 200x100, 논리 해상도는 그 절반
+    env["INITIAL2D_SCALE"] = "2"
+    r3 = subprocess.run([GAME], cwd=work, env=env,
+                        capture_output=True, text=True, timeout=60)
+    log3 = r3.stdout + r3.stderr
+    check("INITIAL2D_SCALE로 시작 배율 지정 (200x100 → 100x50)",
+          "resolution:100x50" in log3 and "scale:2" in log3, log3[-300:])
 
 
 def test_rtp_charset():

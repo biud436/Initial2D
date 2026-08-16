@@ -131,6 +131,21 @@ public:
 	void SetWindowSize(int width, int height);
 
 	/**
+	* @brief 렌더 배율을 적용한 뒤의 실제 창 크기(배율 1일 때의 논리 크기)입니다.
+	*        창을 만들 때는 이 값을 쓰고, 게임 좌표계는 GetWindowWidth를 씁니다.
+	*/
+	const int GetBaseWidth() const;
+	const int GetBaseHeight() const;
+
+	/**
+	* @brief 픽셀 확대 배율을 정합니다 (1 = 원본). 논리 해상도가 창 크기의
+	*        1/배율이 되어 화면 전체가 그만큼 크게 그려집니다. 창 크기는 그대로입니다.
+	*        게임 도중에 바꿔도 되며, 다음 프레임의 RenderTransform에서 반영됩니다.
+	*/
+	void SetRenderScale(int scale);
+	const int GetRenderScale() const;
+
+	/**
 	* @brief game.json과 INITIAL2D_WINDOW 환경 변수에서 해상도 설정을 읽습니다.
 	*        SDL2 백엔드 전용 (구현: platform/sdl2/AppSDL2.cpp).
 	*/
@@ -177,8 +192,14 @@ protected:
 
 	const char*       m_szWindowName;			
 	const char*       m_szClassName;			
-	int               m_nWindowWidth;			
-	int               m_nWindowHeight;			
+	int               m_nWindowWidth;
+	int               m_nWindowHeight;
+
+	// 배율 1일 때의 크기 = 실제 창 크기. m_nWindowWidth/Height는 여기에
+	// 배율을 나눈 논리 해상도이며, 스크립트가 보는 좌표계는 그쪽이다.
+	int               m_nBaseWidth;
+	int               m_nBaseHeight;
+	int               m_nRenderScale;
 
 	int               m_nFPS;
 

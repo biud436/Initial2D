@@ -347,6 +347,25 @@ int Lua_WindowHeight(lua_State *pL)
 	return 1;
 }
 
+/**
+ * 픽셀 확대 배율을 정한다. 창 크기는 그대로 두고 논리 해상도만 1/배율로 줄여
+ * 화면 전체(타일맵, 스프라이트, 폰트)를 그만큼 크게 그린다.
+ * 배율을 바꾸면 WindowWidth/Height가 달라지므로 씬은 그 뒤에 배치를 계산해야 한다.
+ */
+int Lua_SetRenderScale(lua_State *pL)
+{
+	const int scale = static_cast<int>(luaL_checkinteger(pL, 1));
+	App::GetInstance().SetRenderScale(scale);
+	lua_pushinteger(pL, App::GetInstance().GetRenderScale());
+	return 1;
+}
+
+int Lua_GetRenderScale(lua_State *pL)
+{
+	lua_pushinteger(pL, App::GetInstance().GetRenderScale());
+	return 1;
+}
+
 int Lua_GetFrameCount(lua_State *pL)
 {
 	lua_pushinteger(pL, App::GetInstance().GetFrameCount());
@@ -481,6 +500,8 @@ int Lua_Init()
 		lua_register(g_pLuaState, "GetTextWidth", Lua_GetTextWidth);
 		lua_register(g_pLuaState, "WindowWidth", Lua_WindowWidth);
 		lua_register(g_pLuaState, "WindowHeight", Lua_WindowHeight);
+		lua_register(g_pLuaState, "SetRenderScale", Lua_SetRenderScale);
+		lua_register(g_pLuaState, "GetRenderScale", Lua_GetRenderScale);
 		lua_register(g_pLuaState, "GetFrameCount", Lua_GetFrameCount);
 		lua_register(g_pLuaState, "GameExit", Lua_GameExit);
 

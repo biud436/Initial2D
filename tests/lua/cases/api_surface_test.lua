@@ -7,7 +7,8 @@ local M = {}
 local GLOBALS = {
     "print", "MessageBox", "LoadScript", "PreparaFont", "DrawText",
     "GetTextWidth",
-    "WindowWidth", "WindowHeight", "GetFrameCount", "GameExit",
+    "WindowWidth", "WindowHeight", "SetRenderScale", "GetRenderScale",
+    "GetFrameCount", "GameExit",
     "draw_text", "draw_point", "draw_set_color",
     "GetCurrentDirectory", "SetAppIcon", "GetResourcesFiles",
 }
@@ -41,9 +42,21 @@ function M.run(t)
         end
     end
 
-    -- 값 계약: 논리 해상도 (현재 768x896 하드코딩, 1단계에서 설정 가능해지면 갱신)
+    -- 값 계약: 논리 해상도 (game.json, INITIAL2D_WINDOW, 렌더 배율로 결정된다)
     t.check_type(WindowWidth(), "number", "WindowWidth()가 숫자를 돌려준다")
     t.check(WindowWidth() > 0 and WindowHeight() > 0, "논리 해상도가 양수다")
+
+    -- 렌더 배율: 논리 해상도를 나눈다. 다른 케이스에 영향이 없도록 반드시 되돌린다.
+    local baseW, baseH = WindowWidth(), WindowHeight()
+    t.check_eq(GetRenderScale(), 1, "기본 배율은 1")
+    t.check_eq(SetRenderScale(2), 2, "SetRenderScale은 적용된 배율을 돌려준다")
+    t.check(WindowWidth() == baseW // 2 and WindowHeight() == baseH // 2,
+        "배율 2에서 논리 해상도는 절반", WindowWidth() .. "x" .. WindowHeight())
+    t.check_eq(SetRenderScale(-5), 1, "0 이하는 1로 잘린다")
+    t.check_eq(SetRenderScale(100), 16, "상한 16으로 잘린다")
+    SetRenderScale(1)
+    t.check(WindowWidth() == baseW and WindowHeight() == baseH,
+        "배율을 1로 되돌리면 원래 해상도")
 end
 
 return M

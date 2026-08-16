@@ -24,6 +24,7 @@
 - [x] `Sprite.SetSheetGrid(handle, cols, rows)` 추가, 기본 4x4 유지. 겸사겸사 `setRect`의 행 계산이 행 수로 나누던 잠복 버그(4x4에서만 우연히 동작)도 수정
 - [x] `Sprite.Dispose(handle)` 추가. `Sprite.GetRect`의 lua_settable 인덱스 오류(호출 즉시 런타임 오류)도 발견해 수정
 - [x] 화면 설정을 게임이 정하게 한다 — 프로젝트 루트의 `game.json`(`windowWidth`, `windowHeight`)에서 읽고, `INITIAL2D_WINDOW=WxH` 환경 변수가 우선한다 (개발과 테스트용). 파일이 없으면 기존 기본값 768x896 유지. `config.setting`은 엔진이 쓰는 출력 파일이라 쓰지 않기로 결정.
+- [x] **픽셀 확대 배율** `SetRenderScale(n)` / `GetRenderScale()`, `game.json`의 `renderScale`, `INITIAL2D_SCALE` (2026-08-16 추가). 5단계 데모에서 "16px 타일을 768x896에 1:1로 그리니 캐릭터가 점만 하다"는 문제로 되돌아와 넣은 범용 기능이다 — 픽셀 아트 게임이면 장르와 무관하게 필요하다. 창 크기와 논리 해상도를 분리하고(`m_nBaseWidth` 대 `m_nWindowWidth`) 확대는 `SDL_RenderSetLogicalSize`가 맡으므로, 타일맵과 스프라이트와 비트맵 폰트가 한꺼번에 같은 비율로 커지고 마우스 좌표도 논리 좌표로 들어온다(`InputSDL2`가 이미 `SDL_RenderWindowToLogical`을 쓰고 있었다). 씬마다 바꿀 수 있고(`RenderTransform`이 매 프레임 논리 크기를 다시 적용한다) 가속 렌더러에서는 비용이 없다 (실측 62fps 유지).
 
 ### B. 버그 수정
 
