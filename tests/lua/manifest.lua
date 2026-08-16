@@ -12,4 +12,5 @@ return {
     "scripts/luatests/cases/sprite_sheet_test",
     "scripts/luatests/cases/tilemap_test",
     "scripts/luatests/cases/vpad_test",
+    "scripts/luatests/cases/rpg_specs_test",
 }

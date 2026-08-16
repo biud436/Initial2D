@@ -78,7 +78,8 @@ macOS 포팅을 기반으로 Android까지 확장하였습니다. 역시 AI와�
 롤플레잉 게임 제작이 가능한 수준까지 엔진을 확장하는 것이 다음 목표입니다. 단계별 계획과 진행 상황은 [docs/plans](./docs/plans/index.md)에서 관리합니다.
 
 - 타일맵 시스템과 맵 파일 포맷 정리 — 완료 (2026-08)
-- InitialEditor 연동: 로컬 브리지 서버를 통한 맵 저장과 스크립트 편집
+- InitialEditor 연동: 로컬 브리지 서버를 통한 맵 저장과 스크립트 편집 — 완료 (2026-08)
+- 리소스 파이프라인: RPG Maker 2003 RTP 변환과 규격 데이터 — 완료 (2026-08)
 - Lua로 작성하는 RPG 프레임워크: 캐릭터 이동, 이벤트, 대화창
 - 위 요소를 모두 사용하는 데모 게임 제작
 
@@ -641,9 +642,61 @@ SDL_VIDEODRIVER=dummy INITIAL2D_SCENE=tilemap INITIAL2D_MAP=./resources/maps/my_
   INITIAL2D_EXIT_AFTER=60 ./build/Initial2D
 ```
 
+# RTP 리소스 변환 (RPG Maker 2003)
+
+RPG Maker 2003의 RTP 소재를 엔진이 바로 읽는 형태로 바꾸는 도구입니다 (`tools/rtp_import.py`, Pillow 필요).
+8비트 팔레트 PNG를 32비트 RGBA로 바꾸면서 R2K3의 관례인 "팔레트 0번은 투명"을 강제하고, WAV는 그대로 가져옵니다.
+tRNS 청크가 파일마다 들쭉날쭉해서 엔진 로더를 고치는 대신 변환 단계에서 정리하는 쪽을 택했습니다.
+
+> 라이선스: RTP 소재는 RPG Maker 2003 정품 보유자만 다른 엔진의 게임에 쓸 수 있고, 소재 자체의 재배포는 금지입니다.
+> 그래서 `resources/RTP.zip`과 변환 결과인 `resources/rtp/`는 gitignore로 막아 두었습니다. 저장소에 커밋하지 마십시오.
+
+```bash
+# 기본: PNG 변환과 WAV 복사 (resources/RTP.zip → resources/rtp/)
+python3 tools/rtp_import.py
+
+# 일부 카테고리만, 파일명의 공백을 언더스코어로, WAV도 OGG로
+python3 tools/rtp_import.py --only CharSet,ChipSet --normalize-names --ogg
+
+# MIDI를 OGG로 미리 렌더링 (fluidsynth 필요 — 엔진에는 MIDI 재생기를 넣지 않습니다)
+python3 tools/rtp_import.py --soundfont ~/soundfonts/GeneralUser.sf2
+
+# 변환 결과 검증 (규격 크기, 투명 픽셀, 원본 대조, gitignore)
+python3 tests/verify_rtp.py
+```
+
+- 투명 처리는 카테고리마다 다릅니다. CharSet, ChipSet, Monster, System 같은 키 컬러 배경만 뚫고, 배경 그림(Backdrop, Panorama, Title, GameOver)은 팔레트 0번이 실제 그림 색이라 건드리지 않습니다. 판단 근거는 `tools/rtp_import.py`의 `CATEGORIES` 표에 실측값과 함께 적어 두었습니다.
+- MIDI 141개는 기본적으로 건너뜁니다. macOS에는 `/System/Library/Components/CoreAudio.component/Contents/Resources/gs_instruments.dls`가 있어 동작 확인용으로 쓸 수 있지만, 배포할 음원은 자유 라이선스 사운드폰트로 만드십시오.
+- 파일명의 공백("Mountain Road.png")은 그대로 둡니다. 엔진 로더가 공백 경로를 문제없이 읽는 것을 확인했습니다.
+- 변환 결과의 명세는 `resources/rtp/manifest.json`에 남고, `tests/verify_rtp.py`가 이 파일을 계약 삼아 검증합니다. `resources/rtp/`가 없는 환경(CI 등)에서는 스스로 건너뜁니다.
+
+시트 분할과 방향 행 순서 같은 R2K3 규격은 엔진이 아니라 `scripts/rpg/specs.lua`에 Lua 데이터로 둡니다.
+엔진(C++)은 PNG와 OGG만 알면 되고, "CharSet 한 장에 8명이 들어 있다"는 지식은 스크립트 쪽 몫입니다.
+
+```lua
+local Specs = require("scripts/rpg/specs")
+local c = Specs.charset
+
+local actor = Image("./resources/rtp/CharSet/Actor1.png", 0, 0,
+    c.frameW, c.frameH, c.gridCols * c.gridRows, "actor")
+actor.setSheetGrid(c.gridCols, c.gridRows)
+actor.setCurrentFrame(Specs.charsetFrameIndex(0, "down", 1))  -- 0번 캐릭터, 정면, 서기
+actor.setPosition(100, 200)
+```
+
+| 리소스 | 규격 | 한 장에 들어 있는 것 |
+|---|---|---|
+| CharSet | 288x256 | 캐릭터 8명 (한 명 72x128, 24x32 프레임 3개 x 4방향) |
+| FaceSet | 192x192 | 얼굴 16개 (48x48) |
+| ChipSet | 480x256 | 16x16 타일 30열 16행 |
+| System | 160x80 | 창 바탕, 테두리, 커서, 화살표, 숫자, 글자색 20개 |
+
+방향 행 순서는 위(0), 오른쪽(1), 아래(2), 왼쪽(3)이며 실제 이미지를 확대해 확인한 값입니다.
+걷기는 왼발, 서기, 오른발 세 프레임을 `0, 1, 2, 1` 순서로 돕니다.
+
 # 테스트
 
-전체 검수는 스크립트 하나로 실행합니다. C++ 단위 테스트, Lua 단위 테스트, 픽셀 검증, 골든 스크린샷 비교가 순서대로 수행됩니다.
+전체 검수는 스크립트 하나로 실행합니다. C++ 단위 테스트, Lua 단위 테스트, 픽셀 검증, 골든 스크린샷 비교, 브리지 서버 테스트, RTP 변환 검증이 순서대로 수행됩니다.
 
 ```bash
 # 빌드부터 전체 테스트까지 한 번에 실행 (기본은 헤드리스 — 창을 띄우지 않습니다. CI와 동일)

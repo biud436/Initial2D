@@ -56,6 +56,7 @@ def make_workdir(scene):
         if os.path.exists(src):
             shutil.copy(src, scripts)
     shutil.copytree(os.path.join(REPO, "scripts", "ui"), os.path.join(scripts, "ui"))
+    shutil.copytree(os.path.join(REPO, "scripts", "rpg"), os.path.join(scripts, "rpg"))
     shutil.copy(os.path.join(REPO, "tests", "engine", "scenes", scene),
                 os.path.join(scripts, "main.lua"))
     return work
@@ -89,11 +90,12 @@ def px(img, scale, x, y):
     return img.getpixel((int(x * scale), int(y * scale)))
 
 
-def count_color_in(img, scale, x0, y0, x1, y1, target, tol=28):
+def count_color_in(img, scale, x0, y0, x1, y1, target, tol=28, invert=False):
+    """논리 좌표 사각형 안에서 target 색(invert면 target이 아닌 색) 픽셀을 센다."""
     n = 0
     for yy in range(int(y0 * scale), int(y1 * scale), 2):
         for xx in range(int(x0 * scale), int(x1 * scale), 2):
-            if near(img.getpixel((xx, yy)), target, tol):
+            if near(img.getpixel((xx, yy)), target, tol) != invert:
                 n += 1
     return n
 
@@ -196,9 +198,10 @@ def test_lua_units():
     shutil.copytree(os.path.join(REPO, "tests", "lua"), luatests)
     shutil.move(os.path.join(luatests, "run_tests.lua"),
                 os.path.join(scripts, "main.lua"))
-    # 테스트 대상 공용 Lua 모듈 (scripts/image.lua, scripts/ui/*)
+    # 테스트 대상 공용 Lua 모듈 (scripts/image.lua, scripts/ui/*, scripts/rpg/*)
     shutil.copy(os.path.join(REPO, "scripts", "image.lua"), scripts)
     shutil.copytree(os.path.join(REPO, "scripts", "ui"), os.path.join(scripts, "ui"))
+    shutil.copytree(os.path.join(REPO, "scripts", "rpg"), os.path.join(scripts, "rpg"))
 
     env = dict(os.environ)
     env["INITIAL2D_EXIT_AFTER"] = "10"  # GameExit() 미동작 시의 안전망
@@ -303,6 +306,54 @@ def test_resolution():
           "resolution:200x100" in log2, log2[-200:])
 
 
+def test_rtp_charset():
+    """변환된 CharSet의 투명 배경을 엔진 렌더링으로 확인한다 (4단계).
+
+    resources/rtp/ 는 정품 보유자만 가지는 로컬 자산이라(라이선스상 커밋 금지)
+    없으면 건너뛴다. 같은 이유로 골든 스크린샷도 두지 않고, 배경판 색이 캐릭터
+    주변으로 비치는지를 픽셀로 확인한다.
+    """
+    print("\n[4] rtp_charset_scene — RTP CharSet 투명 배경 (팔레트 0번 처리)")
+    charset = os.path.join(REPO, "resources", "rtp", "CharSet", "Actor1.png")
+    if not os.path.exists(charset):
+        print("  SKIP  resources/rtp/CharSet/Actor1.png 없음"
+              " — python3 tools/rtp_import.py 로 생성한다")
+        return
+
+    work, result, shots = run_scene("rtp_charset_scene.lua", [20], 30)
+    log = result.stdout + result.stderr
+    check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode}")
+    check("변환된 CharSet 로드 성공", "charsetLoaded:true" in log, log[-200:])
+    check("정면 서기 프레임 번호 = 25", "charsetFrame:25" in log, log[:200])
+    check("프레임 덤프 생성", 20 in shots)
+    if 20 not in shots:
+        return
+
+    img = shots[20]
+    scale = img.width / 768.0
+
+    # 캐릭터 프레임은 (100,200)에 8배 → 192x256. 네 귀퉁이는 팔레트 0번(=투명)이라
+    # 배경판 색이 그대로 보여야 한다.
+    corners = {
+        "좌상": (108, 208), "우상": (276, 208),
+        "좌하": (108, 440), "우하": (276, 440),
+    }
+    for name, (x, y) in corners.items():
+        pixel = px(img, scale, x, y)
+        check(f"프레임 {name} 귀퉁이로 배경이 비친다", near(pixel, TILE1), str(pixel))
+
+    # 캐릭터 몸통 영역에는 배경판이 아닌 색(옷·머리)이 충분히 있어야 한다 —
+    # 전부 투명해져 버리는 반대 방향의 실패를 잡는다.
+    body = count_color_in(img, scale, 130, 250, 260, 450, TILE1, invert=True)
+    check("캐릭터 몸통이 그려져 있다", body > 500, f"비배경 픽셀={body}")
+
+    # 스프라이트 바깥은 여전히 배경판이다 (프레임 분할이 어긋나면 깨진다)
+    outside = px(img, scale, 60, 480)
+    check("스프라이트 밖은 배경판 색", near(outside, TILE1), str(outside))
+
+    shutil.copy(os.path.join(work, "shot_0020.bmp"), "/tmp/initial2d_rtp_charset.bmp")
+
+
 def main():
     if not os.path.exists(GAME):
         print(f"실행 파일이 없습니다: {GAME} — 먼저 cmake --build build 를 실행하세요")
@@ -312,6 +363,7 @@ def main():
     test_assert_scene()
     test_tilemap_scene()
     test_resolution()
+    test_rtp_charset()
 
     print(f"\n결과: {len(PASSES)} PASS / {len(FAILS)} FAIL")
     if FAILS:
