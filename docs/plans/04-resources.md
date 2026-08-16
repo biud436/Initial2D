@@ -79,7 +79,7 @@
 
 - [x] `python3 tools/rtp_import.py` 한 번으로 `resources/rtp/`에 즉시 사용 가능한 PNG들이 생성된다. (2026-08-16: 이미지 13개 카테고리 318장, 오디오 216개, 17초)
 - [x] 변환된 CharSet 한 장을 화면에 그렸을 때 배경이 투명하게 나온다 (팔레트 0번 처리 검증). (2026-08-16: `rtp_charset_scene`이 단색 배경판 위에 그려 네 귀퉁이로 배경이 비치는 것을 픽셀로 확인, 스크린샷도 눈으로 확인)
-- [x] 변환 결과물이 git 상태에 나타나지 않는다 (gitignore 검증). (2026-08-16: `resources/.gitignore`에 `rtp/` 추가, `verify_rtp.py`가 `git check-ignore`와 `git status`로 매번 확인)
+- [x] 변환 결과물이 git 상태에 나타나지 않는다 (gitignore 검증). (2026-08-16: `verify_rtp.py`가 `git check-ignore`와 `git status`로 매번 확인) — **정정**: 처음에는 `resources/.gitignore`에만 `rtp/`를 넣었는데, 그 파일 자체가 루트 `.gitignore`의 `resources/*.*`에 걸려 커밋되지 않는다. 즉 규칙이 내 로컬에만 있었고 신선한 체크아웃에는 없었다 (5단계 PR의 CI가 잡아냈다). 규칙을 추적되는 루트 `.gitignore`로 옮겼다.
 
 ## 의존 관계
 
