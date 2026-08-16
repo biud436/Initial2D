@@ -50,6 +50,8 @@ namespace {
 		{ SDL_SCANCODE_KP_7,      VK_NUMPAD7 },
 		{ SDL_SCANCODE_KP_8,      VK_NUMPAD8 },
 		{ SDL_SCANCODE_KP_9,      VK_NUMPAD9 },
+		// Android 뒤로가기 버튼 — 스크립트가 ESC와 같은 의미로 다루게 한다
+		{ SDL_SCANCODE_AC_BACK,   VK_ESCAPE },
 	};
 }
 

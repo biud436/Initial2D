@@ -24,12 +24,13 @@
 - [x] `Sprite.SetSheetGrid(handle, cols, rows)` 추가, 기본 4x4 유지. 겸사겸사 `setRect`의 행 계산이 행 수로 나누던 잠복 버그(4x4에서만 우연히 동작)도 수정
 - [x] `Sprite.Dispose(handle)` 추가. `Sprite.GetRect`의 lua_settable 인덱스 오류(호출 즉시 런타임 오류)도 발견해 수정
 - [x] 화면 설정을 게임이 정하게 한다 — 프로젝트 루트의 `game.json`(`windowWidth`, `windowHeight`)에서 읽고, `INITIAL2D_WINDOW=WxH` 환경 변수가 우선한다 (개발과 테스트용). 파일이 없으면 기존 기본값 768x896 유지. `config.setting`은 엔진이 쓰는 출력 파일이라 쓰지 않기로 결정.
+- [x] **픽셀 확대 배율** `SetRenderScale(n)` / `GetRenderScale()`, `game.json`의 `renderScale`, `INITIAL2D_SCALE` (2026-08-16 추가). 5단계 데모에서 "16px 타일을 768x896에 1:1로 그리니 캐릭터가 점만 하다"는 문제로 되돌아와 넣은 범용 기능이다 — 픽셀 아트 게임이면 장르와 무관하게 필요하다. 창 크기와 논리 해상도를 분리하고(`m_nBaseWidth` 대 `m_nWindowWidth`) 확대는 `SDL_RenderSetLogicalSize`가 맡으므로, 타일맵과 스프라이트와 비트맵 폰트가 한꺼번에 같은 비율로 커지고 마우스 좌표도 논리 좌표로 들어온다(`InputSDL2`가 이미 `SDL_RenderWindowToLogical`을 쓰고 있었다). 씬마다 바꿀 수 있고(`RenderTransform`이 매 프레임 논리 크기를 다시 적용한다) 가속 렌더러에서는 비용이 없다 (실측 62fps 유지).
 
 ### B. 버그 수정
 
 - [x] 글리프 테이블 크기 `[55203]` → `[0xD7A4]` 수정. 추가 발견: ParseFont가 fnt의 id를 경계 검사 없이 쓰던 문제, drawText가 빈 문자열에서 빈 벡터 max_element를 역참조하던 UB도 수정. (`Charset` 구조의 4.4MB 메모리 최적화는 보류 — 동작 문제가 아님)
 - [x] `Font::open()`의 반전된 guard 수정 (첫 호출이 파싱을 건너뛰던 문제)
-- [ ] `src/Tilemap.cpp`의 백슬래시 경로 문제 — 2단계 재작성에서 해결하기로 결정
+- [x] `src/Tilemap.cpp`의 백슬래시 경로 문제 — 2단계 재작성에서 해결 (모든 경로가 `NormalizePath`를 거친다)
 - [x] `Rectangle.h`의 `operator=` return 누락 수정 (연쇄 대입 회귀 테스트 포함)
 - [x] 오디오 루프 플래그 정리 — 원인은 반전이 아니라 `lua_toboolean` 뒤 `0이면 -1` 변환이었고, Lua에서는 숫자 0도 참이라 사실상 false만 무한 반복이 되는 구조였다. 새 계약: 불리언 true = 무한, false = 1회, 숫자 = SDL_mixer 원시 루프 값. flappy와 menu의 효과음은 "절반 길이 파일을 2회 재생"하던 기존 소리를 보존하기 위해 숫자 1로 변경. `PlayMusic`, `PlaySound`, `InsertNextMusic` 모두 적용.
 
@@ -44,7 +45,7 @@
 - [x] Lua에서 JSON 파일을 읽어 테이블로 순회하는 테스트가 통과한다. json_load_test 17건.
 - [x] 3x4 시트의 프레임이 올바른 아틀라스 좌표로 계산된다 (GetRect 검증). sprite_sheet_test 12건.
 - [x] 플래피버드가 기존과 동일하게 동작한다 (골든 스크린샷 포함 전체 스위트 통과).
-- [ ] macOS와 Android 양쪽에서 확인 — macOS 완료, **Android 실기 확인 남음** (빌드와 실행, 해상도와 오디오 동작).
+- [x] macOS와 Android 양쪽에서 확인 — 2026-08-15 Galaxy S24(Android 16) 실기: 빌드, 설치, 구동, 메뉴 터치, 해상도(논리 높이 896에 기기 비율 맞춤, 2340x1080 풀 스크린), 오디오 재생(AAudio 플레이어 started) 확인. 발견 사항: `prepare_assets.sh`가 닷파일(`resources/.gitignore`)을 매니페스트에 넣어 첫 실행이 즉시 종료되던 문제와, JNI 소스 목록에 `lua_json.cpp`가 빠져 있던 문제를 함께 수정.
 
 ## 의존 관계
 

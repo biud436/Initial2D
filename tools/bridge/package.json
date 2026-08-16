@@ -1,0 +1,17 @@
+{
+  "name": "initial2d-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "InitialEditor(웹)와 로컬 게임 프로젝트 파일, 엔진 HMR 서버를 잇는 브리지 서버 (의존성 없음)",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "initial2d-bridge": "server.js"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  }
+}

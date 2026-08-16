@@ -4,6 +4,7 @@
 #include "lua_json.h"
 #include "lua_sprite.h"
 #include "lua_texture.h"
+#include "lua_tilemap.h"
 #include "lua_font.h"
 
 #include "App.h"
@@ -31,6 +32,7 @@
 #endif
 
 #include <cstdio>
+#include <cctype>
 #include <vector>
 
 #include "Font.h"
@@ -345,6 +347,25 @@ int Lua_WindowHeight(lua_State *pL)
 	return 1;
 }
 
+/**
+ * 픽셀 확대 배율을 정한다. 창 크기는 그대로 두고 논리 해상도만 1/배율로 줄여
+ * 화면 전체(타일맵, 스프라이트, 폰트)를 그만큼 크게 그린다.
+ * 배율을 바꾸면 WindowWidth/Height가 달라지므로 씬은 그 뒤에 배치를 계산해야 한다.
+ */
+int Lua_SetRenderScale(lua_State *pL)
+{
+	const int scale = static_cast<int>(luaL_checkinteger(pL, 1));
+	App::GetInstance().SetRenderScale(scale);
+	lua_pushinteger(pL, App::GetInstance().GetRenderScale());
+	return 1;
+}
+
+int Lua_GetRenderScale(lua_State *pL)
+{
+	lua_pushinteger(pL, App::GetInstance().GetRenderScale());
+	return 1;
+}
+
 int Lua_GetFrameCount(lua_State *pL)
 {
 	lua_pushinteger(pL, App::GetInstance().GetFrameCount());
@@ -356,6 +377,28 @@ int Lua_GameExit(lua_State *pL)
 	// Windows에서는 PostQuitMessage(0), SDL2에서는 SDL_QUIT 이벤트 푸시와 동일하다.
 	App::GetInstance().Quit();
 	return 0;
+}
+
+/**
+ * local name = GetPlatform()
+ * "windows" | "macos" | "linux" | "android" | "ios" | 그 외 SDL이 보고하는 이름(소문자)
+ * 스크립트가 터치 조작 UI(가상 패드) 표시 여부 등을 결정할 때 쓴다.
+ */
+int Lua_GetPlatform(lua_State *pL)
+{
+#ifdef RS_WINDOWS
+	lua_pushstring(pL, "windows");
+#else
+	std::string name = SDL_GetPlatform();
+	if (name == "Mac OS X") name = "macos";
+	else if (name == "Windows") name = "windows";
+	else if (name == "Linux") name = "linux";
+	else if (name == "Android") name = "android";
+	else if (name == "iOS") name = "ios";
+	else std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+	lua_pushstring(pL, name.c_str());
+#endif
+	return 1;
 }
 
 int Lua_GetCurrentDirectory(lua_State *pL)
@@ -457,6 +500,8 @@ int Lua_Init()
 		lua_register(g_pLuaState, "GetTextWidth", Lua_GetTextWidth);
 		lua_register(g_pLuaState, "WindowWidth", Lua_WindowWidth);
 		lua_register(g_pLuaState, "WindowHeight", Lua_WindowHeight);
+		lua_register(g_pLuaState, "SetRenderScale", Lua_SetRenderScale);
+		lua_register(g_pLuaState, "GetRenderScale", Lua_GetRenderScale);
 		lua_register(g_pLuaState, "GetFrameCount", Lua_GetFrameCount);
 		lua_register(g_pLuaState, "GameExit", Lua_GameExit);
 
@@ -466,6 +511,7 @@ int Lua_Init()
 		lua_register(g_pLuaState, "draw_set_color", Lua_DrawSetColor);
 
 		lua_register(g_pLuaState, "GetCurrentDirectory", Lua_GetCurrentDirectory);
+		lua_register(g_pLuaState, "GetPlatform", Lua_GetPlatform);
 
 		lua_register(g_pLuaState, "SetAppIcon", Lua_SetAppIcon);
 
@@ -482,6 +528,9 @@ int Lua_Init()
 
 		// Sprite
 		Lua_CreateSpriteImpl(g_pLuaState);
+
+		// Tilemap
+		Lua_CreateTilemapObject(g_pLuaState);
 
 		// Texture
 		Lua_CreateTextureManagerObject(g_pLuaState);

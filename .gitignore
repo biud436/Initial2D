@@ -13,6 +13,13 @@
 node_modules/
 
 resources/*.*
+
+# RPG Maker 2003 RTP 원본과 tools/rtp_import.py 의 변환 결과.
+# 재배포가 금지된 소재이므로 저장소에 들어가면 안 된다 (docs/plans/04-resources.md).
+# 이 규칙은 반드시 추적되는 파일에 있어야 한다 — resources/.gitignore 는 위의
+# resources/*.* 에 걸려 커밋되지 않으므로 신선한 체크아웃에서는 없는 것과 같다.
+resources/RTP.zip
+resources/rtp/
 lib/*.exe
 
 # User-specific files (MonoDevelop/Xamarin Studio)

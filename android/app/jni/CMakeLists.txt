@@ -103,7 +103,9 @@ add_library(main SHARED
   ${REPO_ROOT}/src/lua_prot.cpp
   ${REPO_ROOT}/src/lua_input.cpp
   ${REPO_ROOT}/src/lua_sprite.cpp
+  ${REPO_ROOT}/src/lua_json.cpp
   ${REPO_ROOT}/src/lua_texture.cpp
+  ${REPO_ROOT}/src/lua_tilemap.cpp
   ${REPO_ROOT}/src/lua_font.cpp
   # Android 어댑터 — assets 추출 + chdir (Phase A1)
   ${REPO_ROOT}/src/platform/android/AndroidBootstrap.cpp

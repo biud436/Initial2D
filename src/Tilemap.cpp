@@ -1,191 +1,268 @@
+/**
+ * @file Tilemap.cpp
+ * @brief 맵 포맷 v1 로더와 컬링 렌더러 (2단계, docs/plans/02-tilemap.md).
+ *
+ * 이전 구현(settings.json 기반, 타일마다 Sprite 생성)은 실행 경로에서
+ * 생성되지 않는 죽은 코드였고 재작성 대상이었다. 이 구현은
+ * TextureManager::DrawFrame에 소스 사각형을 직접 넘겨 화면에 보이는
+ * 타일만 그린다.
+ */
 #include "Tilemap.h"
 #include "App.h"
-#include "GameStateMachine.h"
 #include "TextureManager.h"
-#include "File.h"
+#include "platform/Utf8.h"
+
+#include <json/json.h>
+
+#include <algorithm>
 #include <fstream>
 
+namespace {
 
-#ifdef TEST_MODE
-#include <iostream>
-#endif
+	/** 음수 좌표에서도 내림 나눗셈이 되도록 한다 (카메라가 맵 밖으로 나간 경우). */
+	int FloorDiv(int value, int divisor)
+	{
+		int q = value / divisor;
+		if ((value % divisor != 0) && ((value < 0) != (divisor < 0))) {
+			--q;
+		}
+		return q;
+	}
+
+	/** 정수 배열 필드를 읽는다. 크기가 expected와 다르면 false. */
+	bool ReadIntArray(const Json::Value& node, size_t expected, std::vector<int>& out)
+	{
+		if (!node.isArray() || node.size() != expected) {
+			return false;
+		}
+		out.clear();
+		out.reserve(expected);
+		for (const Json::Value& v : node) {
+			if (!v.isIntegral()) {
+				return false;
+			}
+			out.push_back(v.asInt());
+		}
+		return true;
+	}
+}
 
 namespace Initial2D {
 
-
-Tilemap::Tilemap(int width, int height) :
-	_width(width),
-	_height(height),
-	_isLoaded(false),
-	_root(),
-	GameObject()
+Tilemap::Tilemap() :
+	_width(0),
+	_height(0),
+	_tileWidth(0),
+	_tileHeight(0)
 {
-	
 }
-
 
 Tilemap::~Tilemap()
 {
-	removeTiles();
+	// 타일셋 텍스처는 TextureManager 소유라 여기서 해제하지 않는다.
 }
 
-void Tilemap::removeTiles() 
+bool Tilemap::fail(const std::string& message)
 {
-	for (auto iter : _tiles) {
-		delete iter;
-	}
-
-	_tiles.clear();
-
-	if (TheTextureManager.valid("main_tileset") && _isLoaded) {
-		TheTextureManager.Remove("main_tileset");
-		_isLoaded = false;
-	}
-		
+	_lastError = message;
+	LOG_D("Tilemap: " << message);
+	return false;
 }
 
-bool Tilemap::loadImages() 
+bool Tilemap::load(const std::string& path)
 {
-	std::string filename = _root["TilesetImage"].asString();
+	const std::string normalized = Platform::NormalizePath(path);
 
-	// 타일셋을 불러옵니다.
-	if (!TheTextureManager.Load(filename, "main_tileset", 0)) {
-		LOG_D("타일셋 텍스쳐 로드에 실패하였습니다.");
-		return false;
+	std::ifstream file(normalized, std::ifstream::binary);
+	if (!file.good()) {
+		return fail("cannot open " + normalized);
 	}
 
-	// 파일 닫기
-	//file.close();
+	Json::Value root;
+	try {
+		file >> root;
+	}
+	catch (const std::exception& e) {
+		return fail("parse error in " + normalized + ": " + e.what());
+	}
 
-	LOG_D("타일셋 이미지를 성공적으로 로드하였습니다");
+	if (root["version"].asInt() != 1) {
+		return fail("unsupported map version in " + normalized);
+	}
 
+	const int width = root["width"].asInt();
+	const int height = root["height"].asInt();
+	const int tileWidth = root["tileWidth"].asInt();
+	const int tileHeight = root["tileHeight"].asInt();
+	if (width <= 0 || height <= 0 || tileWidth <= 0 || tileHeight <= 0) {
+		return fail("invalid map size in " + normalized);
+	}
+	const size_t cells = static_cast<size_t>(width) * static_cast<size_t>(height);
+
+	const Json::Value& layersNode = root["layers"];
+	if (!layersNode.isArray() || layersNode.empty()) {
+		return fail("no layers in " + normalized);
+	}
+	std::vector<Layer> layers;
+	for (const Json::Value& layerNode : layersNode) {
+		Layer layer;
+		layer.name = layerNode["name"].asString();
+		if (!ReadIntArray(layerNode["data"], cells, layer.data)) {
+			return fail("layer \"" + layer.name + "\" data size != width*height in " + normalized);
+		}
+		layers.push_back(std::move(layer));
+	}
+
+	std::vector<int> collision;
+	if (root.isMember("collision")) {
+		if (!ReadIntArray(root["collision"], cells, collision)) {
+			return fail("collision size != width*height in " + normalized);
+		}
+	}
+
+	const Json::Value& tilesetsNode = root["tilesets"];
+	if (!tilesetsNode.isArray() || tilesetsNode.empty()) {
+		return fail("no tilesets in " + normalized);
+	}
+	std::vector<Tileset> tilesets;
+	for (const Json::Value& tilesetNode : tilesetsNode) {
+		Tileset tileset;
+		tileset.image = tilesetNode["image"].asString();
+		tileset.firstGid = tilesetNode["firstGid"].asInt();
+		tileset.columns = tilesetNode["columns"].asInt();
+		if (tileset.image.empty() || tileset.firstGid < 1 || tileset.columns < 1) {
+			return fail("invalid tileset entry in " + normalized);
+		}
+		tileset.textureId = Platform::NormalizePath(tileset.image);
+		if (!TheTextureManager.valid(tileset.textureId)) {
+			if (!TheTextureManager.Load(tileset.image, tileset.textureId, 0)) {
+				return fail("cannot load tileset image " + tileset.image);
+			}
+		}
+		tilesets.push_back(std::move(tileset));
+	}
+	std::sort(tilesets.begin(), tilesets.end(),
+		[](const Tileset& a, const Tileset& b) { return a.firstGid < b.firstGid; });
+
+	// 전부 검증된 뒤에야 멤버를 교체한다 (실패 시 기존 상태 유지)
+	_name = root["name"].asString();
+	_width = width;
+	_height = height;
+	_tileWidth = tileWidth;
+	_tileHeight = tileHeight;
+	_layers = std::move(layers);
+	_collision = std::move(collision);
+	_tilesets = std::move(tilesets);
+	_lastError.clear();
 	return true;
 }
 
-
-void Tilemap::initialize() 
+bool Tilemap::inBounds(int x, int y) const
 {
-	try 
-	{
-		// settings.json 파일 로드
-		std::ifstream config(".\\resources\\maps\\settings.json", std::ifstream::binary);
-		
-		config >> _root;
+	return x >= 0 && x < _width && y >= 0 && y < _height;
+}
 
-		int	x, y, tempTileId;
-
-		_width = _root["MapWidth"].asInt();
-		_height = _root["MapHeight"].asInt();
-		
-		tempTileId = 46 - 1;
-
-		int startMapId = _root["StartMapId"].asInt();
-
-		// 맵 파일을 로드합니다.
-		std::ostringstream stringStream;
-		stringStream << ".\\resources\\maps\\map" << startMapId << ".json";
-		std::ifstream mapFile(stringStream.str(), std::ifstream::binary);
-
-		if (!mapFile.good()) {
-			throw new std::runtime_error("the map file is not existed");
+const Tilemap::Tileset* Tilemap::findTileset(int gid) const
+{
+	// firstGid 오름차순에서 gid를 넘지 않는 마지막 타일셋
+	const Tileset* found = nullptr;
+	for (const Tileset& tileset : _tilesets) {
+		if (tileset.firstGid > gid) {
+			break;
 		}
+		found = &tileset;
+	}
+	return found;
+}
 
-		Json::Value map;
-		mapFile >> map;
+int Tilemap::getTileId(int x, int y, int layer) const
+{
+	if (!inBounds(x, y) || layer < 0 || layer >= layerCount()) {
+		return 0;
+	}
+	return _layers[layer].data[static_cast<size_t>(y) * _width + x];
+}
 
-		Json::Value layer1 = map["Layer1"];
+bool Tilemap::setTileId(int x, int y, int layer, int gid)
+{
+	if (!inBounds(x, y) || layer < 0 || layer >= layerCount() || gid < 0) {
+		return false;
+	}
+	_layers[layer].data[static_cast<size_t>(y) * _width + x] = gid;
+	return true;
+}
 
-		// 타일을 설정합니다 (디커플링 필요)
-		// 각 타일 ID는 불러올 타일 이미지와 연관됩니다.
-		for (y = 0; y < _height; y++) {
-			std::vector<int> yTiles;
+bool Tilemap::isPassable(int x, int y) const
+{
+	if (!inBounds(x, y)) {
+		return false;
+	}
+	if (_collision.empty()) {
+		return true;
+	}
+	return _collision[static_cast<size_t>(y) * _width + x] == 0;
+}
 
-			for (x = 0; x < _width; x++) {
-				yTiles.push_back(layer1[y * _width + x].asInt());
+void Tilemap::draw(int layerFrom, int layerTo, int camX, int camY) const
+{
+	if (_width <= 0 || _layers.empty()) {
+		return;
+	}
+
+	layerFrom = std::max(layerFrom, 0);
+	layerTo = std::min(layerTo, layerCount() - 1);
+	if (layerFrom > layerTo) {
+		return;
+	}
+
+	// 컬링: 카메라 사각형과 겹치는 타일 범위만 그린다
+	const App& app = App::GetInstance();
+	const int screenW = app.GetWindowWidth();
+	const int screenH = app.GetWindowHeight();
+	const int x0 = std::max(0, FloorDiv(camX, _tileWidth));
+	const int y0 = std::max(0, FloorDiv(camY, _tileHeight));
+	const int x1 = std::min(_width - 1, FloorDiv(camX + screenW - 1, _tileWidth));
+	const int y1 = std::min(_height - 1, FloorDiv(camY + screenH - 1, _tileHeight));
+
+	TransformData transform;
+	transform.eM11 = 1.0f;
+	transform.eM12 = 0.0f;
+	transform.eM21 = 0.0f;
+	transform.eM22 = 1.0f;
+
+	for (int layer = layerFrom; layer <= layerTo; ++layer) {
+		const std::vector<int>& data = _layers[layer].data;
+
+		for (int y = y0; y <= y1; ++y) {
+			const size_t rowBase = static_cast<size_t>(y) * _width;
+
+			for (int x = x0; x <= x1; ++x) {
+				const int gid = data[rowBase + x];
+				if (gid <= 0) {
+					continue;
+				}
+				const Tileset* tileset = findTileset(gid);
+				if (tileset == nullptr) {
+					continue;
+				}
+
+				const int local = gid - tileset->firstGid;
+				const int srcX = (local % tileset->columns) * _tileWidth;
+				const int srcY = (local / tileset->columns) * _tileHeight;
+
+				RECT rect;
+				rect.left = srcX;
+				rect.top = srcY;
+				rect.right = srcX + _tileWidth;
+				rect.bottom = srcY + _tileHeight;
+
+				transform.eDx = static_cast<float>(x * _tileWidth - camX);
+				transform.eDy = static_cast<float>(y * _tileHeight - camY);
+
+				TheTextureManager.DrawFrame(tileset->textureId, 0, 0,
+					_tileWidth, _tileHeight, rect, 255, transform);
 			}
-
-			_tileIds.push_back(yTiles);
 		}
-
-		if (!loadImages()) {
-			LOG_D("타일셋 이미지를 로드하는 데 실패했습니다.");
-			throw new std::runtime_error("importing tileset image is failed");
-		}
-
-		createTiles();
-
-	}
-	catch (std::exception& err) 
-	{
-		LOG_D(err.what());
-	}
-
-}
-
-
-int Tilemap::getTile(int x, int y) const 
-{
-	return _tileIds[y][x];
-}
-
-
-void Tilemap::setTile(int x, int y, int data)
-{
-	_tileIds.at(y).at(x) = data;
-}
-
-void Tilemap::createTiles()
-{
-	int cols = 8;
-	int tileWidth = _root["TileWidth"].asInt();
-	int tileHeight = _root["TileHeight"].asInt();
-
-	_tiles.resize(_width * _height);
-	
-	// Layer 1
-	for (int y = 0; y < _height; y++) {
-
-		for (int x = 0; x < _width; x++) {
-
-			Sprite* tile = new Sprite();
-
-			int tileId = getTile(x, y);
-
-			tile->initialize(x * tileWidth, y * tileHeight, tileWidth, tileHeight, 1, "main_tileset");
-
-			int mx = (tileId % cols) * tileWidth;
-			int my = static_cast<int>(tileId / cols) * tileHeight;
-			tile->setRect(mx, my, mx + tileWidth, my + tileHeight);
-
-			_tiles.push_back(tile);
-
-		}
-	}
-
-	_isLoaded = true;
-}
-
-void Tilemap::update(float elapsed)
-{
-	if (!_isLoaded) {
-		return;
-	}
-
-	for (auto i : _tiles) {
-		if(i != nullptr) 
-			i->update(elapsed);
-	}
-}
-
-void Tilemap::draw(void)
-{
-	if (!_isLoaded) {
-		return;
-	}
-
-	for (auto i : _tiles) {
-		if (i != nullptr)
-			i->draw();
 	}
 }
 

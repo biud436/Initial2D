@@ -10,4 +10,11 @@ return {
     "scripts/luatests/cases/font_text_test",
     "scripts/luatests/cases/json_load_test",
     "scripts/luatests/cases/sprite_sheet_test",
+    "scripts/luatests/cases/tilemap_test",
+    "scripts/luatests/cases/vpad_test",
+    "scripts/luatests/cases/rpg_specs_test",
+    "scripts/luatests/cases/rpg_rng_test",
+    "scripts/luatests/cases/rpg_camera_test",
+    "scripts/luatests/cases/rpg_character_test",
+    "scripts/luatests/cases/rpg_map_scene_test",
 }

@@ -8,6 +8,7 @@
 #define LUA_TM_MEMBERS 3
 #define LUA_SPRITE_MEMBERS 31
 #define LUA_JSON_MEMBERS 1
+#define LUA_TILEMAP_MEMBERS 7
 
 struct LuaObjectToken
 {
