@@ -283,6 +283,68 @@ def test_tilemap_scene():
         shutil.copy(os.path.join(work2, "shot_0030.bmp"), "/tmp/initial2d_tilemap_bottomright.bmp")
 
 
+# 플레이스홀더 CharSet(tools/generate_charset.py)의 색. 맵 팔레트와 겹치지 않는
+# 색을 골라 두었기 때문에 색 카운트만으로 캐릭터를 특정할 수 있다.
+HAIR_PURPLE = (168, 96, 200)   # 3번 캐릭터 머리
+SHIRT_WHITE = (236, 236, 240)  # 3번 캐릭터 옷
+SHIRT_RED = (206, 62, 62)      # 0번 캐릭터 옷
+
+
+def test_rpg_walk_scene():
+    """캐릭터 렌더링: 레이어 사이 그리기, 보간 좌표, 걷기 자세 (5단계).
+
+    같은 캐릭터를 두 곳에 세운다. (12,12)는 가림 없는 잔디, (5,3)은 위 칸이
+    상층 울타리다. 머리색 픽셀 수를 비교하면 "캐릭터가 상층 타일 뒤로 지나간다"를
+    눈이 아니라 숫자로 확인할 수 있다.
+    """
+    print("\n[5] rpg_walk_scene — 캐릭터 렌더링과 레이어 분할 그리기")
+    work, result, shots = run_scene("rpg_walk_scene.lua", [20], 30)
+
+    log = result.stdout + result.stderr
+    check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode}")
+    check("Lua 오류 없음", "PANIC" not in log and "attempt to" not in log, log[-300:])
+    check("맵 로드", "rpgMap:80x70 layers:2" in log, log[:300])
+    # 픽셀 좌표: 프레임(24x32)이 타일(16x16)보다 커서 가로는 가운데, 세로는 발을 맞춘다
+    check("기준 캐릭터 좌표와 프레임", "rpgRef:188,176 frame:34" in log, log[:400])
+    check("가려질 캐릭터 좌표와 프레임", "rpgHid:76,32 frame:34" in log, log[:400])
+    check("이동 중 캐릭터의 보간 좌표", "rpgWalk:260,176 frame:14 moving:true" in log,
+          log[:400])
+    check("반 칸 오프셋", "rpgWalkOffset:-8.0" in log, log[:400])
+    check("y정렬 순서 (위쪽 캐릭터부터)", "rpgOrder:hid,ref,walk" in log, log[:400])
+    check("카메라 좌상단 고정", "rpgCamera:0,0" in log, log[:400])
+    check("프레임 덤프 생성", 20 in shots)
+
+    if 20 not in shots:
+        return
+
+    img = shots[20]
+    scale = img.width / 768.0
+
+    # [A] 가림 없는 캐릭터: 머리색이 보인다 (머리 타원은 프레임 안 (6,3)~(17,15))
+    ref_hair = count_color_in(img, scale, 194, 179, 206, 192, HAIR_PURPLE)
+    check("기준 캐릭터의 머리색 픽셀", ref_hair > 6, f"px={ref_hair}")
+    ref_shirt = count_color_in(img, scale, 196, 192, 204, 200, SHIRT_WHITE, 12)
+    check("기준 캐릭터의 옷 픽셀", ref_shirt > 3, f"px={ref_shirt}")
+
+    # [B] 상층 울타리 아래 캐릭터: 같은 머리가 가려진다
+    hid_hair = count_color_in(img, scale, 82, 35, 94, 48, HAIR_PURPLE)
+    check("울타리 뒤 캐릭터의 머리가 가려진다",
+          hid_hair * 3 < ref_hair, f"가려짐 {hid_hair} vs 기준 {ref_hair}")
+    fence_over = count_color_in(img, scale, 82, 35, 94, 48, FENCE_BROWN)
+    check("머리 자리에 상층 울타리가 그려져 있다", fence_over > 3, f"px={fence_over}")
+    hid_shirt = count_color_in(img, scale, 84, 49, 92, 57, SHIRT_WHITE, 12)
+    check("울타리 아래 몸통은 보인다", hid_shirt > 3, f"px={hid_shirt}")
+
+    # [C] 이동 중 캐릭터: 반 칸(8px) 어긋난 자리에 그려진다
+    walk_shirt = count_color_in(img, scale, 268, 191, 276, 201, SHIRT_RED, 20)
+    check("이동 중 캐릭터가 보간된 자리에 있다", walk_shirt > 3, f"px={walk_shirt}")
+    walk_empty = count_color_in(img, scale, 288, 191, 296, 201, SHIRT_RED, 20)
+    check("도착 칸에는 아직 몸통이 없다", walk_empty == 0, f"px={walk_empty}")
+
+    check_golden("rpg_walk_scene", img)
+    shutil.copy(os.path.join(work, "shot_0020.bmp"), "/tmp/initial2d_rpg_walk.bmp")
+
+
 def test_resolution():
     """game.json과 INITIAL2D_WINDOW의 해상도 설정을 검증한다 (1단계)."""
     print("\n[3] resolution_scene — 게임별 해상도 설정")
@@ -362,6 +424,7 @@ def main():
     test_lua_units()
     test_assert_scene()
     test_tilemap_scene()
+    test_rpg_walk_scene()
     test_resolution()
     test_rtp_charset()
 

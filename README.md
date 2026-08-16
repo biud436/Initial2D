@@ -452,6 +452,48 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 
 패드 이미지(`resources/ui/dpad.png`)와 버튼 이미지는 `python3 tools/generate_ui_assets.py`로 다시 만들 수 있습니다.
 
+# RPG 프레임워크 (Lua)
+
+타일맵 위를 걸어다니는 캐릭터를 만드는 Lua 레이어입니다 (`scripts/rpg/`). 엔진은 장르 중립으로 두고 캐릭터, 이동, 카메라 같은 개념은 전부 스크립트에 두었습니다. 게임 메뉴의 **RPG 캐릭터**(`scripts/games/rpg_demo.lua`)가 사용 예제입니다.
+
+| 모듈 | 역할 |
+| :--- | :--- |
+| `character.lua` | 그리드 이동, 방향, 걷기 애니메이션, 통행 판정. 플레이어와 NPC 공용 |
+| `player.lua` | 방향키와 가상 패드를 캐릭터에 연결 |
+| `camera.lua` | 대상 추적과 맵 경계 클램프 |
+| `map_scene.lua` | 맵, 캐릭터들, 카메라를 묶고 y좌표 순으로 그림 |
+| `rng.lua` | 시드를 주입하는 난수 |
+| `specs.lua` | CharSet, FaceSet, ChipSet의 규격 데이터 |
+
+```lua
+	local MapScene = require("scripts/rpg/map_scene")
+	local Player = require("scripts/rpg/player")
+	local Rng = require("scripts/rpg/rng")
+
+	local CHARSET = "./resources/charsets/placeholder.png"
+
+	local scene = MapScene.new{ mapPath = "./resources/maps/sample.json" }
+	local hero = scene:addCharacter{ tx = 40, ty = 35, charset = CHARSET, charIndex = 0 }
+	scene:setCameraTarget(hero)
+	local player = Player.new{ character = hero, input = Input, pad = pad }
+
+	local npc = scene:addCharacter{ tx = 38, ty = 34, charset = CHARSET, charIndex = 2 }
+	npc:setWander{ rng = Rng.new(1234), area = { x = 34, y = 29, w = 14, h = 12 } }
+
+	-- 매 프레임
+	player:update()
+	scene:update(elapsed / 1000.0)
+	scene:draw()
+```
+
+이동은 RPG Maker 2003과 같은 그리드 방식입니다. 타일 좌표가 진실이고 픽셀 좌표는 보간 중에만 어긋납니다. 이동을 시작하는 순간 목적지 칸을 점유하므로 두 캐릭터가 같은 칸에 겹치지 않고, 이동 중에 들어온 입력은 하나만 예약되어 칸에 도착하는 즉시 이어집니다. 정지 상태에서 다른 방향키를 짧게 누르면 걷지 않고 방향만 바뀝니다.
+
+캐릭터는 타일맵의 하층과 상층 사이에 발 y좌표 순으로 그려집니다. 한 프레임(24x32)이 타일(16x16)보다 커서 머리가 윗 칸으로 올라가므로 울타리나 지붕 뒤로 지나갑니다.
+
+캐릭터 시트 규격(288x256 한 장에 8명, 한 명은 24x32 3프레임 4방향)은 `scripts/rpg/specs.lua`에 데이터로 있습니다. 커밋된 `resources/charsets/placeholder.png`는 `python3 tools/generate_charset.py`로 다시 만들 수 있고, RPG Maker 2003 정품 보유자는 `INITIAL2D_CHARSET=./resources/rtp/CharSet/Actor1.png`처럼 환경 변수로 바꿔 실행할 수 있습니다.
+
+난수는 반드시 `rng.lua`의 시드 주입 래퍼로 씁니다. 전역 `math.random`을 쓰면 누가 언제 몇 번 뽑았는지에 따라 결과가 달라져서, 같은 입력이 같은 화면을 내야 하는 시나리오 테스트가 성립하지 않습니다.
+
 # 게임 설정
 
 프로젝트 루트에 `game.json` 파일을 두면 게임별 설정을 지정할 수 있습니다. 파일이 없으면 기본 해상도(768x896)를 사용합니다.
@@ -640,6 +682,9 @@ yarn dev
 SDL_VIDEODRIVER=dummy INITIAL2D_SCENE=tilemap INITIAL2D_MAP=./resources/maps/my_map.json \
   INITIAL2D_SCREENSHOT=/tmp/shot_%04ld.bmp INITIAL2D_SCREENSHOT_FRAME=40 \
   INITIAL2D_EXIT_AFTER=60 ./build/Initial2D
+
+# 같은 맵을 RPG 데모로 열어 캐릭터를 걸려 봅니다 (INITIAL2D_SCENE=rpg)
+INITIAL2D_SCENE=rpg INITIAL2D_MAP=./resources/maps/my_map.json ./build/Initial2D
 ```
 
 # RTP 리소스 변환 (RPG Maker 2003)

@@ -34,7 +34,8 @@ Initial2D는 **범용 2D 게임 엔진**이다. 플래피버드 같은 게임(�
 | Lua | 5.3.5, Input, Audio, Sprite, TextureManager 등 약 70개 함수 | 타일맵, JSON, 파일 IO, 씬 스택 바인딩 |
 | 타일맵 | 맵 포맷 v1 (JSON), 다층 렌더러(컬링, 카메라 오프셋, 레이어 분할), `Tilemap.*` Lua API, 샘플 맵과 데모 씬 (2단계에서 재작성) | 오토타일, 4방향 통행 (v2) |
 | 오디오 | SDL2_mixer, OGG와 WAV, 페이드와 탐색 | 채널별 볼륨, BGS/ME 구분 |
-| 도구 | HMR 서버(127.0.0.1:5959, `tools/hmr_push.py`), 에디터 브리지 서버(127.0.0.1:5960, `tools/bridge/`), RTP 변환기(`tools/rtp_import.py`, 4단계에서 추가) | |
+| RPG 레이어 | (5단계) `scripts/rpg/`의 캐릭터, 플레이어 입력, 카메라, 맵 씬, 시드 난수. 그리드 이동과 y정렬 그리기 | 이벤트와 대화창 (6, 7단계) |
+| 도구 | HMR 서버(127.0.0.1:5959, `tools/hmr_push.py`), 에디터 브리지 서버(127.0.0.1:5960, `tools/bridge/`), RTP 변환기(`tools/rtp_import.py`, 4단계), 플레이스홀더 CharSet 생성기(`tools/generate_charset.py`, 5단계) | |
 
 ### 에디터 (InitialEditor, 별도 저장소)
 
@@ -94,7 +95,7 @@ graph LR
 | 2. 타일맵 시스템 | ✅ 완료 | 2026-08-15 | 작업 항목과 완료 기준 전부 충족. Android 실기 확인 완료 (62fps, 터치 꽃 심기, 가상 D-패드 스크롤, 뒤로가기). 실기 검수 결과로 터치 D-패드 공용 모듈 `scripts/ui/vpad.lua` 추가 |
 | 3. 에디터 브리지 | ✅ 완료 | 2026-08-15 | 완료 기준 3개 충족(브라우저 편집→게임 재시작, 에디터 맵→엔진 렌더링, 두 저장소 README). 마일스톤 1, 2 완료. 마일스톤 3(이벤트 배치, 통행 편집)은 원래 후순위라 6단계와 함께 진행한다. 검수: 브리지 18건 + 에디터 포맷 23건 + 엔진 전체 스위트, 브라우저 실제 조작으로 왕복 확인. **손맛(편집→반영 체감)은 사용자 확인 필요** |
 | 4. 리소스 어댑터 | ✅ 완료 | 2026-08-16 | 완료 기준 3개 충족. `tools/rtp_import.py`(카테고리별 투명 정책, 매니페스트), `scripts/rpg/specs.lua`(실물로 검증한 규격), 검증은 `tests/verify_rtp.py`(원본 zip과 픽셀 대조 포함)와 `rtp_charset_scene`. MIDI는 기본 건너뜀 + `--soundfont` 옵션. 변환 이미지 눈 확인 완료(ChipSet 상위 레이어 투명, Backdrop 구멍 없음, System 창 밖 투명) |
-| 5. 캐릭터와 이동 | ⬜ 대기 | 2026-08-15 | |
+| 5. 캐릭터와 이동 | ✅ 완료 | 2026-08-16 | 완료 기준 4개 충족(방향키 이동과 충돌, 카메라 추적과 클램프, 상층 타일 뒤 통과, C++ diff 0). `scripts/rpg/`에 character, player, camera, map_scene, rng 추가. 데모는 메뉴의 "RPG 캐릭터"(`scripts/games/rpg_demo.lua`). 검수: Lua 단위 160건 추가(전체 615건)와 골든 `rpg_walk_scene`(가림 유무를 머리색 픽셀 수로 비교), 안드로이드 APK 빌드 성공. RTP는 커밋 금지라 플레이스홀더 CharSet(`tools/generate_charset.py`)을 만들어 커밋. **이동 손맛과 안드로이드 실기는 사용자 확인 필요** |
 | 6. 이벤트와 상호작용 | ⬜ 대기 | 2026-08-15 | |
 | 7. 대화창과 UI | ⬜ 대기 | 2026-08-15 | |
 | 8. 통합 데모 | ⬜ 대기 | 2026-08-15 | |
