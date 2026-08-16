@@ -14,6 +14,9 @@
 --   pad.draw()                         -- HUD 위에 마지막으로 그린다
 --   pad.dispose()
 --
+-- size는 표시 크기다. 시트 원본(160px)과 달라도 되며, 논리 해상도가 작은
+-- 화면(렌더 배율 사용)에서는 배율로 나눈 값을 넘기면 손가락 크기가 유지된다.
+--
 -- 스프라이트 시트 resources/ui/dpad.png: 가로 5프레임 (기본, 위, 오른쪽, 아래, 왼쪽)
 
 local Image = require("scripts/image")
@@ -21,6 +24,12 @@ local Image = require("scripts/image")
 local VirtualPad = {}
 
 local FRAME_OF = { up = 1, right = 2, down = 3, left = 4 }
+
+-- 시트의 한 프레임 크기 (tools/generate_ui_assets.py의 make_dpad와 같은 값).
+-- 엔진의 Sprite는 스프라이트 크기를 그대로 소스 프레임 크기로 쓰므로, 원하는
+-- 표시 크기를 그냥 넘기면 프레임의 일부만 잘려 그려진다. 스프라이트는 원본
+-- 크기로 만들고 표시 크기는 스케일로 맞춘다.
+local FRAME_SIZE = 160
 
 -- 표시 여부: 터치 플랫폼이거나 INITIAL2D_VPAD=1 (데스크톱에서 확인용)
 function VirtualPad.shouldShow()
@@ -59,12 +68,16 @@ function VirtualPad.new(opts)
 	local radius = size * 0.48
 	local deadzone = size * 0.10
 	local current = nil
-	local img = Image("./resources/ui/dpad.png", self.x, self.y, size, size, 5, "UIDpad")
+	local img = Image("./resources/ui/dpad.png", self.x, self.y,
+		FRAME_SIZE, FRAME_SIZE, 5, "UIDpad")
 	img.setSheetGrid(5, 1)
 	img.setLoop(false)
 	img.setFrames(0, 0)
 	img.setCurrentFrame(0)
 	img.setOpacity(opts.opacity or 220)
+	img.setScale(size / FRAME_SIZE)   -- 위치는 좌상단 기준이라 스케일이 배치를 흔들지 않는다
+	self.image = img
+	self.scale = size / FRAME_SIZE
 
 	local function center()
 		return self.x + size / 2, self.y + size / 2

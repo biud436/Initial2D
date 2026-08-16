@@ -33,6 +33,28 @@ function M.run(t)
     t.check_eq(dir(100, 0, R, D), nil, "반경 밖은 nil")
     t.check_eq(dir(0, -R, R, D), "up", "반경 경계(포함)는 방향")
 
+    -- 크기: 시트 원본(160px)보다 작게 만들어도 프레임 전체가 그려져야 한다.
+    -- 엔진 Sprite는 스프라이트 크기를 소스 프레임 크기로 그대로 쓰므로, 표시
+    -- 크기를 그대로 넘기면 시트의 일부만 잘려 나온다 (2026-08-16 Galaxy S24
+    -- 실기에서 렌더 배율 2로 패드를 절반 크기로 만들었을 때 발견).
+    local small = VirtualPad.new{ x = 10, y = 20, size = 80 }
+    local rect = small.image.getRect()
+    t.check_eq(rect.x, 0, "0번 프레임의 소스 x")
+    t.check_eq(rect.y, 0, "0번 프레임의 소스 y")
+    t.check_eq(small.image.getWidth(), 160, "소스 프레임 폭은 시트 원본 크기")
+    t.check_eq(small.image.getHeight(), 160, "소스 프레임 높이는 시트 원본 크기")
+    t.check_eq(small.scale, 0.5, "표시 크기는 스케일로 맞춘다")
+
+    -- 방향 프레임도 시트 원본 격자로 잘린다 (5x1의 두 번째 칸 = x 160)
+    small.image.setCurrentFrame(1)
+    t.check_eq(small.image.getRect().x, 160, "위 방향 프레임의 소스 x")
+
+    -- 히트 판정은 표시 크기 기준이다 (중심에서 반경 밖은 nil)
+    t.check_eq(small.hitTest(10 + 40, 20 + 40), nil, "표시 크기 중심은 데드존")
+    t.check_eq(small.hitTest(10 + 40, 20 + 10), "up", "표시 크기 기준 위쪽")
+    t.check_eq(small.hitTest(10 + 40, 20 + 200), nil, "표시 크기 밖은 nil")
+    small.dispose()
+
     -- 표시 규칙: 데스크톱에서는 기본 숨김, INITIAL2D_VPAD가 있으면 표시
     if p ~= "android" and p ~= "ios" then
         local forced = os.getenv("INITIAL2D_VPAD") ~= nil
