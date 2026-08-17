@@ -57,6 +57,8 @@ def make_workdir(scene):
             shutil.copy(src, scripts)
     shutil.copytree(os.path.join(REPO, "scripts", "ui"), os.path.join(scripts, "ui"))
     shutil.copytree(os.path.join(REPO, "scripts", "rpg"), os.path.join(scripts, "rpg"))
+    # 맵별 이벤트 정의 (6단계) — 씬 테스트가 진짜 정의 파일을 그대로 얹는다
+    shutil.copytree(os.path.join(REPO, "scripts", "maps"), os.path.join(scripts, "maps"))
     shutil.copy(os.path.join(REPO, "tests", "engine", "scenes", scene),
                 os.path.join(scripts, "main.lua"))
     return work
@@ -358,6 +360,59 @@ def test_rpg_walk_scene():
     shutil.copy(os.path.join(work, "shot_0020.bmp"), "/tmp/initial2d_rpg_walk.bmp")
 
 
+def test_rpg_event_scene():
+    """이벤트 시스템 통합: 진짜 맵과 진짜 이벤트 정의로 트리거와 전환 (6단계).
+
+    단위 테스트가 규칙을 보고, 여기서는 좌표와 파일이 실제로 맞물리는지를 본다.
+    화면 대신 stdout으로 검증한다 (입력 없이 도는 씬).
+    """
+    print("\n[6] rpg_event_scene — 이벤트 트리거, 대화 분기, 맵 전환")
+    work = make_workdir("rpg_event_scene.lua")
+    env = dict(os.environ)
+    env["INITIAL2D_EXIT_AFTER"] = "60"
+    result = subprocess.run([GAME], cwd=work, env=env,
+                            capture_output=True, text=True, timeout=120)
+    log = result.stdout + result.stderr
+
+    check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode}")
+    check("Lua 오류 없음", "PANIC" not in log and "attempt to" not in log, log[-300:])
+
+    def has(needle, name):
+        check(name, needle in log, f"'{needle}' 없음 | {log[-400:]}")
+
+    has("village:70x40 events:4", "마을 맵과 이벤트 4개 로드")
+    has("playerStart:34,21", "정의 파일의 시작 위치")
+
+    # [A] 병렬 이벤트
+    has("busyAfterMapStart:false", "parallel만으로는 조작이 잠기지 않는다")
+    has("parallelCount:1", "병렬 이벤트가 등록된다")
+    has("patrolMoved:true", "병렬 순찰이 실제로 움직인다")
+    has("busyDuringPatrol:false", "순찰이 도는 동안에도 잠기지 않는다")
+
+    # [B] 말 걸기와 분기
+    has("actionTarget:elder", "바라보는 칸의 이벤트를 집는다")
+    has("confirm:true", "결정키로 실행 시작")
+    has("busyWhileTalking:true", "대화 중 조작 잠금")
+    has("elderTurned:down", "말을 걸면 이쪽을 돌아본다")
+    has("line1:어서 오시게. 처음 보는 얼굴이군.", "첫 대사")
+    has("choiceShown:1", "선택지 표시")
+    has("line2:왼쪽 마당의 문으로 들어가면 오두막이라네.", "선택 1번의 분기 대사")
+    has("busyAfterTalk:false", "대화가 끝나면 잠금 해제")
+    has("stateFlag:true", "스크립트가 남긴 상태가 유지된다")
+
+    # [C] 문 밟기 → 전환 요청
+    has("transfer:room,10,11", "문을 밟으면 전환 요청이 나간다")
+    has("busyAfterTransfer:false", "전환 뒤 조작 잠금이 남지 않는다")
+
+    # [D] 맵 교체와 auto
+    has("roomLoaded:true", "두 번째 맵 로드")
+    has("room:20x14 events:3", "오두막 맵과 이벤트")
+    has("autoBusy:true", "auto 이벤트가 맵 진입 시 조작을 잠근다")
+    has("autoLine:오두막 안이다. 아래 출입구로 나갈 수 있다.", "auto 대사")
+    has("busyAfterAuto:false", "auto가 끝나면 잠금 해제")
+    has("secondVisitLines:0", "두 번째 방문에서는 state를 보고 조용히 넘어간다")
+
+
 def test_resolution():
     """game.json과 INITIAL2D_WINDOW의 해상도 설정, 렌더 배율을 검증한다 (1단계)."""
     print("\n[3] resolution_scene — 게임별 해상도 설정과 렌더 배율")
@@ -454,6 +509,7 @@ def main():
     test_assert_scene()
     test_tilemap_scene()
     test_rpg_walk_scene()
+    test_rpg_event_scene()
     test_resolution()
     test_rtp_charset()
 

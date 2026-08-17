@@ -224,8 +224,13 @@ function Character:update(dt)
 	end
 end
 
--- 정지 상태에서만 도는 자율 행동 (지금은 배회, 6단계에서 이동 루트가 얹힌다)
+-- 정지 상태에서만 도는 자율 행동. 이동 루트가 배회보다 우선한다.
 function Character:updateIdle()
+	if self.route ~= nil then
+		self:updateRoute()
+		return
+	end
+
 	local w = self.wander
 	if w == nil then return end
 
@@ -266,6 +271,87 @@ end
 
 function Character:clearWander()
 	self.wander = nil
+end
+
+-- ---- 이동 루트 (6단계 moveRoute) -----------------------------------------
+--
+-- 명령 배열을 한 칸씩 소화한다. 쓸 수 있는 명령:
+--   "up" "down" "left" "right"   한 칸 이동 (막히면 skipBlocked 규칙을 따른다)
+--   "turn:up" 처럼 turn: 접두사   이동 없이 방향만
+--   "wait:500"                    500ms 정지 (프레임으로 환산, 고정 스텝 16ms 기준)
+-- 이동 자체는 tryMove를 그대로 쓰므로 통행 판정과 걷기 애니메이션이 동일하다.
+
+local MS_PER_FRAME = 1000 / 60
+
+--- @param steps 명령 배열
+-- @param opts.loop        true면 끝에서 처음으로 돌아간다
+-- @param opts.skipBlocked true면 막힌 명령을 건너뛴다 (기본은 성공할 때까지 재시도)
+function Character:setRoute(steps, opts)
+	opts = opts or {}
+	assert(type(steps) == "table", "character: 이동 루트는 배열이어야 한다")
+	self.route = {
+		steps = steps,
+		index = 1,
+		loop = opts.loop or false,
+		skipBlocked = opts.skipBlocked or false,
+		waitFrames = 0,
+		done = #steps == 0,
+	}
+	return self
+end
+
+function Character:clearRoute()
+	self.route = nil
+end
+
+--- 루트를 끝까지 소화했는가 (loop 루트는 끝나지 않는다).
+function Character:isRouteDone()
+	return self.route == nil or self.route.done
+end
+
+function Character:updateRoute()
+	local r = self.route
+	if r.done then return end
+
+	if r.waitFrames > 0 then
+		r.waitFrames = r.waitFrames - 1
+		return
+	end
+
+	local step = r.steps[r.index]
+	if step ~= nil and type(step) ~= "string" then
+		r.index = r.index + 1   -- 문자열이 아닌 명령은 건너뛴다
+		return
+	end
+	if step == nil then
+		if r.loop and #r.steps > 0 then
+			r.index = 1
+			return
+		end
+		r.done = true
+		return
+	end
+
+	local advance = true
+	local waitMs = step:match("^wait:(%d+)$")
+	local turnDir = step:match("^turn:(%a+)$")
+
+	if waitMs ~= nil then
+		r.waitFrames = math.max(1, math.floor(tonumber(waitMs) / MS_PER_FRAME))
+	elseif turnDir ~= nil then
+		self:turn(turnDir)
+	elseif M.DIR_VECTORS[step] ~= nil then
+		if not self:tryMove(step) and not r.skipBlocked then
+			advance = false   -- 막혔다. 다음 프레임에 같은 명령을 다시 시도한다
+		end
+	else
+		-- 모르는 명령은 조용히 넘어가는 대신 건너뛴다 (루트가 멈춰 서는 것보다 낫다)
+		advance = true
+	end
+
+	if advance then
+		r.index = r.index + 1
+	end
 end
 
 --- 지금 그려야 할 걸음 열 번호 (0..2)

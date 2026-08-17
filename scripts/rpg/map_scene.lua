@@ -71,12 +71,26 @@ function M.new(opts)
 	return self
 end
 
---- 통행 판정: 맵의 충돌 레이어 + 다른 캐릭터의 점유.
+--- 통행 판정: 맵의 충돌 레이어 + 다른 캐릭터의 점유 + 막는 이벤트.
 function MapScene:isPassable(tx, ty, except)
 	if not self.tilemap.IsPassable(self.map, tx, ty) then
 		return false
 	end
-	return self:characterAt(tx, ty, except) == nil
+	if self:characterAt(tx, ty, except) ~= nil then
+		return false
+	end
+	-- 이벤트는 자기 캐릭터로 이미 칸을 차지하지만, 외형 없는 이벤트가 나중에
+	-- 통행을 막고 싶어질 수 있어 관리자에게도 물어본다 (6단계).
+	if self.events ~= nil and self.events:blocksTile(tx, ty, except) then
+		return false
+	end
+	return true
+end
+
+--- 이벤트 관리자를 붙인다 (6단계). 통행 판정이 이벤트도 보게 된다.
+function MapScene:setEvents(manager)
+	self.events = manager
+	return self
 end
 
 --- 그 칸을 차지하고 있는 캐릭터 (이동 중이면 목적지 칸을 차지한다).

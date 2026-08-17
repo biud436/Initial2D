@@ -63,10 +63,11 @@ bool Font::ParseFont(std::string fntName)
 		return false;
 	}
 
-	// 재호출(핫 리로드 등) 시 이전 파싱 결과가 누적되지 않도록 비운다
-	m_textureNames.clear();
-
 	TiXmlElement *pRoot = xmlDoc.RootElement();
+	if (pRoot == nullptr) {
+		return false;
+	}
+
 	TiXmlElement *pCommon = nullptr;
 	TiXmlElement *pChars = nullptr;
 	TiXmlElement *pPages = nullptr;
@@ -78,6 +79,10 @@ bool Font::ParseFont(std::string fntName)
 		{
 			pCommon = e;
 			e->Attribute("lineHeight", &m_charsetDesc.LineHeight);
+			// 그리기 배율의 기준. 폰트가 가진 크기 그대로 찍는다 (배율 1).
+			if (m_charsetDesc.LineHeight > 0) {
+				m_fontSize = m_charsetDesc.LineHeight;
+			}
 			e->Attribute("base", &m_charsetDesc.Base);
 			e->Attribute("scaleW", &m_charsetDesc.Width);
 			e->Attribute("scaleH", &m_charsetDesc.Height);
@@ -97,6 +102,17 @@ bool Font::ParseFont(std::string fntName)
 			pKernings = e;
 		}
 	}
+
+	// common, pages, chars 가 없으면 폰트로 쓸 수 없다. kernings 는 없어도 된다 —
+	// BMFont 규격에서 선택 사항이고, 커닝 쌍이 없는 폰트에는 아예 블록이 없다.
+	// (이 검사가 없어서 kernings 없는 .fnt 를 열면 널 역참조로 죽었다. 2026-08-17)
+	if (pCommon == nullptr || pPages == nullptr || pChars == nullptr) {
+		return false;
+	}
+
+	// 여기부터 상태를 바꾼다. 위에서 걸러진 파일은 이미 열려 있는 폰트를
+	// 건드리지 않는다 (재호출 시 이전 파싱 결과가 누적되지 않도록 비운다).
+	m_textureNames.clear();
 
 	// Parse Page
 	for (TiXmlElement *e = pPages->FirstChildElement(); e != NULL; e = e->NextSiblingElement()) {
@@ -128,8 +144,9 @@ bool Font::ParseFont(std::string fntName)
 		}
 	}
 
-	// Parse kerning
-	for (TiXmlElement *e = pKernings->FirstChildElement(); e != NULL; e = e->NextSiblingElement()) {
+	// Parse kerning (선택 사항)
+	for (TiXmlElement *e = (pKernings != nullptr ? pKernings->FirstChildElement() : nullptr);
+		e != NULL; e = e->NextSiblingElement()) {
 		if (e->Value() == std::string("kerning"))
 		{
 			int first, second, amount;
@@ -144,13 +161,7 @@ bool Font::ParseFont(std::string fntName)
 		}
 	}
 
-	if (!pCommon) {
-		return false;
-	}
-
-	if (!pChars) {
-		return false;
-	}
+	// (pCommon/pChars 검사는 실제로 쓰기 전인 위쪽으로 옮겼다)
 
 	m_charsetDesc.IsReady = true;
 
@@ -229,8 +240,14 @@ int Font::drawText(int x, int y, std::wstring text)
 	
 	int prevCode = 0;
 
-	// Set the scale with font.
-	m_scale = m_fontSize / static_cast<double>(lineHeight);
+	// 글자 배율. m_fontSize는 폰트를 열 때 그 폰트의 lineHeight로 맞추므로 보통 1이다.
+	//
+	// 예전에는 m_fontSize가 32로 고정이라, lineHeight가 32가 아닌 폰트를 열면
+	// 32/lineHeight 배로 늘여 그렸다. 그런데 확대하면 소스 사각형까지 같은 배율로
+	// 커져서(아래 DrawText 호출) 아틀라스의 옆 글자를 물고 나온다. 즉 배율 1이
+	// 아닌 경로는 애초에 성립하지 않는다 — 크기를 바꾸려면 폰트를 그 크기로
+	// 다시 구워야 한다 (tools/generate_bmfont.py). 2026-08-17.
+	m_scale = (lineHeight > 0) ? (m_fontSize / static_cast<double>(lineHeight)) : 1.0;
 
 	for (std::size_t i = 0; i < text.length(); i++)
 	{
