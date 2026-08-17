@@ -17,4 +17,6 @@ return {
     "scripts/luatests/cases/rpg_camera_test",
     "scripts/luatests/cases/rpg_character_test",
     "scripts/luatests/cases/rpg_map_scene_test",
+    "scripts/luatests/cases/rpg_interpreter_test",
+    "scripts/luatests/cases/rpg_event_test",
 }

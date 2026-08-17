@@ -458,10 +458,12 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 
 | 모듈 | 역할 |
 | :--- | :--- |
-| `character.lua` | 그리드 이동, 방향, 걷기 애니메이션, 통행 판정. 플레이어와 NPC 공용 |
+| `character.lua` | 그리드 이동, 방향, 걷기 애니메이션, 통행 판정, 이동 루트. 플레이어와 NPC 공용 |
 | `player.lua` | 방향키와 가상 패드를 캐릭터에 연결 |
 | `camera.lua` | 대상 추적과 맵 경계 클램프 |
 | `map_scene.lua` | 맵, 캐릭터들, 카메라를 묶고 y좌표 순으로 그림 |
+| `event.lua` | 맵 위의 이벤트와 트리거 감지 (아래 "이벤트와 상호작용") |
+| `interpreter.lua` | 이벤트 스크립트를 코루틴으로 실행, 실행 중 조작 잠금 |
 | `rng.lua` | 시드를 주입하는 난수 |
 | `specs.lua` | CharSet, FaceSet, ChipSet의 규격 데이터 |
 
@@ -495,6 +497,70 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 캐릭터 시트 규격(288x256 한 장에 8명, 한 명은 24x32 3프레임 4방향)은 `scripts/rpg/specs.lua`에 데이터로 있습니다. 커밋된 `resources/charsets/placeholder.png`는 `python3 tools/generate_charset.py`로 다시 만들 수 있습니다. RPG Maker 2003 정품 보유자가 `tools/rtp_import.py`로 변환해 두었다면 데모가 `resources/rtp/CharSet/Actor1.png`를 자동으로 쓰며, `INITIAL2D_CHARSET`으로 다른 시트를 지정할 수도 있습니다.
 
 난수는 반드시 `rng.lua`의 시드 주입 래퍼로 씁니다. 전역 `math.random`을 쓰면 누가 언제 몇 번 뽑았는지에 따라 결과가 달라져서, 같은 입력이 같은 화면을 내야 하는 시나리오 테스트가 성립하지 않습니다.
+
+# 이벤트와 상호작용
+
+맵 위의 NPC나 문에 스크립트를 붙이는 방법입니다. 이벤트 커맨드 목록을 쌓는 대신 **Lua 함수를 그대로 씁니다.** 코루틴으로 실행되므로 "대화창이 닫힐 때까지 기다린다"를 콜백 없이 순서대로 적을 수 있고, 조건과 반복은 Lua 문법 그대로입니다.
+
+맵 파일(JSON)에는 타일만 들어가고, 무엇이 어디서 무슨 일을 하는지는 `scripts/maps/<맵이름>.lua`에 둡니다.
+
+```lua
+	-- scripts/maps/village.lua
+	return {
+		map = "./resources/maps/village.json",
+		start = { x = 34, y = 21, dir = "down" },
+
+		events = {
+			{
+				id = "elder",
+				x = 32, y = 20,
+				charset = { file = "./resources/charsets/placeholder.png", index = 2 },
+				trigger = "action",
+				script = function(self, ctx)
+					ctx.message("어서 오시게. 처음 보는 얼굴이군.")
+					local pick = ctx.choice({ "네, 처음입니다", "아니요" })
+					if pick == 1 then
+						ctx.message("왼쪽 마당의 문으로 들어가면 오두막이라네.")
+						ctx.state.toldAboutHut = true      -- 다른 이벤트도 읽습니다
+					end
+				end,
+			},
+			{
+				id = "gate", x = 15, y = 15, trigger = "touch",
+				script = function(self, ctx) ctx.transfer("room", 10, 11) end,
+			},
+		},
+	}
+```
+
+트리거는 네 가지입니다.
+
+| 트리거 | 발동 조건 |
+| :--- | :--- |
+| `action` | 플레이어가 인접 칸에서 바라보고 결정키 (앞 칸에 없으면 발밑을 봅니다) |
+| `touch` | 플레이어가 그 칸에 들어섬 |
+| `auto` | 맵 진입 시 한 번, 끝날 때까지 조작 잠금 |
+| `parallel` | 매 프레임 병렬 실행, 조작을 잠그지 않음 |
+
+스크립트 안에서 쓰는 `ctx`는 다음과 같습니다. 전부 완료될 때까지 기다렸다가 다음 줄로 갑니다.
+
+```lua
+	ctx.message("한 줄")                       -- 대화창이 닫힐 때까지
+	local pick = ctx.choice({ "네", "아니요" }) -- 고른 번호(1부터)를 반환
+	ctx.wait(500)                              -- 밀리초
+	ctx.transfer("room", 10, 11)               -- 맵 이동 (이 줄 다음은 실행되지 않음)
+	ctx.moveRoute("patrol", { "right", "wait:400", "up" })  -- 루트가 끝날 때까지
+	ctx.turn("player", "left")
+	ctx.state.flag = true                      -- 이벤트끼리 공유하는 저장용 테이블
+```
+
+이동 루트의 명령은 방향(`up`, `down`, `left`, `right`), `turn:방향`, `wait:밀리초`입니다. `{ loop = true }`로 순찰을 만들고, `{ wait = false }`로 루트를 걸어만 두고 스크립트를 계속 진행할 수 있습니다.
+
+`charset`을 주면 눈에 보이는 NPC가 되고 통행을 막습니다. 생략하면 보이지 않는 트리거 타일이며, `solid = true`를 주면 보이지 않으면서 길을 막는 벽이 됩니다. 외형이 있는 이벤트에 `wander`를 주면 5단계의 배회가 그대로 붙습니다.
+
+스크립트에서 오류가 나면 그 이벤트만 중단되고 기록에 남습니다. 게임이 멈추거나 조작이 잠긴 채로 남지 않습니다.
+
+예제는 `scripts/maps/village.lua`(대화, 분기, 문, 순찰)와 `scripts/maps/room.lua`(맵 진입 자동 실행, 되돌아가는 문)에 있습니다.
 
 # 게임 설정
 

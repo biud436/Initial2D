@@ -238,6 +238,63 @@ function M.run(t)
 	t.check(pcall(function() Character.new{}:setWander{} end) == false,
 		"rng 없는 배회는 오류 (전역 난수 사용을 막는다)")
 
+	-- ---- [10-b] 이동 루트 (6단계 moveRoute의 토대) --------------------------
+	c = Character.new{ tx = 5, ty = 5, speed = SPEED, canPass = fakeWorld{} }
+	t.check_eq(c:isRouteDone(), true, "루트가 없으면 끝난 것으로 본다")
+
+	c:setRoute({ "right", "down" })
+	t.check_eq(c:isRouteDone(), false, "루트를 걸면 아직 안 끝났다")
+	step(c, 4)
+	t.check(c.tx == 6 and c.ty == 5, "첫 명령 수행", c.tx .. "," .. c.ty)
+	step(c, 5)
+	t.check(c.tx == 6 and c.ty == 6, "둘째 명령 수행", c.tx .. "," .. c.ty)
+	step(c, 2)
+	t.check_eq(c:isRouteDone(), true, "명령을 다 쓰면 끝난다")
+
+	-- turn: 이동 없이 방향만
+	c = Character.new{ tx = 5, ty = 5, speed = SPEED, canPass = fakeWorld{} }
+	c:setRoute({ "turn:left" })
+	step(c, 2)
+	t.check_eq(c.dir, "left", "turn 명령은 방향만 바꾼다")
+	t.check(c.tx == 5 and c.ty == 5, "turn은 움직이지 않는다")
+
+	-- wait:ms — 고정 스텝(16.67ms) 기준으로 프레임을 센다
+	c = Character.new{ tx = 5, ty = 5, speed = SPEED, canPass = fakeWorld{} }
+	c:setRoute({ "wait:100", "right" })   -- 100ms = 6프레임
+	step(c, 4)
+	t.check_eq(c.tx, 5, "대기 중에는 움직이지 않는다")
+	step(c, 4)
+	t.check_eq(c.tx, 6, "대기가 끝나면 다음 명령", tostring(c.tx))
+
+	-- 막히면 기본은 재시도, skipBlocked면 건너뛴다
+	c = Character.new{ tx = 5, ty = 5, speed = SPEED, canPass = fakeWorld{ ["6,5"] = true } }
+	c:setRoute({ "right", "down" })
+	step(c, 6)
+	t.check(c.tx == 5 and c.ty == 5, "막힌 명령에서 기다린다", c.tx .. "," .. c.ty)
+	t.check_eq(c:isRouteDone(), false, "막혀 있으면 루트가 끝나지 않는다")
+
+	c = Character.new{ tx = 5, ty = 5, speed = SPEED, canPass = fakeWorld{ ["6,5"] = true } }
+	c:setRoute({ "right", "down" }, { skipBlocked = true })
+	step(c, 6)
+	t.check(c.tx == 5 and c.ty == 6, "skipBlocked면 막힌 명령을 건너뛴다", c.tx .. "," .. c.ty)
+
+	-- loop: 끝에서 처음으로 돌아간다 (순찰)
+	c = Character.new{ tx = 5, ty = 5, speed = SPEED, canPass = fakeWorld{} }
+	c:setRoute({ "right", "left" }, { loop = true })
+	step(c, 40)
+	t.check_eq(c:isRouteDone(), false, "loop 루트는 끝나지 않는다")
+	t.check(c.tx >= 5 and c.tx <= 6, "제자리를 오간다", tostring(c.tx))
+
+	-- clearRoute와 배회의 우선순위
+	c:clearRoute()
+	t.check_eq(c:isRouteDone(), true, "clearRoute 후에는 끝난 상태")
+
+	c = Character.new{ tx = 5, ty = 5, speed = SPEED, canPass = fakeWorld{} }
+	c:setWander{ rng = Rng.new(1), minWait = 1, maxWait = 1 }
+	c:setRoute({ "wait:1000" })
+	step(c, 20)
+	t.check(c.tx == 5 and c.ty == 5, "루트가 배회보다 우선한다", c.tx .. "," .. c.ty)
+
 	-- ---- [11] 플레이어 입력: 방향 전환과 걷기 -------------------------------
 	local function newPlayer(scenario, opts)
 		opts = opts or {}

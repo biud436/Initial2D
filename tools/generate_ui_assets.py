@@ -109,10 +109,22 @@ def make_dpad(path, size=160):
     print("generated:", os.path.relpath(path, REPO))
 
 
+def make_fade(path, size=16):
+    """맵 전환 페이드와 대화 배경에 쓰는 단색 검정 타일 (6단계).
+
+    엔진에는 사각형 채우기 프리미티브가 없어서, 불투명한 검정 텍스처를
+    스프라이트로 크게 확대하고 opacity로 농도를 조절한다.
+    """
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 255))
+    img.save(path)
+    print("generated:", os.path.relpath(path, REPO))
+
+
 def main():
     os.makedirs(UI, exist_ok=True)
     make_button(os.path.join(UI, "button.png"))
     make_dpad(os.path.join(UI, "dpad.png"))
+    make_fade(os.path.join(UI, "fade.png"))
 
 
 if __name__ == "__main__":
