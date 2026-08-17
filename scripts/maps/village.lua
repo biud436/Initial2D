@@ -6,10 +6,32 @@
 -- 스크립트는 코루틴으로 돌기 때문에 ctx.message처럼 "끝날 때까지 기다리는" 호출을
 -- 그냥 순서대로 쓰면 된다. 조건과 반복은 Lua 문법 그대로다.
 
+
+-- RTP 칩셋이 로컬에 있으면 그 판을 쓴다. RTP 그림은 재배포할 수 없어 저장소에
+-- 없으므로, 없으면 직접 그린 타일셋 판으로 돌아간다. 두 판은 지오메트리가 같아
+-- 아래 이벤트 좌표를 그대로 쓴다 (tools/generate_demo_maps.py).
+local function exists(path)
+	local f = io.open(path, "rb")
+	if f == nil then return false end
+	f:close()
+	return true
+end
+
+-- NPC 그림도 마찬가지로 로컬에 RTP가 있으면 그쪽을 쓴다.
 local CHARSET = "./resources/charsets/placeholder.png"
+for _, candidate in ipairs({ "./resources/rtp/CharSet/People1.png" }) do
+	if exists(candidate) then CHARSET = candidate end
+end
+
+local function pickMap(base)
+	if exists("./resources/rtp/ChipSet/Exterior.png") then
+		return "./resources/maps/" .. base .. "_rtp.json"
+	end
+	return "./resources/maps/" .. base .. ".json"
+end
 
 return {
-	map = "./resources/maps/village.json",
+	map = pickMap("village"),
 	start = { x = 34, y = 21, dir = "down" },
 
 	-- 자동 시연(INITIAL2D_AUTOPLAY)에서 따라 걷는 경로. "talk"은 결정키.
@@ -61,7 +83,7 @@ return {
 			x = 13, y = 14,
 			trigger = "touch",
 			script = function(self, ctx)
-				ctx.transfer("room", 13, 20)
+				ctx.transfer("room", 10, 12)
 			end,
 		},
 

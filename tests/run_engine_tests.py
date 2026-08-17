@@ -401,12 +401,12 @@ def test_rpg_event_scene():
     has("stateFlag:true", "스크립트가 남긴 상태가 유지된다")
 
     # [C] 문 밟기 → 전환 요청
-    has("transfer:room,13,20", "문을 밟으면 전환 요청이 나간다")
+    has("transfer:room,10,12", "문을 밟으면 전환 요청이 나간다")
     has("busyAfterTransfer:false", "전환 뒤 조작 잠금이 남지 않는다")
 
     # [D] 맵 교체와 auto
     has("roomLoaded:true", "두 번째 맵 로드")
-    has("room:26x30 events:3", "오두막 맵과 이벤트")
+    has("room:20x14 events:3", "오두막 맵과 이벤트")
     has("autoBusy:true", "auto 이벤트가 맵 진입 시 조작을 잠근다")
     has("autoLine:오두막 안이다. 아래 문으로 나갈 수 있다.", "auto 대사")
     has("busyAfterAuto:false", "auto가 끝나면 잠금 해제")

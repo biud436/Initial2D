@@ -401,6 +401,12 @@ function RpgDemoScene.render()
 		return
 	end
 
+	-- 맵이 화면보다 작으면 바깥이 배경색으로 남는다. 뒤에 검은 판을 깔아 둔다.
+	fadeImg.setOpacity(255)
+	fadeImg.setPosition(0, 0)
+	fadeImg.update(0)
+	fadeImg.draw()
+
 	scene:draw()
 
 	if FontReady then

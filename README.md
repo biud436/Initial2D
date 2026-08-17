@@ -572,6 +572,15 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 
 데모 맵이 쓰는 타일셋 `resources/tiles/village16.png`는 기존 타일셋 뒤에 집 타일(지붕, 벽, 창문, 문, 마루, 실내벽)을 이어 붙인 것입니다. `python3 tools/generate_village_tileset.py`로 다시 만들 수 있습니다. 뒤에만 더하므로 기존 gid가 밀리지 않아, 먼저 만든 맵 데이터가 그대로 살아 있습니다.
 
+맵 파일은 `python3 tools/generate_demo_maps.py`로 두 벌이 나옵니다. 지오메트리는 한 벌만 정의하고 타일 번호만 바꾸므로 이벤트 좌표는 공통입니다.
+
+| 맵 | 타일셋 | 비고 |
+| :--- | :--- | :--- |
+| `village.json`, `room.json` | `village16.png` | 저장소에 포함, 어디서나 동작 |
+| `village_rtp.json`, `room_rtp.json` | RPG Maker 2003 RTP 칩셋 | 그림은 로컬 자산이라 저장소에 없음 |
+
+`scripts/maps/*.lua`가 `resources/rtp/ChipSet/`을 확인해 있으면 RTP 판을, 없으면 기본 판을 엽니다. NPC 그림도 같은 규칙으로 RTP `People1.png`를 씁니다. RTP 소재 자체는 재배포할 수 없으므로 저장소에 넣지 않습니다.
+
 # 게임 설정
 
 프로젝트 루트에 `game.json` 파일을 두면 게임별 설정을 지정할 수 있습니다. 파일이 없으면 기본 해상도(768x896)와 배율 1을 사용합니다.
