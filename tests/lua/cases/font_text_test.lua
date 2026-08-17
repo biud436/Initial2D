@@ -34,6 +34,39 @@ function M.run(t)
     local wide = GetTextWidth("안녕하세요")
     local multi = GetTextWidth("안녕하세요\n가")
     t.check_eq(multi, wide, "개행 시 가장 넓은 줄의 폭")
+
+    -- 커닝 블록이 없는 .fnt (BMFont 규격에서 선택 사항이며, 커닝 쌍이 없는
+    -- 폰트에는 아예 없다). 파서가 널 검사 없이 참조해서 게임이 죽던 자리다
+    -- (2026-08-17, tools/generate_bmfont.py로 만든 폰트를 열다가 발견).
+    local minimal = [[<?xml version="1.0"?>
+<font>
+  <info face="t" size="8" bold="0" italic="0" charset="" unicode="1" stretchH="100" smooth="1" aa="1" padding="0,0,0,0" spacing="1,1" outline="0"/>
+  <common lineHeight="8" base="7" scaleW="64" scaleH="64" pages="1" packed="0" alphaChnl="0" redChnl="0" greenChnl="0" blueChnl="0"/>
+  <pages>
+    <page id="0" file="hangul_0.png" />
+  </pages>
+  <chars count="1">
+    <char id="65" x="0" y="0" width="4" height="6" xoffset="0" yoffset="1" xadvance="5" page="0" chnl="15" />
+  </chars>
+</font>
+]]
+    local f = assert(io.open("./no_kernings.fnt", "w"))
+    f:write(minimal)
+    f:close()
+    t.check_eq(PreparaFont("./no_kernings.fnt"), true, "커닝 블록 없는 폰트도 열린다")
+    t.check(GetTextWidth("A") > 0, "그 폰트로 폭 측정이 된다")
+
+    -- 필수 블록이 빠진 파일은 죽지 않고 false를 돌려준다
+    local broken = assert(io.open("./no_chars.fnt", "w"))
+    broken:write(minimal:gsub('<chars count="1">.-</chars>', ""))
+    broken:close()
+    t.check_eq(PreparaFont("./no_chars.fnt"), false, "chars 없는 폰트는 거부한다")
+
+    os.remove("./no_kernings.fnt")
+    os.remove("./no_chars.fnt")
+
+    -- 다음 케이스를 위해 원래 폰트로 되돌린다
+    t.check_eq(PreparaFont("./resources/fonts/hangul.fnt"), true, "원래 폰트 복구")
 end
 
 return M

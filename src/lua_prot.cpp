@@ -241,10 +241,11 @@ int Lua_LoadScript(lua_State *pL)
 int Lua_PreparaFont(lua_State *pL)
 {
 	std::string filename = luaL_checkstring(pL, 1);
+
+	// LoadFont가 파싱과 텍스처 적재를 모두 한다. 예전에는 그 결과를 버리고
+	// Font::open()의 반환값을 썼는데, open()은 "이미 폰트가 하나 열려 있으면"
+	// 무조건 true라서 잘못된 파일을 줘도 성공으로 보고했다 (2026-08-17).
 	bool isValid = App::GetInstance().LoadFont(filename);
-	GameFont *pFont = App::GetInstance().GetFont();
-	
-	isValid = pFont->get()->open(filename);
 	lua_pushboolean(pL, isValid);
 	return 1;
 }

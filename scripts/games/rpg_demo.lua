@@ -23,6 +23,7 @@ local Player = require("scripts/rpg/player")
 local Rng = require("scripts/rpg/rng")
 local Event = require("scripts/rpg/event")
 local Interpreter = require("scripts/rpg/interpreter")
+local Text = require("scripts/rpg/text")
 local Image = require("scripts/image")
 local VirtualPad = require("scripts/ui/vpad")
 
@@ -32,6 +33,12 @@ local MAPS = {
 	village = "scripts/maps/village",
 	room = "scripts/maps/room",
 }
+
+-- 엔진의 텍스트 경로에는 확대·축소가 없다. 화면이 논리 384x448이라 32px 폰트는
+-- 너무 크므로 이 씬만 16px 폰트를 쓰고, 나갈 때 원래 폰트로 되돌린다
+-- (tools/generate_bmfont.py 로 다시 구울 수 있다).
+local UI_FONT = "./resources/fonts/hangul16.fnt"
+local BASE_FONT = "./resources/fonts/hangul.fnt"
 
 local DEFAULT_CHARSET = "./resources/charsets/placeholder.png"
 local RTP_CHARSET = "./resources/rtp/CharSet/Actor1.png"
@@ -211,6 +218,8 @@ function RpgDemoScene.init()
 	scale = tonumber(env("INITIAL2D_RPG_SCALE") or "") or DEFAULT_SCALE
 	SetRenderScale(scale)
 
+	if FontReady then PreparaFont(UI_FONT) end
+
 	W, H = WindowWidth(), WindowHeight()
 	fpsAvg, hintTimer = 0, 0
 	autoTimer, autoIndex = 0, 1
@@ -351,19 +360,27 @@ function RpgDemoScene.update(elapsed)
 	end
 end
 
+local MSG_MARGIN = 12
+
 local function drawMessage()
 	if message == nil or not FontReady then return end
 
+	-- 폭에 맞춰 줄을 나눈다. 비트맵 폰트는 글자마다 폭이 달라서 글자 수가 아니라
+	-- 픽셀로 재야 한다 (scripts/rpg/text.lua, 7단계의 대화창도 같은 것을 쓴다).
+	local maxWidth = W - MSG_MARGIN * 2
 	local lines = {}
 	if message.text ~= nil then
-		lines[1] = message.text
+		lines = Text.wrap(message.text, maxWidth, GetTextWidth)
 	else
 		for i, option in ipairs(message.options) do
-			lines[i] = (i == message.index and "> " or "  ") .. option
+			local prefix = (i == message.index and "> " or "  ")
+			for _, line in ipairs(Text.wrap(prefix .. option, maxWidth, GetTextWidth)) do
+				lines[#lines + 1] = line
+			end
 		end
 	end
 
-	local lineH = 44
+	local lineH = 24
 	local boxH = lineH * #lines + 16
 	fadeImg.setOpacity(190)
 	fadeImg.setPosition(0, H - boxH)
@@ -392,7 +409,7 @@ function RpgDemoScene.render()
 			DrawText((W - GetTextWidth(help)) / 2, 8, help)
 		end
 		if DEBUG_HUD then
-			DrawText(8, H - 40, string.format("%d,%d  %d fps  busy %s",
+			DrawText(8, H - 24, string.format("%d,%d  %d fps  busy %s",
 				playerChar.tx, playerChar.ty, math.floor(fpsAvg + 0.5),
 				tostring(interp:isBusy())))
 		end
@@ -424,6 +441,7 @@ function RpgDemoScene.destroy()
 	end
 	interp = nil
 	message = nil
+	if FontReady then PreparaFont(BASE_FONT) end
 	SetRenderScale(1)
 end
 
