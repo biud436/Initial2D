@@ -120,10 +120,10 @@ function Initialize()
 	print("busyAfterTalk:" .. tostring(interp:isBusy()))
 	print("stateFlag:" .. tostring(interp.state.toldAboutHut))
 
-	-- [C] 문을 밟으면 전환 요청이 나간다
-	playerChar:place(15, 16, "up")
+	-- [C] 집 문을 밟으면 전환 요청이 나간다
+	playerChar:place(13, 15, "up")
 	pump(1)
-	playerChar:tryMove("up")         -- (15,15) 문 칸으로
+	playerChar:tryMove("up")         -- (13,14) 문 칸으로
 	pump(1)
 	print("transfer:" .. tostring(transferred and transferred.map)
 		.. "," .. tostring(transferred and transferred.x)

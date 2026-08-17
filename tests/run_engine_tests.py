@@ -380,7 +380,7 @@ def test_rpg_event_scene():
     def has(needle, name):
         check(name, needle in log, f"'{needle}' 없음 | {log[-400:]}")
 
-    has("village:70x40 events:4", "마을 맵과 이벤트 4개 로드")
+    has("village:70x40 events:5", "마을 맵과 이벤트 5개 로드")
     has("playerStart:34,21", "정의 파일의 시작 위치")
 
     # [A] 병렬 이벤트
@@ -396,19 +396,19 @@ def test_rpg_event_scene():
     has("elderTurned:down", "말을 걸면 이쪽을 돌아본다")
     has("line1:어서 오시게. 처음 보는 얼굴이군.", "첫 대사")
     has("choiceShown:1", "선택지 표시")
-    has("line2:왼쪽 마당의 문으로 들어가면 오두막이라네.", "선택 1번의 분기 대사")
+    has("line2:왼쪽 집 문으로 들어가면 우리 오두막이라네.", "선택 1번의 분기 대사")
     has("busyAfterTalk:false", "대화가 끝나면 잠금 해제")
     has("stateFlag:true", "스크립트가 남긴 상태가 유지된다")
 
     # [C] 문 밟기 → 전환 요청
-    has("transfer:room,10,11", "문을 밟으면 전환 요청이 나간다")
+    has("transfer:room,13,20", "문을 밟으면 전환 요청이 나간다")
     has("busyAfterTransfer:false", "전환 뒤 조작 잠금이 남지 않는다")
 
     # [D] 맵 교체와 auto
     has("roomLoaded:true", "두 번째 맵 로드")
-    has("room:20x14 events:3", "오두막 맵과 이벤트")
+    has("room:26x30 events:3", "오두막 맵과 이벤트")
     has("autoBusy:true", "auto 이벤트가 맵 진입 시 조작을 잠근다")
-    has("autoLine:오두막 안이다. 아래 출입구로 나갈 수 있다.", "auto 대사")
+    has("autoLine:오두막 안이다. 아래 문으로 나갈 수 있다.", "auto 대사")
     has("busyAfterAuto:false", "auto가 끝나면 잠금 해제")
     has("secondVisitLines:0", "두 번째 방문에서는 state를 보고 조용히 넘어간다")
 

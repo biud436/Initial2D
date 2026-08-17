@@ -13,7 +13,12 @@ return {
 	start = { x = 34, y = 21, dir = "down" },
 
 	-- 자동 시연(INITIAL2D_AUTOPLAY)에서 따라 걷는 경로. "talk"은 결정키.
-	autoRoute = { "left", "left", "up", "talk", "talk", "talk", "down", "right", "right" },
+	autoRoute = {
+		"left", "left", "up", "talk", "talk", "talk", "left", "left",
+		"left", "left", "left", "left", "left", "left", "left", "left",
+		"left", "left", "left", "left", "left", "left", "left", "left",
+		"left", "up", "up", "up", "up", "up", "up", "up",
+	},
 
 	events = {
 		-- 말을 걸면 대화하고, 선택지에 따라 다른 대사를 한다
@@ -26,7 +31,7 @@ return {
 				ctx.message("어서 오시게. 처음 보는 얼굴이군.")
 				local pick = ctx.choice({ "네, 처음입니다", "아니요, 와 본 적 있습니다" })
 				if pick == 1 then
-					ctx.message("왼쪽 마당의 문으로 들어가면 오두막이라네.")
+					ctx.message("왼쪽 집 문으로 들어가면 우리 오두막이라네.")
 					ctx.state.toldAboutHut = true
 				else
 					ctx.message("그럼 길은 잘 알겠군.")
@@ -43,20 +48,30 @@ return {
 			wander = { minWait = 30, maxWait = 120, area = { x = 30, y = 18, w = 12, h = 8 } },
 			script = function(self, ctx)
 				if ctx.state.toldAboutHut then
-					ctx.message("촌장님한테 들었죠? 저 문 맞아요.")
+					ctx.message("촌장님한테 들었죠? 저 빨간 지붕 집이에요.")
 				else
 					ctx.message("여기저기 돌아다니는 게 제 일이에요.")
 				end
 			end,
 		},
 
-		-- 마당 출입구를 밟으면 오두막으로 (전송 + 페이드)
+		-- 집 문을 밟으면 안으로 (전송 + 페이드)
 		{
-			id = "gate_to_hut",
-			x = 15, y = 15,
+			id = "door_to_hut",
+			x = 13, y = 14,
 			trigger = "touch",
 			script = function(self, ctx)
-				ctx.transfer("room", 10, 11)
+				ctx.transfer("room", 13, 20)
+			end,
+		},
+
+		-- 오른쪽 집은 잠겨 있다 — 밟는 게 아니라 문 앞에서 말을 걸면 반응한다
+		{
+			id = "locked_door",
+			x = 51, y = 14,
+			trigger = "action",
+			script = function(self, ctx)
+				ctx.message("문이 잠겨 있다.")
 			end,
 		},
 
