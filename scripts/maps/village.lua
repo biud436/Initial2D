@@ -6,14 +6,48 @@
 -- 스크립트는 코루틴으로 돌기 때문에 ctx.message처럼 "끝날 때까지 기다리는" 호출을
 -- 그냥 순서대로 쓰면 된다. 조건과 반복은 Lua 문법 그대로다.
 
+
+-- RTP 칩셋이 로컬에 있으면 그 판을 쓴다. RTP 그림은 재배포할 수 없어 저장소에
+-- 없으므로, 없으면 직접 그린 타일셋 판으로 돌아간다. 두 판은 지오메트리가 같아
+-- 아래 이벤트 좌표를 그대로 쓴다 (tools/generate_demo_maps.py).
+local function exists(path)
+	local f = io.open(path, "rb")
+	if f == nil then return false end
+	f:close()
+	return true
+end
+
+-- NPC 그림도 마찬가지로 로컬에 RTP가 있으면 그쪽을 쓴다.
 local CHARSET = "./resources/charsets/placeholder.png"
+for _, candidate in ipairs({ "./resources/rtp/CharSet/People1.png" }) do
+	if exists(candidate) then CHARSET = candidate end
+end
+
+-- 대화창 얼굴 그림 (7단계). 플레이스홀더 FaceSet은 CharSet과 팔레트를 공유해서
+-- 같은 번호면 같은 인물이다 (tools/generate_faceset.py).
+local FACESET = "./resources/faces/placeholder.png"
+for _, candidate in ipairs({ "./resources/rtp/FaceSet/People1.png" }) do
+	if exists(candidate) then FACESET = candidate end
+end
+
+local function pickMap(base)
+	if exists("./resources/rtp/ChipSet/Exterior.png") then
+		return "./resources/maps/" .. base .. "_rtp.json"
+	end
+	return "./resources/maps/" .. base .. ".json"
+end
 
 return {
-	map = "./resources/maps/village.json",
+	map = pickMap("village"),
 	start = { x = 34, y = 21, dir = "down" },
 
 	-- 자동 시연(INITIAL2D_AUTOPLAY)에서 따라 걷는 경로. "talk"은 결정키.
-	autoRoute = { "left", "left", "up", "talk", "talk", "talk", "down", "right", "right" },
+	autoRoute = {
+		"left", "left", "up", "talk", "talk", "talk", "left", "left",
+		"left", "left", "left", "left", "left", "left", "left", "left",
+		"left", "left", "left", "left", "left", "left", "left", "left",
+		"left", "up", "up", "up", "up", "up", "up", "up",
+	},
 
 	events = {
 		-- 말을 걸면 대화하고, 선택지에 따라 다른 대사를 한다
@@ -23,13 +57,17 @@ return {
 			charset = { file = CHARSET, index = 2 },
 			trigger = "action",
 			script = function(self, ctx)
-				ctx.message("어서 오시게. 처음 보는 얼굴이군.")
-				local pick = ctx.choice({ "네, 처음입니다", "아니요, 와 본 적 있습니다" })
+				local elder = { name = "촌장", face = { file = FACESET, index = 2 } }
+				ctx.message("어서 오시게. 처음 보는 얼굴이군. 이 마을은 조용하지만 "
+					.. "지낼 만한 곳이라네. 오래 머물 생각인가?", elder)
+				-- 취소키(X)는 두 번째 항목으로 빠져나간다
+				local pick = ctx.choice({ "네, 처음입니다", "아니요, 와 본 적 있습니다" },
+					{ cancelIndex = 2 })
 				if pick == 1 then
-					ctx.message("왼쪽 마당의 문으로 들어가면 오두막이라네.")
+					ctx.message("왼쪽 집 문으로 들어가면 우리 오두막이라네.", elder)
 					ctx.state.toldAboutHut = true
 				else
-					ctx.message("그럼 길은 잘 알겠군.")
+					ctx.message("그럼 길은 잘 알겠군.", elder)
 				end
 			end,
 		},
@@ -42,21 +80,32 @@ return {
 			trigger = "action",
 			wander = { minWait = 30, maxWait = 120, area = { x = 30, y = 18, w = 12, h = 8 } },
 			script = function(self, ctx)
+				local kid = { name = "아이", face = { file = FACESET, index = 13 } }
 				if ctx.state.toldAboutHut then
-					ctx.message("촌장님한테 들었죠? 저 문 맞아요.")
+					ctx.message("촌장님한테 들었죠? 저 빨간 지붕 집이에요.", kid)
 				else
-					ctx.message("여기저기 돌아다니는 게 제 일이에요.")
+					ctx.message("여기저기 돌아다니는 게 제 일이에요.", kid)
 				end
 			end,
 		},
 
-		-- 마당 출입구를 밟으면 오두막으로 (전송 + 페이드)
+		-- 집 문을 밟으면 안으로 (전송 + 페이드)
 		{
-			id = "gate_to_hut",
-			x = 15, y = 15,
+			id = "door_to_hut",
+			x = 13, y = 14,
 			trigger = "touch",
 			script = function(self, ctx)
-				ctx.transfer("room", 10, 11)
+				ctx.transfer("room", 10, 12)
+			end,
+		},
+
+		-- 오른쪽 집은 잠겨 있다 — 밟는 게 아니라 문 앞에서 말을 걸면 반응한다
+		{
+			id = "locked_door",
+			x = 51, y = 14,
+			trigger = "action",
+			script = function(self, ctx)
+				ctx.message("문이 잠겨 있다.")
 			end,
 		},
 

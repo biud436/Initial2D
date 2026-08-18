@@ -1,9 +1,12 @@
--- RPG 데모 — 5, 6단계 산출물 (docs/plans/05-rpg-character.md, 06-rpg-events.md)
+-- RPG 데모 — 5, 6, 7단계 산출물 (docs/plans/05-rpg-character.md, 06-rpg-events.md,
+-- 07-rpg-dialogue.md)
 --
--- 맵 위를 걸어다니고, NPC에게 말을 걸고, 문을 밟아 다른 맵으로 이동한다.
---   방향키 또는 가상 D-패드: 이동
+-- 맵 위를 걸어다니고, NPC에게 말을 걸면 얼굴이 있는 대화창이 뜨고, 선택지에 따라
+-- 대사가 갈린다. 문을 밟으면 다른 맵으로 이동한다.
+--   방향키 또는 가상 D-패드: 이동, 선택지 커서
 --     - 정지 중에 다른 방향키를 짧게 누르면 이동 없이 방향만 바뀐다 (R2K3식)
 --   Z / Enter / Space (터치는 패드 밖 탭): 말 걸기, 대화 넘기기, 선택지 결정
+--   X: 선택지 취소 (취소 항목이 정해진 선택지에서만)
 --   ESC 또는 Android 뒤로가기: 메뉴로
 --
 -- 맵과 이벤트 정의는 scripts/maps/<이름>.lua 가 짝으로 들고 있다. 이 씬은 그
@@ -15,6 +18,7 @@
 -- 환경 변수
 --   INITIAL2D_MAP       시작 맵 정의 이름 (village, room)
 --   INITIAL2D_CHARSET   다른 CharSet. 없으면 변환된 RTP를, 그것도 없으면 플레이스홀더
+--                       (대화창 스킨과 얼굴도 같은 규칙으로 고른다)
 --   INITIAL2D_RPG_SCALE 렌더 배율 (기본 2)
 --   INITIAL2D_DEBUG     좌표와 FPS 표시
 
@@ -23,7 +27,8 @@ local Player = require("scripts/rpg/player")
 local Rng = require("scripts/rpg/rng")
 local Event = require("scripts/rpg/event")
 local Interpreter = require("scripts/rpg/interpreter")
-local Text = require("scripts/rpg/text")
+local Window = require("scripts/rpg/window")
+local Dialogue = require("scripts/rpg/message")
 local Image = require("scripts/image")
 local VirtualPad = require("scripts/ui/vpad")
 
@@ -42,13 +47,20 @@ local BASE_FONT = "./resources/fonts/hangul.fnt"
 
 local DEFAULT_CHARSET = "./resources/charsets/placeholder.png"
 local RTP_CHARSET = "./resources/rtp/CharSet/Actor1.png"
+-- 대화창 스킨과 효과음. RTP가 있으면 원본 System을, 없으면 같은 규격으로 그린
+-- 플레이스홀더를 쓴다 (tools/generate_windowskin.py).
+local DEFAULT_SKIN = "./resources/ui/window.png"
+local RTP_SKIN = "./resources/rtp/System/System.png"
+local SE_CURSOR = "./resources/audio/ui_cursor.wav"
+local SE_DECISION = "./resources/audio/ui_decision.wav"
+local SE_TEXT = "./resources/audio/ui_text.wav"
 local DEFAULT_SCALE = 2
 local PAD_DEVICE_SIZE = 160
 local WANDER_SEED = 20260817
 local FADE_FRAMES = 14          -- 전환 페이드 한쪽 길이
 
 local VK_ESCAPE, VK_RETURN, VK_SPACE, VK_Z = 27, 13, 32, 90
-local VK_UP, VK_DOWN = 38, 40
+local VK_UP, VK_DOWN, VK_X = 38, 40, 88
 
 local W, H = 768, 896
 local scale = 1
@@ -63,7 +75,8 @@ local fade = { alpha = 0, dir = 0, pending = nil }
 local hintTimer, fpsAvg = 0, 0
 local DEBUG_HUD = false
 local HINT_SECONDS = 4.0
-local message = nil             -- { text = } 또는 { options =, index = }
+local skin, dialogue = nil, nil   -- 대화창 (7단계)
+local padPrev = nil               -- 가상 패드 방향의 직전 값 (엣지 판정용)
 
 -- 자동 시연 경로. 맵 정의 파일의 autoRoute를 쓰고, 없으면 제자리에서 말만 건다.
 -- "talk"은 결정키, 나머지는 방향이다.
@@ -82,27 +95,14 @@ local function fileExists(path)
 	return true
 end
 
--- ---- 대화 표시 (7단계에서 대화창으로 교체할 자리) -------------------------
+-- ---- 대화창 (7단계) -------------------------------------------------------
 --
--- interpreter는 messagePort.isBusy()가 false가 될 때까지 스크립트를 재개하지
--- 않는다. 여기서는 화면 아래에 글자를 얹고 결정키를 기다리는 최소 구현만 둔다.
--- 7단계가 오면 이 테이블만 진짜 창으로 갈아 끼우면 된다.
-local messagePort = {}
+-- 실행기(interpreter.lua)는 messagePort의 네 함수만 안다. 6단계에서는 화면 아래에
+-- 글자만 얹는 최소 구현이었고, 지금은 스킨 창(scripts/rpg/message.lua)이 그
+-- 자리에 있다. 씬이 하는 일은 창을 만들고, 매 프레임 입력을 넘겨 주는 것뿐이다.
 
-function messagePort.showMessage(text)
-	message = { text = text }
-end
-
-function messagePort.showChoice(options)
-	message = { options = options, index = 1 }
-end
-
-function messagePort.isBusy()
-	return message ~= nil
-end
-
-function messagePort.result()
-	return messagePort.picked or 1
+local function playSe(path, id)
+	return function() Audio.PlaySound(path, id, 0) end
 end
 
 -- ---- 맵 적재 -------------------------------------------------------------
@@ -224,8 +224,7 @@ function RpgDemoScene.init()
 	fpsAvg, hintTimer = 0, 0
 	autoTimer, autoIndex = 0, 1
 	DEBUG_HUD = env("INITIAL2D_DEBUG") ~= nil
-	message = nil
-	messagePort.picked = nil
+	padPrev = nil
 	fade = { alpha = 0, dir = 0, pending = nil }
 
 	charsetPath = env("INITIAL2D_CHARSET")
@@ -244,8 +243,22 @@ function RpgDemoScene.init()
 	fadeImg.setOpacity(0)
 	fadeImg.update(0)   -- 위치·스케일은 update가 트랜스폼에 반영한다
 
+	skin = Window.newSkin{
+		path = fileExists(RTP_SKIN) and RTP_SKIN or DEFAULT_SKIN,
+		scale = 1,
+	}
+	dialogue = Dialogue.new{
+		skin = skin, measure = GetTextWidth, drawText = DrawText,
+		screenW = W, screenH = H, lines = 3, lineHeight = 20,
+		se = {
+			cursor = playSe(SE_CURSOR, "uiCursor"),
+			decision = playSe(SE_DECISION, "uiDecision"),
+			text = playSe(SE_TEXT, "uiText"),
+		},
+	}
+
 	interp = Interpreter.new{
-		messagePort = messagePort,
+		messagePort = dialogue:port(),
 		host = { transfer = requestTransfer, characterById = characterById },
 	}
 
@@ -265,24 +278,19 @@ local function confirmPressed()
 	return false
 end
 
-local function updateMessage()
-	if message.options ~= nil then
-		local n = #message.options
-		if Input.IsKeyDown(VK_UP) or (pad ~= nil and pad.pressed() == "up") then
-			message.index = (message.index - 2) % n + 1
-		elseif Input.IsKeyDown(VK_DOWN) or (pad ~= nil and pad.pressed() == "down") then
-			message.index = message.index % n + 1
-		end
-		if confirmPressed() then
-			messagePort.picked = message.index
-			message = nil
-		end
-		return
-	end
+--- 이번 프레임에 눌린 키들. 대화창은 "누르고 있다"가 아니라 "방금 눌렀다"를 본다.
+-- 가상 패드는 누르고 있는 방향만 알려 주므로 여기서 직전 값과 비교해 엣지로 바꾼다.
+local function pollInput()
+	local padDir = pad ~= nil and pad.pressed() or nil
+	local padEdge = (padDir ~= nil and padDir ~= padPrev) and padDir or nil
+	padPrev = padDir
 
-	if confirmPressed() then
-		message = nil
-	end
+	return {
+		confirm = confirmPressed(),
+		up = Input.IsKeyDown(VK_UP) or padEdge == "up",
+		down = Input.IsKeyDown(VK_DOWN) or padEdge == "down",
+		cancel = Input.IsKeyDown(VK_X),
+	}
 end
 
 function RpgDemoScene.update(elapsed)
@@ -318,14 +326,15 @@ function RpgDemoScene.update(elapsed)
 		return
 	end
 
+	local input = pollInput()
+
 	if AUTOPLAY then
 		-- 자동 시연: 촌장 쪽으로 걸어가 말을 걸고, 대화는 알아서 넘긴다
 		autoTimer = autoTimer + elapsed
-		if message ~= nil then
-			if autoTimer > 900 then
+		if dialogue:isBusy() then
+			if autoTimer > 700 then
 				autoTimer = 0
-				if message.options ~= nil then messagePort.picked = message.index end
-				message = nil
+				input.confirm = true
 			end
 		elseif interp:isBusy() then
 			-- 스크립트가 도는 중이면 기다린다
@@ -339,15 +348,20 @@ function RpgDemoScene.update(elapsed)
 				playerChar:request(step)
 			end
 		end
-	elseif message ~= nil then
-		updateMessage()
-	elseif not interp:isBusy() and confirmPressed() then
+	end
+
+	-- 대화창이 결정키를 먼저 가져간다. 대화를 닫은 그 누름으로 같은 NPC에게 다시
+	-- 말을 걸지 않도록, 말 걸기는 "이번 프레임을 한가하게 시작했는가"로 판단한다.
+	local wasIdle = not dialogue:isBusy() and not interp:isBusy()
+	dialogue:update(input, interp:isBusy())
+
+	if not AUTOPLAY and wasIdle and input.confirm then
 		events:confirm()
 	end
 
 	if player ~= nil and not AUTOPLAY then
 		-- 이벤트가 도는 동안 플레이어만 멈춘다. 맵과 병렬 이벤트는 계속 돈다.
-		player.enabled = not interp:isBusy() and message == nil
+		player.enabled = not interp:isBusy() and not dialogue:isBusy()
 		player:update()
 	end
 
@@ -360,38 +374,6 @@ function RpgDemoScene.update(elapsed)
 	end
 end
 
-local MSG_MARGIN = 12
-
-local function drawMessage()
-	if message == nil or not FontReady then return end
-
-	-- 폭에 맞춰 줄을 나눈다. 비트맵 폰트는 글자마다 폭이 달라서 글자 수가 아니라
-	-- 픽셀로 재야 한다 (scripts/rpg/text.lua, 7단계의 대화창도 같은 것을 쓴다).
-	local maxWidth = W - MSG_MARGIN * 2
-	local lines = {}
-	if message.text ~= nil then
-		lines = Text.wrap(message.text, maxWidth, GetTextWidth)
-	else
-		for i, option in ipairs(message.options) do
-			local prefix = (i == message.index and "> " or "  ")
-			for _, line in ipairs(Text.wrap(prefix .. option, maxWidth, GetTextWidth)) do
-				lines[#lines + 1] = line
-			end
-		end
-	end
-
-	local lineH = 24
-	local boxH = lineH * #lines + 16
-	fadeImg.setOpacity(190)
-	fadeImg.setPosition(0, H - boxH)
-	fadeImg.update(0)
-	fadeImg.draw()
-
-	for i, line in ipairs(lines) do
-		DrawText(12, H - boxH + 8 + (i - 1) * lineH, line)
-	end
-end
-
 function RpgDemoScene.render()
 	if scene == nil then
 		if FontReady then
@@ -400,6 +382,12 @@ function RpgDemoScene.render()
 		end
 		return
 	end
+
+	-- 맵이 화면보다 작으면 바깥이 배경색으로 남는다. 뒤에 검은 판을 깔아 둔다.
+	fadeImg.setOpacity(255)
+	fadeImg.setPosition(0, 0)
+	fadeImg.update(0)
+	fadeImg.draw()
 
 	scene:draw()
 
@@ -415,7 +403,7 @@ function RpgDemoScene.render()
 		end
 	end
 
-	drawMessage()
+	dialogue:draw()
 
 	if pad ~= nil then
 		pad.draw()
@@ -439,8 +427,15 @@ function RpgDemoScene.destroy()
 		fadeImg.dispose()
 		fadeImg = nil
 	end
+	if dialogue ~= nil then
+		dialogue:dispose()
+		dialogue = nil
+	end
+	if skin ~= nil then
+		skin:dispose()
+		skin = nil
+	end
 	interp = nil
-	message = nil
 	if FontReady then PreparaFont(BASE_FONT) end
 	SetRenderScale(1)
 end

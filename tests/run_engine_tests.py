@@ -380,7 +380,7 @@ def test_rpg_event_scene():
     def has(needle, name):
         check(name, needle in log, f"'{needle}' 없음 | {log[-400:]}")
 
-    has("village:70x40 events:4", "마을 맵과 이벤트 4개 로드")
+    has("village:70x40 events:5", "마을 맵과 이벤트 5개 로드")
     has("playerStart:34,21", "정의 파일의 시작 위치")
 
     # [A] 병렬 이벤트
@@ -396,21 +396,158 @@ def test_rpg_event_scene():
     has("elderTurned:down", "말을 걸면 이쪽을 돌아본다")
     has("line1:어서 오시게. 처음 보는 얼굴이군.", "첫 대사")
     has("choiceShown:1", "선택지 표시")
-    has("line2:왼쪽 마당의 문으로 들어가면 오두막이라네.", "선택 1번의 분기 대사")
+    has("line2:왼쪽 집 문으로 들어가면 우리 오두막이라네.", "선택 1번의 분기 대사")
     has("busyAfterTalk:false", "대화가 끝나면 잠금 해제")
     has("stateFlag:true", "스크립트가 남긴 상태가 유지된다")
 
     # [C] 문 밟기 → 전환 요청
-    has("transfer:room,10,11", "문을 밟으면 전환 요청이 나간다")
+    has("transfer:room,10,12", "문을 밟으면 전환 요청이 나간다")
     has("busyAfterTransfer:false", "전환 뒤 조작 잠금이 남지 않는다")
 
     # [D] 맵 교체와 auto
     has("roomLoaded:true", "두 번째 맵 로드")
     has("room:20x14 events:3", "오두막 맵과 이벤트")
     has("autoBusy:true", "auto 이벤트가 맵 진입 시 조작을 잠근다")
-    has("autoLine:오두막 안이다. 아래 출입구로 나갈 수 있다.", "auto 대사")
+    has("autoLine:오두막 안이다. 아래 문으로 나갈 수 있다.", "auto 대사")
     has("busyAfterAuto:false", "auto가 끝나면 잠금 해제")
     has("secondVisitLines:0", "두 번째 방문에서는 state를 보고 조용히 넘어간다")
+
+
+# 플레이스홀더 대화창 스킨(tools/generate_windowskin.py)의 색
+SKIN_FRAME_LIGHT = (196, 214, 246)   # 테두리의 밝은 선
+SKIN_BG_TOP = (36, 52, 96)           # 창 바탕 (위쪽 띠)
+SKIN_ARROW = (232, 240, 255)         # 스크롤·대기 화살표
+
+
+def parse_rects(log):
+    """씬이 stdout으로 알려 준 사각형들 (이름 → (x, y, w, h))."""
+    rects = {}
+    for line in log.splitlines():
+        if line.startswith("dlg") and ":" in line:
+            name, _, value = line.partition(":")
+            parts = value.split(",")
+            if len(parts) == 4 and all(p.strip().lstrip("-").isdigit() for p in parts):
+                rects[name] = tuple(int(p) for p in parts)
+    return rects
+
+
+def mean_luma(img, scale, x0, y0, x1, y1):
+    total, n = 0, 0
+    for yy in range(int(y0 * scale), int(y1 * scale), 2):
+        for xx in range(int(x0 * scale), int(x1 * scale), 2):
+            r, g, b = img.getpixel((xx, yy))
+            total += r + g + b
+            n += 1
+    return total / max(1, n)
+
+
+def test_rpg_dialogue_scene():
+    """대화창 렌더링: 스킨 조립, 얼굴, 이름 창, 선택 커서 (7단계).
+
+    창의 위치와 크기는 씬이 stdout으로 알려 준다 (Lua가 계산한 값). 그래서 배치
+    규칙이 바뀌어도 러너를 고칠 필요 없이, "그 사각형 안에 무엇이 그려졌는가"만
+    본다. 스킨은 커밋된 플레이스홀더라 RTP 없이도 돈다.
+    """
+    print("\n[7] rpg_dialogue_scene — 대화창 스킨, 타자 효과, 얼굴, 선택지")
+    work, result, shots = run_scene("rpg_dialogue_scene.lua", [20], 30)
+
+    log = result.stdout + result.stderr
+    check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode}")
+    check("Lua 오류 없음", "PANIC" not in log and "attempt to" not in log, log[-300:])
+    check("폰트 로드", "dlgFont:true" in log, log[:200])
+    check("스킨 배율 2로 조립", "scale:2" in log, log[:200])
+
+    # [A] 쪽 나눔과 타자 효과 (프레임당 3글자)
+    check("긴 대사가 두 쪽으로 나뉜다", "dlgPages:2" in log, log[:400])
+    check("처음에는 한 글자도 안 나온다", "dlgReveal0:0" in log)
+    check("한 프레임에 3글자", "dlgReveal1:3" in log and "dlgReveal2:6" in log, log[:400])
+    check("보이는 글자는 앞에서부터", "dlgVisible:어서 오시게" in log, log[:400])
+    check("결정키가 남은 글자를 즉시 보여 준다", "dlgRevealAll:true" in log)
+    check("그 누름으로 창이 닫히지는 않는다", "dlgBusy:true" in log)
+    check("선택지가 떠 있다", "dlgChoiceActive:true" in log)
+    check("줄바꿈된 첫 줄", "dlgLine1:어서 오시게. 처음 보는 얼굴이군. 이 마을은" in log,
+          log[:600])
+
+    if 20 not in shots:
+        check("프레임 덤프 생성", False, "스크린샷 없음")
+        return
+    check("프레임 덤프 생성", True)
+
+    img = shots[20]
+    scale = img.width / 768.0
+    rects = parse_rects(log)
+    for name in ("dlgMsgRect", "dlgFaceRect", "dlgTextRect", "dlgNameRect",
+                 "dlgChoiceRect", "dlgChoiceRow1", "dlgChoiceRow2"):
+        if name not in rects:
+            check(f"{name} 좌표 출력", False, log[:400])
+            return
+
+    # [B] 창틀: 테두리의 밝은 선이 창 위쪽에 있다 (스킨 y=1 → 배율 2로 창의 2~3픽셀)
+    mx, my, mw, mh = rects["dlgMsgRect"]
+    border = count_color_in(img, scale, mx + 40, my + 2, mx + mw - 40, my + 4,
+                            SKIN_FRAME_LIGHT, 20)
+    check("대화창 위 테두리(밝은 선)", border > 80, f"px={border}")
+    side = count_color_in(img, scale, mx + 2, my + 40, mx + 4, my + mh - 40,
+                          SKIN_FRAME_LIGHT, 20)
+    check("대화창 왼쪽 테두리", side > 20, f"px={side}")
+
+    # 바탕: 창 안쪽(글자가 없는 오른쪽 아래)은 스킨 바탕색 계열
+    inside = px(img, scale, mx + mw - 14, my + mh - 14)
+    check("창 안쪽은 스킨 바탕색", inside[2] > inside[0] and 20 <= inside[2] <= 120,
+          str(inside))
+
+    # [C] 글자: 텍스트 영역에 흰 글리프가 있다
+    tx, ty, tw, th = rects["dlgTextRect"]
+    glyphs = count_color_in(img, scale, tx, ty, tx + tw, ty + th, WHITE, 30)
+    check("대사 글자가 그려진다", glyphs > 150, f"white px={glyphs}")
+
+    # [D] 얼굴: 얼굴 칸에 창 바탕이 아닌 색(피부·머리)이 있다
+    fx, fy, fw, fh = rects["dlgFaceRect"]
+    face = count_color_in(img, scale, fx + 8, fy + 8, fx + fw - 8, fy + fh - 8,
+                          SKIN_BG_TOP, 40, invert=True)
+    check("얼굴 그림이 창 왼쪽에 그려진다", face > 100, f"px={face}")
+    # 글자 영역은 얼굴 오른쪽에서 시작한다
+    check("글자가 얼굴만큼 밀려 있다", tx >= fx + fw, f"textX={tx} faceRight={fx + fw}")
+
+    # [E] 이름 창: 대화창 위에 붙고 안에 글자가 있다
+    nx, ny, nw, nh = rects["dlgNameRect"]
+    check("이름 창이 대화창 위에 있다", ny + nh <= my + 8, f"name={ny + nh} msg={my}")
+    name_glyphs = count_color_in(img, scale, nx, ny, nx + nw, ny + nh, WHITE, 30)
+    check("이름 글자가 그려진다", name_glyphs > 10, f"px={name_glyphs}")
+
+    # [F] 선택지: 커서가 고른 항목(첫 줄)을 덮어 그 줄이 더 밝다
+    r1 = rects["dlgChoiceRow1"]
+    r2 = rects["dlgChoiceRow2"]
+    luma1 = mean_luma(img, scale, r1[0], r1[1], r1[0] + r1[2], r1[1] + r1[3])
+    luma2 = mean_luma(img, scale, r2[0], r2[1], r2[0] + r2[2], r2[1] + r2[3])
+    check("선택 커서가 고른 항목을 덮는다", luma1 > luma2 * 1.15,
+          f"1번 줄 {luma1:.0f} vs 2번 줄 {luma2:.0f}")
+
+    cx, cy, cw, ch = rects["dlgChoiceRect"]
+    check("선택지 창은 대화창 위에 붙는다", cy + ch <= my, f"choice={cy + ch} msg={my}")
+    check("선택지 창은 대화창 오른쪽 끝에 맞춘다", abs((cx + cw) - (mx + mw)) <= 2,
+          f"choiceRight={cx + cw} msgRight={mx + mw}")
+
+    check_golden("rpg_dialogue_scene", img)
+    shutil.copy(os.path.join(work, "shot_0020.bmp"), "/tmp/initial2d_rpg_dialogue.bmp")
+
+    # [G] 같은 씬을 "다음 쪽을 기다리는" 상태로 한 번 더: 창 아래 대기 화살표
+    work2, result2, shots2 = run_scene("rpg_dialogue_scene.lua", [20], 30,
+                                       extra_env={"INITIAL2D_DLG_MODE": "arrow"})
+    log2 = result2.stdout + result2.stderr
+    check("대기 상태 실행 정상 종료", result2.returncode == 0, f"rc={result2.returncode}")
+    check("첫 쪽에서 멈춰 있다", "dlgArrowPage:1/2" in log2, log2[:400])
+    rects2 = parse_rects(log2)
+    if 20 in shots2 and "dlgArrowRect" in rects2:
+        img2 = shots2[20]
+        s2 = img2.width / 768.0
+        ax, ay, aw, ah = rects2["dlgArrowRect"]
+        arrow = count_color_in(img2, s2, ax, ay, ax + aw, ay + ah, SKIN_ARROW, 30)
+        beside = count_color_in(img2, s2, ax - 40, ay, ax - 8, ay + ah, SKIN_ARROW, 30)
+        check("창 아래 가운데에 대기 화살표", arrow > 20, f"px={arrow}")
+        check("화살표 옆은 비어 있다 (창 바탕)", beside == 0, f"px={beside}")
+    else:
+        check("대기 화살표 프레임 덤프", False, log2[-300:])
 
 
 def test_resolution():
@@ -510,6 +647,7 @@ def main():
     test_tilemap_scene()
     test_rpg_walk_scene()
     test_rpg_event_scene()
+    test_rpg_dialogue_scene()
     test_resolution()
     test_rtp_charset()
 

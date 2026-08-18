@@ -11,7 +11,8 @@
 --   - 시간은 전부 프레임 수로 잰다 (고정 16ms 스텝, 09-testing.md 4절).
 --
 -- 이 파일도 엔진 전역을 부르지 않는다. 대화창과 맵 전환은 주입받은 항구(port)로
--- 나간다. 7단계에서 messagePort만 진짜 대화창으로 갈아 끼우면 된다.
+-- 나간다. 7단계에서 messagePort를 진짜 대화창(message.lua)으로 갈아 끼웠고,
+-- 테스트는 여전히 print 스텁이나 가짜 항구를 쓴다.
 --
 --   local interp = Interpreter.new{
 --       host = { transfer = function(map, x, y) ... end,
@@ -23,7 +24,8 @@ local M = {}
 
 M.MS_PER_FRAME = 1000 / 60
 
---- 7단계 전까지 쓰는 대화창 스텁. print로 남기고 즉시 끝난다.
+--- 대화창 없이 돌 때 쓰는 스텁 (테스트, 헤드리스). print로 남기고 즉시 끝난다.
+--- 진짜 대화창은 scripts/rpg/message.lua의 Dialogue:port()다 (7단계).
 function M.printPort()
 	local port = { busy = false, value = nil }
 	function port.showMessage(text)
@@ -63,15 +65,17 @@ function M.makeCtx(interp)
 
 	ctx.state = interp.state
 
-	--- 대화 한 줄. 7단계의 대화창이 닫힐 때까지 대기한다.
-	function ctx.message(text)
-		return coroutine.yield{ message = tostring(text) }
+	--- 대화 한 줄. 대화창이 닫힐 때까지 대기한다.
+	-- opts는 대화창(7단계 message.lua)이 해석한다: face = { file, index }, name = 화자.
+	function ctx.message(text, opts)
+		return coroutine.yield{ message = tostring(text), messageOpts = opts }
 	end
 
 	--- 선택지. 고른 항목의 번호(1부터)를 돌려준다.
-	function ctx.choice(options)
+	-- opts.cancelIndex를 주면 취소키가 그 번호로 빠져나간다.
+	function ctx.choice(options, opts)
 		assert(type(options) == "table" and #options > 0, "ctx.choice: 항목이 필요하다")
-		return coroutine.yield{ choice = options }
+		return coroutine.yield{ choice = options, choiceOpts = opts }
 	end
 
 	--- ms 만큼 대기 (고정 스텝이라 프레임으로 환산한다)
@@ -168,12 +172,12 @@ function Interp:beginWait(request)
 	end
 
 	if request.message ~= nil then
-		self.messagePort.showMessage(request.message)
+		self.messagePort.showMessage(request.message, request.messageOpts)
 		return { kind = "message" }
 	end
 
 	if request.choice ~= nil then
-		self.messagePort.showChoice(request.choice)
+		self.messagePort.showChoice(request.choice, request.choiceOpts)
 		return { kind = "choice" }
 	end
 

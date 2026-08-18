@@ -36,6 +36,21 @@ function M.run(t)
     r = Sprite.GetRect(sp)
     t.check_eq(r.y, 32, "0 이하의 분할 값은 무시")
 
+    -- 소스 사각형 직접 지정 (7단계 대화창 스킨이 쓴다). 격자로는 표현할 수 없는
+    -- 좌표 — 폭 16짜리 조각을 x=40에서 잘라 오기 — 가 되는지 본다.
+    Sprite.SetRect(sp, 40, 8, 16, 8)
+    r = Sprite.GetRect(sp)
+    t.check_eq(r.x, 40, "SetRect(x, y, w, h)의 x가 적용된다")
+    t.check_eq(r.y, 8, "SetRect의 y가 적용된다 (예전 구현은 height로 덮어썼다)")
+    -- GetRect의 width/height 칸은 오른쪽·아래 좌표다 (무인자 setRect와 같은 규칙)
+    t.check_eq(r.width, 56, "오른쪽 좌표 = x + width")
+    t.check_eq(r.height, 16, "아래 좌표 = y + height")
+
+    -- 테이블 형태도 받는다 (예전 구현이 유일하게 받던 형태)
+    Sprite.SetRect(sp, { x = 96, y = 32, width = 8, height = 8 })
+    r = Sprite.GetRect(sp)
+    t.check(r.x == 96 and r.y == 32, "테이블 형태 SetRect", r.x .. "," .. r.y)
+
     -- 해제 (누수 방지 API)
     t.check_type(Sprite.Dispose, "function", "Dispose 바인딩 존재")
     Sprite.Dispose(sp)

@@ -80,7 +80,7 @@ macOS 포팅을 기반으로 Android까지 확장하였습니다. 역시 AI와�
 - 타일맵 시스템과 맵 파일 포맷 정리 — 완료 (2026-08)
 - InitialEditor 연동: 로컬 브리지 서버를 통한 맵 저장과 스크립트 편집 — 완료 (2026-08)
 - 리소스 파이프라인: RPG Maker 2003 RTP 변환과 규격 데이터 — 완료 (2026-08)
-- Lua로 작성하는 RPG 프레임워크: 캐릭터 이동, 이벤트, 대화창
+- Lua로 작성하는 RPG 프레임워크: 캐릭터 이동, 이벤트, 대화창 — 완료 (2026-08)
 - 위 요소를 모두 사용하는 데모 게임 제작
 
 # 스크립트 예제
@@ -472,6 +472,10 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 | `map_scene.lua` | 맵, 캐릭터들, 카메라를 묶고 y좌표 순으로 그림 |
 | `event.lua` | 맵 위의 이벤트와 트리거 감지 (아래 "이벤트와 상호작용") |
 | `interpreter.lua` | 이벤트 스크립트를 코루틴으로 실행, 실행 중 조작 잠금 |
+| `window.lua` | 스킨을 잘라 조립하는 창 (나인 슬라이스, 여닫기) |
+| `message.lua` | 대화창 — 타자 효과, 자동 줄바꿈, 쪽 넘김, 얼굴, 이름 |
+| `choice.lua` | 선택지 창 — 커서, 스크롤, 취소 |
+| `text.lua` | UTF-8 글자 단위 분할과 픽셀 폭 기준 줄바꿈 |
 | `rng.lua` | 시드를 주입하는 난수 |
 | `specs.lua` | CharSet, FaceSet, ChipSet의 규격 데이터 |
 
@@ -554,7 +558,11 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 
 ```lua
 	ctx.message("한 줄")                       -- 대화창이 닫힐 때까지
+	ctx.message("얼굴과 이름을 붙일 수도 있습니다", {
+		name = "촌장", face = { file = "./resources/faces/placeholder.png", index = 2 },
+	})
 	local pick = ctx.choice({ "네", "아니요" }) -- 고른 번호(1부터)를 반환
+	local pick2 = ctx.choice({ "산다", "안 산다" }, { cancelIndex = 2 })  -- 취소키(X)
 	ctx.wait(500)                              -- 밀리초
 	ctx.transfer("room", 10, 11)               -- 맵 이동 (이 줄 다음은 실행되지 않음)
 	ctx.moveRoute("patrol", { "right", "wait:400", "up" })  -- 루트가 끝날 때까지
@@ -569,6 +577,70 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 스크립트에서 오류가 나면 그 이벤트만 중단되고 기록에 남습니다. 게임이 멈추거나 조작이 잠긴 채로 남지 않습니다.
 
 예제는 `scripts/maps/village.lua`(대화, 분기, 문, 순찰)와 `scripts/maps/room.lua`(맵 진입 자동 실행, 되돌아가는 문)에 있습니다.
+
+데모 맵이 쓰는 타일셋 `resources/tiles/village16.png`는 기존 타일셋 뒤에 집 타일(지붕, 벽, 창문, 문, 마루, 실내벽)을 이어 붙인 것입니다. `python3 tools/generate_village_tileset.py`로 다시 만들 수 있습니다. 뒤에만 더하므로 기존 gid가 밀리지 않아, 먼저 만든 맵 데이터가 그대로 살아 있습니다.
+
+맵 파일은 `python3 tools/generate_demo_maps.py`로 두 벌이 나옵니다. 지오메트리는 한 벌만 정의하고 타일 번호만 바꾸므로 이벤트 좌표는 공통입니다.
+
+| 맵 | 타일셋 | 비고 |
+| :--- | :--- | :--- |
+| `village.json`, `room.json` | `village16.png` | 저장소에 포함, 어디서나 동작 |
+| `village_rtp.json`, `room_rtp.json` | RPG Maker 2003 RTP 칩셋 | 그림은 로컬 자산이라 저장소에 없음 |
+
+`scripts/maps/*.lua`가 `resources/rtp/ChipSet/`을 확인해 있으면 RTP 판을, 없으면 기본 판을 엽니다. NPC 그림도 같은 규칙으로 RTP `People1.png`를 씁니다. RTP 소재 자체는 재배포할 수 없으므로 저장소에 넣지 않습니다.
+
+# 대화창과 창 UI
+
+`ctx.message`와 `ctx.choice`가 실제로 그리는 창입니다. RPG Maker 2003의 System 스킨(160x80 한 장)을 조각내어 조립하며, 나인 슬라이스 같은 개념은 C++에 넣지 않고 Lua가 `Sprite.SetRect`로 잘라 찍습니다. 스킨의 분할 좌표는 `scripts/rpg/specs.lua`의 `M.window`에 있습니다.
+
+```lua
+	local Window = require("scripts/rpg/window")
+	local Dialogue = require("scripts/rpg/message")
+
+	local skin = Window.newSkin{ path = "./resources/ui/window.png", scale = 1 }
+	local dialogue = Dialogue.new{
+		skin = skin, measure = GetTextWidth, drawText = DrawText,
+		lines = 3, lineHeight = 20, speed = 2,      -- speed = 프레임당 글자 수 (0이면 즉시)
+		se = { cursor = ..., decision = ..., text = ... },   -- 효과음 함수 (선택)
+	}
+
+	-- 이벤트 실행기에 항구로 넘깁니다 (실행기는 창의 존재를 모릅니다)
+	local interp = Interpreter.new{ messagePort = dialogue:port(), host = ... }
+
+	-- 매 프레임: 이번 프레임에 눌린 키를 넘기고, 스크립트가 도는 중인지 알려 줍니다
+	dialogue:update({ confirm = ..., up = ..., down = ..., cancel = ... }, interp:isBusy())
+	dialogue:draw()
+```
+
+- **타자 효과**: 한 글자씩 출력하고, 결정키를 한 번 누르면 남은 글자를 즉시 보여 주며, 다시 누르면 다음 쪽으로 넘어가거나 닫힙니다. 글자 수는 UTF-8 기준이라 한글도 한 글자씩 나옵니다.
+- **자동 줄바꿈과 쪽 넘김**: 비트맵 폰트는 글자마다 폭이 달라 `GetTextWidth`로 픽셀을 재서 접습니다. 띄어쓰기에서 끊는 것을 우선하되 한 낱말이 폭을 넘으면 글자에서 끊습니다. 정해진 줄 수를 넘으면 쪽으로 나뉘고, 다음 쪽이 남으면 창 아래에서 스킨의 화살표가 깜빡입니다.
+- **얼굴과 이름**: `face = { file, index }`는 FaceSet(192x192, 48x48짜리 16칸)의 한 칸을 창 왼쪽에 그리고 글자를 그만큼 밀어냅니다. `name`은 대화창 위에 붙는 작은 창입니다.
+- **선택지**: 항목 수와 글자 폭에 맞춰 창을 만들고 대화창 오른쪽 위에 붙입니다. 항목이 많으면 보이는 만큼만 그리고 위아래 화살표로 알립니다. `cancelIndex`를 주면 취소키가 그 번호로 빠져나갑니다.
+
+창 자체(`window.lua`)는 대화와 무관한 공용품이라 메뉴나 상태창에도 그대로 씁니다.
+
+```lua
+	local win = Window.new{ skin = skin, x = 8, y = 8, width = 200, height = 96 }
+	win:open()            -- 4프레임에 걸쳐 위아래 가운데에서 자랍니다
+	win:update()          -- 매 프레임 한 번
+	win:draw()            -- 창틀만 그립니다. 내용은 contentRect()에 직접 그립니다
+	local x, y, w, h = win:contentRect()
+```
+
+엔진의 스프라이트 배율은 가로세로 같은 값 하나뿐이라 조각을 늘일 수 없습니다. 그래서 변과 바탕은 반복해 채우고, 남는 자투리는 그 크기만큼 소스를 잘라 그립니다. 바탕은 원본을 세로로 4등분해 띠마다 해당 부분을 반복하므로, 그라데이션이 32픽셀마다 끊겨 보이지 않습니다.
+
+스킨과 얼굴 그림은 RPG Maker 2003 RTP가 있으면 그쪽(`resources/rtp/System/System.png`, `resources/rtp/FaceSet/People1.png`)을, 없으면 저장소에 커밋된 플레이스홀더를 씁니다. 플레이스홀더는 다음 명령으로 다시 만듭니다.
+
+```bash
+# 대화창 스킨 (resources/ui/window.png, 160x80 — System과 같은 배치)
+python3 tools/generate_windowskin.py
+
+# 얼굴 그림 (resources/faces/placeholder.png, 192x192 — CharSet과 같은 팔레트)
+python3 tools/generate_faceset.py
+
+# UI 효과음 (resources/audio/ui_cursor.wav, ui_decision.wav, ui_text.wav)과 그 밖의 UI 이미지
+python3 tools/generate_ui_assets.py
+```
 
 # 게임 설정
 
