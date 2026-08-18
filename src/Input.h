@@ -139,8 +139,14 @@ protected:
 	// 짧은 클릭·탭이 유실되지 않도록 update()에서 1틱 PRESSED로 반영 후 클리어된다.
 	BYTE m_mbEventLatch[8];
 
+	// 키보드도 같은 이유로 래치가 필요하다. 리맵 도구나 매크로가 만든 키는
+	// 눌림과 뗌이 같은 틱 안에 들어와, 상태 폴링만으로는 아예 관측되지 않는다
+	// (macOS에서 ESC가 그랬다, 2026-08-18).
+	BYTE m_kbEventLatch[256];
+
 public:
 	void latchMouseDown(int index);
+	void latchKeyDown(int vKey);
 #endif
 
 private:

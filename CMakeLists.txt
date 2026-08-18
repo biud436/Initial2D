@@ -133,6 +133,7 @@ if(NOT WIN32 AND SDL2_FOUND AND SDL2_IMAGE_LIBRARY AND SDL2_MIXER_LIBRARY)
     ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/sdl2/AppSDL2.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/sdl2/TextureManagerSDL2.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/sdl2/InputSDL2.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/sdl2/ScancodeMap.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/sdl2/ExperimentalFontStub.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/sdl2/sdl2Main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/Utf8.cpp
@@ -169,3 +170,12 @@ add_executable(engine_unit_tests
   ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/Utf8.cpp
 )
 target_link_libraries(engine_unit_tests PRIVATE initial2d_core)
+
+# 키 매핑(SDL 스캔코드 → VK)은 SDL 헤더만 필요한 순수 함수라 단위 테스트가 직접 부른다
+if(SDL2_FOUND)
+  target_sources(engine_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/scancode_map_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/sdl2/ScancodeMap.cpp
+  )
+  target_link_libraries(engine_unit_tests PRIVATE SDL2::SDL2)
+endif()

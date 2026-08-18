@@ -115,6 +115,7 @@ add_library(main SHARED
   ${REPO_ROOT}/src/platform/sdl2/AppSDL2.cpp
   ${REPO_ROOT}/src/platform/sdl2/TextureManagerSDL2.cpp
   ${REPO_ROOT}/src/platform/sdl2/InputSDL2.cpp
+  ${REPO_ROOT}/src/platform/sdl2/ScancodeMap.cpp
   ${REPO_ROOT}/src/platform/sdl2/ExperimentalFontStub.cpp
   ${REPO_ROOT}/src/platform/sdl2/sdl2Main.cpp
   ${REPO_ROOT}/src/platform/Utf8.cpp
