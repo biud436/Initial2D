@@ -27,7 +27,8 @@ void Input::updateKeyboard()
 
 	// 스캔코드 → VK 변환은 순수 함수로 떼어 두었다 (ScancodeMap.cpp).
 	// 가짜 키보드 상태로 부를 수 있어야 회귀 테스트를 쓸 수 있기 때문이다.
-	Initial2D::Platform::ApplyScancodeState(keys, numKeys, m_kbCurrent);
+	// 이벤트 래치도 함께 넘긴다 — 폴링 사이에 눌렸다 떼어진 키를 살린다.
+	Initial2D::Platform::ApplyScancodeState(keys, numKeys, m_kbCurrent, m_kbEventLatch);
 
 	// 4-상태 키 머신 (원본 Win32 구현과 동일)
 	for (int i = 0; i < 256; ++i)
@@ -95,6 +96,13 @@ void Input::updateMouse()
 	m_mouse.setY(logicalY);
 
 	setMouseZ(0);
+}
+
+void Input::latchKeyDown(int vKey)
+{
+	if (vKey > 0 && vKey < 256) {
+		m_kbEventLatch[vKey] = 1;
+	}
 }
 
 void Input::latchMouseDown(int index)

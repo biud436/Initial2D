@@ -43,6 +43,7 @@ void Input::initialize(HWND hWnd)
 
 #ifndef RS_WINDOWS
 	memset(m_mbEventLatch, 0, sizeof(m_mbEventLatch));
+	memset(m_kbEventLatch, 0, sizeof(m_kbEventLatch));
 #endif
 
 	m_mouse.setX(0.0f);

@@ -18,8 +18,15 @@ namespace Platform {
 	 *  @param keys     SDL_GetKeyboardState가 준 배열 (스캔코드로 색인)
 	 *  @param numKeys  그 배열의 길이
 	 *  @param vkState  채울 256칸 배열. 이 함수가 먼저 전부 RELEASED로 지운다.
+	 *  @param latch    이벤트로 래치된 키 (256칸, 없으면 nullptr). 폴링 사이에
+	 *                  눌렸다 떼어진 키를 1틱 PRESSED로 살려 주고 지운다.
 	 */
-	void ApplyScancodeState(const unsigned char* keys, int numKeys, unsigned char* vkState);
+	void ApplyScancodeState(const unsigned char* keys, int numKeys, unsigned char* vkState,
+		unsigned char* latch = nullptr);
+
+	/** SDL 스캔코드 하나에 대응하는 Win32 VK 값. 표에 없으면 0.
+	 *  키 이벤트를 래치할 때 쓴다 (App::HandleEvent). */
+	int ScancodeToVirtualKey(int scancode);
 
 } // namespace Platform
 } // namespace Initial2D

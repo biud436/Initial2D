@@ -17,6 +17,7 @@
 
 #include "App.h"
 #include "Input.h"
+#include "ScancodeMap.h"
 #include "TextureManager.h"
 #include "lua_prot.h"
 
@@ -171,6 +172,13 @@ int App::Run(int nCmdShow)
 		SDL_Quit();
 		return -1;
 	}
+
+	// SDL은 텍스트 입력(IME 조합)을 기본으로 켜 둔다. 이 엔진은 글자 입력 이벤트를
+	// 쓰지 않고 키 상태만 폴링하는데, 켜져 있으면 입력기가 키를 먼저 가져간다 —
+	// macOS에서 한글 입력 상태일 때 ESC가 앱까지 오지 않아 어느 씬에서도 먹지
+	// 않았다 (2026-08-18, 사용자 보고). 안드로이드에서는 소프트 키보드도 막는다.
+	// 글자 입력이 필요한 게임이 생기면 그때 Lua에서 켜고 끄는 API를 연다.
+	SDL_StopTextInput();
 
 #ifdef __ANDROID__
 	// 풀 화면: 논리 해상도의 가로를 실제 화면 비율에 맞춰 확장한다 (세로는 기존 값 고정).
@@ -398,6 +406,17 @@ void App::HandleEvent(const SDL_Event& event)
 {
 	switch (event.type)
 	{
+	case SDL_KEYDOWN:
+		// 고정 스텝 폴링 사이에 눌렸다 떼어진 짧은 키 입력을 래치한다.
+		// 사람 손가락은 그렇게 빠르지 않지만, 리맵 도구나 매크로가 만든 키는
+		// down과 up이 같은 프레임에 들어온다 (macOS의 ESC, 2026-08-18).
+		if (m_pInput != nullptr) {
+			const int vk = Initial2D::Platform::ScancodeToVirtualKey(event.key.keysym.scancode);
+			if (vk != 0) {
+				m_pInput->latchKeyDown(vk);
+			}
+		}
+		break;
 	case SDL_MOUSEWHEEL:
 		if (m_pInput != nullptr) {
 			m_pInput->setMouseZ(event.wheel.y > 0 ? 1 : -1);

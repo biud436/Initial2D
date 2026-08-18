@@ -58,10 +58,28 @@ namespace {
 namespace Initial2D {
 namespace Platform {
 
-void ApplyScancodeState(const unsigned char* keys, int numKeys, unsigned char* vkState)
+namespace {
+	// 이벤트로 래치된 키를 이번 틱에 눌린 것으로 반영하고 지운다.
+	void ApplyLatch(unsigned char* vkState, unsigned char* latch)
+	{
+		if (latch == nullptr) {
+			return;
+		}
+		for (int i = 0; i < 256; ++i) {
+			if (latch[i] != 0) {
+				vkState[i] = PRESSED;
+				latch[i] = 0;
+			}
+		}
+	}
+}
+
+void ApplyScancodeState(const unsigned char* keys, int numKeys, unsigned char* vkState,
+	unsigned char* latch)
 {
 	std::memset(vkState, RELEASED, 256);
 	if (keys == nullptr || numKeys <= 0) {
+		ApplyLatch(vkState, latch);
 		return;
 	}
 
@@ -101,6 +119,34 @@ void ApplyScancodeState(const unsigned char* keys, int numKeys, unsigned char* v
 	for (const auto& entry : KEY_TABLE) {
 		if (down(entry.scancode)) press(entry.vk);
 	}
+
+	ApplyLatch(vkState, latch);
+}
+
+int ScancodeToVirtualKey(int scancode)
+{
+	if (scancode >= SDL_SCANCODE_A && scancode <= SDL_SCANCODE_Z) {
+		return 0x41 + (scancode - SDL_SCANCODE_A);
+	}
+	if (scancode >= SDL_SCANCODE_1 && scancode <= SDL_SCANCODE_9) {
+		return 0x31 + (scancode - SDL_SCANCODE_1);
+	}
+	if (scancode == SDL_SCANCODE_0) {
+		return 0x30;
+	}
+	if (scancode >= SDL_SCANCODE_F1 && scancode <= SDL_SCANCODE_F12) {
+		return VK_F1 + (scancode - SDL_SCANCODE_F1);
+	}
+	if (scancode == SDL_SCANCODE_LSHIFT || scancode == SDL_SCANCODE_RSHIFT) return VK_SHIFT;
+	if (scancode == SDL_SCANCODE_LCTRL || scancode == SDL_SCANCODE_RCTRL) return VK_CONTROL;
+	if (scancode == SDL_SCANCODE_LALT || scancode == SDL_SCANCODE_RALT) return VK_MENU;
+
+	for (const auto& entry : KEY_TABLE) {
+		if (entry.scancode == scancode) {
+			return entry.vk;
+		}
+	}
+	return 0;
 }
 
 } // namespace Platform

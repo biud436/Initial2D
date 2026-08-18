@@ -102,6 +102,51 @@ TEST(scancode_modifiers_merge_left_and_right)
 	CHECK_EQ((int)kb.vk[VK_MENU], RELEASED);
 }
 
+TEST(scancode_latched_key_survives_a_missed_poll)
+{
+	// 리맵 도구가 만든 키는 down과 up이 같은 틱에 들어와, 상태 배열에는 흔적이
+	// 남지 않는다. 이벤트에서 래치해 두면 그 틱에 눌린 것으로 관측된다.
+	Keyboard kb;
+	unsigned char latch[256];
+	std::memset(latch, 0, sizeof(latch));
+	latch[VK_ESCAPE] = 1;
+
+	Initial2D::Platform::ApplyScancodeState(kb.keys, SDL_NUM_SCANCODES, kb.vk, latch);
+	CHECK_EQ((int)kb.vk[VK_ESCAPE], PRESSED);
+	CHECK_EQ((int)latch[VK_ESCAPE], 0);        // 한 틱만 살아 있다
+
+	// 다음 틱에는 눌리지 않은 상태로 돌아간다 (그래야 눌림→뗌 전이가 만들어진다)
+	Initial2D::Platform::ApplyScancodeState(kb.keys, SDL_NUM_SCANCODES, kb.vk, latch);
+	CHECK_EQ((int)kb.vk[VK_ESCAPE], RELEASED);
+}
+
+TEST(scancode_latch_does_not_erase_a_held_key)
+{
+	Keyboard kb;
+	unsigned char latch[256];
+	std::memset(latch, 0, sizeof(latch));
+	kb.press(SDL_SCANCODE_Z);
+	latch[VK_ESCAPE] = 1;
+
+	Initial2D::Platform::ApplyScancodeState(kb.keys, SDL_NUM_SCANCODES, kb.vk, latch);
+	CHECK_EQ((int)kb.vk['Z'], PRESSED);
+	CHECK_EQ((int)kb.vk[VK_ESCAPE], PRESSED);
+}
+
+TEST(scancode_to_virtual_key_lookup)
+{
+	using Initial2D::Platform::ScancodeToVirtualKey;
+	CHECK_EQ(ScancodeToVirtualKey(SDL_SCANCODE_ESCAPE), VK_ESCAPE);
+	CHECK_EQ(ScancodeToVirtualKey(SDL_SCANCODE_AC_BACK), VK_ESCAPE);
+	CHECK_EQ(ScancodeToVirtualKey(SDL_SCANCODE_Z), 'Z');
+	CHECK_EQ(ScancodeToVirtualKey(SDL_SCANCODE_0), '0');
+	CHECK_EQ(ScancodeToVirtualKey(SDL_SCANCODE_5), '5');
+	CHECK_EQ(ScancodeToVirtualKey(SDL_SCANCODE_F3), VK_F3);
+	CHECK_EQ(ScancodeToVirtualKey(SDL_SCANCODE_RIGHT), VK_RIGHT);
+	CHECK_EQ(ScancodeToVirtualKey(SDL_SCANCODE_RSHIFT), VK_SHIFT);
+	CHECK_EQ(ScancodeToVirtualKey(SDL_SCANCODE_F18), 0);   // 표에 없는 키는 0
+}
+
 TEST(scancode_short_state_array_is_safe)
 {
 	// SDL이 알려 준 길이보다 큰 스캔코드는 읽지 않는다
