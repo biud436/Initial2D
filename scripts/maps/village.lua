@@ -23,6 +23,13 @@ for _, candidate in ipairs({ "./resources/rtp/CharSet/People1.png" }) do
 	if exists(candidate) then CHARSET = candidate end
 end
 
+-- 대화창 얼굴 그림 (7단계). 플레이스홀더 FaceSet은 CharSet과 팔레트를 공유해서
+-- 같은 번호면 같은 인물이다 (tools/generate_faceset.py).
+local FACESET = "./resources/faces/placeholder.png"
+for _, candidate in ipairs({ "./resources/rtp/FaceSet/People1.png" }) do
+	if exists(candidate) then FACESET = candidate end
+end
+
 local function pickMap(base)
 	if exists("./resources/rtp/ChipSet/Exterior.png") then
 		return "./resources/maps/" .. base .. "_rtp.json"
@@ -50,13 +57,17 @@ return {
 			charset = { file = CHARSET, index = 2 },
 			trigger = "action",
 			script = function(self, ctx)
-				ctx.message("어서 오시게. 처음 보는 얼굴이군.")
-				local pick = ctx.choice({ "네, 처음입니다", "아니요, 와 본 적 있습니다" })
+				local elder = { name = "촌장", face = { file = FACESET, index = 2 } }
+				ctx.message("어서 오시게. 처음 보는 얼굴이군. 이 마을은 조용하지만 "
+					.. "지낼 만한 곳이라네. 오래 머물 생각인가?", elder)
+				-- 취소키(X)는 두 번째 항목으로 빠져나간다
+				local pick = ctx.choice({ "네, 처음입니다", "아니요, 와 본 적 있습니다" },
+					{ cancelIndex = 2 })
 				if pick == 1 then
-					ctx.message("왼쪽 집 문으로 들어가면 우리 오두막이라네.")
+					ctx.message("왼쪽 집 문으로 들어가면 우리 오두막이라네.", elder)
 					ctx.state.toldAboutHut = true
 				else
-					ctx.message("그럼 길은 잘 알겠군.")
+					ctx.message("그럼 길은 잘 알겠군.", elder)
 				end
 			end,
 		},
@@ -69,10 +80,11 @@ return {
 			trigger = "action",
 			wander = { minWait = 30, maxWait = 120, area = { x = 30, y = 18, w = 12, h = 8 } },
 			script = function(self, ctx)
+				local kid = { name = "아이", face = { file = FACESET, index = 13 } }
 				if ctx.state.toldAboutHut then
-					ctx.message("촌장님한테 들었죠? 저 빨간 지붕 집이에요.")
+					ctx.message("촌장님한테 들었죠? 저 빨간 지붕 집이에요.", kid)
 				else
-					ctx.message("여기저기 돌아다니는 게 제 일이에요.")
+					ctx.message("여기저기 돌아다니는 게 제 일이에요.", kid)
 				end
 			end,
 		},

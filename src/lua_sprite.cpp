@@ -599,63 +599,51 @@ LUA_CLASS(Set, Sprite, CurrentFrame)
 	return 0;
 }
 
+/**
+ * Sprite.SetRect(spriteId, x, y, width, height)
+ * Sprite.SetRect(spriteId, { x =, y =, width =, height = })
+ *
+ * 텍스처에서 잘라 그릴 소스 사각형을 직접 지정한다. 시트 격자(SetSheetGrid +
+ * SetCurrentFrame)로 표현할 수 없는 위치 — 대화창 스킨의 나인 슬라이스 조각처럼
+ * 폭의 배수가 아닌 좌표 — 를 그릴 때 쓴다.
+ *
+ * 예전 구현은 테이블 형태만 받으면서(그래서 scripts/image.lua의 네 인자 호출은
+ * 조용히 무시됐다) width와 height를 y 변수에 덮어써 읽고 있었다. 두 형태를 모두
+ * 받고, 오른쪽·아래 좌표는 무인자 setRect()와 같은 규칙(left + width)으로 채운다.
+ */
 LUA_CLASS(Set, Sprite, Rect)
 {
-	int x = 0, y = 0, width = 1, height = 1;
-	int n = lua_gettop(pL);
 	uintptr_t d = (uintptr_t)lua_tonumber(pL, 1);
 	Sprite* p = (Sprite*)d;
 
-	// STACK TOP
-	// 2 (-1) Rect Table
-	// 1 (-2) Sprite Pointer
-	// STACK BOTTOM
-
-	if (!p || !lua_istable(pL, -1))
+	if (!p)
 	{
 		return 0;
 	}
 
-	// 3 (-1) x
-	// 2 (-2) Rect Table
-	// 1 (-3) Sprite Pointer
+	int x = 0, y = 0, width = 0, height = 0;
 
-	lua_pushstring(pL, "x");
-	lua_gettable(pL, 2);
-	x = luaL_checkinteger(pL, -1);
-	lua_pop(pL, 1);
+	if (lua_istable(pL, 2))
+	{
+		const char* keys[4] = { "x", "y", "width", "height" };
+		int* fields[4] = { &x, &y, &width, &height };
+		for (int i = 0; i < 4; i++)
+		{
+			lua_pushstring(pL, keys[i]);
+			lua_gettable(pL, 2);
+			*fields[i] = static_cast<int>(luaL_optinteger(pL, -1, 0));
+			lua_pop(pL, 1);
+		}
+	}
+	else
+	{
+		x = static_cast<int>(luaL_optinteger(pL, 2, 0));
+		y = static_cast<int>(luaL_optinteger(pL, 3, 0));
+		width = static_cast<int>(luaL_optinteger(pL, 4, 0));
+		height = static_cast<int>(luaL_optinteger(pL, 5, 0));
+	}
 
-	// 3 (-1) y
-	// 2 (-2) Rect Table
-	// 1 (-3) Sprite Pointer
-
-	lua_pushstring(pL, "y");
-	lua_gettable(pL, 2);
-	y = luaL_checkinteger(pL, -1);
-	lua_pop(pL, 1);
-
-	// 3 (-1) width
-	// 2 (-2) Rect Table
-	// 1 (-3) Sprite Pointer
-
-	lua_pushstring(pL, "width");
-	lua_gettable(pL, 2);
-	y = luaL_checkinteger(pL, -1);
-	lua_pop(pL, 1);
-
-	// 3 (-1) height
-	// 2 (-2) Rect Table
-	// 1 (-3) Sprite Pointer
-
-	lua_pushstring(pL, "height");
-	lua_gettable(pL, 2);
-	y = luaL_checkinteger(pL, -1);
-	lua_pop(pL, 1);
-
-	p->setRect(x, y, width, height);
-
-	lua_pop(pL, 1);
-	lua_pop(pL, 1);
+	p->setRect(x, y, x + width, y + height);
 
 	return 0;
 }

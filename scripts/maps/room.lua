@@ -20,6 +20,12 @@ for _, candidate in ipairs({ "./resources/rtp/CharSet/People1.png" }) do
 	if exists(candidate) then CHARSET = candidate end
 end
 
+-- 대화창 얼굴 그림 (7단계, tools/generate_faceset.py)
+local FACESET = "./resources/faces/placeholder.png"
+for _, candidate in ipairs({ "./resources/rtp/FaceSet/People1.png" }) do
+	if exists(candidate) then FACESET = candidate end
+end
+
 local function pickMap(base)
 	if exists("./resources/rtp/ChipSet/Interior.png") then
 		return "./resources/maps/" .. base .. "_rtp.json"
@@ -57,9 +63,12 @@ return {
 			charset = { file = CHARSET, index = 3 },
 			trigger = "action",
 			script = function(self, ctx)
-				ctx.message("여긴 조용해서 좋아요.")
+				local resident = { name = "주민", face = { file = FACESET, index = 3 } }
+				ctx.message("여긴 조용해서 좋아요.", resident)
 				ctx.moveRoute(self.id, { "turn:left", "wait:300", "turn:down" })
-				ctx.message("...가끔 심심하지만요.")
+				-- 웃는 표정으로 바꿔 본다 (플레이스홀더 FaceSet은 8..15가 웃는 얼굴)
+				ctx.message("...가끔 심심하지만요.",
+					{ name = "주민", face = { file = FACESET, index = 11 } })
 			end,
 		},
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate UI assets under resources/ui/.
+"""Generate UI assets under resources/ui/ and resources/audio/.
 
 플레이스홀더 아트(tools/generate_placeholder_assets.py)와 달리 이 출력물은
 저장소에 커밋된다 — 디자인을 바꿀 때만 다시 실행한다.
@@ -8,12 +8,18 @@ Usage: python3 tools/generate_ui_assets.py
 Requires: Pillow (pip install pillow)
 """
 
+import math
 import os
+import struct
+import wave
 
 from PIL import Image, ImageDraw
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UI = os.path.join(REPO, "resources", "ui")
+AUDIO = os.path.join(REPO, "resources", "audio")
+
+SAMPLE_RATE = 22050
 
 
 def lerp(a, b, t):
@@ -120,11 +126,43 @@ def make_fade(path, size=16):
     print("generated:", os.path.relpath(path, REPO))
 
 
+def make_se(path, tones, volume=0.35):
+    """UI 효과음 한 개 (16비트 모노 WAV).
+
+    대화창의 커서음·결정음·글자 출력음이다 (7단계). RTP의 Sound/ 는 커밋할 수
+    없고, 짧은 사인파 블립이면 손맛을 확인하기에 충분하다. tones는
+    (주파수Hz, 길이초) 목록이며 각 구간은 앞뒤로 짧게 페이드해 딸깍거림을 막는다.
+    """
+    frames = bytearray()
+    for freq, seconds in tones:
+        count = int(SAMPLE_RATE * seconds)
+        fade = max(1, int(count * 0.2))
+        for i in range(count):
+            env = min(1.0, i / fade, (count - i) / fade)
+            value = math.sin(2.0 * math.pi * freq * i / SAMPLE_RATE)
+            frames += struct.pack("<h", int(value * env * volume * 32767))
+
+    with wave.open(path, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(SAMPLE_RATE)
+        w.writeframes(bytes(frames))
+    print("generated:", os.path.relpath(path, REPO))
+
+
 def main():
     os.makedirs(UI, exist_ok=True)
     make_button(os.path.join(UI, "button.png"))
     make_dpad(os.path.join(UI, "dpad.png"))
     make_fade(os.path.join(UI, "fade.png"))
+
+    os.makedirs(AUDIO, exist_ok=True)
+    # 커서 이동: 짧고 높은 한 음
+    make_se(os.path.join(AUDIO, "ui_cursor.wav"), [(880, 0.045)])
+    # 결정: 두 음이 올라간다
+    make_se(os.path.join(AUDIO, "ui_decision.wav"), [(660, 0.045), (990, 0.075)])
+    # 글자 출력: 아주 짧고 작게 (몇 글자마다 한 번씩 난다)
+    make_se(os.path.join(AUDIO, "ui_text.wav"), [(1320, 0.016)], volume=0.16)
 
 
 if __name__ == "__main__":
