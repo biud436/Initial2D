@@ -12,6 +12,7 @@ return {
     "scripts/luatests/cases/sprite_sheet_test",
     "scripts/luatests/cases/tilemap_test",
     "scripts/luatests/cases/vpad_test",
+    "scripts/luatests/cases/bgm_test",
     "scripts/luatests/cases/rpg_specs_test",
     "scripts/luatests/cases/rpg_rng_test",
     "scripts/luatests/cases/rpg_camera_test",
@@ -23,4 +24,5 @@ return {
     "scripts/luatests/cases/rpg_window_test",
     "scripts/luatests/cases/rpg_choice_test",
     "scripts/luatests/cases/rpg_message_test",
+    "scripts/luatests/cases/rpg_assets_test",
 }

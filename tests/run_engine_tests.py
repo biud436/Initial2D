@@ -45,20 +45,27 @@ def check(name, cond, detail=""):
         print(f"  FAIL  {name}  {detail}")
 
 
+def stage_scripts(work):
+    """저자의 scripts/ 를 통째로 워크 디렉터리에 복사한다.
+
+    씬 테스트는 main.lua만 갈아 끼우고 나머지는 실물을 그대로 쓴다 (게임이
+    실제로 여는 파일과 테스트가 여는 파일이 같아야 한다). 8단계의 데모 씬
+    테스트는 scripts/games/ 까지 진짜를 얹어 돌린다.
+    """
+    scripts = os.path.join(work, "scripts")
+    shutil.copytree(os.path.join(REPO, "scripts"), scripts)
+    os.remove(os.path.join(scripts, "main.lua"))   # 테스트 씬이 대신 들어온다
+    return scripts
+
+
 def make_workdir(scene):
     work = tempfile.mkdtemp(prefix="initial2d-test-")
     os.symlink(os.path.join(REPO, "resources"), os.path.join(work, "resources"))
-    scripts = os.path.join(work, "scripts")
-    os.makedirs(scripts)
-    # 저자의 Lua 모듈은 그대로 사용한다
-    for module in ("image.lua", "Font.lua"):
-        src = os.path.join(REPO, "scripts", module)
-        if os.path.exists(src):
-            shutil.copy(src, scripts)
-    shutil.copytree(os.path.join(REPO, "scripts", "ui"), os.path.join(scripts, "ui"))
-    shutil.copytree(os.path.join(REPO, "scripts", "rpg"), os.path.join(scripts, "rpg"))
-    # 맵별 이벤트 정의 (6단계) — 씬 테스트가 진짜 정의 파일을 그대로 얹는다
-    shutil.copytree(os.path.join(REPO, "scripts", "maps"), os.path.join(scripts, "maps"))
+    scripts = stage_scripts(work)
+    # 입력 재생기 (09-testing.md 3.4절) — 씬 테스트가 사람 대신 키를 누른다
+    luatests = os.path.join(scripts, "luatests")
+    os.makedirs(luatests, exist_ok=True)
+    shutil.copy(os.path.join(REPO, "tests", "lua", "input_replay.lua"), luatests)
     shutil.copy(os.path.join(REPO, "tests", "engine", "scenes", scene),
                 os.path.join(scripts, "main.lua"))
     return work
@@ -195,15 +202,12 @@ def test_lua_units():
     # 포맷 계약 픽스처 (09-testing.md 3.5절) — 에디터 저장소와 공유하는 파일
     shutil.copytree(os.path.join(REPO, "tests", "fixtures"),
                     os.path.join(work, "fixtures"))
-    scripts = os.path.join(work, "scripts")
+    # 테스트 대상은 저자의 scripts/ 전부다 (main.lua만 러너로 갈아 끼운다)
+    scripts = stage_scripts(work)
     luatests = os.path.join(scripts, "luatests")
     shutil.copytree(os.path.join(REPO, "tests", "lua"), luatests)
     shutil.move(os.path.join(luatests, "run_tests.lua"),
                 os.path.join(scripts, "main.lua"))
-    # 테스트 대상 공용 Lua 모듈 (scripts/image.lua, scripts/ui/*, scripts/rpg/*)
-    shutil.copy(os.path.join(REPO, "scripts", "image.lua"), scripts)
-    shutil.copytree(os.path.join(REPO, "scripts", "ui"), os.path.join(scripts, "ui"))
-    shutil.copytree(os.path.join(REPO, "scripts", "rpg"), os.path.join(scripts, "rpg"))
 
     env = dict(os.environ)
     env["INITIAL2D_EXIT_AFTER"] = "10"  # GameExit() 미동작 시의 안전망
@@ -380,7 +384,7 @@ def test_rpg_event_scene():
     def has(needle, name):
         check(name, needle in log, f"'{needle}' 없음 | {log[-400:]}")
 
-    has("village:70x40 events:5", "마을 맵과 이벤트 5개 로드")
+    has("village:70x40 events:6", "마을 맵과 이벤트 6개 로드")
     has("playerStart:34,21", "정의 파일의 시작 위치")
 
     # [A] 병렬 이벤트
@@ -400,6 +404,15 @@ def test_rpg_event_scene():
     has("busyAfterTalk:false", "대화가 끝나면 잠금 해제")
     has("stateFlag:true", "스크립트가 남긴 상태가 유지된다")
 
+    # [B2] 상인과 맵을 넘는 상태 (8단계)
+    has("merchantTarget:merchant", "상인을 바라보면 상인이 집힌다")
+    has("merchantLine1:길이 험하지 않은 마을이지만", "상인의 첫 대사")
+    has("merchantChoice:1", "상인이 선택지를 띄운다")
+    has("merchantLine2:자, 받게.", "받겠다고 하면 건네준다")
+    has("herbFlag:true", "받은 사실이 state에 남는다")
+    has("merchantAgain:약초는 잘 챙겨 두시게", "다시 말을 걸면 다른 대사")
+    has("merchantChoiceAgain:0", "두 번째에는 선택지가 없다")
+
     # [C] 문 밟기 → 전환 요청
     has("transfer:room,10,12", "문을 밟으면 전환 요청이 나간다")
     has("busyAfterTransfer:false", "전환 뒤 조작 잠금이 남지 않는다")
@@ -410,6 +423,9 @@ def test_rpg_event_scene():
     has("autoBusy:true", "auto 이벤트가 맵 진입 시 조작을 잠근다")
     has("autoLine:오두막 안이다. 아래 문으로 나갈 수 있다.", "auto 대사")
     has("busyAfterAuto:false", "auto가 끝나면 잠금 해제")
+    has("residentTarget:resident", "오두막 주민을 바라보면 주민이 집힌다")
+    has("residentLine:상인 아저씨한테 약초를 받으셨군요",
+        "마을에서 남긴 state가 다른 맵의 대사를 바꾼다")
     has("secondVisitLines:0", "두 번째 방문에서는 state를 보고 조용히 넘어간다")
 
 
@@ -550,6 +566,99 @@ def test_rpg_dialogue_scene():
         check("대기 화살표 프레임 덤프", False, log2[-300:])
 
 
+# 데모 화면에서 눈으로 확인한 색 (INITIAL2D_NO_RTP=1, 저장소 자산 기준)
+TITLE_SKY = (36, 40, 74)         # 타이틀 배경 위쪽 밤하늘
+DEMO_GRASS = GRASS_BASE          # 마을 잔디 (tools/generate_village_tileset.py)
+DEMO_PATH = (216, 200, 128)      # 마을 흙길
+DEMO_SHIRT = SHIRT_RED           # 플레이어(0번 캐릭터)의 빨간 옷
+
+
+def test_rpgdemo_scene():
+    """8단계 인수 테스트: 타이틀부터 집 출입까지 한 번에 (docs/plans/08-demo.md).
+
+    가짜 씬이 아니라 게임이 실제로 여는 파일(scripts/games/rpgdemo/*.lua)을 얹고
+    입력 재생기로 키를 눌러 로드맵 전체를 한 줄로 통과시킨다. 시나리오가 stdout에
+    남긴 좌표와 대사를 여기서 검사한다.
+
+    RTP는 기계마다 있고 없고가 달라 결과가 갈리므로 INITIAL2D_NO_RTP=1로 저장소
+    자산만 쓰게 고정한다 (골든도 그래야 커밋할 수 있다 — RTP는 재배포 금지).
+    """
+    print("\n[8] rpgdemo_scene — 데모 인수 시나리오 (타이틀 → 마을 → 대화 → 집)")
+    work = make_workdir("rpgdemo_scene.lua")
+    env = dict(os.environ)
+    env["INITIAL2D_EXIT_AFTER"] = "30"
+    env["INITIAL2D_NO_RTP"] = "1"
+    result = subprocess.run([GAME], cwd=work, env=env,
+                            capture_output=True, text=True, timeout=300)
+    log = result.stdout + result.stderr
+
+    check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode}")
+    check("Lua 오류 없음", "PANIC" not in log and "attempt to" not in log, log[-300:])
+
+    def has(needle, name):
+        check(name, needle in log, f"'{needle}' 없음 | {log[-500:]}")
+
+    # [A] 타이틀
+    has("titleScene:title", "타이틀 씬으로 시작")
+    has("titleMenuOpen:true", "커서 메뉴가 열린다")
+    has("titleItems:3 index:1", "항목 3개, 커서는 첫 항목")
+    has("helpCursor:2", "아래 키로 커서가 내려간다")
+    has("helpShown:true", "조작 방법을 고르면 설명 창이 뜬다")
+    has("helpClosed:true", "설명을 끝까지 넘기면 닫힌다")
+    has("menuBack:true", "설명이 닫히면 메뉴로 돌아온다")
+    has("sceneAfterStart:rpg", "시작을 고르면 맵 씬으로 넘어간다")
+
+    # [B] 마을
+    has("mapLoaded:village error:nil", "마을 맵 로드")
+    has("playerAt:34,21", "정의 파일의 시작 칸")
+
+    # [C] 촌장과 대화, 선택지 2번 분기
+    has("beforeTalkAt:32,21", "촌장 앞까지 걸어간다")
+    has("facing:up", "촌장 쪽을 바라본다 (막혀서 제자리)")
+    has("elderLine:어서 오시게. 처음 보는 얼굴이군.", "말을 걸면 대사가 뜬다")
+    has("choiceOpen:true", "대사를 넘기면 선택지")
+    has("branchLine:그럼 길은 잘 알겠군.", "2번을 고르면 그쪽 분기 대사")
+
+    # [D] 집 출입
+    has("roomAt:10,12", "문을 밟으면 오두막 안으로")
+    has("autoBusy:true", "들어서면 auto 이벤트가 조작을 잠근다")
+    has("autoLine:오두막 안이다.", "auto 대사")
+    has("backAt:13,15", "아래 문으로 나오면 마을 문 앞")
+    has("demoDone:true", "시나리오 끝까지 통과")
+    check("걷다가 멈춘 곳이 없다", "timeout" not in log,
+          [ln for ln in log.splitlines() if "timeout" in ln][:3])
+
+    # ---- 화면 두 장 (골든) -------------------------------------------------
+    shot_env = {"INITIAL2D_NO_RTP": "1", "INITIAL2D_DEMO_STOP": "title"}
+    _, r_title, s_title = run_scene("rpgdemo_scene.lua", [20], 30, shot_env)
+    check("타이틀 화면 덤프", 20 in s_title, f"rc={r_title.returncode}")
+    if 20 in s_title:
+        img = s_title[20]
+        scale = img.width / 768.0
+        sky = count_color_in(img, scale, 20, 20, 200, 120, TITLE_SKY, 30)
+        check("타이틀 배경의 밤하늘", sky > 100, f"px={sky}")
+        frame = count_color_in(img, scale, 250, 600, 570, 800, SKIN_FRAME_LIGHT, 30)
+        check("메뉴 창의 테두리", frame > 40, f"px={frame}")
+        check_golden("rpgdemo_title", img)
+
+    shot_env = {"INITIAL2D_NO_RTP": "1", "INITIAL2D_DEMO_STOP": "village"}
+    _, r_village, s_village = run_scene("rpgdemo_scene.lua", [20], 30, shot_env)
+    check("마을 첫 화면 덤프", 20 in s_village, f"rc={r_village.returncode}")
+    if 20 in s_village:
+        img = s_village[20]
+        # 맵 씬은 렌더 배율 2 — 논리 해상도가 384x448이다
+        scale = img.width / 384.0
+        grass = count_color_in(img, scale, 20, 100, 160, 180, DEMO_GRASS, 30)
+        check("마을 잔디가 그려진다", grass > 200, f"px={grass}")
+        # 세로 길은 x=34 칸, 카메라가 플레이어를 가운데 두므로 화면 가운데다
+        path = count_color_in(img, scale, 188, 60, 196, 100, DEMO_PATH, 30)
+        check("십자로의 흙길", path > 20, f"px={path}")
+        # 플레이어는 화면 한가운데 (카메라 추적)
+        hero = count_color_in(img, scale, 186, 212, 198, 224, DEMO_SHIRT, 30)
+        check("플레이어가 화면 가운데 있다", hero > 5, f"px={hero}")
+        check_golden("rpgdemo_village", img)
+
+
 def test_resolution():
     """game.json과 INITIAL2D_WINDOW의 해상도 설정, 렌더 배율을 검증한다 (1단계)."""
     print("\n[3] resolution_scene — 게임별 해상도 설정과 렌더 배율")
@@ -648,6 +757,7 @@ def main():
     test_rpg_walk_scene()
     test_rpg_event_scene()
     test_rpg_dialogue_scene()
+    test_rpgdemo_scene()
     test_resolution()
     test_rtp_charset()
 

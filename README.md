@@ -81,7 +81,7 @@ macOS 포팅을 기반으로 Android까지 확장하였습니다. 역시 AI와�
 - InitialEditor 연동: 로컬 브리지 서버를 통한 맵 저장과 스크립트 편집 — 완료 (2026-08)
 - 리소스 파이프라인: RPG Maker 2003 RTP 변환과 규격 데이터 — 완료 (2026-08)
 - Lua로 작성하는 RPG 프레임워크: 캐릭터 이동, 이벤트, 대화창 — 완료 (2026-08)
-- 위 요소를 모두 사용하는 데모 게임 제작
+- 위 요소를 모두 사용하는 데모 게임 "작은 마을" — 완료 (2026-08)
 
 # 스크립트 예제
 
@@ -464,7 +464,7 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 
 # RPG 프레임워크 (Lua)
 
-타일맵 위를 걸어다니는 캐릭터를 만드는 Lua 레이어입니다 (`scripts/rpg/`). 엔진은 장르 중립으로 두고 캐릭터, 이동, 카메라 같은 개념은 전부 스크립트에 두었습니다. 게임 메뉴의 **RPG 캐릭터**(`scripts/games/rpg_demo.lua`)가 사용 예제입니다.
+타일맵 위를 걸어다니는 캐릭터를 만드는 Lua 레이어입니다 (`scripts/rpg/`). 엔진은 장르 중립으로 두고 캐릭터, 이동, 카메라 같은 개념은 전부 스크립트에 두었습니다. 게임 메뉴의 **작은 마을**(`scripts/games/rpgdemo/`)이 사용 예제입니다.
 
 | 모듈 | 역할 |
 | :--- | :--- |
@@ -589,7 +589,7 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 | `village.json`, `room.json` | `village16.png` | 저장소에 포함, 어디서나 동작 |
 | `village_rtp.json`, `room_rtp.json` | RPG Maker 2003 RTP 칩셋 | 그림은 로컬 자산이라 저장소에 없음 |
 
-`scripts/maps/*.lua`가 `resources/rtp/ChipSet/`을 확인해 있으면 RTP 판을, 없으면 기본 판을 엽니다. NPC 그림도 같은 규칙으로 RTP `People1.png`를 씁니다. RTP 소재 자체는 재배포할 수 없으므로 저장소에 넣지 않습니다.
+어느 쪽을 열지는 `scripts/rpg/assets.lua`가 정합니다 — 칩셋과 CharSet, FaceSet, 창 스킨 모두 "RTP가 있으면 RTP, 없으면 저장소의 플레이스홀더"이며, `INITIAL2D_NO_RTP=1`로 RTP를 아예 보지 않게 할 수 있습니다. RTP 소재 자체는 재배포할 수 없으므로 저장소에 넣지 않습니다.
 
 # 대화창과 창 UI
 
@@ -631,7 +631,7 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 
 엔진의 스프라이트 배율은 가로세로 같은 값 하나뿐이라 조각을 늘일 수 없습니다. 그래서 변과 바탕은 반복해 채우고, 남는 자투리는 그 크기만큼 소스를 잘라 그립니다. 바탕은 원본을 세로로 4등분해 띠마다 해당 부분을 반복하므로, 그라데이션이 32픽셀마다 끊겨 보이지 않습니다.
 
-스킨과 얼굴 그림은 RPG Maker 2003 RTP가 있으면 그쪽(`resources/rtp/System/System.png`, `resources/rtp/FaceSet/People1.png`)을, 없으면 저장소에 커밋된 플레이스홀더를 씁니다. 플레이스홀더는 다음 명령으로 다시 만듭니다.
+스킨과 얼굴 그림도 `scripts/rpg/assets.lua`가 고릅니다. RTP가 있으면 그쪽(`resources/rtp/System/System.png`, `resources/rtp/FaceSet/People1.png`)을, 없으면 저장소에 커밋된 플레이스홀더를 씁니다. 플레이스홀더는 다음 명령으로 다시 만듭니다.
 
 ```bash
 # 대화창 스킨 (resources/ui/window.png, 160x80 — System과 같은 배치)
@@ -640,8 +640,81 @@ python3 tools/generate_windowskin.py
 # 얼굴 그림 (resources/faces/placeholder.png, 192x192 — CharSet과 같은 팔레트)
 python3 tools/generate_faceset.py
 
-# UI 효과음 (resources/audio/ui_cursor.wav, ui_decision.wav, ui_text.wav)과 그 밖의 UI 이미지
+# UI 효과음(커서, 결정, 글자, 문)과 그 밖의 UI 이미지
 python3 tools/generate_ui_assets.py
+```
+
+# 데모 게임: 작은 마을
+
+앞의 요소를 전부 사용하는 짧은 데모입니다. 미니 게임 목록에서 **작은 마을**을 고르면 타이틀이 뜨고, 시작하면 마을을 걸어다니며 촌장과 아이와 상인에게 말을 걸고, 선택지로 대사가 갈리고, 집에 들어갔다 나올 수 있습니다. 같은 빌드에서 플래피 버드도 그대로 돌아갑니다 — "한 엔진에서 두 장르"가 이 데모의 요점입니다.
+
+```bash
+# 데모를 바로 열기 (타이틀부터)
+INITIAL2D_SCENE=title ./build/Initial2D
+
+# 맵 씬만 바로 열기. 시작 맵과 캐릭터 시트, 렌더 배율도 바꿀 수 있습니다
+INITIAL2D_SCENE=rpg INITIAL2D_MAP=room INITIAL2D_RPG_SCALE=3 ./build/Initial2D
+```
+
+| 조작 | 내용 |
+| :--- | :--- |
+| 방향키 / 가상 D-패드 | 걷기, 커서 이동 (정지 중 짧게 누르면 방향만 전환) |
+| Z, Enter, Space / 패드 밖 화면 탭 | 말 걸기, 대화 넘기기, 선택지 결정 |
+| X | 선택지 취소 (취소 항목이 정해진 선택지에서만) |
+| ESC / 안드로이드 뒤로가기 | 맵에서는 타이틀로, 타이틀에서는 목록으로 |
+
+타이틀 화면에서는 항목을 직접 눌러도 선택됩니다 (터치 기기용, `Choice:indexAt`).
+
+구성은 다음과 같습니다. 씬은 데모 폴더에, 맵의 이벤트 정의는 맵 이름과 짝이 되는 파일에 둡니다.
+
+| 파일 | 역할 |
+| :--- | :--- |
+| `scripts/games/rpgdemo/title.lua` | 타이틀 씬. 배경 한 장과 커서 메뉴(시작, 조작 방법, 나가기) |
+| `scripts/games/rpgdemo/game.lua` | 맵 씬. 맵 적재, 페이드 전환, 대화창과 실행기 연결 |
+| `scripts/maps/village.lua`, `room.lua` | 이벤트 정의와 대사 (맵 파일은 `resources/maps/`) |
+| `scripts/rpg/assets.lua` | 그림 고르기 — RTP가 있으면 RTP, 없으면 저장소의 플레이스홀더 |
+| `scripts/bgm.lua` | 지금 걸린 곡을 기억해, 같은 곡이면 다시 틀지 않는 배경음 층 |
+
+## 음악과 효과음
+
+BGM은 씬과 맵이 각자 정합니다. 맵 정의 파일에 `bgm`을 적으면 그 맵에 들어설 때 곡이 바뀌고, 같은 곡이면 이어서 재생됩니다 (맵을 오갈 때 음악이 끊기지 않습니다).
+
+```lua
+	-- scripts/maps/village.lua
+	return {
+		map = Assets.mapPath("village", "Exterior"),
+		bgm = { file = "./resources/audio/town.ogg", volume = 96 },   -- 곡마다 음압이 달라 볼륨을 함께 줍니다
+		...
+	}
+```
+
+데모에 들어 있는 곡은 저자의 자작곡 `resources/audio/bless.ogg` 한 곡입니다 (분석은 [docs/music/bless-analysis.md](./docs/music/bless-analysis.md)). 다른 곡을 넣으려면 파일을 `resources/audio/`에 두고 위 `bgm.file`만 바꾸면 됩니다. RTP의 MIDI에 의존하지 않습니다.
+
+문을 여닫는 효과음과 UI 효과음은 코드로 합성해 커밋했습니다.
+
+```bash
+# 타이틀 배경 (resources/titles/village_title.png, 768x896 — 한글 TTF 필요)
+python3 tools/generate_title.py
+
+# UI 효과음(커서, 결정, 글자, 문)과 UI 이미지
+python3 tools/generate_ui_assets.py
+```
+
+## RTP 없이 보기
+
+데모는 RPG Maker 2003 RTP가 로컬에 있으면 그쪽 그림을, 없으면 저장소에 커밋된 플레이스홀더를 자동으로 씁니다. `INITIAL2D_NO_RTP=1`을 주면 RTP가 있어도 보지 않습니다 — 검수가 어느 기계에서나 같은 화면을 내야 하기 때문이고(골든 스크린샷), "RTP가 없는 사람에게 어떻게 보이는가"를 확인할 때도 씁니다.
+
+```bash
+INITIAL2D_NO_RTP=1 INITIAL2D_SCENE=title ./build/Initial2D
+```
+
+## 인수 테스트
+
+데모 전체가 로드맵의 인수 테스트입니다. `tests/engine/scenes/rpgdemo_scene.lua`가 실제 씬 파일을 그대로 얹고, 입력 재생기로 키를 눌러 **타이틀 → 시작 → 마을 → 촌장과 대화 → 선택지 2번 → 집 출입 → 복귀**를 한 번에 통과시킨 뒤 좌표와 대사를 stdout으로 검사합니다 (`tests/run_all.sh`에 포함).
+
+```bash
+# 시나리오 도중의 화면을 눈으로 확인 (title, village)
+INITIAL2D_DEMO_STOP=village INITIAL2D_NO_RTP=1   INITIAL2D_SCREENSHOT=/tmp/demo_%04ld.bmp INITIAL2D_SCREENSHOT_FRAME=20   INITIAL2D_EXIT_AFTER=30 ./build/Initial2D
 ```
 
 # 게임 설정
@@ -844,8 +917,9 @@ SDL_VIDEODRIVER=dummy INITIAL2D_SCENE=tilemap INITIAL2D_MAP=./resources/maps/my_
   INITIAL2D_SCREENSHOT=/tmp/shot_%04ld.bmp INITIAL2D_SCREENSHOT_FRAME=40 \
   INITIAL2D_EXIT_AFTER=60 ./build/Initial2D
 
-# 같은 맵을 RPG 데모로 열어 캐릭터를 걸려 봅니다 (INITIAL2D_SCENE=rpg)
-INITIAL2D_SCENE=rpg INITIAL2D_MAP=./resources/maps/my_map.json ./build/Initial2D
+# 데모의 맵 씬으로 열려면 맵과 짝이 되는 이벤트 정의(scripts/maps/<이름>.lua)가
+# 필요합니다. INITIAL2D_MAP에는 파일 경로가 아니라 그 정의 이름을 줍니다.
+INITIAL2D_SCENE=rpg INITIAL2D_MAP=village ./build/Initial2D
 ```
 
 # RTP 리소스 변환 (RPG Maker 2003)
@@ -920,6 +994,8 @@ tests/run_all.sh --update-golden
 
 - C++ 단위 테스트는 `tests/unit/`에 파일을 만들고 `CMakeLists.txt`의 `engine_unit_tests` 목록에 추가합니다.
 - Lua 단위 테스트는 `tests/lua/cases/`에 파일을 만들고 `tests/lua/manifest.lua` 목록에 추가합니다. 엔진에 내장된 Lua VM에서 실행됩니다.
+- 화면을 보는 테스트는 `tests/engine/scenes/`에 씬을 만들고 `tests/run_engine_tests.py`에 검사를 추가합니다. 씬 테스트는 저자의 `scripts/`를 통째로 얹고 `main.lua`만 갈아 끼우므로, 게임이 실제로 여는 파일을 그대로 검사합니다.
+- 사람의 조작이 필요한 시나리오는 `tests/lua/input_replay.lua`로 재생합니다. 프레임 단위로 키를 예약하거나(`{ at = 10, press = "Z" }`), 화면 상태를 보고 그때그때 누를 수도 있습니다(`replay:tap("Z")`, `replay:press("LEFT")`). 고정 타임스텝이라 같은 시나리오는 항상 같은 결과를 냅니다.
 
 푸시할 때마다 GitHub Actions(macOS 러너)가 같은 검수를 헤드리스로 실행합니다.
 
