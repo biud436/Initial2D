@@ -531,22 +531,62 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 				x = 32, y = 20,
 				charset = { file = "./resources/charsets/placeholder.png", index = 2 },
 				trigger = "action",
-				script = function(self, ctx)
-					ctx.message("어서 오시게. 처음 보는 얼굴이군.")
-					local pick = ctx.choice({ "네, 처음입니다", "아니요" })
-					if pick == 1 then
-						ctx.message("왼쪽 마당의 문으로 들어가면 오두막이라네.")
-						ctx.state.toldAboutHut = true      -- 다른 이벤트도 읽습니다
-					end
-				end,
+				commands = {
+					{ code = "message", text = "어서 오시게. 처음 보는 얼굴이군." },
+					{ code = "choice", options = { "네, 처음입니다", "아니요" }, branches = {
+						{ { code = "message", text = "왼쪽 마당의 문으로 들어가면 오두막이라네." },
+						  -- 다른 이벤트도 읽는 값입니다 (ctx.state)
+						  { code = "setFlag", key = "toldAboutHut" } },
+						{},
+					} },
+				},
 			},
 			{
 				id = "gate", x = 15, y = 15, trigger = "touch",
-				script = function(self, ctx) ctx.transfer("room", 10, 11) end,
+				commands = { { code = "transfer", map = "room", x = 10, y = 11 } },
 			},
 		},
 	}
 ```
+
+이벤트의 본문은 **커맨드 목록**입니다. 순수 데이터라 맵 에디터가 만들고 읽을 수 있고, JSON으로 그대로 옮길 수 있습니다. 실행은 `scripts/rpg/commands.lua`가 맡아 6단계 실행기가 아는 함수 하나로 바꿔 줍니다.
+
+```lua
+	commands = {
+		{ code = "message", name = "선장", face = { file = FACES, index = 4 },
+		  text = "저녁 물때에 배가 다시 뜨네." },
+		{ code = "choice", options = { "지금 떠난다", "더 둘러본다" }, cancel = 2,
+		  branches = {
+			{ { code = "setFlag", key = "left" },
+			  { code = "scene", name = "title", fade = 30 } },
+			{ { code = "message", text = "해가 지기 전에는 오게." } },
+		  } },
+	}
+```
+
+| code | 인자 | 하는 일 |
+| :--- | :--- | :--- |
+| `message` | `text`, `name`, `face` | 대화창 (닫힐 때까지 기다립니다) |
+| `choice` | `options`, `cancel`, `branches` | 선택지. 고른 번호의 가지를 이어서 실행 |
+| `wait` | `ms` | 멈춤 |
+| `transfer` | `map`, `x`, `y`, `dir` | 맵 이동 (이 뒤의 커맨드는 실행되지 않습니다) |
+| `moveRoute` | `target`, `route`, `wait`, `loop` | 이동 루트 |
+| `turn` | `target`, `dir` | 방향만 |
+| `setFlag` | `key`, `value` | `ctx.state[key] = value` (값을 생략하면 참) |
+| `setVar` | `key`, `op`, `value` | `op`는 `=`, `+`, `-` |
+| `if` | `cond`, `thenDo`, `elseDo` | 조건 분기 (`then`과 `else`는 Lua 예약어라 `thenDo`, `elseDo`) |
+| `playSe` | `file`, `id` | 효과음 |
+| `playBgm` | `file`, `volume` | 배경음 (같은 곡이면 이어서) |
+| `showLocation` | `text`, `seconds` | 화면 위쪽에 장소 이름 |
+| `scene` | `name`, `fade` | 다른 씬으로 |
+| `script` | `name`, `args` 또는 `run` | Lua 함수 (커맨드로 적기 어려운 것의 탈출구) |
+| `comment` | `text` | 아무것도 하지 않습니다 (에디터 가독성) |
+
+조건은 `{ flag = "gotHerb" }`, `{ flag = "booked", equals = false }`, `{ var = "silver", op = ">=", value = 2 }` 세 형태입니다.
+
+커맨드로 적기 어려운 이벤트는 예전처럼 `script = function(self, ctx) ... end`으로 적으면 됩니다. 데이터 안에서 부르려면 맵 정의 파일의 `scripts` 표에 이름을 등록하고 `{ code = "script", name = "이름", args = {...} }`으로 부릅니다 — 이름으로 부르므로 JSON을 오가도 왕복이 깨지지 않습니다.
+
+잘못된 커맨드는 **맵을 열 때** 어느 자리인지와 함께 걸립니다 (`[4].branches[1][1]: 알 수 없는 code`). 실행 도중에 조용히 실패하지 않습니다.
 
 트리거는 네 가지입니다.
 
@@ -570,6 +610,10 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 	ctx.transfer("room", 10, 11)               -- 맵 이동 (이 줄 다음은 실행되지 않음)
 	ctx.moveRoute("patrol", { "right", "wait:400", "up" })  -- 루트가 끝날 때까지
 	ctx.turn("player", "left")
+	ctx.playSe("./resources/audio/door.wav")   -- 효과음
+	ctx.playBgm("./resources/audio/inn.ogg", { volume = 80 })
+	ctx.showLocation("항구 마을", 2)            -- 화면 위쪽에 장소 이름
+	ctx.scene("title", { fade = 30 })          -- 다른 씬으로 (이 줄 다음은 실행되지 않음)
 	ctx.state.flag = true                      -- 이벤트끼리 공유하는 저장용 테이블
 ```
 
