@@ -1,44 +1,26 @@
--- 오두막 안의 이벤트 정의 (6단계)
+-- 오두막 안의 이벤트 정의 (6단계, 8단계에서 확장)
 --
 -- 맵에 들어서면 auto 이벤트가 한 번 돌고(그동안 조작이 잠긴다), 아래 출입구를
--- 밟으면 마을로 돌아간다.
+-- 밟으면 마을로 돌아간다. 그림 고르기는 scripts/rpg/assets.lua 에 맡긴다.
 
+local Assets = require("scripts/rpg/assets")
 
--- RTP 칩셋이 로컬에 있으면 그 판을 쓴다. RTP 그림은 재배포할 수 없어 저장소에
--- 없으므로, 없으면 직접 그린 타일셋 판으로 돌아간다. 두 판은 지오메트리가 같아
--- 아래 이벤트 좌표를 그대로 쓴다 (tools/generate_demo_maps.py).
-local function exists(path)
-	local f = io.open(path, "rb")
-	if f == nil then return false end
-	f:close()
-	return true
-end
+local CHARSET = Assets.npcCharset()
+local FACESET = Assets.faceset()
 
--- NPC 그림도 마찬가지로 로컬에 RTP가 있으면 그쪽을 쓴다.
-local CHARSET = "./resources/charsets/placeholder.png"
-for _, candidate in ipairs({ "./resources/rtp/CharSet/People1.png" }) do
-	if exists(candidate) then CHARSET = candidate end
-end
-
--- 대화창 얼굴 그림 (7단계, tools/generate_faceset.py)
-local FACESET = "./resources/faces/placeholder.png"
-for _, candidate in ipairs({ "./resources/rtp/FaceSet/People1.png" }) do
-	if exists(candidate) then FACESET = candidate end
-end
-
-local function pickMap(base)
-	if exists("./resources/rtp/ChipSet/Interior.png") then
-		return "./resources/maps/" .. base .. "_rtp.json"
-	end
-	return "./resources/maps/" .. base .. ".json"
-end
+local RESIDENT_FACE = { file = FACESET, index = 3 }
+-- 플레이스홀더 FaceSet은 8..15가 웃는 얼굴이다
+local RESIDENT_SMILE = { file = FACESET, index = 11 }
 
 return {
-	map = pickMap("room"),
+	map = Assets.mapPath("room", "Interior"),
 	start = { x = 10, y = 12, dir = "up" },
 
-	-- 자동 시연: 한 칸 아래 출입구를 밟아 마을로 돌아간다 (전환과 페이드 확인)
-	-- 자동 시연: 주민에게 말을 걸어 보고 아래 문으로 나간다
+	-- 실내는 같은 곡을 조금 작게 (곡마다 음압이 달라 볼륨을 곡과 함께 준다)
+	bgm = { file = "./resources/audio/bless.ogg", volume = 72 },
+
+	-- 자동 시연: 주민에게 말을 걸어 보고 아래 문을 밟아 마을로 돌아간다
+	-- (맵 전환과 페이드까지 한 바퀴 확인한다)
 	autoRoute = { "left", "left", "up", "up", "up", "up", "talk", "talk",
 		"down", "down", "down", "right", "right", "down" },
 
@@ -48,13 +30,13 @@ return {
 			id = "enter_note",
 			x = 10, y = 12,
 			trigger = "auto",
-			script = function(self, ctx)
-				if ctx.state.visitedHut then
-					return   -- 두 번째부터는 조용히 넘어간다
-				end
-				ctx.state.visitedHut = true
-				ctx.message("오두막 안이다. 아래 문으로 나갈 수 있다.")
-			end,
+			-- 두 번째 방문부터는 조용히 넘어간다 (thenDo가 없으면 아무것도 하지 않는다)
+			commands = {
+				{ code = "if", cond = { flag = "visitedHut" }, elseDo = {
+					{ code = "setFlag", key = "visitedHut" },
+					{ code = "message", text = "오두막 안이다. 아래 문으로 나갈 수 있다." },
+				} },
+			},
 		},
 
 		{
@@ -62,14 +44,21 @@ return {
 			x = 7, y = 8, dir = "down",
 			charset = { file = CHARSET, index = 3 },
 			trigger = "action",
-			script = function(self, ctx)
-				local resident = { name = "주민", face = { file = FACESET, index = 3 } }
-				ctx.message("여긴 조용해서 좋아요.", resident)
-				ctx.moveRoute(self.id, { "turn:left", "wait:300", "turn:down" })
-				-- 웃는 표정으로 바꿔 본다 (플레이스홀더 FaceSet은 8..15가 웃는 얼굴)
-				ctx.message("...가끔 심심하지만요.",
-					{ name = "주민", face = { file = FACESET, index = 11 } })
-			end,
+			commands = {
+				{ code = "if", cond = { flag = "gotHerb" },
+				  thenDo = {
+					{ code = "message", name = "주민", face = RESIDENT_FACE,
+					  text = "상인 아저씨한테 약초를 받으셨군요. 인심이 좋은 분이에요." },
+				  },
+				  elseDo = {
+					{ code = "message", name = "주민", face = RESIDENT_FACE,
+					  text = "여긴 조용해서 좋아요." },
+				  } },
+				{ code = "moveRoute", target = "resident",
+				  route = { "turn:left", "wait:300", "turn:down" } },
+				{ code = "message", name = "주민", face = RESIDENT_SMILE,
+				  text = "...가끔 심심하지만요." },
+			},
 		},
 
 		-- 아래 출입구: 밟으면 마을로 돌아간다 (문 앞 칸에 세운다)
@@ -77,9 +66,7 @@ return {
 			id = "exit_to_village",
 			x = 10, y = 13,
 			trigger = "touch",
-			script = function(self, ctx)
-				ctx.transfer("village", 13, 15)
-			end,
+			commands = { { code = "transfer", map = "village", x = 13, y = 15 } },
 		},
 	},
 }

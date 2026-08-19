@@ -158,6 +158,23 @@ function Choice:update(input)
 	end
 end
 
+--- 화면 좌표 아래에 있는 항목 번호 (없으면 nil).
+-- 터치 플랫폼에서 항목을 직접 누를 수 있게 하는 값이다. 커서 이동과 결정을
+-- 어떻게 엮을지는 부르는 쪽이 정한다 (한 번 눌러 바로 결정할 수도, 커서만
+-- 옮길 수도 있다).
+function Choice:indexAt(x, y)
+	local win = self.window
+	if self.options == nil or win == nil or not win:isOpen() then return nil end
+
+	local cx, cy, cw = win:contentRect()
+	if x < cx or x >= cx + cw then return nil end
+
+	local first, last = self:visibleRange()
+	local row = math.floor((y - cy) / self.lineHeight)
+	if row < 0 or row > last - first then return nil end
+	return first + row
+end
+
 --- 지금 화면에 보이는 항목 범위 (테스트가 스크롤을 확인한다)
 function Choice:visibleRange()
 	if self.options == nil then return 0, -1 end

@@ -114,6 +114,32 @@ function Replay:tick()
     end
 end
 
+--- 다음 tick에 적용될 이벤트를 지금 예약한다.
+-- 시나리오를 미리 다 적어 두는 대신, 화면 상태를 보고 다음 입력을 정하는
+-- 대화형 시나리오(8단계의 데모 인수 테스트)에서 쓴다.
+function Replay:schedule(ev, delay)
+    local at = self.frame + (delay or 1)
+    self.events[at] = self.events[at] or {}
+    table.insert(self.events[at], ev)
+    return self
+end
+
+--- 다음 tick부터 키를 누른 채로 둔다 (뗄 때까지 계속 눌려 있다)
+function Replay:press(key)
+    return self:schedule{ press = key }
+end
+
+--- 다음 tick에 키를 뗀다
+function Replay:release(key)
+    return self:schedule{ release = key }
+end
+
+--- 한 tick만 눌렀다 뗀다 (결정키처럼 엣지로 쓰는 입력)
+function Replay:tap(key)
+    self:schedule({ press = key }, 1)
+    return self:schedule({ release = key }, 2)
+end
+
 --- 남은 이벤트가 없으면 true (시나리오 종료 판정용)
 function Replay:finished()
     for at in pairs(self.events) do

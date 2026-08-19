@@ -86,8 +86,8 @@ function M.makeCtx(interp)
 
 	--- 다른 맵으로 이동. 이 호출 이후의 스크립트는 실행되지 않는다
 	--- (맵이 통째로 바뀌므로 이벤트도 사라진다).
-	function ctx.transfer(mapId, x, y)
-		return coroutine.yield{ transfer = { map = mapId, x = x, y = y } }
+	function ctx.transfer(mapId, x, y, dir)
+		return coroutine.yield{ transfer = { map = mapId, x = x, y = y, dir = dir } }
 	end
 
 	--- 이동 루트. who는 이벤트 id 또는 "player", route는 character.lua의 명령 배열.
@@ -103,6 +103,29 @@ function M.makeCtx(interp)
 	--- 방향만 바꾼다.
 	function ctx.turn(who, dir)
 		return coroutine.yield{ turn = { who = who, dir = dir } }
+	end
+
+	-- 아래 넷은 씬에 위임한다 (9단계). 프레임워크는 오디오 장치도 화면 구성도
+	-- 모르는 채로 두고, 무엇을 어떻게 낼지는 호스트가 정한다 — transfer와 같은 방식이다.
+
+	--- 효과음 한 번. 기다리지 않는다.
+	function ctx.playSe(file, id)
+		return coroutine.yield{ playSe = { file = file, id = id } }
+	end
+
+	--- 배경음을 건다. 같은 곡이면 호스트 쪽에서 이어서 재생한다.
+	function ctx.playBgm(file, opts)
+		return coroutine.yield{ playBgm = { file = file, opts = opts } }
+	end
+
+	--- 화면에 장소 이름을 잠깐 띄운다.
+	function ctx.showLocation(text, seconds)
+		return coroutine.yield{ showLocation = { text = text, seconds = seconds } }
+	end
+
+	--- 다른 씬으로 나간다 (에필로그 뒤 타이틀 등). 이 호출 이후는 실행되지 않는다.
+	function ctx.scene(name, opts)
+		return coroutine.yield{ scene = { name = name, opts = opts } }
 	end
 
 	return ctx
@@ -184,7 +207,7 @@ function Interp:beginWait(request)
 	if request.transfer ~= nil then
 		local t = request.transfer
 		if self.host.transfer ~= nil then
-			self.host.transfer(t.map, t.x, t.y)
+			self.host.transfer(t.map, t.x, t.y, t.dir)
 		end
 		-- 맵이 통째로 바뀌었으므로 이 스크립트는 여기서 끝낸다. 씬이 clear를
 		-- 부르지 않더라도 조작 잠금이 남지 않게 스스로 죽는다.
@@ -208,6 +231,35 @@ function Interp:beginWait(request)
 		local who = self:resolve(request.turn.who)
 		if who ~= nil then who:turn(request.turn.dir) end
 		return { kind = "frames", frames = 0 }
+	end
+
+	if request.playSe ~= nil then
+		if self.host.playSe ~= nil then
+			self.host.playSe(request.playSe.file, request.playSe.id)
+		end
+		return { kind = "frames", frames = 0 }
+	end
+
+	if request.playBgm ~= nil then
+		if self.host.playBgm ~= nil then
+			self.host.playBgm(request.playBgm.file, request.playBgm.opts)
+		end
+		return { kind = "frames", frames = 0 }
+	end
+
+	if request.showLocation ~= nil then
+		if self.host.showLocation ~= nil then
+			self.host.showLocation(request.showLocation.text, request.showLocation.seconds)
+		end
+		return { kind = "frames", frames = 0 }
+	end
+
+	if request.scene ~= nil then
+		if self.host.scene ~= nil then
+			self.host.scene(request.scene.name, request.scene.opts)
+		end
+		-- 씬이 통째로 바뀐다. transfer와 같은 이유로 여기서 스크립트를 끝낸다.
+		return { kind = "kill" }
 	end
 
 	-- 모르는 요청은 한 프레임 쉬고 넘어간다 (스크립트가 멈춰 서는 것보다 낫다)

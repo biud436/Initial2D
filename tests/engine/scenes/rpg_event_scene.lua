@@ -50,6 +50,7 @@ local function loadMap(name, sx, sy)
 		local ev = Event.new{
 			id = edef.id, x = edef.x, y = edef.y, dir = edef.dir,
 			trigger = edef.trigger, script = edef.script, charset = edef.charset,
+			commands = edef.commands, scripts = def.scripts,
 			through = edef.through, solid = edef.solid,
 		}
 		if edef.charset ~= nil then
@@ -120,6 +121,27 @@ function Initialize()
 	print("busyAfterTalk:" .. tostring(interp:isBusy()))
 	print("stateFlag:" .. tostring(interp.state.toldAboutHut))
 
+	-- [B2] 상인에게 물건을 받으면 그 사실이 ctx.state 에 남는다 (8단계)
+	playerChar:place(36, 20, "right")   -- 상인(37,20) 왼쪽에서 오른쪽을 본다
+	print("merchantTarget:" .. tostring(events:actionTarget() and events:actionTarget().id))
+	events:confirm()
+	print("merchantLine1:" .. tostring(port.lines[#port.lines]))
+	local choicesBefore = port.choices
+	port.busy = false; pump(1)
+	print("merchantChoice:" .. tostring(port.choices - choicesBefore))
+	port.value = 1                       -- "고맙게 받겠습니다"
+	port.busy = false; pump(1)
+	print("merchantLine2:" .. tostring(port.lines[#port.lines]))
+	port.busy = false; pump(2)
+	print("herbFlag:" .. tostring(interp.state.gotHerb))
+
+	-- 같은 상인에게 다시 말을 걸면 선택지 없이 다른 대사가 나온다
+	choicesBefore = port.choices
+	events:confirm()
+	print("merchantAgain:" .. tostring(port.lines[#port.lines]))
+	port.busy = false; pump(2)
+	print("merchantChoiceAgain:" .. tostring(port.choices - choicesBefore))
+
 	-- [C] 집 문을 밟으면 전환 요청이 나간다
 	playerChar:place(13, 15, "up")
 	pump(1)
@@ -138,6 +160,14 @@ function Initialize()
 	print("autoLine:" .. tostring(port.lines[#port.lines]))
 	port.busy = false; pump(2)
 	print("busyAfterAuto:" .. tostring(interp:isBusy()))
+
+	-- 방 안 주민의 대사가 마을에서 남긴 상태를 읽는다 (맵을 넘는 state, 8단계)
+	playerChar:place(7, 9, "up")     -- 주민(7,8) 아래에서 위를 본다
+	print("residentTarget:" .. tostring(events:actionTarget() and events:actionTarget().id))
+	events:confirm()
+	print("residentLine:" .. tostring(port.lines[#port.lines]))
+	port.busy = false; pump(2)
+	port.busy = false; pump(2)
 
 	-- 두 번째 방문에서는 auto가 조용히 넘어간다 (state 유지 확인)
 	local before = #port.lines

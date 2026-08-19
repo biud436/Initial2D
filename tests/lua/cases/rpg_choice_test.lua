@@ -132,6 +132,29 @@ function M.run(t)
 	noisy:update{ confirm = true }
 	t.check_eq(beeps.cursor, 1, "커서 이동 효과음")
 	t.check_eq(beeps.decision, 1, "결정 효과음")
+
+	-- ---- [9] 좌표로 항목 집기 (터치 조작, 8단계) ---------------------------
+	local touch = newChoice{ lineHeight = 20, maxVisible = 2 }
+	touch:show({ "가", "나", "다" }, { x = 40, y = 60 })
+	touch:update(nil)
+	local cx, cy, cw = touch.window:contentRect()
+
+	t.check_eq(touch:indexAt(cx + 2, cy + 2), 1, "첫 줄 안을 누르면 1번")
+	t.check_eq(touch:indexAt(cx + 2, cy + 25), 2, "둘째 줄은 2번")
+	t.check_eq(touch:indexAt(cx - 5, cy + 2), nil, "창 왼쪽 밖은 없음")
+	t.check_eq(touch:indexAt(cx + cw + 5, cy + 2), nil, "창 오른쪽 밖은 없음")
+	t.check_eq(touch:indexAt(cx + 2, cy - 5), nil, "내용 위쪽 밖은 없음")
+	t.check_eq(touch:indexAt(cx + 2, cy + 45), nil, "보이지 않는 셋째 줄은 없음")
+
+	touch:update{ down = true }   -- 커서를 2번으로 옮겨 스크롤 없이 확인
+	touch:update{ down = true }   -- 3번 → 한 칸 스크롤 (보이는 범위 2..3)
+	local first = touch:visibleRange()
+	t.check_eq(first, 2, "스크롤된 상태")
+	t.check_eq(touch:indexAt(cx + 2, cy + 2), 2, "스크롤 뒤 첫 줄은 2번")
+	t.check_eq(touch:indexAt(cx + 2, cy + 25), 3, "스크롤 뒤 둘째 줄은 3번")
+
+	touch:update{ confirm = true }
+	t.check_eq(touch:indexAt(cx + 2, cy + 2), nil, "선택이 끝나면 집히지 않는다")
 end
 
 return M

@@ -59,6 +59,34 @@ function M.run(t)
     t.check_eq(r.api.GetMouseZ(), -1, "프레임 7: 휠 값")
     t.check(r:finished(), "프레임 7: 시나리오 종료 판정")
 
+    -- ---- 대화형 예약 (8단계: 화면을 보고 다음 입력을 정하는 시나리오) ------
+    local live = require("scripts/luatests/input_replay").new({})
+    local Z = 90
+
+    live:tap("Z")
+    live:tick()
+    t.check(live.api.IsKeyDown(Z), "tap: 다음 tick에 눌린다")
+    live:tick()
+    t.check(live.api.IsKeyUp(Z), "tap: 그 다음 tick에 떼어진다")
+    live:tick()
+    t.check(not live.api.IsKeyDown(Z) and not live.api.IsKeyPress(Z), "tap: 한 tick뿐")
+
+    live:press("LEFT")
+    live:tick()
+    t.check(live.api.IsKeyDown(37), "press: 눌리기 시작")
+    live:tick()
+    live:tick()
+    t.check(live.api.IsKeyPress(37), "press: 뗄 때까지 눌린 채로 남는다")
+    live:release("LEFT")
+    live:tick()
+    t.check(live.api.IsKeyUp(37), "release: 떼어진다")
+
+    live:schedule({ press = "SPACE" }, 3)
+    live:tick(); live:tick()
+    t.check(not live.api.IsKeyDown(32), "schedule: 아직 아니다")
+    live:tick()
+    t.check(live.api.IsKeyDown(32), "schedule: 지정한 tick 뒤에 들어온다")
+
     -- install/restore가 전역 Input을 교체하고 복구하는지
     local original = _G.Input
     r:install()

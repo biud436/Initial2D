@@ -7,15 +7,19 @@
 -- 씬 전환: 씬 안에서 SwitchScene("이름") 호출 — 실제 전환은 다음 update 직전에 수행
 -- INITIAL2D_AUTOPLAY 환경 변수를 설정하면 자동 시연 모드로 동작한다 (테스트/CI용).
 
+local Bgm = require("scripts/bgm")
+
 require("scripts/scenes/menu")
 require("scripts/games/flappy")
 require("scripts/games/tilemap_demo")
-require("scripts/games/rpg_demo")
+require("scripts/games/rpgdemo/title")
+require("scripts/games/rpgdemo/game")
 
 local scenes = {
 	menu = MenuScene,
 	flappy = FlappyScene,
 	tilemap = TilemapDemoScene,
+	title = RpgDemoTitleScene,
 	rpg = RpgDemoScene,
 }
 
@@ -33,10 +37,11 @@ function Initialize()
 	AUTOPLAY = (os.getenv ~= nil) and (os.getenv("INITIAL2D_AUTOPLAY") ~= nil)
 	math.randomseed(os.time())
 
-	-- 폰트·BGM은 씬 공용 자원이라 허브에서 한 번만 준비한다
+	-- 폰트는 씬 공용 자원이라 허브에서 한 번만 준비한다. BGM은 씬마다 다를 수
+	-- 있으므로 scripts/bgm.lua 가 "지금 걸린 곡"을 들고 있다 (곡이 같으면 다시
+	-- 틀지 않아 씬을 오갈 때 음악이 끊기지 않는다).
 	FontReady = PreparaFont("./resources/fonts/hangul.fnt")
-	Audio.PlayMusic("./resources/audio/bless.ogg", "bgm", true)
-	Audio.SetVolume(96)
+	Bgm.play("./resources/audio/bless.ogg", { volume = 96 })
 
 	-- 시작 씬은 메뉴. INITIAL2D_SCENE 으로 특정 씬을 바로 열 수 있다 (검증과 스크린샷용)
 	local startScene = (os.getenv ~= nil) and os.getenv("INITIAL2D_SCENE") or nil
@@ -61,5 +66,5 @@ end
 
 function Destroy()
 	current.destroy()
-	Audio.ReleaseMusic("bgm")
+	Bgm.stop()
 end

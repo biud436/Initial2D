@@ -3,8 +3,12 @@
 -- 버튼을 터치/클릭하면 해당 미니 게임으로 전환한다 (SwitchScene 전역은 main.lua 제공).
 -- 버튼은 resources/ui/button.png 패널 + 흰색 비트맵 폰트 라벨로 구성되며,
 -- 누르는 동안 살짝 가라앉고 어두워지는 피드백을 준다.
+--
+-- 미니 게임이 저마다 다른 곡을 걸 수 있으므로, 목록으로 돌아오면 허브의 곡을
+-- 되찾는다 (같은 곡이면 scripts/bgm.lua 가 그냥 넘어간다).
 
 local Image = require("scripts/image")
+local Bgm = require("scripts/bgm")
 
 MenuScene = {}
 
@@ -43,10 +47,15 @@ local function makeButton(label, scene, cy)
 	}
 end
 
+local HUB_BGM = "./resources/audio/bless.ogg"
+local HUB_BGM_VOLUME = 96
+
 function MenuScene.init()
 	W = WindowWidth()
 	H = WindowHeight()
 	t = 0
+
+	Bgm.play(HUB_BGM, { volume = HUB_BGM_VOLUME })
 
 	bg = Image("./resources/background_768x896.png", 0, 0, W, H, 1, "Background")
 
@@ -61,7 +70,7 @@ function MenuScene.init()
 	buttons = {
 		makeButton("플래피 버드", "flappy", H / 2 - 130),
 		makeButton("타일맵 데모", "tilemap", H / 2 - 10),
-		makeButton("RPG 캐릭터", "rpg", H / 2 + 110),
+		makeButton("떠나기 전에", "title", H / 2 + 110),
 	}
 end
 

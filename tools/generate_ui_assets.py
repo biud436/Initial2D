@@ -10,6 +10,7 @@ Requires: Pillow (pip install pillow)
 
 import math
 import os
+import random
 import struct
 import wave
 
@@ -115,6 +116,32 @@ def make_dpad(path, size=160):
     print("generated:", os.path.relpath(path, REPO))
 
 
+def make_action_button(path, size=96):
+    """터치용 동그란 버튼 두 프레임 (기본, 눌림).
+
+    9단계에서 "패드 밖 아무 데나 탭 = 결정"을 그만두고 결정과 취소 버튼을
+    화면에 두기로 했다 (기획서 6.3절). 지도를 가리지 않게 반투명이며, 글자는
+    런타임에 비트맵 폰트로 올린다 — 버튼 하나로 여러 이름을 쓸 수 있다.
+    """
+    img = Image.new("RGBA", (size * 2, size), (0, 0, 0, 0))
+    for frame in (0, 1):
+        pressed = frame == 1
+        layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        d = ImageDraw.Draw(layer)
+        inset = 3
+        # 바깥 테두리 → 면 → 위쪽 하이라이트 순으로 겹친다
+        d.ellipse([0, 0, size - 1, size - 1], fill=(28, 42, 38, 150))
+        face = (96, 132, 104, 210) if not pressed else (58, 88, 70, 230)
+        d.ellipse([inset, inset, size - 1 - inset, size - 1 - inset], fill=face)
+        if not pressed:
+            d.ellipse([inset + 4, inset + 3, size - 1 - inset - 4, size // 2],
+                      fill=(140, 178, 146, 90))
+        d.ellipse([0, 0, size - 1, size - 1], outline=(232, 240, 228, 200), width=2)
+        img.alpha_composite(layer, (frame * size, 0))
+    img.save(path)
+    print("generated:", os.path.relpath(path, REPO))
+
+
 def make_fade(path, size=16):
     """맵 전환 페이드와 대화 배경에 쓰는 단색 검정 타일 (6단계).
 
@@ -150,11 +177,50 @@ def make_se(path, tones, volume=0.35):
     print("generated:", os.path.relpath(path, REPO))
 
 
+def make_door_se(path, volume=0.5):
+    """문을 여닫는 소리 (8단계 데모의 맵 전환).
+
+    사인파 블립으로는 나무 문이 되지 않는다. 낮은 삼각파 쿵과, 저역만 남긴
+    잡음의 삐걱임을 겹쳐 짧게 끊는다. 잡음은 고정 시드라 다시 실행해도 같은
+    파일이 나온다 (커밋되는 산출물이므로 결정적이어야 한다).
+    """
+    rnd = random.Random(20260819)
+    seconds = 0.22
+    count = int(SAMPLE_RATE * seconds)
+    creak_len = int(count * 0.55)
+
+    # 저역만 남기기 위한 1극 저역통과 (직전 표본과 섞는다)
+    noise, prev = [], 0.0
+    for _ in range(creak_len):
+        prev = prev * 0.86 + rnd.uniform(-1.0, 1.0) * 0.14
+        noise.append(prev)
+
+    frames = bytearray()
+    for i in range(count):
+        t = i / count
+        # 나무 쿵: 낮은 사인 두 개가 빠르게 사그라진다
+        body = math.sin(2.0 * math.pi * 150 * i / SAMPLE_RATE) * math.exp(-t * 14.0)
+        body += math.sin(2.0 * math.pi * 92 * i / SAMPLE_RATE) * math.exp(-t * 9.0) * 0.7
+        # 삐걱임: 앞쪽에만
+        creak = noise[i] * 6.0 * math.exp(-t * 9.0) if i < creak_len else 0.0
+        env = min(1.0, i / 64.0, (count - i) / 300.0)
+        value = max(-1.0, min(1.0, (body * 0.7 + creak * 0.5) * env * volume))
+        frames += struct.pack("<h", int(value * 32767))
+
+    with wave.open(path, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(SAMPLE_RATE)
+        w.writeframes(bytes(frames))
+    print("generated:", os.path.relpath(path, REPO))
+
+
 def main():
     os.makedirs(UI, exist_ok=True)
     make_button(os.path.join(UI, "button.png"))
     make_dpad(os.path.join(UI, "dpad.png"))
     make_fade(os.path.join(UI, "fade.png"))
+    make_action_button(os.path.join(UI, "actionbtn.png"))
 
     os.makedirs(AUDIO, exist_ok=True)
     # 커서 이동: 짧고 높은 한 음
@@ -163,6 +229,8 @@ def main():
     make_se(os.path.join(AUDIO, "ui_decision.wav"), [(660, 0.045), (990, 0.075)])
     # 글자 출력: 아주 짧고 작게 (몇 글자마다 한 번씩 난다)
     make_se(os.path.join(AUDIO, "ui_text.wav"), [(1320, 0.016)], volume=0.16)
+    # 문 여닫기: 데모에서 집을 드나들 때
+    make_door_se(os.path.join(AUDIO, "door.wav"))
 
 
 if __name__ == "__main__":

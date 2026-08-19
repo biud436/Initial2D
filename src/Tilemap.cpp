@@ -19,6 +19,10 @@
 
 namespace {
 
+	/** 맵 포맷의 최신 버전. v2는 v1에 events 배열이 더해진 것이며(9단계),
+	 *  타일 렌더러가 보는 부분은 v1과 같다. */
+	const int MAP_FORMAT_VERSION = 2;
+
 	/** 음수 좌표에서도 내림 나눗셈이 되도록 한다 (카메라가 맵 밖으로 나간 경우). */
 	int FloorDiv(int value, int divisor)
 	{
@@ -86,7 +90,11 @@ bool Tilemap::load(const std::string& path)
 		return fail("parse error in " + normalized + ": " + e.what());
 	}
 
-	if (root["version"].asInt() != 1) {
+	// v1: 타일과 통행만. v2: 그 위에 events 배열이 더해진다 (에디터가 놓는
+	// 이벤트, 9단계). 타일 렌더러가 보는 부분은 둘이 같으므로 여기서는 둘 다
+	// 받아들이고, events는 Lua 쪽(scripts/rpg/mapdata.lua)이 Json.Load로 읽는다.
+	const int version = root["version"].asInt();
+	if (version != 1 && version != MAP_FORMAT_VERSION) {
 		return fail("unsupported map version in " + normalized);
 	}
 
