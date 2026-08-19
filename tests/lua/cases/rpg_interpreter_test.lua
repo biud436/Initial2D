@@ -263,6 +263,45 @@ function M.run(t)
 	t.check_eq(interp:isBusy(), false, "clear가 막는 이벤트를 지운다")
 	t.check_eq(#interp.parallels, 0, "clear가 병렬 이벤트도 지운다")
 
+	-- ---- [11b] 씬에 위임하는 요청들 (9단계) --------------------------------
+	-- 프레임워크는 오디오 장치도 화면 구성도 모른다. 무엇을 어떻게 낼지는 호스트가
+	-- 정하고, 실행기는 요청을 넘기기만 한다 (transfer와 같은 방식).
+	local seenHost = {}
+	interp = Interpreter.new{
+		messagePort = fakePort(),
+		host = {
+			playSe = function(file, id) seenHost.se = { file, id } end,
+			playBgm = function(file, opts) seenHost.bgm = { file, opts and opts.volume } end,
+			showLocation = function(text, sec) seenHost.loc = { text, sec } end,
+			scene = function(name, opts) seenHost.scene = { name, opts and opts.fade } end,
+		},
+	}
+	interp:start(makeEvent("host", "action", function(self, ctx)
+		ctx.playSe("./door.wav", "door")
+		ctx.playBgm("./inn.ogg", { volume = 80 })
+		ctx.showLocation("항구 마을", 2)
+		ctx.scene("title", { fade = 30 })
+		seenHost.after = true          -- scene 뒤로는 실행되지 않아야 한다
+	end))
+	pump(interp, 8)
+	t.check_eq(seenHost.se[1], "./door.wav", "host.playSe로 나간다")
+	t.check_eq(seenHost.bgm[2], 80, "host.playBgm에 볼륨이 실린다")
+	t.check_eq(seenHost.loc[1], "항구 마을", "host.showLocation으로 나간다")
+	t.check_eq(seenHost.scene[1], "title", "host.scene으로 나간다")
+	t.check_eq(seenHost.after, nil, "씬을 나간 뒤의 스크립트는 실행되지 않는다")
+	t.check_eq(interp:isBusy(), false, "씬 전환 뒤 조작 잠금이 남지 않는다")
+
+	-- 호스트가 그 기능을 갖고 있지 않아도 스크립트가 멈추지 않는다
+	interp = Interpreter.new{ messagePort = fakePort(), host = {} }
+	local reached = false
+	interp:start(makeEvent("noHost", "action", function(self, ctx)
+		ctx.playSe("./x.wav")
+		ctx.showLocation("어딘가")
+		reached = true
+	end))
+	pump(interp, 6)
+	t.check(reached, "호스트에 없는 기능은 조용히 넘어간다")
+
 	-- ---- [11] 이벤트 자신(self)이 스크립트로 전달된다 ----------------------
 	interp = Interpreter.new{ messagePort = fakePort() }
 	local gotSelf = nil

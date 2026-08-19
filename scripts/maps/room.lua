@@ -8,6 +8,10 @@ local Assets = require("scripts/rpg/assets")
 local CHARSET = Assets.npcCharset()
 local FACESET = Assets.faceset()
 
+local RESIDENT_FACE = { file = FACESET, index = 3 }
+-- 플레이스홀더 FaceSet은 8..15가 웃는 얼굴이다
+local RESIDENT_SMILE = { file = FACESET, index = 11 }
+
 return {
 	map = Assets.mapPath("room", "Interior"),
 	start = { x = 10, y = 12, dir = "up" },
@@ -26,13 +30,13 @@ return {
 			id = "enter_note",
 			x = 10, y = 12,
 			trigger = "auto",
-			script = function(self, ctx)
-				if ctx.state.visitedHut then
-					return   -- 두 번째부터는 조용히 넘어간다
-				end
-				ctx.state.visitedHut = true
-				ctx.message("오두막 안이다. 아래 문으로 나갈 수 있다.")
-			end,
+			-- 두 번째 방문부터는 조용히 넘어간다 (thenDo가 없으면 아무것도 하지 않는다)
+			commands = {
+				{ code = "if", cond = { flag = "visitedHut" }, elseDo = {
+					{ code = "setFlag", key = "visitedHut" },
+					{ code = "message", text = "오두막 안이다. 아래 문으로 나갈 수 있다." },
+				} },
+			},
 		},
 
 		{
@@ -40,19 +44,21 @@ return {
 			x = 7, y = 8, dir = "down",
 			charset = { file = CHARSET, index = 3 },
 			trigger = "action",
-			script = function(self, ctx)
-				local resident = { name = "주민", face = { file = FACESET, index = 3 } }
-				if ctx.state.gotHerb then
-					ctx.message("상인 아저씨한테 약초를 받으셨군요. 인심이 좋은 분이에요.",
-						resident)
-				else
-					ctx.message("여긴 조용해서 좋아요.", resident)
-				end
-				ctx.moveRoute(self.id, { "turn:left", "wait:300", "turn:down" })
-				-- 웃는 표정으로 바꿔 본다 (플레이스홀더 FaceSet은 8..15가 웃는 얼굴)
-				ctx.message("...가끔 심심하지만요.",
-					{ name = "주민", face = { file = FACESET, index = 11 } })
-			end,
+			commands = {
+				{ code = "if", cond = { flag = "gotHerb" },
+				  thenDo = {
+					{ code = "message", name = "주민", face = RESIDENT_FACE,
+					  text = "상인 아저씨한테 약초를 받으셨군요. 인심이 좋은 분이에요." },
+				  },
+				  elseDo = {
+					{ code = "message", name = "주민", face = RESIDENT_FACE,
+					  text = "여긴 조용해서 좋아요." },
+				  } },
+				{ code = "moveRoute", target = "resident",
+				  route = { "turn:left", "wait:300", "turn:down" } },
+				{ code = "message", name = "주민", face = RESIDENT_SMILE,
+				  text = "...가끔 심심하지만요." },
+			},
 		},
 
 		-- 아래 출입구: 밟으면 마을로 돌아간다 (문 앞 칸에 세운다)
@@ -60,9 +66,7 @@ return {
 			id = "exit_to_village",
 			x = 10, y = 13,
 			trigger = "touch",
-			script = function(self, ctx)
-				ctx.transfer("village", 13, 15)
-			end,
+			commands = { { code = "transfer", map = "village", x = 13, y = 15 } },
 		},
 	},
 }

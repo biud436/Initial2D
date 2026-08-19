@@ -69,8 +69,10 @@ local pad, fadeImg = nil, nil
 local charsetPath = nil
 local rng = nil
 local mapName = nil
+local mapScripts = nil    -- 맵 정의가 등록한 script 커맨드용 함수 표 (9단계)
 
-local fade = { alpha = 0, dir = 0, pending = nil }
+local fade = { alpha = 0, dir = 0, pending = nil, exitTo = nil }
+local locationText, locationTimer = nil, 0
 local hintTimer, fpsAvg = 0, 0
 local DEBUG_HUD = false
 local HINT_SECONDS = 4.0
@@ -112,6 +114,7 @@ local function spawnEvent(def)
 	local ev = Event.new{
 		id = def.id, x = def.x, y = def.y, dir = def.dir,
 		trigger = def.trigger, script = def.script,
+		commands = def.commands, scripts = mapScripts,
 		charset = def.charset, through = def.through, solid = def.solid,
 		data = def.data,
 	}
@@ -151,6 +154,7 @@ local function loadMap(name, startX, startY, startDir)
 		sceneError = "이벤트 정의 로드 실패: " .. tostring(def)
 		return
 	end
+	mapScripts = def.scripts
 
 	local err
 	scene, err = MapScene.new{
@@ -182,7 +186,14 @@ local function loadMap(name, startX, startY, startDir)
 
 	events = Event.newManager{ player = playerChar, interpreter = interp }
 	for _, edef in ipairs(def.events or {}) do
-		events:add(spawnEvent(edef))
+		-- 커맨드가 틀리면 Event.new가 어느 자리인지와 함께 죽는다. 게임을 통째로
+		-- 멈추는 대신 씬 오류로 띄운다 (맵 로드 실패와 같은 경로).
+		local built, result = pcall(spawnEvent, edef)
+		if not built then
+			sceneError = tostring(result)
+			return
+		end
+		events:add(result)
 	end
 	scene:setEvents(events)
 
@@ -206,6 +217,37 @@ local function requestTransfer(target, x, y)
 	Audio.PlaySound(SE_DOOR, "door", 0)
 end
 
+-- ---- 커맨드가 위임하는 호스트 기능 (9단계) --------------------------------
+
+--- 화면 위쪽에 장소 이름을 잠깐 띄운다 (맵 진입 auto 이벤트가 부른다)
+local function showLocation(text, seconds)
+	locationText = text
+	locationTimer = tonumber(seconds) or 2.0
+end
+
+local function hostPlaySe(file, id)
+	Audio.PlaySound(file, id or "se", 0)
+end
+
+local function hostPlayBgm(file, opts)
+	Bgm.play(file, opts)
+end
+
+--- 다른 씬으로 나간다. 페이드를 걸어 두면 어두워진 뒤에 넘어간다.
+local function hostScene(name, opts)
+	opts = opts or {}
+	if opts.text ~= nil then
+		showLocation(opts.text, 3.0)
+	end
+	if opts.fade then
+		fade.pending = nil
+		fade.dir = 1
+		fade.exitTo = name
+	else
+		SwitchScene(name)
+	end
+end
+
 local function characterById(id)
 	if id == "player" then return playerChar end
 	local ev = events ~= nil and events:get(id) or nil
@@ -226,6 +268,7 @@ function RpgDemoScene.status()
 		talking = dialogue ~= nil and dialogue:isBusy() or false,
 		lines = dialogue ~= nil and dialogue:visibleLines() or {},
 		fading = fade.dir ~= 0,
+		location = locationTimer > 0 and locationText or nil,
 		error = sceneError,
 	}
 end
@@ -244,7 +287,8 @@ function RpgDemoScene.init()
 	DEBUG_HUD = env("INITIAL2D_DEBUG") ~= nil
 	padPrev = nil
 	-- 검은 화면에서 밝아지며 시작한다 (타이틀에서 넘어오는 장면이 이어진다)
-	fade = { alpha = 255, dir = -1, pending = nil }
+	fade = { alpha = 255, dir = -1, pending = nil, exitTo = nil }
+	locationText, locationTimer = nil, 0
 
 	charsetPath = env("INITIAL2D_CHARSET") or Assets.playerCharset()
 
@@ -276,7 +320,11 @@ function RpgDemoScene.init()
 
 	interp = Interpreter.new{
 		messagePort = dialogue:port(),
-		host = { transfer = requestTransfer, characterById = characterById },
+		host = {
+			transfer = requestTransfer, characterById = characterById,
+			playSe = hostPlaySe, playBgm = hostPlayBgm,
+			showLocation = showLocation, scene = hostScene,
+		},
 	}
 
 	loadMap(env("INITIAL2D_MAP") or "village")
@@ -315,6 +363,9 @@ function RpgDemoScene.update(elapsed)
 		fpsAvg = fpsAvg * 0.95 + (1000.0 / elapsed) * 0.05
 	end
 	hintTimer = hintTimer + elapsed / 1000.0
+	if locationTimer > 0 then
+		locationTimer = math.max(0, locationTimer - elapsed / 1000.0)
+	end
 
 	if scene == nil then
 		if Input.IsKeyDown(VK_ESCAPE) then SwitchScene("title") end
@@ -330,6 +381,10 @@ function RpgDemoScene.update(elapsed)
 		fade.alpha = fade.alpha + fade.dir * (255 / FADE_FRAMES)
 		if fade.dir > 0 and fade.alpha >= 255 then
 			fade.alpha = 255
+			if fade.exitTo ~= nil then
+				SwitchScene(fade.exitTo)   -- 검게 덮인 채로 다음 씬에 넘긴다
+				return
+			end
 			local t = fade.pending
 			fade.pending = nil
 			if t ~= nil then
@@ -409,6 +464,9 @@ function RpgDemoScene.render()
 	scene:draw()
 
 	if FontReady then
+		if locationTimer > 0 and locationText ~= nil then
+			DrawText((W - GetTextWidth(locationText)) / 2, 28, locationText)
+		end
 		if hintTimer < HINT_SECONDS then
 			local help = pad ~= nil and "패드 이동, 화면 탭 결정" or "방향키 이동  Z 결정  ESC 타이틀"
 			DrawText((W - GetTextWidth(help)) / 2, 8, help)

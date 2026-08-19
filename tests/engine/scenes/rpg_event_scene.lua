@@ -50,6 +50,7 @@ local function loadMap(name, sx, sy)
 		local ev = Event.new{
 			id = edef.id, x = edef.x, y = edef.y, dir = edef.dir,
 			trigger = edef.trigger, script = edef.script, charset = edef.charset,
+			commands = edef.commands, scripts = def.scripts,
 			through = edef.through, solid = edef.solid,
 		}
 		if edef.charset ~= nil then

@@ -20,6 +20,7 @@ return {
     "scripts/luatests/cases/rpg_map_scene_test",
     "scripts/luatests/cases/rpg_interpreter_test",
     "scripts/luatests/cases/rpg_event_test",
+    "scripts/luatests/cases/rpg_commands_test",
     "scripts/luatests/cases/rpg_text_test",
     "scripts/luatests/cases/rpg_window_test",
     "scripts/luatests/cases/rpg_choice_test",

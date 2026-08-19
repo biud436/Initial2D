@@ -14,9 +14,14 @@
 --     events = {
 --       { id = "villager", x = 12, y = 7, trigger = "action",
 --         charset = { file = "./resources/charsets/placeholder.png", index = 2 },
---         script = function(self, ctx) ctx.message("안녕하세요") end },
+--         commands = { { code = "message", text = "안녕하세요" } } },
 --     },
 --   }
+--
+-- 9단계부터 이벤트의 본문은 **커맨드 목록**(commands)이 기본이고, Lua 함수(script)는
+-- 커맨드로 적기 어려운 경우의 탈출구다. 둘 다 없으면 보이기만 하는 이벤트다.
+
+local Commands = require("scripts/rpg/commands")
 
 local M = {}
 
@@ -29,7 +34,9 @@ M.Event = Event
 --- @param opts.id       이벤트 이름 (moveRoute 대상 지정과 로그에 쓴다)
 -- @param opts.x, opts.y 타일 좌표
 -- @param opts.trigger   "action" | "touch" | "auto" | "parallel"
--- @param opts.script    function(self, ctx)
+-- @param opts.commands  커맨드 배열 (9단계). script가 없으면 이것을 컴파일해 쓴다
+-- @param opts.script    function(self, ctx) — 커맨드로 적기 어려운 이벤트의 탈출구
+-- @param opts.scripts   commands 안의 script 커맨드가 이름으로 부를 함수 표
 -- @param opts.charset   { file =, index = } 외형 (없으면 보이지 않는 트리거)
 -- @param opts.dir       시작 방향
 -- @param opts.through   true면 외형이 있어도 통행을 막지 않는다
@@ -41,13 +48,25 @@ function M.new(opts)
 	assert(opts.script == nil or type(opts.script) == "function",
 		"event: script는 함수여야 한다")
 
+	-- 커맨드 목록은 여기서 한 번 검사하고 함수로 바꾼다. 틀린 커맨드는 실행 도중이
+	-- 아니라 맵을 열 때, 어느 자리인지와 함께 드러나야 한다.
+	local script = opts.script
+	if script == nil and opts.commands ~= nil then
+		local env = { scripts = opts.scripts }
+		local ok, errors = Commands.validate(opts.commands, env)
+		assert(ok, "event '" .. tostring(opts.id) .. "'의 커맨드가 잘못되었다:\n  "
+			.. table.concat(errors or {}, "\n  "))
+		script = Commands.compile(opts.commands, env)
+	end
+
 	local self = setmetatable({}, Event)
 	self.id = opts.id
 	self.x = opts.x or 0
 	self.y = opts.y or 0
 	self.dir = opts.dir or "down"
 	self.trigger = trigger
-	self.script = opts.script
+	self.script = script
+	self.commands = opts.commands
 	self.charset = opts.charset
 	self.through = opts.through or false
 	self.solid = opts.solid            -- nil이면 외형 유무로 판단한다
