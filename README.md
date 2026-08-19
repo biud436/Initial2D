@@ -81,8 +81,8 @@ macOS 포팅을 기반으로 Android까지 확장하였습니다. 역시 AI와�
 - InitialEditor 연동: 로컬 브리지 서버를 통한 맵 저장과 스크립트 편집 — 완료 (2026-08)
 - 리소스 파이프라인: RPG Maker 2003 RTP 변환과 규격 데이터 — 완료 (2026-08)
 - Lua로 작성하는 RPG 프레임워크: 캐릭터 이동, 이벤트, 대화창 — 완료 (2026-08)
-- 위 요소를 모두 사용하는 데모 게임 "작은 마을" — 완료 (2026-08)
-- 기획서대로 만드는 데모와 데이터 기반 이벤트 커맨드 — 진행 중 ([기획서](./docs/design/port-town.md), [계획](./docs/plans/10-demo-v2.md))
+- 위 요소를 모두 사용하는 데모 게임 — 완료 (2026-08). 기획서를 먼저 쓰고 그대로 만든 「떠나기 전에」 ([기획서](./docs/design/port-town.md))
+- 이벤트를 데이터 커맨드로 적어 맵 에디터가 만들 수 있게 — 진행 중 ([계획](./docs/plans/10-demo-v2.md))
 
 # 스크립트 예제
 
@@ -465,7 +465,7 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 
 # RPG 프레임워크 (Lua)
 
-타일맵 위를 걸어다니는 캐릭터를 만드는 Lua 레이어입니다 (`scripts/rpg/`). 엔진은 장르 중립으로 두고 캐릭터, 이동, 카메라 같은 개념은 전부 스크립트에 두었습니다. 게임 메뉴의 **작은 마을**(`scripts/games/rpgdemo/`)이 사용 예제입니다.
+타일맵 위를 걸어다니는 캐릭터를 만드는 Lua 레이어입니다 (`scripts/rpg/`). 엔진은 장르 중립으로 두고 캐릭터, 이동, 카메라 같은 개념은 전부 스크립트에 두었습니다. 게임 메뉴의 **떠나기 전에**(`scripts/games/rpgdemo/`)가 사용 예제입니다.
 
 | 모듈 | 역할 |
 | :--- | :--- |
@@ -689,65 +689,75 @@ python3 tools/generate_faceset.py
 python3 tools/generate_ui_assets.py
 ```
 
-# 데모 게임: 작은 마을
+# 데모 게임: 떠나기 전에
 
-앞의 요소를 전부 사용하는 짧은 데모입니다. 미니 게임 목록에서 **작은 마을**을 고르면 타이틀이 뜨고, 시작하면 마을을 걸어다니며 촌장과 아이와 상인에게 말을 걸고, 선택지로 대사가 갈리고, 집에 들어갔다 나올 수 있습니다. 같은 빌드에서 플래피 버드도 그대로 돌아갑니다 — "한 엔진에서 두 장르"가 이 데모의 요점입니다.
+앞의 요소를 전부 사용하는 짧은 데모입니다. 미니 게임 목록에서 **떠나기 전에**를 고르면 타이틀이 뜨고, 시작하면 항구 마을에 내린 여행자가 됩니다. 저녁 배가 뜰 때까지 마을을 둘러보고, 떠날지 하루 더 머물지 스스로 정하면 끝납니다. 3분이면 끝낼 수 있고 전부 보면 10분입니다. 같은 빌드에서 플래피 버드도 그대로 돌아갑니다 — "한 엔진에서 두 장르"가 이 데모의 요점입니다.
+
+세계관은 저자의 자작곡에서 왔습니다. 마을은 《Port》의 항구이고, 들어갈 수 있는 건물은 그 앨범 1번 트랙과 같은 이름의 여관이며, 마을에 걸리는 곡은 《Bless》입니다. 갈 수 없는 곳(《요정의 숲》, 《천공의 끝》)은 사람들의 말 속에만 있습니다. 기획서는 [docs/design/port-town.md](./docs/design/port-town.md)에 있고, 대사와 배치와 화면 구성이 전부 그 문서에서 나옵니다.
 
 ```bash
 # 데모를 바로 열기 (타이틀부터)
 INITIAL2D_SCENE=title ./build/Initial2D
 
 # 맵 씬만 바로 열기. 시작 맵과 캐릭터 시트, 렌더 배율도 바꿀 수 있습니다
-INITIAL2D_SCENE=rpg INITIAL2D_MAP=room INITIAL2D_RPG_SCALE=3 ./build/Initial2D
+INITIAL2D_SCENE=rpg INITIAL2D_MAP=inn INITIAL2D_RPG_SCALE=3 ./build/Initial2D
 ```
 
-| 조작 | 내용 |
-| :--- | :--- |
-| 방향키 / 가상 D-패드 | 걷기, 커서 이동 (정지 중 짧게 누르면 방향만 전환) |
-| Z, Enter, Space / 패드 밖 화면 탭 | 말 걸기, 대화 넘기기, 선택지 결정 |
-| X | 선택지 취소 (취소 항목이 정해진 선택지에서만) |
-| ESC / 안드로이드 뒤로가기 | 맵에서는 타이틀로, 타이틀에서는 목록으로 |
+| 조작 | PC | 모바일 |
+| :--- | :--- | :--- |
+| 이동, 커서 | 방향키 (정지 중 짧게 누르면 방향만 전환) | 왼쪽 아래 가상 D-패드 |
+| 결정 | Z, Enter, Space | 오른쪽 아래 **결정** 버튼 |
+| 취소 | X | 오른쪽 아래 **취소** 버튼 |
+| 나가기 | ESC (맵→타이틀, 타이틀→목록) | 뒤로가기 |
 
-타이틀 화면에서는 항목을 직접 눌러도 선택됩니다 (터치 기기용, `Choice:indexAt`).
+타이틀 화면에서는 항목을 직접 눌러도 선택됩니다 (`Choice:indexAt`).
 
 구성은 다음과 같습니다. 씬은 데모 폴더에, 맵의 이벤트 정의는 맵 이름과 짝이 되는 파일에 둡니다.
 
 | 파일 | 역할 |
 | :--- | :--- |
 | `scripts/games/rpgdemo/title.lua` | 타이틀 씬. 배경 한 장과 커서 메뉴(시작, 조작 방법, 나가기) |
-| `scripts/games/rpgdemo/game.lua` | 맵 씬. 맵 적재, 페이드 전환, 대화창과 실행기 연결 |
-| `scripts/maps/village.lua`, `room.lua` | 이벤트 정의와 대사 (맵 파일은 `resources/maps/`) |
+| `scripts/games/rpgdemo/game.lua` | 맵 씬. 맵 적재, 페이드 전환, 대화창과 실행기 연결, 장소 이름 |
+| `scripts/maps/port_town.lua`, `inn.lua` | 이벤트 정의와 대사 (커맨드 목록) |
 | `scripts/rpg/assets.lua` | 그림 고르기 — RTP가 있으면 RTP, 없으면 저장소의 플레이스홀더 |
 | `scripts/bgm.lua` | 지금 걸린 곡을 기억해, 같은 곡이면 다시 틀지 않는 배경음 층 |
+| `scripts/ui/buttons.lua` | 터치용 결정과 취소 버튼 |
+
+## 그림과 맵 다시 만들기
+
+데모의 그림은 전부 코드로 그려 커밋했습니다 (RPG Maker RTP가 없어도 그대로 돌아갑니다). 배치를 바꾸려면 도구를 고치고 다시 실행합니다.
+
+```bash
+# 항구 타일 39종 (바다, 부두, 배, 등대, 우물, 게시판, 좌판, 난로 등)
+python3 tools/generate_port_tileset.py
+
+# 맵 두 장 — 기획서 4절의 좌표 그대로, 난수를 쓰지 않습니다
+python3 tools/generate_port_maps.py
+
+# 타이틀 배경 (제목 글자가 그림에 구워집니다 — 한글 TTF 필요)
+python3 tools/generate_title.py
+```
 
 ## 음악과 효과음
 
 BGM은 씬과 맵이 각자 정합니다. 맵 정의 파일에 `bgm`을 적으면 그 맵에 들어설 때 곡이 바뀌고, 같은 곡이면 이어서 재생됩니다 (맵을 오갈 때 음악이 끊기지 않습니다).
 
 ```lua
-	-- scripts/maps/village.lua
+	-- scripts/maps/inn.lua
 	return {
-		map = Assets.mapPath("village", "Exterior"),
-		bgm = { file = "./resources/audio/town.ogg", volume = 96 },   -- 곡마다 음압이 달라 볼륨을 함께 줍니다
+		map = "./resources/maps/inn.json",
+		bgm = { file = INN_BGM, volume = 80 },   -- 곡마다 음압이 달라 볼륨을 함께 줍니다
 		...
 	}
 ```
 
-데모에 들어 있는 곡은 저자의 자작곡 `resources/audio/bless.ogg` 한 곡입니다 (분석은 [docs/music/bless-analysis.md](./docs/music/bless-analysis.md)). 다른 곡을 넣으려면 파일을 `resources/audio/`에 두고 위 `bgm.file`만 바꾸면 됩니다. RTP의 MIDI에 의존하지 않습니다.
+저장소에 들어 있는 곡은 저자의 자작곡 `resources/audio/bless.ogg` 한 곡입니다 (분석은 [docs/music/bless-analysis.md](./docs/music/bless-analysis.md)). 여관은 《Port》의 "Inn"을 위한 자리를 비워 두었습니다 — `resources/audio/inn.ogg`에 파일을 두면 그 곡이 걸리고, 없으면 마을 곡을 낮춰 씁니다. RTP의 MIDI에 의존하지 않습니다.
 
-문을 여닫는 효과음과 UI 효과음은 코드로 합성해 커밋했습니다.
-
-```bash
-# 타이틀 배경 (resources/titles/village_title.png, 768x896 — 한글 TTF 필요)
-python3 tools/generate_title.py
-
-# UI 효과음(커서, 결정, 글자, 문)과 UI 이미지
-python3 tools/generate_ui_assets.py
-```
+효과음(커서, 결정, 글자, 문)은 코드로 합성해 커밋했습니다: `python3 tools/generate_ui_assets.py`.
 
 ## RTP 없이 보기
 
-데모는 RPG Maker 2003 RTP가 로컬에 있으면 그쪽 그림을, 없으면 저장소에 커밋된 플레이스홀더를 자동으로 씁니다. `INITIAL2D_NO_RTP=1`을 주면 RTP가 있어도 보지 않습니다 — 검수가 어느 기계에서나 같은 화면을 내야 하기 때문이고(골든 스크린샷), "RTP가 없는 사람에게 어떻게 보이는가"를 확인할 때도 씁니다.
+데모는 RPG Maker 2003 RTP가 로컬에 있으면 캐릭터와 얼굴, 창 스킨을 그쪽에서 가져오고, 없으면 저장소에 커밋된 플레이스홀더를 씁니다. `INITIAL2D_NO_RTP=1`을 주면 RTP가 있어도 보지 않습니다 — 검수가 어느 기계에서나 같은 화면을 내야 하기 때문이고(골든 스크린샷), "RTP가 없는 사람에게 어떻게 보이는가"를 확인할 때도 씁니다.
 
 ```bash
 INITIAL2D_NO_RTP=1 INITIAL2D_SCENE=title ./build/Initial2D
@@ -755,11 +765,13 @@ INITIAL2D_NO_RTP=1 INITIAL2D_SCENE=title ./build/Initial2D
 
 ## 인수 테스트
 
-데모 전체가 로드맵의 인수 테스트입니다. `tests/engine/scenes/rpgdemo_scene.lua`가 실제 씬 파일을 그대로 얹고, 입력 재생기로 키를 눌러 **타이틀 → 시작 → 마을 → 촌장과 대화 → 선택지 2번 → 집 출입 → 복귀**를 한 번에 통과시킨 뒤 좌표와 대사를 stdout으로 검사합니다 (`tests/run_all.sh`에 포함).
+데모 전체가 로드맵의 인수 테스트입니다. `tests/engine/scenes/rpgdemo_scene.lua`가 실제 씬 파일을 그대로 얹고, 입력 재생기로 키를 눌러 **타이틀 → 부두 도착 → 생선 장수 → 창고 → 여관에서 방 잡기 → 등대지기 → 배 → 에필로그 → 타이틀**을 한 번에 통과시킨 뒤 좌표와 대사를 검사합니다 (`tests/run_all.sh`에 포함). 본 것에 따라 대사와 에필로그가 갈리는 것도 여기서 확인합니다.
 
 ```bash
-# 시나리오 도중의 화면을 눈으로 확인 (title, village)
-INITIAL2D_DEMO_STOP=village INITIAL2D_NO_RTP=1   INITIAL2D_SCREENSHOT=/tmp/demo_%04ld.bmp INITIAL2D_SCREENSHOT_FRAME=20   INITIAL2D_EXIT_AFTER=30 ./build/Initial2D
+# 시나리오 도중의 화면을 눈으로 확인 (title, town)
+INITIAL2D_DEMO_STOP=town INITIAL2D_NO_RTP=1 \
+  INITIAL2D_SCREENSHOT=/tmp/demo_%04ld.bmp INITIAL2D_SCREENSHOT_FRAME=20 \
+  INITIAL2D_EXIT_AFTER=30 ./build/Initial2D
 ```
 
 # 게임 설정

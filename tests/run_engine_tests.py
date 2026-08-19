@@ -568,28 +568,29 @@ def test_rpg_dialogue_scene():
 
 # 데모 화면에서 눈으로 확인한 색 (INITIAL2D_NO_RTP=1, 저장소 자산 기준)
 TITLE_SKY = (36, 40, 74)         # 타이틀 배경 위쪽 밤하늘
-DEMO_GRASS = GRASS_BASE          # 마을 잔디 (tools/generate_village_tileset.py)
-DEMO_PATH = (216, 200, 128)      # 마을 흙길
+DEMO_SEA = (46, 108, 156)        # 항구의 바다 (tools/generate_port_tileset.py)
+DEMO_PLANK = (150, 106, 68)      # 부두 널
 DEMO_SHIRT = SHIRT_RED           # 플레이어(0번 캐릭터)의 빨간 옷
 
 
 def test_rpgdemo_scene():
-    """8단계 인수 테스트: 타이틀부터 집 출입까지 한 번에 (docs/plans/08-demo.md).
+    """9단계 인수 테스트: 기획서대로의 데모를 처음부터 끝까지 (docs/design/port-town.md).
 
-    가짜 씬이 아니라 게임이 실제로 여는 파일(scripts/games/rpgdemo/*.lua)을 얹고
-    입력 재생기로 키를 눌러 로드맵 전체를 한 줄로 통과시킨다. 시나리오가 stdout에
-    남긴 좌표와 대사를 여기서 검사한다.
+    가짜 씬이 아니라 게임이 실제로 여는 파일(scripts/games/rpgdemo/*.lua,
+    scripts/maps/port_town.lua, inn.lua)을 얹고 입력 재생기로 키를 눌러
+    타이틀 → 부두 → 생선 장수 → 창고 → 여관 → 등대지기 → 배 → 에필로그를
+    한 번에 통과시킨다. 대사와 좌표가 stdout에 남고 여기서 검사한다.
 
-    RTP는 기계마다 있고 없고가 달라 결과가 갈리므로 INITIAL2D_NO_RTP=1로 저장소
-    자산만 쓰게 고정한다 (골든도 그래야 커밋할 수 있다 — RTP는 재배포 금지).
+    RTP는 기계마다 있고 없고가 달라 INITIAL2D_NO_RTP=1로 저장소 자산만 쓰게
+    고정한다 (골든도 그래야 커밋할 수 있다 — RTP는 재배포 금지).
     """
-    print("\n[8] rpgdemo_scene — 데모 인수 시나리오 (타이틀 → 마을 → 대화 → 집)")
+    print("\n[8] rpgdemo_scene — 데모 인수 시나리오 (기획서 전체 흐름)")
     work = make_workdir("rpgdemo_scene.lua")
     env = dict(os.environ)
     env["INITIAL2D_EXIT_AFTER"] = "30"
     env["INITIAL2D_NO_RTP"] = "1"
     result = subprocess.run([GAME], cwd=work, env=env,
-                            capture_output=True, text=True, timeout=300)
+                            capture_output=True, text=True, timeout=900)
     log = result.stdout + result.stderr
 
     check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode}")
@@ -602,30 +603,48 @@ def test_rpgdemo_scene():
     has("titleScene:title", "타이틀 씬으로 시작")
     has("titleMenuOpen:true", "커서 메뉴가 열린다")
     has("titleItems:3 index:1", "항목 3개, 커서는 첫 항목")
-    has("helpCursor:2", "아래 키로 커서가 내려간다")
     has("helpShown:true", "조작 방법을 고르면 설명 창이 뜬다")
     has("helpClosed:true", "설명을 끝까지 넘기면 닫힌다")
     has("menuBack:true", "설명이 닫히면 메뉴로 돌아온다")
     has("sceneAfterStart:rpg", "시작을 고르면 맵 씬으로 넘어간다")
 
-    # [B] 마을
-    has("mapLoaded:village error:nil", "마을 맵 로드")
-    has("playerAt:34,21", "정의 파일의 시작 칸")
+    # [B] 부두 도착 — 기획서 4.1절의 시작 칸과 선장의 첫 인사
+    has("mapLoaded:port_town error:nil", "항구 마을 맵 로드")
+    has("playerAt:16,43", "배에서 막 내린 자리")
+    has("location:항구 마을", "맵에 들어서면 장소 이름이 뜬다")
+    has("captainLine:짐은 다 내렸네.", "선장이 먼저 말을 건다 (auto)")
+    has("captainLine2:급할 것 없으면 마을을 좀 둘러보게.", "선장의 두 번째 대사")
 
-    # [C] 촌장과 대화, 선택지 2번 분기
-    has("beforeTalkAt:32,21", "촌장 앞까지 걸어간다")
-    has("facing:up", "촌장 쪽을 바라본다 (막혀서 제자리)")
-    has("elderLine:어서 오시게. 처음 보는 얼굴이군.", "말을 걸면 대사가 뜬다")
-    has("choiceOpen:true", "대사를 넘기면 선택지")
-    has("branchLine:그럼 길은 잘 알겠군.", "2번을 고르면 그쪽 분기 대사")
+    # [C] 광장: 생선 장수의 선택지와 그 뒤에 달라지는 창고
+    has("fishLine:오늘 물건은 아침에 다 나갔어요.", "생선 장수의 첫 대사")
+    has("fishChoice:true", "생선 장수가 선택지를 띄운다")
+    has("warehouseStory:저 창고요? 주인이 남쪽으로 떠난 지 삼 년째예요.", "창고의 사연")
+    has("warehouseLine:삼 년째 잠긴 문이다.", "사연을 들은 뒤 창고 문의 설명이 달라진다")
 
-    # [D] 집 출입
-    has("roomAt:10,12", "문을 밟으면 오두막 안으로")
-    has("autoBusy:true", "들어서면 auto 이벤트가 조작을 잠근다")
-    has("autoLine:오두막 안이다.", "auto 대사")
-    has("backAt:13,15", "아래 문으로 나오면 마을 문 앞")
+    # [D] 여관: 문을 밟아 들어가고, 방을 잡고, 다시 나온다
+    has("innAt:10,12", "여관 문으로 들어서면 1층 입구")
+    has("innLocation:항구 여관", "실내에서도 장소 이름")
+    has("hostLine:어서 오세요.", "여관 주인의 첫 대사")
+    has("hostChoice:true", "방을 잡을지 묻는 선택지")
+    has("bookedLine:그럼 짐을 올려 두세요.", "묵기로 하면 방을 내준다")
+    has("backAt:13,30", "아래 문으로 나오면 여관 문 앞")
+
+    # [E] 언덕: 등대지기와, 그 뒤에 달라지는 북쪽 문
+    has("keeperLine:...배를 기다리나.", "등대지기의 첫 마디")
+    has("altarLine:제단이 있었네.", "하늘 끝을 물으면 제단 이야기가 나온다")
+    has("gateLine:숲으로 가는 길은 막혀 있다. 바람이",
+        "그 이야기를 들은 뒤에는 북쪽 문의 설명도 달라진다")
+
+    # [F] 배: 마지막 선택과 에필로그, 그리고 타이틀 복귀
+    has("shipLine:저녁 배가 밧줄을 풀 준비를 하고 있다. 등대에는",
+        "등대 이야기를 들었으면 배 앞의 글도 달라진다")
+    has("shipChoice:true", "떠날지 묻는 선택지")
+    has("farewellLine:밧줄 푸네.", "떠나기로 하면 선장이 배웅한다")
+    has("epilogue:배가 항구를 떠날 때, 등 뒤에서 등대에 불이 켜졌다.",
+        "본 것에 따라 에필로그 한 줄이 달라진다")
+    has("finalScene:title", "에필로그 뒤에는 타이틀로 돌아온다")
     has("demoDone:true", "시나리오 끝까지 통과")
-    check("걷다가 멈춘 곳이 없다", "timeout" not in log,
+    check("걷다가 막힌 곳이 없다", "timeout" not in log,
           [ln for ln in log.splitlines() if "timeout" in ln][:3])
 
     # ---- 화면 두 장 (골든) -------------------------------------------------
@@ -637,26 +656,26 @@ def test_rpgdemo_scene():
         scale = img.width / 768.0
         sky = count_color_in(img, scale, 20, 20, 200, 120, TITLE_SKY, 30)
         check("타이틀 배경의 밤하늘", sky > 100, f"px={sky}")
-        frame = count_color_in(img, scale, 250, 600, 570, 800, SKIN_FRAME_LIGHT, 30)
+        frame = count_color_in(img, scale, 80, 610, 400, 800, SKIN_FRAME_LIGHT, 30)
         check("메뉴 창의 테두리", frame > 40, f"px={frame}")
         check_golden("rpgdemo_title", img)
 
-    shot_env = {"INITIAL2D_NO_RTP": "1", "INITIAL2D_DEMO_STOP": "village"}
-    _, r_village, s_village = run_scene("rpgdemo_scene.lua", [20], 30, shot_env)
-    check("마을 첫 화면 덤프", 20 in s_village, f"rc={r_village.returncode}")
-    if 20 in s_village:
-        img = s_village[20]
+    shot_env = {"INITIAL2D_NO_RTP": "1", "INITIAL2D_DEMO_STOP": "town"}
+    _, r_town, s_town = run_scene("rpgdemo_scene.lua", [20], 30, shot_env)
+    check("마을 첫 화면 덤프", 20 in s_town, f"rc={r_town.returncode}")
+    if 20 in s_town:
+        img = s_town[20]
         # 맵 씬은 렌더 배율 2 — 논리 해상도가 384x448이다
         scale = img.width / 384.0
-        grass = count_color_in(img, scale, 20, 100, 160, 180, DEMO_GRASS, 30)
-        check("마을 잔디가 그려진다", grass > 200, f"px={grass}")
-        # 세로 길은 x=34 칸, 카메라가 플레이어를 가운데 두므로 화면 가운데다
-        path = count_color_in(img, scale, 188, 60, 196, 100, DEMO_PATH, 30)
-        check("십자로의 흙길", path > 20, f"px={path}")
-        # 플레이어는 화면 한가운데 (카메라 추적)
-        hero = count_color_in(img, scale, 186, 212, 198, 224, DEMO_SHIRT, 30)
-        check("플레이어가 화면 가운데 있다", hero > 5, f"px={hero}")
-        check_golden("rpgdemo_village", img)
+        # 카메라가 맵 아래 끝에서 멈추므로 플레이어는 화면 가운데가 아니라
+        # 부두 위(논리 y 355 언저리)에 선다.
+        sea = count_color_in(img, scale, 20, 350, 140, 400, DEMO_SEA, 30)
+        check("부두 앞의 바다", sea > 200, f"px={sea}")
+        plank = count_color_in(img, scale, 172, 395, 182, 412, DEMO_PLANK, 40)
+        check("부두 널", plank > 10, f"px={plank}")
+        hero = count_color_in(img, scale, 187, 357, 197, 370, DEMO_SHIRT, 30)
+        check("플레이어가 부두 위에 서 있다", hero > 5, f"px={hero}")
+        check_golden("rpgdemo_town", img)
 
 
 def test_resolution():

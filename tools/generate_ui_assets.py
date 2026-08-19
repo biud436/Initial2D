@@ -116,6 +116,32 @@ def make_dpad(path, size=160):
     print("generated:", os.path.relpath(path, REPO))
 
 
+def make_action_button(path, size=96):
+    """터치용 동그란 버튼 두 프레임 (기본, 눌림).
+
+    9단계에서 "패드 밖 아무 데나 탭 = 결정"을 그만두고 결정과 취소 버튼을
+    화면에 두기로 했다 (기획서 6.3절). 지도를 가리지 않게 반투명이며, 글자는
+    런타임에 비트맵 폰트로 올린다 — 버튼 하나로 여러 이름을 쓸 수 있다.
+    """
+    img = Image.new("RGBA", (size * 2, size), (0, 0, 0, 0))
+    for frame in (0, 1):
+        pressed = frame == 1
+        layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        d = ImageDraw.Draw(layer)
+        inset = 3
+        # 바깥 테두리 → 면 → 위쪽 하이라이트 순으로 겹친다
+        d.ellipse([0, 0, size - 1, size - 1], fill=(28, 42, 38, 150))
+        face = (96, 132, 104, 210) if not pressed else (58, 88, 70, 230)
+        d.ellipse([inset, inset, size - 1 - inset, size - 1 - inset], fill=face)
+        if not pressed:
+            d.ellipse([inset + 4, inset + 3, size - 1 - inset - 4, size // 2],
+                      fill=(140, 178, 146, 90))
+        d.ellipse([0, 0, size - 1, size - 1], outline=(232, 240, 228, 200), width=2)
+        img.alpha_composite(layer, (frame * size, 0))
+    img.save(path)
+    print("generated:", os.path.relpath(path, REPO))
+
+
 def make_fade(path, size=16):
     """맵 전환 페이드와 대화 배경에 쓰는 단색 검정 타일 (6단계).
 
@@ -194,6 +220,7 @@ def main():
     make_button(os.path.join(UI, "button.png"))
     make_dpad(os.path.join(UI, "dpad.png"))
     make_fade(os.path.join(UI, "fade.png"))
+    make_action_button(os.path.join(UI, "actionbtn.png"))
 
     os.makedirs(AUDIO, exist_ok=True)
     # 커서 이동: 짧고 높은 한 음

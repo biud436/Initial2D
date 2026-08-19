@@ -70,7 +70,7 @@ function MenuScene.init()
 	buttons = {
 		makeButton("플래피 버드", "flappy", H / 2 - 130),
 		makeButton("타일맵 데모", "tilemap", H / 2 - 10),
-		makeButton("작은 마을", "title", H / 2 + 110),
+		makeButton("떠나기 전에", "title", H / 2 + 110),
 	}
 end
 

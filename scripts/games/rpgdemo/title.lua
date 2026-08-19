@@ -1,4 +1,4 @@
--- 데모 게임 "작은 마을" — 타이틀 씬 (8단계, docs/plans/08-demo.md)
+-- 데모 게임 「떠나기 전에」 — 타이틀 씬 (기획서 docs/design/port-town.md)
 --
 -- 배경 그림 한 장과 커서 메뉴 하나가 전부다. 메뉴는 대화창에 쓰던 창과 선택지
 -- (scripts/rpg/window.lua, choice.lua)를 그대로 재사용한다 — 대화 전용이 아니라
@@ -19,7 +19,7 @@ local Bgm = require("scripts/bgm")
 
 RpgDemoTitleScene = {}
 
-local BACKGROUND = "./resources/titles/village_title.png"
+local BACKGROUND = "./resources/titles/port_title.png"
 local BASE_FONT = "./resources/fonts/hangul.fnt"
 local SE_CURSOR = "./resources/audio/ui_cursor.wav"
 local SE_DECISION = "./resources/audio/ui_decision.wav"
@@ -31,7 +31,9 @@ local TITLE_BGM_VOLUME = 88
 local SKIN_SCALE = 3        -- 160x80 스킨을 768x896 화면에 맞게
 local LINE_HEIGHT = 48      -- 32픽셀 폰트 기준 줄 간격
 local MENU_WIDTH = 260
-local MENU_Y = 604          -- 배경의 마을 아래, 풀밭 위
+-- 메뉴는 화면 가운데가 아니라 왼쪽에 둔다. 가운데에 놓으면 배와 부두를 가린다.
+local MENU_X = 84
+local MENU_Y = 616
 local AUTOPLAY_START_FRAME = 60
 
 local VK_ESCAPE, VK_RETURN, VK_SPACE, VK_Z = 27, 13, 32, 90
@@ -42,8 +44,8 @@ local START, HELP, LEAVE = 1, 2, 3
 
 local HELP_TEXT = "방향키로 걷고, Z 키로 말을 겁니다. 대화 중에는 Z로 넘기고, "
 	.. "선택지에서는 위아래로 고른 뒤 Z로 결정합니다. X는 취소입니다. "
-	.. "터치 기기에서는 화면 왼쪽 아래의 패드로 걷고, 그 밖을 눌러 대화를 넘깁니다. "
-	.. "ESC나 뒤로가기를 누르면 목록으로 돌아옵니다."
+	.. "터치 기기에서는 왼쪽 아래 패드로 걷고, 오른쪽 아래의 결정과 취소 버튼을 "
+	.. "누릅니다. ESC나 뒤로가기를 누르면 목록으로 돌아옵니다."
 
 local W, H = 768, 896
 local bg, skin, choice, help = nil, nil, nil, nil
@@ -57,8 +59,7 @@ local function playSe(path, id)
 end
 
 local function openMenu(index)
-	local x = math.floor((W - MENU_WIDTH) / 2)
-	choice:show(ITEMS, { x = x, y = MENU_Y, index = index })
+	choice:show(ITEMS, { x = MENU_X, y = MENU_Y, index = index })
 end
 
 --- 지금 씬의 상태. 8단계 시나리오 테스트가 이 값을 읽어 커서와 도움말을 본다

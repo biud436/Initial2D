@@ -30,15 +30,20 @@ local Window = require("scripts/rpg/window")
 local Dialogue = require("scripts/rpg/message")
 local Image = require("scripts/image")
 local VirtualPad = require("scripts/ui/vpad")
+local Buttons = require("scripts/ui/buttons")
 local Assets = require("scripts/rpg/assets")
 local Bgm = require("scripts/bgm")
 
 RpgDemoScene = {}
 
+-- 데모의 맵. village와 room은 6단계의 회귀 테스트가 계속 쓰므로 남겨 둔다.
 local MAPS = {
+	port_town = "scripts/maps/port_town",
+	inn = "scripts/maps/inn",
 	village = "scripts/maps/village",
 	room = "scripts/maps/room",
 }
+local START_MAP = "port_town"
 
 -- 엔진의 텍스트 경로에는 확대와 축소가 없다. 화면이 논리 384x448이라 32px 폰트는
 -- 너무 크므로 이 씬만 16px 폰트를 쓰고, 나갈 때 원래 폰트로 되돌린다
@@ -65,7 +70,7 @@ local scale = 1
 local scene, sceneError = nil, nil
 local player, playerChar = nil, nil
 local events, interp = nil, nil
-local pad, fadeImg = nil, nil
+local pad, buttons, fadeImg = nil, nil, nil
 local charsetPath = nil
 local rng = nil
 local mapName = nil
@@ -296,6 +301,21 @@ function RpgDemoScene.init()
 		local size = math.floor(PAD_DEVICE_SIZE / scale)
 		local margin = math.floor(24 / scale)
 		pad = VirtualPad.new{ x = margin, y = H - size - margin, size = size }
+
+		-- 결정과 취소는 오른손 엄지 자리에 둔다. 손가락이 닿는 크기(실기 112px,
+		-- 88px)를 논리 좌표로 환산한다 (기획서 6.3절).
+		local big = math.floor(112 / scale)
+		local small = math.floor(88 / scale)
+		buttons = Buttons.new{
+			drawText = DrawText, measure = GetTextWidth,
+			items = {
+				{ id = "confirm", label = "결정",
+				  x = W - big - margin, y = H - big - margin, size = big },
+				{ id = "cancel", label = "취소",
+				  x = W - big - small - margin - math.floor(8 / scale),
+				  y = H - small - margin, size = small },
+			},
+		}
 	end
 
 	-- 페이드와 대화 배경에 쓰는 단색 판 (엔진에 사각형 채우기가 없어 스프라이트로 대신)
@@ -327,7 +347,7 @@ function RpgDemoScene.init()
 		},
 	}
 
-	loadMap(env("INITIAL2D_MAP") or "village")
+	loadMap(env("INITIAL2D_MAP") or START_MAP)
 end
 
 -- 결정키: 대화를 넘기거나, 선택지를 고르거나, 말을 건다
@@ -335,9 +355,8 @@ local function confirmPressed()
 	if Input.IsKeyDown(VK_Z) or Input.IsKeyDown(VK_RETURN) or Input.IsKeyDown(VK_SPACE) then
 		return true
 	end
-	-- 터치: 패드 밖을 탭하면 결정 (단일 터치라 이동과 겹치지 않는다)
-	if pad ~= nil and Input.IsMouseDown(0)
-		and not pad.contains(Input.GetMouseX(), Input.GetMouseY()) then
+	-- 터치: 화면의 결정 버튼 (8단계의 "패드 밖 아무 데나 탭"은 걷기와 부딪혔다)
+	if buttons ~= nil and buttons.pressed("confirm") then
 		return true
 	end
 	return false
@@ -354,7 +373,8 @@ local function pollInput()
 		confirm = confirmPressed(),
 		up = Input.IsKeyDown(VK_UP) or padEdge == "up",
 		down = Input.IsKeyDown(VK_DOWN) or padEdge == "down",
-		cancel = Input.IsKeyDown(VK_X),
+		cancel = Input.IsKeyDown(VK_X)
+			or (buttons ~= nil and buttons.pressed("cancel")),
 	}
 end
 
@@ -374,6 +394,9 @@ function RpgDemoScene.update(elapsed)
 
 	if pad ~= nil then
 		pad.update()
+	end
+	if buttons ~= nil then
+		buttons.update()
 	end
 
 	-- 페이드 중에는 게임을 멈춘다 (전환이 또렷하게 보인다)
@@ -464,11 +487,15 @@ function RpgDemoScene.render()
 	scene:draw()
 
 	if FontReady then
-		if locationTimer > 0 and locationText ~= nil then
-			DrawText((W - GetTextWidth(locationText)) / 2, 28, locationText)
+		local showingLocation = locationTimer > 0 and locationText ~= nil
+		if showingLocation then
+			DrawText((W - GetTextWidth(locationText)) / 2, 8, locationText)
 		end
-		if hintTimer < HINT_SECONDS then
-			local help = pad ~= nil and "패드 이동, 화면 탭 결정" or "방향키 이동  Z 결정  ESC 타이틀"
+		-- 장소 이름과 조작 안내를 같은 자리에 겹쳐 놓지 않는다. 장소 이름이
+		-- 먼저 뜨고 사라진 뒤에 안내가 남는다.
+		if not showingLocation and hintTimer < HINT_SECONDS then
+			local help = pad ~= nil and "패드로 이동, 오른쪽 버튼으로 결정"
+				or "방향키 이동  Z 결정  ESC 타이틀"
 			DrawText((W - GetTextWidth(help)) / 2, 8, help)
 		end
 		if DEBUG_HUD then
@@ -484,6 +511,9 @@ function RpgDemoScene.render()
 	if pad ~= nil then
 		pad.draw()
 	end
+	if buttons ~= nil then
+		buttons.draw()
+	end
 
 	if fade.alpha > 0 then
 		fadeImg.setOpacity(math.floor(fade.alpha))
@@ -498,6 +528,10 @@ function RpgDemoScene.destroy()
 	if pad ~= nil then
 		pad.dispose()
 		pad = nil
+	end
+	if buttons ~= nil then
+		buttons.dispose()
+		buttons = nil
 	end
 	if fadeImg ~= nil then
 		fadeImg.dispose()
