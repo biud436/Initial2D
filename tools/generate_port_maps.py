@@ -98,9 +98,10 @@ class Grid:
                 if (dx, dy) in holes:
                     self.block(x + dx, y + dy, False)
 
-    def to_map(self, name, map_id):
-        return {
-            "version": 1, "name": name, "id": map_id,
+    def to_map(self, name, map_id, events=None):
+        """맵 포맷. events가 있으면 v2다 (없으면 v1 그대로 — 옛 파일도 열린다)."""
+        data = {
+            "version": 2 if events else 1, "name": name, "id": map_id,
             "width": self.w, "height": self.h,
             "tileWidth": 16, "tileHeight": 16,
             "layers": [
@@ -110,6 +111,9 @@ class Grid:
             "collision": self.collision,
             "tilesets": [dict(TILESET)],
         }
+        if events:
+            data["events"] = events
+        return data
 
 
 # ---- 항구 마을 -------------------------------------------------------------
@@ -209,7 +213,19 @@ def build_town():
     ):
         m.d(x, y, gid, solid=False)
 
-    return m.to_map("항구 마을", 10)
+    # 맵 파일이 실어 나르는 이벤트 (포맷 v2). 좌표와 커맨드가 전부 데이터라
+    # 맵 에디터가 이 자리에서 만들 수 있다 — 나머지 이벤트는 아직 Lua 정의
+    # 파일에 있다 (배회 설정처럼 데이터로만 적기 어려운 것이 섞여 있다).
+    events = [{
+        "id": "crates",
+        "x": 14, "y": 40,
+        "trigger": "action",
+        "commands": [{
+            "code": "message",
+            "text": "누군가의 짐이다. 남쪽으로 간다는 표가 붙어 있다.",
+        }],
+    }]
+    return m.to_map("항구 마을", 10, events)
 
 
 # ---- 여관 1층 --------------------------------------------------------------

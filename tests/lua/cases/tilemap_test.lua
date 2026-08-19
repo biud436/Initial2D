@@ -91,7 +91,18 @@ function M.run(t)
     local bad, err2 = Tilemap.Load("./tilemap_bad_size.json")
     t.check(bad == nil and type(err2) == "string", "데이터 크기 불일치: nil + 오류", err2)
 
-    writeFile("./tilemap_bad_ver.json", fixtureText:gsub('"version": 1', '"version": 2'))
+    -- v2는 v1에 events 배열이 더해진 것이라 타일 렌더러에게는 같다 (9단계).
+    -- 둘 다 열리고, 그 밖의 번호는 거부한다.
+    writeFile("./tilemap_v2.json", fixtureText:gsub('"version": 1', '"version": 2'))
+    local v2, errV2 = Tilemap.Load("./tilemap_v2.json")
+    t.check(v2 ~= nil, "포맷 v2도 열린다: " .. tostring(errV2))
+    if v2 ~= nil then
+        t.check_eq(Tilemap.GetSize(v2), 4, "v2에서도 타일은 그대로 읽힌다")
+        t.check_eq(Tilemap.GetTileId(v2, 3, 2, 1), 12, "v2의 타일 값도 v1과 같다")
+        Tilemap.Dispose(v2)
+    end
+
+    writeFile("./tilemap_bad_ver.json", fixtureText:gsub('"version": 1', '"version": 99'))
     local badv, err3 = Tilemap.Load("./tilemap_bad_ver.json")
     t.check(badv == nil and type(err3) == "string", "지원하지 않는 버전: nil + 오류", err3)
 

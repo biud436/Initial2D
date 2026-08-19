@@ -181,6 +181,16 @@ function Initialize()
 		return
 	end
 
+	-- ---- [C] 부두 앞: 맵 파일이 실어 온 이벤트 -----------------------------
+	-- 짐 상자는 정의 파일이 아니라 맵 JSON(events)에 있다 — 에디터가 놓는 이벤트가
+	-- 실제로 도는지 여기서 확인한다.
+	walk("UP", ty, 40, "walkToCrates")
+	walk("LEFT", tx, 15, "walkBesideCrates")
+	talk("crateTalk")
+	print("crateLine:" .. dialogueText())
+	next(20)
+	tickUntil("crateEnd", function() return not status().busy end, 120)
+
 	-- ---- [C] 광장: 생선 장수와 창고 ----------------------------------------
 	walk("UP", ty, 35, "walkToPlaza")
 	walk("LEFT", tx, 14, "walkToStall")

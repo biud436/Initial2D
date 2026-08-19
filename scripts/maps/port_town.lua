@@ -140,13 +140,9 @@ return {
 			id = "bollard", x = 17, y = 42, trigger = "action",
 			commands = { { code = "message", text = "굵은 밧줄이 말뚝에 단단히 매여 있다." } },
 		},
-		{
-			id = "crates", x = 14, y = 40, trigger = "action",
-			commands = {
-				{ code = "message",
-				  text = "누군가의 짐이다. 남쪽으로 간다는 표가 붙어 있다." },
-			},
-		},
+		-- 짐 상자(crates, 14,40)는 이 파일이 아니라 **맵 파일**에 실려 있다
+		-- (resources/maps/port_town.json의 events). 맵 에디터가 놓는 이벤트가
+		-- 어떻게 도는지 보이는 자리이며, 둘은 id로 합쳐진다 (scripts/rpg/mapdata.lua).
 
 		-- 광장
 		{

@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "name": "항구 마을",
   "id": 10,
   "width": 32,
@@ -4633,6 +4633,20 @@
       "image": "resources/tiles/port16.png",
       "columns": 8,
       "firstGid": 1
+    }
+  ],
+  "events": [
+    {
+      "id": "crates",
+      "x": 14,
+      "y": 40,
+      "trigger": "action",
+      "commands": [
+        {
+          "code": "message",
+          "text": "누군가의 짐이다. 남쪽으로 간다는 표가 붙어 있다."
+        }
+      ]
     }
   ]
 }

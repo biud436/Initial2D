@@ -32,6 +32,7 @@ local Image = require("scripts/image")
 local VirtualPad = require("scripts/ui/vpad")
 local Buttons = require("scripts/ui/buttons")
 local Assets = require("scripts/rpg/assets")
+local MapData = require("scripts/rpg/mapdata")
 local Bgm = require("scripts/bgm")
 
 RpgDemoScene = {}
@@ -190,7 +191,13 @@ local function loadMap(name, startX, startY, startDir)
 	rng = Rng.new(WANDER_SEED)   -- 맵마다 같은 시드에서 시작 (재현 가능한 데모)
 
 	events = Event.newManager{ player = playerChar, interpreter = interp }
-	for _, edef in ipairs(def.events or {}) do
+	-- 이벤트는 맵 파일(에디터가 놓은 것)과 정의 파일(사람이 쓴 것) 양쪽에서 온다
+	local eventDefs, eventErr = MapData.eventsFor(def)
+	if eventErr ~= nil then
+		sceneError = "맵 이벤트 로드 실패: " .. tostring(eventErr)
+		return
+	end
+	for _, edef in ipairs(eventDefs) do
 		-- 커맨드가 틀리면 Event.new가 어느 자리인지와 함께 죽는다. 게임을 통째로
 		-- 멈추는 대신 씬 오류로 띄운다 (맵 로드 실패와 같은 경로).
 		local built, result = pcall(spawnEvent, edef)

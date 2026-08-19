@@ -1,0 +1,48 @@
+{
+  "version": 2,
+  "name": "소형 v2",
+  "id": 98,
+  "width": 4,
+  "height": 3,
+  "tileWidth": 16,
+  "tileHeight": 16,
+  "layers": [
+    { "name": "ground", "data": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] },
+    { "name": "deco",   "data": [0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0] }
+  ],
+  "collision": [0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0],
+  "tilesets": [
+    { "image": "resources/tiles/tileset16-8x13.png", "firstGid": 1, "columns": 8 }
+  ],
+  "events": [
+    {
+      "id": "sign",
+      "x": 1,
+      "y": 0,
+      "trigger": "action",
+      "commands": [
+        { "code": "message", "text": "맵 파일에 실려 온 이벤트다." }
+      ]
+    },
+    {
+      "id": "guard",
+      "x": 2,
+      "y": 1,
+      "dir": "down",
+      "trigger": "action",
+      "charset": { "file": "./resources/charsets/placeholder.png", "index": 2 },
+      "commands": [
+        { "code": "if", "cond": { "flag": "greeted" },
+          "thenDo": [ { "code": "message", "name": "문지기", "text": "또 오셨군." } ],
+          "elseDo": [
+            { "code": "setFlag", "key": "greeted" },
+            { "code": "choice", "options": ["들어간다", "돌아간다"], "cancel": 2,
+              "branches": [
+                [ { "code": "message", "text": "문이 열렸다." } ],
+                [ { "code": "message", "text": "발길을 돌렸다." } ]
+              ] }
+          ] }
+      ]
+    }
+  ]
+}

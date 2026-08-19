@@ -615,6 +615,9 @@ def test_rpgdemo_scene():
     has("captainLine:짐은 다 내렸네.", "선장이 먼저 말을 건다 (auto)")
     has("captainLine2:급할 것 없으면 마을을 좀 둘러보게.", "선장의 두 번째 대사")
 
+    # [C] 맵 파일(JSON)에 실려 온 이벤트가 실제로 돈다 (포맷 v2, 마일스톤 3)
+    has("crateLine:누군가의 짐이다.", "맵 파일에 실린 이벤트가 그대로 실행된다")
+
     # [C] 광장: 생선 장수의 선택지와 그 뒤에 달라지는 창고
     has("fishLine:오늘 물건은 아침에 다 나갔어요.", "생선 장수의 첫 대사")
     has("fishChoice:true", "생선 장수가 선택지를 띄운다")
