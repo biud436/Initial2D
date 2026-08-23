@@ -90,6 +90,15 @@ function M.run(t)
 	lines = Text.wrap("가나", 5, fakeMeasure)
 	t.check_eq(#lines, 2, "한 글자씩 나뉜다")
 	t.check_eq(lines[1], "가", "첫 글자")
+
+	-- 한글 조사 고르기 (받침이 있으면 앞엣것)
+	t.check_eq(Text.particle("폭주", "을", "를"), "를", "받침 없는 말")
+	t.check_eq(Text.particle("도약", "을", "를"), "을", "받침 있는 말")
+	t.check_eq(Text.particle("검기 방출", "을", "를"), "을", "마지막 글자로 고른다")
+	t.check_eq(Text.particle("Karto", "을", "를"), "를", "한글이 아니면 뒤엣것")
+	t.check_eq(Text.particle("", "을", "를"), "를", "빈 문자열도 죽지 않는다")
+	t.check_eq(Text.with("도약", "을", "를"), "도약을", "붙여서 돌려준다")
+	t.check_eq(Text.with("폭주", "이", "가"), "폭주가", "다른 조사 짝도 된다")
 end
 
 return M

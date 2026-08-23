@@ -36,6 +36,7 @@ local Monster = require("scripts/games/aldebaran/monster")
 local Combat = require("scripts/games/aldebaran/combat")
 local Stage = require("scripts/games/aldebaran/stage")
 local Hud = require("scripts/games/aldebaran/hud")
+local Text = require("scripts/rpg/text")
 
 AldebaranScene = {}
 
@@ -791,7 +792,7 @@ function AldebaranScene.update(elapsed)
 			if mark.skill ~= nil and skills[mark.skill] == false then
 				skills[mark.skill] = true
 				local def = Combat.SKILLS[mark.skill]
-				learnedText = def.name .. "을(를) 익혔다"
+				learnedText = Text.with(def.name, "을", "를") .. " 익혔다"
 				learnedTimer = SIGN_SECONDS
 			end
 			if mark.hallucination then
