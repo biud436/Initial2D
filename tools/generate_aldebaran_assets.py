@@ -57,6 +57,8 @@ COAT_SHADE = (150, 120, 76)
 SCARF = (202, 70, 58)           # 붉은 목도리
 SKIN = (232, 194, 156)
 HAIR = (88, 58, 34)
+HAIR_LIGHT = (124, 86, 52)
+RIM = (150, 170, 220)      # 역광 (숲의 푸른 밤빛)
 PANTS = (84, 76, 96)
 PANTS_SHADE = (60, 54, 72)
 BOOT = (110, 74, 44)
@@ -126,19 +128,85 @@ def blank(w, h):
     return Image.new("RGBA", (w, h), (0, 0, 0, 0))
 
 
+# 순서 있는 디더 (Bayer 4x4). 문턱값이 0..15 로 흩어져 있어, 밀도 t 를 0에서 1로
+# 옮기면 두 색이 **점점 엇갈리며** 섞인다. 면 전체를 50% 체커로 덮는 것과 다르다.
+BAYER4 = [
+    [0, 8, 2, 10],
+    [12, 4, 14, 6],
+    [3, 11, 1, 9],
+    [15, 7, 13, 5],
+]
+
+
+def bayer(x, y):
+    """(x, y) 자리의 문턱값 (0.0 ~ 1.0)."""
+    return (BAYER4[y % 4][x % 4] + 0.5) / 16.0
+
+
 def dither(d, x0, y0, x1, y1, color, phase=0):
-    """체커보드 디더 — 두 색이 점점이 엇갈리며 중간 톤을 만든다 (경계 포함 안 함)."""
+    """체커보드 디더. 무늬가 필요한 자리(작은 소품)에만 쓴다."""
     for y in range(y0, y1):
         for x in range(x0, x1):
             if (x + y + phase) % 2 == 0:
                 d.point((x, y), color)
 
 
-def dither_over(img, x0, y0, x1, y1, color, phase=0):
-    """이미 칠해진 픽셀 위에만 디더를 얹는다 (실루엣 밖으로 새지 않는다)."""
+def shade_band(img, color, x0, y0, x1, y1, axis="y", invert=False, gamma=1.0):
+    """그늘(또는 빛)을 **밀도가 변하는 띠**로 얹는다.
+
+    띠의 시작에서는 한 픽셀도 찍지 않고, 끝으로 갈수록 촘촘해진다. 이미 칠해진
+    픽셀 위에만 얹으므로 실루엣 밖으로 새지 않는다.
+
+    axis  "y" 면 위에서 아래로, "x" 면 왼쪽에서 오른쪽으로 짙어진다.
+    invert 반대 방향으로 짙어지게 한다.
+    gamma  1보다 크면 늦게 짙어진다 (띠가 얇게 느껴진다).
+    """
     px = img.load()
+    x0, y0 = max(0, int(x0)), max(0, int(y0))
+    x1, y1 = min(img.width, int(x1)), min(img.height, int(y1))
+    span = (y1 - y0) if axis == "y" else (x1 - x0)
+    if span <= 0:
+        return
+    for y in range(y0, y1):
+        for x in range(x0, x1):
+            if px[x, y][3] <= 40:
+                continue
+            pos = (y - y0) if axis == "y" else (x - x0)
+            t = pos / (span - 1) if span > 1 else 1.0
+            if invert:
+                t = 1.0 - t
+            t = t ** gamma
+            # 디더가 눈에 띄는 것은 밀도가 0.5 언저리일 때다. 그 구간을 띠의
+            # 가운데 절반으로 좁히고, 바깥은 아예 비우고 안쪽은 꽉 채운다.
+            t = (t - 0.25) / 0.5
+            if t <= 0:
+                continue
+            if t >= 1 or t > bayer(x, y):
+                px[x, y] = color + (255,)
+
+
+def tint(img, color, amount=0.5, box=None):
+    """영역을 한 색 쪽으로 섞는다 (피격 번쩍임처럼 무늬가 아니라 색이 변해야 하는 곳)."""
+    px = img.load()
+    x0, y0, x1, y1 = box or (0, 0, img.width, img.height)
     for y in range(max(0, y0), min(img.height, y1)):
         for x in range(max(0, x0), min(img.width, x1)):
+            r, g, b, a = px[x, y]
+            if a <= 40:
+                continue
+            px[x, y] = (
+                int(r + (color[0] - r) * amount),
+                int(g + (color[1] - g) * amount),
+                int(b + (color[2] - b) * amount),
+                255,
+            )
+
+
+def dither_over(img, x0, y0, x1, y1, color, phase=0):
+    """예전 방식(면 전체 50% 체커). 남은 호출부가 없어질 때까지만 둔다."""
+    px = img.load()
+    for y in range(max(0, int(y0)), min(img.height, int(y1))):
+        for x in range(max(0, int(x0)), min(img.width, int(x1))):
             if (x + y + phase) % 2 == 0 and px[x, y][3] > 40:
                 px[x, y] = color + (255,)
 
@@ -148,8 +216,16 @@ def rect(d, x0, y0, x1, y1, fill):
     d.rectangle([min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)], fill=fill)
 
 
-def outline(img, color=INK, thresh=40):
-    """실루엣 가장자리 픽셀을 테두리 색으로 바꾼다 — 지침 3번 (명확한 테두리)."""
+def darker(color, k=0.45):
+    return tuple(max(0, int(c * k)) for c in color)
+
+
+def outline(img, thresh=40, ink=None):
+    """실루엣 가장자리를 두른다 (지침 3번: 테두리가 명확할 것).
+
+    잉크 한 색으로 두르면 스티커처럼 보이므로, 기본은 **그 자리 색을 어둡게 한 것**을
+    쓴다. ink 를 주면 예전처럼 단색으로 두른다.
+    """
     px = img.load()
     w, h = img.size
     edges = []
@@ -162,7 +238,43 @@ def outline(img, color=INK, thresh=40):
                         edges.append((x, y))
                         break
     for x, y in edges:
-        px[x, y] = color + (255,)
+        if ink is not None:
+            px[x, y] = ink + (255,)
+        else:
+            r, g, b, _ = px[x, y]
+            px[x, y] = darker((r, g, b)) + (255,)
+
+
+def rim_light(img, color, thresh=40, side=0.55):
+    """실루엣의 **바깥 오른쪽** 가장자리에만 1px 역광을 넣는다.
+
+    어두운 숲에서 인물이 배경에 묻히지 않게 하는 장치다. 안쪽 가장자리(다리
+    사이 같은 곳)까지 넣으면 전부 파랗게 테두리가 지므로, 채워진 영역의
+    오른쪽 side 비율 안에 드는 픽셀만 고른다.
+    """
+    px = img.load()
+    w, h = img.size
+    xs = [x for y in range(h) for x in range(w) if px[x, y][3] > thresh]
+    if not xs:
+        return
+    x0, x1 = min(xs), max(xs)
+    limit = x0 + (x1 - x0) * side
+    hits = []
+    for y in range(1, h):
+        for x in range(w - 1):
+            if x < limit:
+                continue
+            if px[x, y][3] > thresh and px[x + 1, y][3] <= thresh:
+                if px[x, y - 1][3] > thresh:
+                    hits.append((x, y))
+    for x, y in hits:
+        r, g, b, _ = px[x, y]
+        px[x, y] = (
+            min(255, int(r + (color[0] - r) * 0.45)),
+            min(255, int(g + (color[1] - g) * 0.45)),
+            min(255, int(b + (color[2] - b) * 0.45)),
+            255,
+        )
 
 
 def sheet(frames_right, fw, fh, mirror=True):
@@ -286,11 +398,17 @@ def karto_frame(pose):
                        (hand[0] + dgx + ln, hand[1] + dgy),
                        (hand[0] + dgx, hand[1] + dgy + 1)], fill=BLADE)
 
-    # --- 명암 (마일스톤 2에서 디더 띠로 바뀐다) -----------------------------
-    dither_over(f, tx + 1, sh_y + 4, tx + 8, hip_y + 1, COAT_SHADE)
-    dither_over(f, tx - 5, hip_y, tx + 6, fy, PANTS_SHADE)
+    # --- 명암: 광원은 왼쪽 위. 오른쪽 아래로 갈수록 그늘이 촘촘해진다 -------
+    shade_band(f, COAT_SHADE, tx - 2, sh_y + 3, tx + 8, hip_y + 2, axis="x", gamma=1.4)
+    shade_band(f, COAT_SHADE, tx - 7, waist_y, tx + 8, hip_y + 2, axis="y", gamma=1.6)
+    shade_band(f, PANTS_SHADE, tx - 6, hip_y + 2, tx + 7, fy, axis="y", gamma=1.5)
+    shade_band(f, HAIR_LIGHT, hx - 4, head_t, hx + 5, head_t + 4, axis="y",
+               invert=True, gamma=1.2)
+    if pose.get("hurt"):
+        tint(f, SKIN, 0.35)
 
     outline(f)
+    rim_light(f, RIM)
 
     # 검기 (테두리 뒤에 얹는다. 빛이라 테두리가 없다)
     for arc in pose.get("slash", []):
@@ -388,10 +506,13 @@ def spider_frame(pose):
     d.point((cx + 9, by - 1), fill=SPIDER_EYE)
     d.point((cx + 11, by), fill=SPIDER_EYE)
 
-    dither_over(f, cx - 11, by, cx + 13, by + 5, SPIDER_SHADE)         # 배 쪽 그늘
+    shade_band(f, SPIDER_SHADE, cx - 12, by - 1, cx + 14, by + 5, axis="y", gamma=1.4)
+    shade_band(f, SPIDER_BELLY, cx - 11, by - 6, cx + 12, by - 4, axis="y",
+               invert=True, gamma=1.1)
     if pose.get("hurt"):
-        dither_over(f, 0, 0, 48, 32, SPIDER_BELLY, phase=1)
+        tint(f, SPIDER_BELLY, 0.45)
     outline(f)
+    rim_light(f, RIM, side=0.82)     # 다리마다 걸리지 않게 앞쪽 끝에만
     return f
 
 
@@ -469,10 +590,14 @@ def wolf_frame(pose):
         for i in range(3):
             d.line([wrist[0] + i - 1, wrist[1], wrist[0] + i + 1, wrist[1] + 3], fill=CLAW)
 
-    dither_over(f, cx - 8, hip_y - 4, cx + 9 + lean, hip_y + 3, WOLF_SHADE)
+    shade_band(f, WOLF_SHADE, cx - 9, hip_y - 6, cx + 10 + lean, hip_y + 4,
+               axis="y", gamma=1.4)
+    shade_band(f, WOLF_BELLY, cx - 6, sh_y - 2, cx + 10 + lean, sh_y + 6,
+               axis="y", invert=True, gamma=1.5)
     if pose.get("hurt"):
-        dither_over(f, 0, 0, 48, 48, WOLF_BELLY, phase=1)
+        tint(f, WOLF_BELLY, 0.45)
     outline(f)
+    rim_light(f, RIM)
     return f
 
 
@@ -510,7 +635,7 @@ def monkey_frame(pose):
         d.polygon([(cx - 14, sh_y + 3), (cx - 5, sh_y + 1),
                    (cx - 4, hip_y - 1), (cx - 13, hip_y + 1)], fill=BAG)
         d.line([cx - 13, sh_y + 8, cx - 5, sh_y + 7], fill=BAG_SHADE)
-        dither_over(f, cx - 14, sh_y + 9, cx - 4, hip_y + 1, BAG_SHADE)
+        shade_band(f, BAG_SHADE, cx - 14, sh_y + 8, cx - 4, hip_y + 1, axis="y", gamma=1.3)
 
     # --- 몸통 ---------------------------------------------------------------
     d.ellipse([cx - 7, sh_y + 2, cx + 6, hip_y + 2], fill=MONKEY)
@@ -542,9 +667,11 @@ def monkey_frame(pose):
     else:
         limb(d, (cx + 3, sh_y + 5), (cx + 9, hip_y - 1), 5, 3, MONKEY)
 
+    shade_band(f, MONKEY_SHADE, cx - 8, sh_y + 6, cx + 7, fy, axis="y", gamma=1.5)
     if pose.get("hurt"):
-        dither_over(f, 0, 0, 48, 48, MASK, phase=1)
+        tint(f, MASK, 0.45)
     outline(f)
+    rim_light(f, RIM)
     return f
 
 
