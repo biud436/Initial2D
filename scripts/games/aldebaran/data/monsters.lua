@@ -34,6 +34,23 @@ M.ATTACK_TYPES = {
 	            pattern = "매우 강한 공격력으로 자폭을 한다." },
 }
 
+-- 원안에 없는 공격 방식. **사료와 섞지 않으려고 표를 나눠 둔다.**
+-- 1-2에서 적이 묻는 질문을 늘리려고 우리가 만든 것이다
+-- (docs/plans/aldebaran-7-tomb.md 5절).
+M.EXTRA_ATTACK_TYPES = {
+	air    = { name = "공중 형", hp = "적음", atk = "보통", def = "낮음",
+	           pattern = "떠다니다가 내려찍는다. 지면에서는 닿지 않는다.",
+	           question = "2단 점프의 정점을 써라" },
+	shield = { name = "방패 형", hp = "많음", atk = "보통", def = "높음",
+	           pattern = "앞을 막는다. 등은 비어 있고 돌아서는 데 시간이 걸린다.",
+	           question = "뒤로 돌아가라" },
+}
+
+--- 공격 방식 하나 (원안의 것이든 우리 것이든)
+function M.attackType(key)
+	return M.ATTACK_TYPES[key] or M.EXTRA_ATTACK_TYPES[key]
+end
+
 -- ---- 원안 6.2.2절 표 37: 몬스터의 이동 속도 5단계 ----------------------------
 -- 원안의 값은 초당 픽셀이 아니라 배율이다. 우리 walkSpeed(픽셀/초)와 짝지어 둔다.
 
@@ -285,6 +302,124 @@ M.species = {
 	},
 }
 
+-- ---- 1-2 황제의 무덤의 적 셋 (docs/plans/aldebaran-7-tomb.md 5절) ----------
+--
+-- 셋 다 원안의 서술에 뿌리가 있지만 수치는 우리가 정했다. 텔레그래프 부등식
+-- (선딜 >= 회피 성립 17프레임 + 인지 15프레임 = 32프레임 = 0.53초)을 지킨다.
+-- 그 검사는 tests/lua/cases/aldebaran_monster_test.lua가 데이터에서 돌린다.
+
+M.species.soul = {
+	name = "순장된 영혼",
+	hp = 30, atk = 12, def = 1, exp = 7, gold = 8,
+	walkSpeed = 24, chaseSpeed = 52,
+	alertRange = 128, attackRange = 40, alertRangeY = 96,
+	windup = 0.55, active = 0.28, recover = 0.7,  -- 선딜 33프레임
+	halfW = 10, bodyH = 22,
+	-- 내려찍기는 0.28초에 380px/s = 106px. 떠 있는 높이(약 64px)보다 깊게 내려온다.
+	flies = true, flySpeed = 55, diveSpeed = 380, riseSpeed = 190,
+	sheet = "./resources/aldebaran/soul.png",
+	cols = 4, rows = 2, frameW = 32, frameH = 32,
+	anchorX = 15, anchorY = 26,
+	frames = { walk = { 0, 1 }, attack = 2, hurt = 3 },
+
+	spec = {
+		source = nil,                    -- 규격서는 없다. 표 16과 20의 서술에서 만들었다
+		index = 5,
+		name = "순장된 영혼",
+		element = "dark",
+		attackType = "air",
+		traits = "왕이 사후에도 함께하길 원해 강제로 순장된 신하와 자식들의 영혼. "
+			.. "수호자들이 침입자를 막으려 불러낸다 (원안 표 16, 표 20).",
+		habitat = "황제의 무덤. 방을 떠날 수 없다.",
+		weakness = { light = true },      -- 별들의 방의 빛기둥 안에서 실체가 된다
+		attackPatterns = {
+			normal = "떠 있다가 몸을 위로 당겼다 발치까지 내려찍는다.",
+		},
+		reward = { exp = 7, gold = 8, item = nil },
+		stats = { moveSpeed = "slow", maxHp = 30, atk = 12, def = 1 },
+		notes = {
+			"원안에 몬스터 규격서가 없다. 순장(표 16)과 '희생된 영혼들을 소환'(표 20)에서 "
+				.. "만든 종이다.",
+			"공중형은 원안 표 6의 넷에 없다. 우리가 더한 공격 방식이다 "
+				.. "(M.EXTRA_ATTACK_TYPES).",
+		},
+	},
+}
+
+M.species.sentinel = {
+	name = "무덤 번병",
+	hp = 60, atk = 18, def = 8, exp = 11, gold = 14,
+	walkSpeed = 22, chaseSpeed = 40,
+	alertRange = 112, attackRange = 26,
+	windup = 0.6, active = 0.18, recover = 0.6,    -- 선딜 36프레임
+	halfW = 11, bodyH = 30,
+	guardFront = true, turnDelay = 0.55,
+	sheet = "./resources/aldebaran/sentinel.png",
+	cols = 5, rows = 2, frameW = 48, frameH = 48,
+	anchorX = 23, anchorY = 46,
+	frames = { walk = { 0, 1 }, attack = 2, hurt = 3, block = 4 },
+
+	spec = {
+		source = nil,
+		index = 6,
+		name = "무덤 번병",
+		element = "dark",
+		attackType = "shield",
+		traits = "수호자들이 '직접 나서지 않고 부하를 통솔'한다는 서술(원안 표 20)의 "
+			.. "그 부하다. 석회암 방패를 들고 통로를 막는다.",
+		habitat = "황제의 무덤의 복도와 방 입구.",
+		weakness = { text = "방패는 앞만 가린다. 등은 비어 있다." },
+		attackPatterns = {
+			normal = "방패로 밀고 창을 내지른다.",
+			defense = "바라보는 쪽에서 오는 것은 막는다. 막은 뒤 잠깐 굳는다.",
+		},
+		reward = { exp = 11, gold = 14, item = nil },
+		stats = { moveSpeed = "veryslow", maxHp = 60, atk = 18, def = 8 },
+		notes = {
+			"원안에 규격서가 없다. 표 20의 '부하를 통솔하고 지휘하에 침입자를 처치'에서 "
+				.. "만든 종이다.",
+			"방패형은 원안 표 6의 넷에 없다. 원안 표 39의 '방어 기술' 칸이 '없음'이라 "
+				.. "막는 적이 아예 없었다.",
+		},
+	},
+}
+
+M.species.shard = {
+	name = "파괴의 조각",
+	hp = 14, atk = 26, def = 3, exp = 6, gold = 12,
+	walkSpeed = 30, chaseSpeed = 95,
+	alertRange = 150, attackRange = 20,
+	windup = 0.75, active = 0.15, recover = 0.3,
+	halfW = 8, bodyH = 16,
+	special = "fuse",
+	fuseRange = 26, fuseTime = 0.75, blastTime = 0.15, blastRadius = 30,
+	sheet = "./resources/aldebaran/shard.png",
+	cols = 4, rows = 2, frameW = 32, frameH = 32,
+	anchorX = 15, anchorY = 30,
+	frames = { walk = { 0, 1 }, attack = 2, hurt = 3, fuse = 2, boom = 2 },
+
+	spec = {
+		source = { table = 6, section = "2.3.1" },   -- 자폭형은 원안의 것이다
+		index = 7,
+		name = "파괴의 조각",
+		element = "dark",
+		attackType = "suicide",
+		traits = "파괴의 방에서 떨어져 나온 돌조각에 아포피스의 힘이 붙은 것. "
+			.. "원안 표 6의 자폭형은 넷 중 하나인데 지금까지 쓰이지 않았다.",
+		habitat = "파괴의 방과 그 복도.",
+		weakness = { text = "체력이 낮다. 심지가 타는 동안 베면 터지지 않고 스러진다." },
+		attackPatterns = {
+			normal = "붙으면 멈춰 서서 심지가 탄다. 그리고 터진다.",
+		},
+		reward = { exp = 6, gold = 12, item = nil },
+		stats = { moveSpeed = "fast", maxHp = 14, atk = 26, def = 3 },
+		notes = {
+			"공격 방식은 원안 표 6의 자폭형이다. 이름과 수치는 우리가 정했다.",
+			"멈춰 서는 것이 예고다 (45프레임). 그 사이에 물러나거나 베어 없앤다.",
+		},
+	},
+}
+
 -- ---- 스키마 검사 ------------------------------------------------------------
 -- 그릇이 그릇 노릇을 하려면 모양이 지켜져야 한다. P5에서 종이 열로 늘어날 때
 -- 칸 하나를 빠뜨리는 것을 여기서 잡는다.
@@ -335,7 +470,7 @@ function M.validateSpecies(key, def)
 			return key .. ": spec 에 모르는 칸 '" .. field .. "'이 있다"
 		end
 	end
-	if spec.attackType and not M.ATTACK_TYPES[spec.attackType] then
+	if spec.attackType and not M.attackType(spec.attackType) then
 		return key .. ": 모르는 공격 방식 '" .. tostring(spec.attackType) .. "'"
 	end
 	if type(spec.stats) == "table" then

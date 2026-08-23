@@ -34,15 +34,30 @@ local Dialogue = require("scripts/rpg/message")
 local Player = require("scripts/games/aldebaran/player")
 local Monster = require("scripts/games/aldebaran/monster")
 local Combat = require("scripts/games/aldebaran/combat")
-local Stage = require("scripts/games/aldebaran/stage")
+local Stages = require("scripts/games/aldebaran/stages/init")
 local Hud = require("scripts/games/aldebaran/hud")
 local Text = require("scripts/rpg/text")
 
 AldebaranScene = {}
 
-local MAP_PATH = "./resources/maps/aldebaran_forest.json"
+-- 지금 무대. 씬을 열기 전에 AldebaranScene.setStage(id)로 바꾼다 (타이틀과
+-- 결과 창이 그렇게 한다). 기본은 목록의 첫 스테이지다.
+local Stage = Stages.first()
+
+--- 다음에 열 스테이지를 정한다. load() 전에 불러야 한다.
+function AldebaranScene.setStage(id)
+	local stage, why = Stages.get(id)
+	if stage == nil then return false, why end
+	Stage = stage
+	return true
+end
+
+--- 지금 무대의 id (진행 저장과 결과 창이 쓴다)
+function AldebaranScene.stageId()
+	return Stage ~= nil and Stage.id or nil
+end
+
 local BG_DIR = "./resources/aldebaran/"
-local BRIGHT_PATH = "./resources/aldebaran/forest_bright.png"
 local KARTO_PATH = "./resources/aldebaran/karto.png"
 local AURA_PATH = "./resources/aldebaran/aura.png"
 local STONE_PATH = "./resources/aldebaran/stone.png"
@@ -50,7 +65,6 @@ local BAG_PATH = "./resources/aldebaran/bag.png"
 local FADE_PATH = "./resources/ui/fade.png"
 local UI_FONT = "./resources/fonts/hangul16.fnt"
 local BASE_FONT = "./resources/fonts/hangul.fnt"
-local BGM_SLOT = "./resources/audio/aldebaran_forest.ogg"   -- 없으면 bless로
 local BGM_FALLBACK = "./resources/audio/bless.ogg"
 
 local SE = {
@@ -106,6 +120,7 @@ local rng = nil
 local monsters = {}            -- { model = Monster, img = Image, boss = bool }
 local stones = {}              -- 짐도둑의 돌팔매 { x, y, vx, vy }
 local bag = nil                -- 떨어진 배낭 { x, y }
+local bossClear = nil          -- 보스를 쓰러뜨린 뒤 끝나기까지 남은 초
 local stats = nil
 local exp, gold, lives = 0, 0, 2
 local level = 1
@@ -233,6 +248,7 @@ local function resetStage()
 	spawnMonsters()
 	stones = {}
 	bag = nil
+	bossClear = nil
 	ending = nil
 	gameOver = nil
 	stageTime = 0
@@ -277,6 +293,17 @@ local function gainReward(def)
 end
 
 --- 날린 검기. 몬스터에 닿으면 터지고, 벽이나 화면 밖에서 사라진다.
+--- 보스가 쓰러졌다. 무엇으로 끝나는가는 스테이지가 정한다.
+--   숲: 짐도둑이 배낭을 떨구고, 그것을 주워야 끝난다 (기획서 4.3절).
+--   그 밖: 쓰러뜨린 것으로 끝난다. 죽는 연출을 보여 주고 잠시 뒤 에필로그.
+local function bossDown(m)
+	if Stage.boss.drops == "bag" then
+		bag = { x = m.x, y = m.y }
+	else
+		bossClear = 1.2
+	end
+end
+
 local function updateBolts(dt)
 	local def = Combat.SKILLS.bolt
 	for i = #bolts, 1, -1 do
@@ -292,7 +319,7 @@ local function updateBolts(dt)
 						playSe("hit")
 						if Monster.hurt(m, def.damage, b.vx > 0 and 1 or -1) then
 							gainReward(m.def)
-							if e.boss then bag = { x = m.x, y = m.y } end
+							if e.boss then bossDown(m) end
 						end
 						gone = true
 						break
@@ -321,10 +348,7 @@ local function resolvePlayerAttack()
 					playSe("hit")
 					if Monster.hurt(m, r.dmg, player.facing) then
 						gainReward(m.def)
-						if e.boss then
-							-- 짐도둑이 쓰러지면 배낭이 떨어진다 (기획서 4.3절)
-							bag = { x = m.x, y = m.y }
-						end
+						if e.boss then bossDown(m) end
 					end
 				end
 			end
@@ -408,7 +432,7 @@ local function updateStones(dt)
 			gone = true
 		elseif player.invulnTimer <= 0
 				and overlap(s.x - 4, s.y - 4, s.x + 4, s.y + 4, px0, py0, px1, py1) then
-			damagePlayer(Stage.species.monkey.atk, s.x, nil)
+			damagePlayer(Stage.species[Stage.boss.species].atk, s.x, nil)
 			gone = true
 		end
 		if gone then table.remove(stones, i) end
@@ -468,7 +492,7 @@ function AldebaranScene.init()
 	DEBUG_HUD = env("INITIAL2D_DEBUG") ~= nil
 	if FontReady then PreparaFont(UI_FONT) end
 
-	map, mapError = Tilemap.Load(MAP_PATH)
+	map, mapError = Tilemap.Load(Stage.map)
 	if map ~= nil then
 		mapW, mapH, tileW, tileH, layerCount = Tilemap.GetSize(map)
 		worldW, worldH = mapW * tileW, mapH * tileH
@@ -486,7 +510,9 @@ function AldebaranScene.init()
 				Image(near, 0, 0, W, H, 1, "AldNear:" .. s.name) },
 		}
 	end
-	brightImg = Image(BRIGHT_PATH, 0, 0, W, H, 1, "AldBright")
+	-- 환각 때 겹쳐 보이는 옛 무대. 스테이지마다 있을 수도 없을 수도 있다
+	brightImg = (Stage.bright ~= nil)
+		and Image(Stage.bright, 0, 0, W, H, 1, "AldBright:" .. Stage.id) or nil
 	hallucination = 0
 
 	karto = Image(KARTO_PATH, 0, 0, 48, 48, 24, "AldebaranKarto")
@@ -500,12 +526,17 @@ function AldebaranScene.init()
 	stoneImg = Image(STONE_PATH, 0, 0, 8, 8, 1, "AldebaranStone")
 	bagImg = Image(BAG_PATH, 0, 0, 16, 16, 1, "AldebaranBag")
 
-	-- 도입 컷씬의 짐도둑 (몬스터와 같은 시트, 다른 스프라이트)
-	local mk = Stage.species.monkey
-	thiefImg = Image(mk.sheet, 0, 0, mk.frameW, mk.frameH,
-		mk.cols * mk.rows, "Aldebaran:monkey")
-	thiefImg.setSheetGrid(mk.cols, mk.rows)
-	thiefImg.setLoop(false)
+	-- 도입 컷씬의 짐도둑 (몬스터와 같은 시트, 다른 스프라이트).
+	-- 컷씬이 없는 스테이지에서는 만들지 않는다.
+	if Stage.intro == "thief" then
+		local mk = Stage.species[Stage.boss.species]
+		thiefImg = Image(mk.sheet, 0, 0, mk.frameW, mk.frameH,
+			mk.cols * mk.rows, "Aldebaran:" .. Stage.boss.species)
+		thiefImg.setSheetGrid(mk.cols, mk.rows)
+		thiefImg.setLoop(false)
+	else
+		thiefImg = nil
+	end
 
 	fadeImg = Image(FADE_PATH, 0, 0, 16, 16, 1, "AldebaranFade")
 	fadeImg.setScale(math.max(W, H) / 16)
@@ -535,10 +566,15 @@ function AldebaranScene.init()
 	resetStage()
 
 	-- 도입 컷씬 (기획서 4.2절): 짐도둑이 배낭을 지고 달아난다 → 나레이션
-	if env("INITIAL2D_SKIP_INTRO") == nil then
+	if Stage.intro == nil or env("INITIAL2D_SKIP_INTRO") ~= nil then
+		intro = nil
+	elseif Stage.intro == "thief" then
 		intro = { phase = "thief", timer = 0, x = Stage.START.x + 40 }
 	else
-		intro = nil
+		-- 컷씬 없이 나레이션만. 글을 지금 띄우지 않으면 isBusy()가 거짓이라
+		-- 첫 프레임에 그대로 사라진다 (A3에서 한 번 당한 자리다).
+		intro = { phase = "text", timer = 0 }
+		dialogue:showMessage(Stage.INTRO)
 	end
 
 	if VirtualPad.shouldShow() then
@@ -555,7 +591,9 @@ function AldebaranScene.init()
 		}
 	end
 
-	Bgm.play(Assets.exists(BGM_SLOT) and BGM_SLOT or BGM_FALLBACK, { volume = 64 })
+	local slot = Stage.bgmSlot
+	Bgm.play((slot ~= nil and Assets.exists(slot)) and slot or BGM_FALLBACK,
+		{ volume = 64 })
 end
 
 -- ---- 일시 정지 (기획서 8.3절) ----------------------------------------------
@@ -821,6 +859,16 @@ function AldebaranScene.update(elapsed)
 		return
 	end
 
+	-- 배낭이 없는 무대는 보스를 쓰러뜨린 것으로 끝난다
+	if bossClear ~= nil then
+		bossClear = bossClear - dt
+		if bossClear <= 0 then
+			bossClear = nil
+			startEnding()
+			return
+		end
+	end
+
 	camX = math.max(0, math.min(player.x - W / 2, worldW - W))
 end
 
@@ -969,7 +1017,7 @@ function AldebaranScene.render()
 
 	-- 도입 컷씬의 짐도둑
 	if intro ~= nil and intro.phase == "thief" then
-		local mk = Stage.species.monkey
+		local mk = Stage.species[Stage.boss.species]
 		local f = math.floor(intro.timer * 8) % 2
 		thiefImg.setFrames(f, f)
 		thiefImg.setCurrentFrame(f)
