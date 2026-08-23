@@ -393,6 +393,10 @@ function AldebaranScene.status()
 		monsters = ms,
 		stones = #stones,
 		intro = intro ~= nil,
+		-- 창이 화면에 남아 있는가 (닫히는 중도 포함). 컷씬이 끝난 뒤 이것이
+		-- 참으로 남으면 "대화창이 안 꺼진다" 버그다 (2026-08-23 사용자 보고)
+		dialogueShown = dialogue ~= nil and dialogue.window ~= nil
+			and not dialogue.window:isClosed() or false,
 		bag = bag ~= nil,
 		ending = ending ~= nil and ending.phase or nil,
 		gameOver = gameOver ~= nil and gameOver.phase or nil,
@@ -576,6 +580,7 @@ local function updateEnding()
 		end
 	else
 		-- 결과 창 (기획서 4.4절): 결정키로 닫으면 타이틀로
+		dialogue:update({}, false)      -- 에필로그 창이 닫히는 것을 마저 본다
 		ending.wait = ending.wait + 1
 		if ending.wait > 10 and pollConfirm().confirm then
 			SwitchScene("aldebaran_title")
@@ -593,6 +598,7 @@ local function updateGameOver()
 			})
 		end
 	else
+		dialogue:update({}, false)      -- 게임 오버 글의 창이 닫히는 것을 마저 본다
 		pauseChoice:update(pollMenuInput())
 		if not pauseChoice:isActive() then
 			local picked = pauseChoice:result()
@@ -634,6 +640,11 @@ function AldebaranScene.update(elapsed)
 		updateIntro(dt)
 		return
 	end
+
+	-- 대화창은 한가할 때도 매 프레임 돌린다. isBusy()는 마지막 쪽을 넘긴 즉시
+	-- 거짓이 되고 창이 닫히는 것은 그 뒤의 update()가 하는 일이라, 컷씬이
+	-- 끝났다고 갱신을 멈추면 창이 열린 채로 화면에 남는다.
+	dialogue:update({}, false)
 
 	stageTime = stageTime + dt
 	local input = pollInput()
@@ -698,10 +709,6 @@ function AldebaranScene.update(elapsed)
 	end
 
 	camX = math.max(0, math.min(player.x - W / 2, worldW - W))
-
-	bg1.update(0)
-	bg2.update(0)
-	karto.update(0)
 end
 
 -- ---- 그리기 ----------------------------------------------------------------
@@ -772,9 +779,14 @@ function AldebaranScene.render()
 
 	local cx = math.floor(camX)
 
+	-- 스프라이트의 트랜스폼은 update()에서 커밋된다. 위치를 render에서 정하므로
+	-- 그리기 직전에 update(0)을 불러야 한다 — 그러지 않으면 한 프레임 늦고,
+	-- 컷씬처럼 update가 일찍 반환하는 동안에는 아예 반영되지 않는다.
 	local bx = -math.floor(camX * PARALLAX) % W
 	bg1.setPosition(bx - W, 0)
 	bg2.setPosition(bx, 0)
+	bg1.update(0)
+	bg2.update(0)
 	bg1.draw()
 	bg2.draw()
 
@@ -826,6 +838,7 @@ function AldebaranScene.render()
 	else
 		karto.setOpacity(255)
 	end
+	karto.update(0)
 	karto.draw()
 
 	drawHud()

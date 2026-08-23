@@ -782,7 +782,11 @@ def test_aldebaran_scene():
     # [B] 도입 컷씬 (기획서 4.2절)
     has("aldebaranMonsters:8", "몬스터 여덟이 배치된다 (거미 넷, 늑대 셋, 짐도둑)")
     has("introActive:true", "도입 컷씬이 조작을 잠근다")
+    has("introWindow:true", "나레이션 창이 실제로 떠 있다")
     has("introDone:true", "나레이션을 넘기면 조작이 풀린다")
+    # isBusy()는 마지막 쪽을 넘긴 즉시 거짓이 되고 창은 그 뒤의 update()가 닫는다.
+    # 컷씬이 끝났다고 갱신을 멈추면 창이 열린 채 남는다 (2026-08-23 사용자 보고).
+    has("introWindowClosed:true", "넘긴 나레이션 창이 화면에서 사라진다")
 
     # [C] 게임 오버와 다시 하기 (기획서 4.5절)
     has("firstDeathLives:1", "낙하 한 번에 목숨 하나")

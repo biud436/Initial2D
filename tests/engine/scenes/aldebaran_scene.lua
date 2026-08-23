@@ -154,8 +154,13 @@ end
 local function runIntro()
 	print("introActive:" .. tostring(st().intro))
 	tick(110)                           -- 짐도둑이 달아난다 (1.6초)
+	print("introWindow:" .. tostring(st().dialogueShown))
 	readThrough(function() return not st().intro end)
 	print("introDone:" .. tostring(not st().intro))
+	-- 넘긴 창이 실제로 화면에서 사라지는지 본다. isBusy()는 마지막 쪽을 넘긴
+	-- 즉시 거짓이 되지만 창은 그 뒤의 update()가 닫는다 (2026-08-23 사용자 보고).
+	tick(30)
+	print("introWindowClosed:" .. tostring(not st().dialogueShown))
 end
 
 local function runGameOver()
