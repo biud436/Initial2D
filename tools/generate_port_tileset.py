@@ -61,20 +61,46 @@ def tile(bg=None):
 # ---- 바다와 물가 -----------------------------------------------------------
 
 
-def sea(variant=0):
-    """바다. 물결 무늬 두 가지를 번갈아 깔아 넓은 면이 죽지 않게 한다."""
-    im = tile(SEA)
-    d = ImageDraw.Draw(im)
-    d.rectangle((0, 0, TILE - 1, 1), fill=SEA_DARK)
-    if variant == 0:
-        d.line([(2, 5), (6, 5)], fill=SEA_LIGHT)
-        d.line([(9, 10), (13, 10)], fill=SEA_LIGHT)
-        d.point((7, 12), fill=SEA_LIGHT)
-    else:
-        d.line([(4, 3), (8, 3)], fill=SEA_LIGHT)
-        d.line([(1, 11), (4, 11)], fill=SEA_LIGHT)
-        d.line([(10, 7), (14, 7)], fill=SEA_LIGHT)
-    return im
+# 바다는 타일 하나가 아니라 2x2 한 벌이다. 32x32 한 장에 감아 도는 물결을 그린 뒤
+# 넷으로 자르고, 맵은 (x % 2, y % 2)로 골라 깐다. 이렇게 하는 까닭:
+#
+#   1. 예전 구현은 타일 위쪽에 어두운 띠(SEA_DARK)를 깔았다. 한 장만 보면 수면의
+#      그늘이지만, 넓은 바다에 깔면 16px마다 가로줄이 격자로 드러났다.
+#   2. 무늬가 타일 안에서 닫혀 있으면 되풀이 주기가 16px이라 눈에 띈다. 32x32에
+#      그려 넷으로 자르면 주기가 32px로 늘고, 가장자리를 감아 도는 물결이 이음매를 지운다.
+#
+# 좌표는 손으로 골랐고 난수가 아니다 — 같은 명령이 언제나 같은 그림을 낸다.
+_SEA_WAVES = (
+    (2, 3, 5, "light"), (12, 6, 4, "light"), (24, 2, 6, "light"),
+    (30, 11, 5, "light"), (6, 14, 6, "light"), (18, 18, 4, "light"),
+    (27, 22, 5, "light"), (9, 25, 6, "light"), (20, 29, 5, "light"),
+    (14, 30, 4, "light"), (31, 17, 3, "light"),
+    (1, 20, 3, "dark"), (15, 10, 3, "dark"), (22, 27, 3, "dark"), (5, 8, 2, "dark"),
+)
+
+_sea_tiles = None
+
+
+def _make_sea_tiles():
+    """바다 2x2 한 벌을 만든다. 반환 순서는 (0,0), (1,0), (0,1), (1,1)."""
+    n = TILE * 2
+    im = Image.new("RGBA", (n, n), SEA)
+    pixels = im.load()
+    for x0, y0, length, kind in _SEA_WAVES:
+        color = SEA_LIGHT if kind == "light" else SEA_DARK
+        for i in range(length):
+            # 가로로 감아 돈다 — 오른쪽 끝을 넘은 물결이 왼쪽에서 이어진다
+            pixels[(x0 + i) % n, y0 % n] = color + (255,)
+    return [im.crop((cx * TILE, cy * TILE, (cx + 1) * TILE, (cy + 1) * TILE))
+            for cy in (0, 1) for cx in (0, 1)]
+
+
+def sea(index):
+    """바다 2x2 한 벌 중 하나. index는 (y % 2) * 2 + (x % 2)."""
+    global _sea_tiles
+    if _sea_tiles is None:
+        _sea_tiles = _make_sea_tiles()
+    return _sea_tiles[index]
 
 
 def shore():
@@ -97,7 +123,9 @@ def plank(edge=None):
     """부두 널. edge는 "left"/"right"면 그쪽에 굄목을 댄다."""
     im = tile(WOOD)
     d = ImageDraw.Draw(im)
-    for y in (0, 5, 10, 15):
+    # 어두운 줄은 y=0, 5, 10에만 둔다. 예전에는 15에도 그려서 널을 세로로 이으면
+    # 15와 다음 널의 0이 붙어 이음매만 2px로 두꺼워졌다 (다른 줄은 1px).
+    for y in (0, 5, 10):
         d.line([(0, y), (TILE - 1, y)], fill=WOOD_DARK)
     for y in (1, 6, 11):
         d.line([(0, y), (TILE - 1, y)], fill=WOOD_LIGHT)
@@ -344,7 +372,8 @@ def steps():
     """언덕으로 오르는 돌계단."""
     im = tile(STONE)
     d = ImageDraw.Draw(im)
-    for y in (0, 5, 10, 15):
+    # 널과 같은 이유로 y=15를 뺀다 (세로로 이었을 때 이음매만 두꺼워진다)
+    for y in (0, 5, 10):
         d.line([(0, y), (TILE - 1, y)], fill=STONE_DARK)
         d.line([(0, y + 1), (TILE - 1, y + 1)], fill=STONE_LIGHT)
     return im
@@ -418,8 +447,10 @@ def table():
 
 
 TILESET = [
-    ("바다", lambda: sea(0)),
-    ("바다 물결", lambda: sea(1)),
+    # 바다 2x2 한 벌 가운데 위쪽 둘. 아래쪽 둘은 목록 끝에 있다 — 앞 타일의 gid를
+    # 밀지 않으려고 새 타일은 언제나 뒤에만 더한다 (이 파일의 첫 번째 규칙).
+    ("바다 좌위", lambda: sea(0)),
+    ("바다 우위", lambda: sea(1)),
     ("물가", shore),
     ("부두 널", lambda: plank()),
     ("부두 널 좌", lambda: plank("left")),
@@ -461,6 +492,9 @@ TILESET = [
     ("막힌 문", gate_closed),
     ("난로", hearth),
     ("탁자", table),
+
+    ("바다 좌아래", lambda: sea(2)),
+    ("바다 우아래", lambda: sea(3)),
 ]
 
 

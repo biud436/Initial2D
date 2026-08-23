@@ -22,6 +22,8 @@
 -- 분기는 중첩이지 점프가 아니다. RPG Maker는 평탄한 목록에 들여쓰기로 분기를
 -- 표현하지만, JSON과 웹 에디터에는 중첩 배열이 다루기 쉽고 라벨 관리가 없다.
 
+local Inventory = require("scripts/rpg/inventory")
+
 local M = {}
 
 -- ---- 조건 -----------------------------------------------------------------
@@ -38,12 +40,24 @@ local COMPARE = {
 }
 
 --- 조건 하나를 판정한다. 조건이 없으면 참.
---   { flag = "heardAltar" }                    깃발이 참인가
---   { flag = "booked", equals = false }        값 비교
---   { var = "silver", op = ">=", value = 2 }   수 비교
+--   { flag = "heardAltar" }                        깃발이 참인가
+--   { flag = "booked", equals = false }            값 비교
+--   { var = "silver", op = ">=", value = 2 }       수 비교
+--   { item = "warehouse_key" }                     하나라도 가졌는가 (10단계)
+--   { item = "silver", op = ">=", value = 2 }      개수 비교
 function M.test(cond, state)
 	if cond == nil then return true end
 	state = state or {}
+
+	if cond.item ~= nil then
+		local have = Inventory.count(state, cond.item)
+		if cond.op == nil and cond.value == nil then
+			return have >= 1
+		end
+		local op = COMPARE[cond.op or ">="]
+		if op == nil then return false end
+		return op(have, tonumber(cond.value) or 1)
+	end
 
 	if cond.flag ~= nil then
 		local v = state[cond.flag]
@@ -124,6 +138,16 @@ define("setVar", { key = "string" }, function(cmd, _, ctx)
 	else
 		ctx.state[cmd.key] = amount
 	end
+end)
+
+define("giveItem", { item = "string" }, function(cmd, _, ctx)
+	Inventory.give(ctx.state, cmd.item, cmd.count)
+end)
+
+define("takeItem", { item = "string" }, function(cmd, _, ctx)
+	-- 모자라면 아무 일도 일어나지 않는다. 반쯤 빼고 실패하는 경우가 없어야
+	-- 이벤트가 스스로를 되돌릴 필요가 없다 (inventory.take의 규칙).
+	return Inventory.take(ctx.state, cmd.item, cmd.count)
 end)
 
 define("if", { cond = "table" }, function(cmd, self, ctx, env, runList)

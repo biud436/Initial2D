@@ -4,8 +4,8 @@
 -- 대사가 갈린다. 문을 밟으면 다른 맵으로 이동한다.
 --   방향키 또는 가상 D-패드: 이동, 선택지 커서
 --     - 정지 중에 다른 방향키를 짧게 누르면 이동 없이 방향만 바뀐다 (R2K3식)
---   Z / Enter / Space (터치는 패드 밖 탭): 말 걸기, 대화 넘기기, 선택지 결정
---   X: 선택지 취소 (취소 항목이 정해진 선택지에서만)
+--   Z / Enter / Space (터치는 결정 버튼): 말 걸기, 대화 넘기기, 선택지 결정
+--   X (터치는 취소 버튼): 소지품 창 열고 닫기, 선택지 취소
 --   ESC 또는 Android 뒤로가기: 타이틀로
 --
 -- 맵과 이벤트 정의는 scripts/maps/<이름>.lua 가 짝으로 들고 있다. 이 씬은 그
@@ -34,6 +34,9 @@ local Buttons = require("scripts/ui/buttons")
 local Assets = require("scripts/rpg/assets")
 local MapData = require("scripts/rpg/mapdata")
 local Bgm = require("scripts/bgm")
+local Inventory = require("scripts/rpg/inventory")
+local Menu = require("scripts/rpg/menu")
+local Items = require("scripts/games/rpgdemo/items")
 
 RpgDemoScene = {}
 
@@ -83,6 +86,7 @@ local hintTimer, fpsAvg = 0, 0
 local DEBUG_HUD = false
 local HINT_SECONDS = 4.0
 local skin, dialogue = nil, nil   -- 대화창 (7단계)
+local menu = nil                  -- 소지품 창 (10단계)
 local padPrev = nil               -- 가상 패드 방향의 직전 값 (엣지 판정용)
 
 -- 자동 시연 경로. 맵 정의 파일의 autoRoute를 쓰고, 없으면 제자리에서 말만 건다.
@@ -163,8 +167,13 @@ local function loadMap(name, startX, startY, startDir)
 	mapScripts = def.scripts
 
 	local err
+	-- groundLayers는 "캐릭터보다 아래에 그릴 레이어 수"다. 맵마다 다르므로
+	-- 정의 파일이 정한다 — 항구 마을은 ground와 deco가 아래(2), 빨래줄만 위다.
+	-- 이 값이 모자라면 집 벽 같은 장식이 캐릭터의 머리를 덮는다 (프레임 24x32가
+	-- 타일 16x16보다 커서 머리가 윗 칸으로 올라간다).
 	scene, err = MapScene.new{
-		mapPath = def.map, viewW = W, viewH = H, groundLayers = 1,
+		mapPath = def.map, viewW = W, viewH = H,
+		groundLayers = def.groundLayers or 1,
 	}
 	if scene == nil then
 		sceneError = err
@@ -281,6 +290,11 @@ function RpgDemoScene.status()
 		lines = dialogue ~= nil and dialogue:visibleLines() or {},
 		fading = fade.dir ~= 0,
 		location = locationTimer > 0 and locationText or nil,
+		menu = menu ~= nil and menu:isOpen() or false,
+		menuLines = (menu ~= nil and menu:isOpen() and interp ~= nil)
+			and Inventory.list(interp.state, Items) or {},
+		items = (interp ~= nil and interp.state[Inventory.KEY]) or {},
+		flags = interp ~= nil and interp.state or {},
 		error = sceneError,
 	}
 end
@@ -342,6 +356,15 @@ function RpgDemoScene.init()
 			cursor = playSe(SE_CURSOR, "uiCursor"),
 			decision = playSe(SE_DECISION, "uiDecision"),
 			text = playSe(SE_TEXT, "uiText"),
+		},
+	}
+
+	menu = Menu.new{
+		skin = skin, measure = GetTextWidth, drawText = DrawText,
+		screenW = W, screenH = H, lineHeight = 20, maxVisible = 6,
+		se = {
+			cursor = playSe(SE_CURSOR, "uiCursor"),
+			cancel = playSe(SE_DECISION, "uiDecision"),
 		},
 	}
 
@@ -430,6 +453,14 @@ function RpgDemoScene.update(elapsed)
 
 	local input = pollInput()
 
+	-- 소지품 창이 열려 있으면 게임이 멈춘다 (대화창과 같은 규칙). 닫히는 중의
+	-- 창 애니메이션은 계속 돌아야 하므로 update는 매 프레임 부른다.
+	if menu ~= nil and menu:isOpen() then
+		menu:update(input)
+		return
+	end
+	if menu ~= nil then menu:update(nil) end
+
 	if AUTOPLAY then
 		-- 자동 시연: 촌장 쪽으로 걸어가 말을 걸고, 대화는 알아서 넘긴다
 		autoTimer = autoTimer + elapsed
@@ -456,6 +487,14 @@ function RpgDemoScene.update(elapsed)
 	-- 말을 걸지 않도록, 말 걸기는 "이번 프레임을 한가하게 시작했는가"로 판단한다.
 	local wasIdle = not dialogue:isBusy() and not interp:isBusy()
 	dialogue:update(input, interp:isBusy())
+
+	-- 취소키는 한가할 때 소지품 창을 연다. 선택지가 떠 있으면 대화창이 먼저
+	-- 가져가므로(위의 dialogue:update) 여기까지 오지 않는다.
+	if not AUTOPLAY and wasIdle and input.cancel and menu ~= nil then
+		menu:open(Inventory.list(interp.state, Items))
+		Audio.PlaySound(SE_DECISION, "uiDecision", 0)
+		return
+	end
 
 	if not AUTOPLAY and wasIdle and input.confirm then
 		events:confirm()
@@ -501,8 +540,8 @@ function RpgDemoScene.render()
 		-- 장소 이름과 조작 안내를 같은 자리에 겹쳐 놓지 않는다. 장소 이름이
 		-- 먼저 뜨고 사라진 뒤에 안내가 남는다.
 		if not showingLocation and hintTimer < HINT_SECONDS then
-			local help = pad ~= nil and "패드로 이동, 오른쪽 버튼으로 결정"
-				or "방향키 이동  Z 결정  ESC 타이틀"
+			local help = pad ~= nil and "패드 이동  결정  취소로 소지품"
+				or "방향키 이동  Z 결정  X 소지품  ESC 타이틀"
 			DrawText((W - GetTextWidth(help)) / 2, 8, help)
 		end
 		if DEBUG_HUD then
@@ -520,6 +559,12 @@ function RpgDemoScene.render()
 	end
 	if buttons ~= nil then
 		buttons.draw()
+	end
+
+	-- 소지품 창은 패드와 버튼 위에 온다 (열려 있는 동안 게임이 멈춰 있으므로
+	-- 가려도 상관없고, 목록이 잘리지 않는 편이 낫다)
+	if menu ~= nil then
+		menu:draw()
 	end
 
 	if fade.alpha > 0 then
@@ -543,6 +588,10 @@ function RpgDemoScene.destroy()
 	if fadeImg ~= nil then
 		fadeImg.dispose()
 		fadeImg = nil
+	end
+	if menu ~= nil then
+		menu:dispose()
+		menu = nil
 	end
 	if dialogue ~= nil then
 		dialogue:dispose()

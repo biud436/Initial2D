@@ -4,6 +4,14 @@
 -- 머물지 스스로 정한다. 대사의 기준은 기획서 5절에 있다 — 세계를 넓히거나,
 -- 선택에 필요한 정보를 주거나, 인물을 드러내거나. 셋 중 아니면 지운다.
 --
+-- 10단계에서 인물들이 **하나의 심부름 사슬**로 이어졌다 (docs/plans/11-game-systems.md).
+--
+--   생선 장수(창고 사연) → 여관 주인(창고 열쇠) → 창고(등유)
+--     → 등대지기(불을 켠다, 은화 두 닢) → 여관(방을 잡는다) → 배(끝)
+--
+-- 사슬은 강제가 아니다. 어느 자리에서든 부두로 내려가 배를 타면 게임이 끝나며,
+-- 심부름은 "더 볼 것"이다. 다음에 갈 곳은 언제나 그 자리의 대사가 말한다.
+--
 -- 본문은 전부 커맨드 목록(데이터)이라 맵 에디터가 만들고 읽을 수 있다.
 -- 좌표는 tools/generate_port_maps.py 가 찍은 타일과 짝이 맞는다.
 
@@ -22,27 +30,32 @@ local KID_SMILE = { file = FACESET, index = 11 }
 local KEEPER = { file = FACESET, index = 5 }
 
 local SE_DOOR = "./resources/audio/door.wav"
+local SE_ITEM = "./resources/audio/ui_decision.wav"
 
---- 배를 타고 떠나는 마무리. 본 것에 따라 에필로그 한 줄이 달라진다.
+--- 배를 타고 떠나는 마무리.
+--
+-- 에필로그는 갈래가 아니라 **줄의 쌓임**이다. 본 것마다 한 줄씩 붙어, 전부 본
+-- 플레이어는 네 줄을 읽는다. 분기를 늘리는 것보다 "내가 한 만큼 남았다"가
+-- 또렷하고, 조건이 늘어도 조합이 터지지 않는다.
+--
 -- 두 선택지 가지에서 같은 흐름을 쓰므로 여기서 한 번만 적는다 (에디터로
 -- 내보내면 두 자리에 똑같이 펼쳐진다).
 local function departure()
 	return {
 		{ code = "message", name = "선장", face = CAPTAIN_SMILE,
 		  text = "밧줄 푸네. 뭍에 두고 가는 게 없나 보시게." },
-		{ code = "if", cond = { flag = "heardAltar" },
-		  thenDo = {
-			{ code = "message", text = "배가 항구를 떠날 때, 등 뒤에서 등대에 불이 켜졌다." },
-		  },
-		  elseDo = {
-			{ code = "if", cond = { flag = "booked" },
-			  thenDo = {
-				{ code = "message", text = "여관의 방 하나가 하룻밤 비어 있었다." },
-			  },
-			  elseDo = {
-				{ code = "message", text = "배는 저녁 물때에 항구를 떠났다." },
-			  } },
-		  } },
+		{ code = "message", text = "배는 저녁 물때에 항구를 떠났다." },
+		{ code = "if", cond = { flag = "lampReady" }, thenDo = {
+			{ code = "message", text = "등 뒤에서 등대에 불이 켜졌다. "
+				.. "노인이 오늘 밤 몫의 기름을 다 붓는 모양이었다." },
+		} },
+		{ code = "if", cond = { flag = "booked" }, thenDo = {
+			{ code = "message", text = "여관의 방 하나가 하룻밤 비어 있었다." },
+		} },
+		{ code = "if", cond = { item = "shell" }, thenDo = {
+			{ code = "message", text = "주머니 속에서 조개 목걸이가 달그락거렸다. "
+				.. "숲의 노래를 들었다는 아이는, 아직 그 마을에 있다." },
+		} },
 		{ code = "scene", name = "title", fade = true },
 	}
 end
@@ -50,6 +63,11 @@ end
 return {
 	map = "./resources/maps/port_town.json",
 	start = { x = 16, y = 43, dir = "up" },   -- 배에서 막 내린 자리
+
+	-- ground와 deco는 캐릭터보다 아래, over(빨래줄)만 위에 그린다.
+	-- 집 벽과 울타리는 "앞에 서는" 것이라 아래여야 한다 — 위에 두면 벽 앞에
+	-- 섰을 때 캐릭터의 머리가 벽에 가려진다.
+	groundLayers = 2,
 
 	-- 마을의 곡. 저자의 자작곡이다 (docs/music/bless-analysis.md).
 	bgm = { file = "./resources/audio/bless.ogg", volume = 96 },
@@ -110,13 +128,13 @@ return {
 			x = 18, y = 44,
 			trigger = "action",
 			commands = {
-				{ code = "if", cond = { flag = "heardAltar" },
+				{ code = "if", cond = { flag = "lampReady" },
 				  thenDo = {
 					{ code = "message",
 					  text = "저녁 배가 밧줄을 풀 준비를 하고 있다. "
-						.. "등대에는 아직 불이 켜지지 않았다." },
+						.. "언덕의 등대에는 기름이 채워져 있다." },
 					{ code = "choice",
-					  options = { "지금 떠난다", "등대에 불이 켜지는 것을 보고 간다" },
+					  options = { "지금 떠난다", "불이 켜지는 것을 보고 간다" },
 					  cancel = 2, branches = {
 						departure(),
 						{ { code = "message", name = "선장", face = CAPTAIN,
@@ -152,6 +170,8 @@ return {
 					.. "하나. 저녁 배는 물때에 맞춰 뜬다. 늦으면 기다리지 않는다." },
 				{ code = "message", text = "둘. 북쪽 숲에는 들어가지 말 것. "
 					.. "아이들은 특히." },
+				{ code = "message", text = "셋. 창고 물건은 주인이 돌아올 때까지 "
+					.. "손대지 말 것. 열쇠는 여관에 맡겨 두었다." },
 			},
 		},
 		{
@@ -163,7 +183,7 @@ return {
 			commands = { { code = "message", text = "볕이 드는 자리다. 앉아 쉴 수 있을 것 같다." } },
 		},
 
-		-- 생선 장수: 창고의 사연과 등대 안내
+		-- 생선 장수: 창고의 사연과 등대 안내. 사슬의 첫 칸이다.
 		{
 			id = "fishmonger",
 			x = 13, y = 35, dir = "left",
@@ -179,7 +199,10 @@ return {
 					  { code = "message", name = "생선 장수", face = FISHER,
 					    text = "저 창고요? 주인이 남쪽으로 떠난 지 삼 년째예요. "
 						.. "계약은 아직 살아 있어서 아무도 손을 못 대고요. "
-						.. "돌아오겠다고는 했다는데." } },
+						.. "돌아오겠다고는 했다는데." },
+					  { code = "message", name = "생선 장수", face = FISHER,
+					    text = "열쇠는 여관 주인이 맡아 뒀어요. 안에 등유가 남아 있을 "
+						.. "텐데, 등대 노인이 늘 아쉬워하시죠." } },
 					{ { code = "message", name = "생선 장수", face = FISHER,
 					    text = "언덕에 등대가 있어요. 등대지기 노인이 계신데, "
 						.. "말은 별로 없어도 물어보면 대답은 해 주세요." } },
@@ -200,18 +223,42 @@ return {
 			commands = { { code = "message", text = "항구 여관. 오늘도 방이 남아 있다." } },
 		},
 
-		-- 창고: 생선 장수에게 사연을 들었으면 보는 눈이 달라진다
+		-- 창고: 사슬의 가운데. 열쇠가 있으면 열리고, 안에는 등유가 있다.
 		{
 			id = "warehouse", x = 19, y = 29, trigger = "action",
 			commands = {
-				{ code = "if", cond = { flag = "heardWarehouse" },
+				{ code = "if", cond = { flag = "openedWarehouse" },
 				  thenDo = {
 					{ code = "message",
-					  text = "삼 년째 잠긴 문이다. 자물쇠에는 녹이 슬지 않았다. "
-						.. "누군가 닦아 두는 모양이다." },
+					  text = "다시 잠가 두었다. 안에 남은 것은 밧줄과 빈 궤짝뿐이었다." },
 				  },
 				  elseDo = {
-					{ code = "message", text = "창고 문은 잠겨 있다. 사람 손을 탄 지 오래다." },
+					{ code = "if", cond = { item = "warehouse_key" },
+					  thenDo = {
+						{ code = "playSe", file = SE_DOOR, id = "door" },
+						{ code = "message",
+						  text = "열쇠가 맞는다. 삼 년 만에 열린 문 안에서 "
+							.. "마른 밧줄 냄새가 났다." },
+						{ code = "setFlag", key = "openedWarehouse" },
+						{ code = "giveItem", item = "lamp_oil" },
+						{ code = "playSe", file = SE_ITEM, id = "item" },
+						{ code = "message", text = "선반에 등유 한 통이 남아 있다. "
+							.. "등유 한 통을 얻었다." },
+						{ code = "message",
+						  text = "등대 노인에게 가져다 주면 오늘 밤은 불을 켜겠다." },
+					  },
+					  elseDo = {
+						{ code = "if", cond = { flag = "heardWarehouse" },
+						  thenDo = {
+							{ code = "message",
+							  text = "삼 년째 잠긴 문이다. 자물쇠에는 녹이 슬지 않았다. "
+								.. "여관 주인이 열쇠를 맡아 두었다고 했다." },
+						  },
+						  elseDo = {
+							{ code = "message",
+							  text = "창고 문은 잠겨 있다. 사람 손을 탄 지 오래다." },
+						  } },
+					  } },
 				  } },
 			},
 		},
@@ -228,16 +275,31 @@ return {
 			trigger = "action",
 			wander = { minWait = 40, maxWait = 140, area = { x = 13, y = 19, w = 6, h = 6 } },
 			commands = {
-				{ code = "if", cond = { flag = "heardAltar" },
+				{ code = "if", cond = { item = "shell" },
 				  thenDo = {
 					{ code = "message", name = "아이", face = KID_SMILE,
-					  text = "등대 할아버지도 노래 얘기를 했죠? 할아버지는 저를 안 놀려요." },
+					  text = "그거 잃어버리면 안 돼요. 숲에서 주운 거니까." },
 				  },
 				  elseDo = {
-					{ code = "message", name = "아이", face = KID,
-					  text = "북쪽 문은 어른들이 막아 놨어요. 숲에서 노래가 들린다고요." },
-					{ code = "message", name = "아이", face = KID,
-					  text = "근데 저는 들었어요. 생일 노래 같은 거였는데, 아무도 안 믿어요." },
+					{ code = "if", cond = { flag = "heardAltar" },
+					  thenDo = {
+						{ code = "message", name = "아이", face = KID_SMILE,
+						  text = "등대 할아버지도 노래 얘기를 했죠? 할아버지는 저를 안 놀려요." },
+						{ code = "giveItem", item = "shell" },
+						{ code = "playSe", file = SE_ITEM, id = "item" },
+						{ code = "message", text = "조개 목걸이를 받았다." },
+						{ code = "message", name = "아이", face = KID_SMILE,
+						  text = "이거 드릴게요. 숲에서 주운 거예요. 배 타고 가다가 "
+							.. "이거 보면, 여기 생각나실 거예요." },
+					  },
+					  elseDo = {
+						{ code = "message", name = "아이", face = KID,
+						  text = "북쪽 문은 어른들이 막아 놨어요. 숲에서 노래가 들린다고요." },
+						{ code = "message", name = "아이", face = KID,
+						  text = "근데 저는 들었어요. 생일 노래 같은 거였는데, 아무도 안 믿어요." },
+						{ code = "message", name = "아이", face = KID,
+						  text = "등대 할아버지한테 물어봐 주세요. 그 할아버지는 뭐든 아니까." },
+					  } },
 				  } },
 			},
 		},
@@ -245,7 +307,16 @@ return {
 		-- 언덕과 등대
 		{
 			id = "lighthouse_door", x = 17, y = 12, trigger = "action",
-			commands = { { code = "message", text = "등대 문은 잠겨 있다. 열쇠는 등대지기가 갖고 있다." } },
+			commands = {
+				{ code = "if", cond = { flag = "lampReady" },
+				  thenDo = {
+					{ code = "message", text = "등대 문이 조금 열려 있다. "
+						.. "안에서 기름 붓는 소리가 난다." },
+				  },
+				  elseDo = {
+					{ code = "message", text = "등대 문은 잠겨 있다. 열쇠는 등대지기가 갖고 있다." },
+				  } },
+			},
 		},
 		{
 			id = "keeper",
@@ -253,20 +324,46 @@ return {
 			charset = { file = CHARSET, index = 5 },
 			trigger = "action",
 			commands = {
-				{ code = "message", name = "등대지기", face = KEEPER,
-				  text = "...배를 기다리나." },
-				{ code = "message", name = "등대지기", face = KEEPER,
-				  text = "저 불은 사람을 부르는 게 아니라, 돌아오는 길을 잊지 말라고 "
-					.. "켜 두는 걸세." },
-				{ code = "choice",
-				  options = { "하늘 끝에 가 보셨습니까", "등대를 지키신 지 오래되셨나요" },
-				  branches = {
-					{ { code = "setFlag", key = "heardAltar" },
-					  { code = "message", name = "등대지기", face = KEEPER,
-					    text = "제단이 있었네. 소리가 오래 남는 곳이었지. "
-						.. "그 뒤로는 배를 타지 않았네." } },
-					{ { code = "message", name = "등대지기", face = KEEPER,
-					    text = "불을 켜는 일에는 오래고 짧고가 없네. 오늘 켜면 오늘의 일이지." } },
+				-- 등유를 들고 왔으면 그 이야기가 먼저다. 노인이 먼저 알아본다.
+				{ code = "if", cond = { item = "lamp_oil" },
+				  thenDo = {
+					{ code = "message", name = "등대지기", face = KEEPER,
+					  text = "...그건 창고 것이군. 여관에서 열쇠를 받았나." },
+					{ code = "takeItem", item = "lamp_oil" },
+					{ code = "setFlag", key = "lampReady" },
+					{ code = "message", name = "등대지기", face = KEEPER,
+					  text = "고맙네. 오늘 밤은 아끼지 않고 켜겠네. "
+						.. "자네 배가 항구를 나갈 때까지는 밝을 걸세." },
+					{ code = "giveItem", item = "silver", count = 2 },
+					{ code = "playSe", file = SE_ITEM, id = "item" },
+					{ code = "message", text = "은화 두 닢을 받았다." },
+					{ code = "message", name = "등대지기", face = KEEPER,
+					  text = "받아 두게. 여관 하루치일세. 쓸 일이 없으면 그냥 가지고 가고." },
+				  },
+				  elseDo = {
+					{ code = "message", name = "등대지기", face = KEEPER,
+					  text = "...배를 기다리나." },
+					{ code = "message", name = "등대지기", face = KEEPER,
+					  text = "저 불은 사람을 부르는 게 아니라, 돌아오는 길을 잊지 말라고 "
+						.. "켜 두는 걸세." },
+					{ code = "choice",
+					  options = { "하늘 끝에 가 보셨습니까", "등대를 지키신 지 오래되셨나요" },
+					  branches = {
+						{ { code = "setFlag", key = "heardAltar" },
+						  { code = "message", name = "등대지기", face = KEEPER,
+						    text = "제단이 있었네. 소리가 오래 남는 곳이었지. "
+							.. "그 뒤로는 배를 타지 않았네." },
+						  { code = "message", name = "등대지기", face = KEEPER,
+						    text = "숲에서 노래를 들었다는 아이가 있다지. "
+							.. "그 아이한테 거짓말쟁이라 하지 말게." } },
+						{ { code = "message", name = "등대지기", face = KEEPER,
+						    text = "불을 켜는 일에는 오래고 짧고가 없네. 오늘 켜면 오늘의 일이지." },
+						  { code = "if", cond = { flag = "lampReady" }, elseDo = {
+							{ code = "message", name = "등대지기", face = KEEPER,
+							  text = "다만 기름이 얼마 없네. 창고에 한 통 남아 있을 텐데, "
+								.. "그 문이 삼 년째 잠겨 있어서." },
+						  } } },
+					  } },
 				  } },
 			},
 		},

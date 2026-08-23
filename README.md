@@ -82,7 +82,9 @@ macOS 포팅을 기반으로 Android까지 확장하였습니다. 역시 AI와�
 - 리소스 파이프라인: RPG Maker 2003 RTP 변환과 규격 데이터 — 완료 (2026-08)
 - Lua로 작성하는 RPG 프레임워크: 캐릭터 이동, 이벤트, 대화창 — 완료 (2026-08)
 - 위 요소를 모두 사용하는 데모 게임 — 완료 (2026-08). 기획서를 먼저 쓰고 그대로 만든 「떠나기 전에」 ([기획서](./docs/design/port-town.md))
-- 이벤트를 데이터 커맨드로 적어 맵 에디터가 만들 수 있게 — 진행 중 ([계획](./docs/plans/10-demo-v2.md))
+- 이벤트를 데이터 커맨드로 적어 맵 에디터가 만들 수 있게 — 엔진 쪽 완료 (2026-08). 맵 포맷 v2가 이벤트를 실어 나릅니다 ([계획](./docs/plans/10-demo-v2.md))
+- 아이템과 소지품, 그리고 마을 사람들을 잇는 심부름 — 완료 (2026-08). 걷고 읽는 것 말고 할 일이 생겼습니다 ([계획](./docs/plans/11-game-systems.md))
+- 다음 로드맵: 에디터의 이벤트 편집기, 저장과 로드, 오토타일, 씬 스택 ([로드맵 v2](./docs/plans/roadmap-v2.md))
 
 # 스크립트 예제
 
@@ -507,6 +509,19 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 
 캐릭터는 타일맵의 하층과 상층 사이에 발 y좌표 순으로 그려집니다. 한 프레임(24x32)이 타일(16x16)보다 커서 머리가 윗 칸으로 올라가므로 울타리나 지붕 뒤로 지나갑니다.
 
+**어디까지가 하층인지는 맵마다 정합니다.** 머리가 윗 칸으로 올라간다는 것은, 그 칸의 타일이 캐릭터보다 앞에 그려지면 머리를 덮는다는 뜻이기도 합니다. 집 벽처럼 **앞에 서는** 것은 하층이어야 하고, 빨래줄처럼 **밑을 지나가는** 것만 상층입니다.
+
+```lua
+	-- scripts/maps/port_town.lua
+	return {
+		map = "./resources/maps/port_town.json",   -- 레이어: ground, deco, over
+		groundLayers = 2,                          -- ground와 deco가 캐릭터 아래
+		...
+	}
+```
+
+맵의 레이어 이름은 관례상 `ground`(땅), `deco`(앞에 서는 것), `over`(밑을 지나가는 것)를 씁니다. `groundLayers`를 생략하면 1이라 `deco`가 캐릭터 위로 올라가고, 집 벽 앞에 서면 머리가 벽에 가려집니다.
+
 데모는 렌더 배율 2로 돌아갑니다 (16픽셀 타일을 1:1로 그리면 캐릭터가 점처럼 보입니다). 배율은 `INITIAL2D_RPG_SCALE`로 바꿀 수 있고, 씬을 나갈 때 1로 되돌아갑니다. 조작 안내는 4초 뒤 사라지며, 좌표와 FPS는 `INITIAL2D_DEBUG=1`일 때만 표시됩니다.
 
 캐릭터 시트 규격(288x256 한 장에 8명, 한 명은 24x32 3프레임 4방향)은 `scripts/rpg/specs.lua`에 데이터로 있습니다. 커밋된 `resources/charsets/placeholder.png`는 `python3 tools/generate_charset.py`로 다시 만들 수 있습니다. RPG Maker 2003 정품 보유자가 `tools/rtp_import.py`로 변환해 두었다면 데모가 `resources/rtp/CharSet/Actor1.png`를 자동으로 쓰며, `INITIAL2D_CHARSET`으로 다른 시트를 지정할 수도 있습니다.
@@ -617,6 +632,8 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 	ctx.state.flag = true                      -- 이벤트끼리 공유하는 저장용 테이블
 ```
 
+아이템을 주고 뺏고 가졌는지 묻는 커맨드는 [아이템과 소지품](#아이템과-소지품) 절에 있습니다.
+
 이동 루트의 명령은 방향(`up`, `down`, `left`, `right`), `turn:방향`, `wait:밀리초`입니다. `{ loop = true }`로 순찰을 만들고, `{ wait = false }`로 루트를 걸어만 두고 스크립트를 계속 진행할 수 있습니다.
 
 `charset`을 주면 눈에 보이는 NPC가 되고 통행을 막습니다. 생략하면 보이지 않는 트리거 타일이며, `solid = true`를 주면 보이지 않으면서 길을 막는 벽이 됩니다. 외형이 있는 이벤트에 `wander`를 주면 5단계의 배회가 그대로 붙습니다.
@@ -689,9 +706,79 @@ python3 tools/generate_faceset.py
 python3 tools/generate_ui_assets.py
 ```
 
+# 아이템과 소지품
+
+열쇠와 증표를 들고 다니고, 가진 것에 따라 문이 열리거나 대사가 바뀌게 하는 층입니다. 소지품은 별도의 저장소가 아니라 이벤트가 공유하는 `ctx.state` 안의 표 하나(`state.items`)입니다. 맵을 넘는 상태 공유가 이미 그 테이블로 되고 있어서, 나중에 저장 기능이 붙으면 소지품도 함께 저장됩니다.
+
+아이템 목록은 **데이터**입니다. 프레임워크(`scripts/rpg/inventory.lua`)는 표를 주입받을 뿐 내용을 모르므로, 다른 게임은 다른 표를 넣으면 됩니다.
+
+```lua
+	-- scripts/games/rpgdemo/items.lua
+	return {
+		warehouse_key = { name = "창고 열쇠", order = 10,
+			desc = "여관 주인이 삼 년째 맡아 둔 열쇠. 손잡이가 반들반들하다." },
+		silver = { name = "은화", order = 30,
+			desc = "이 지방에서 쓰는 은화. 여관 하루치가 두 닢이다." },
+	}
+```
+
+이벤트에서는 커맨드 둘과 조건 하나를 씁니다.
+
+```lua
+	commands = {
+		{ code = "if", cond = { item = "warehouse_key" },
+		  thenDo = {
+			{ code = "message", text = "열쇠가 맞는다. 삼 년 만에 문이 열렸다." },
+			{ code = "giveItem", item = "lamp_oil" },
+		  },
+		  elseDo = {
+			{ code = "message", text = "창고 문은 잠겨 있다." },
+		  } },
+
+		-- 개수 비교와 지불
+		{ code = "if", cond = { item = "silver", op = ">=", value = 2 },
+		  thenDo = {
+			{ code = "takeItem", item = "silver", count = 2 },
+			{ code = "setFlag", key = "booked" },
+		  } },
+	}
+```
+
+`giveItem`은 `count`를 생략하면 하나, `takeItem`은 모자라면 **아무 일도 일으키지 않고** 넘어갑니다 (반쯤 빼고 실패하는 경우가 없어야 이벤트가 스스로를 되돌릴 필요가 없습니다). 조건 `{ item = ... }`은 `op`와 `value`가 없으면 "하나라도 가졌는가"입니다.
+
+소지품 창은 `scripts/rpg/menu.lua`이며, 목록과 설명 두 칸으로 되어 있습니다. 창과 커서와 스크롤은 대화창과 같은 `window.lua`를 씁니다.
+
+```lua
+	local Inventory = require("scripts/rpg/inventory")
+	local Menu = require("scripts/rpg/menu")
+
+	local menu = Menu.new{ skin = skin, measure = GetTextWidth, drawText = DrawText,
+		screenW = W, screenH = H, maxVisible = 6 }
+
+	menu:open(Inventory.list(interp.state, ITEMS))   -- 취소키를 눌렀을 때
+	menu:update({ up = ..., down = ..., cancel = ..., confirm = ... })
+	menu:draw()
+```
+
+씬이 창을 들고, 열려 있는 동안 플레이어 입력을 잠급니다 — 대화창과 같은 구조입니다. 대화나 이벤트가 도는 중에는 열리지 않습니다.
+
+엔진 밖에서 쓸 수 있는 함수는 다섯입니다. 전부 순수 함수라 엔진 없이 단위 테스트로 검증됩니다.
+
+```lua
+	Inventory.count(state, "silver")          -- 몇 개 (없으면 0)
+	Inventory.has(state, "silver", 2)         -- 두 개 이상 가졌는가
+	Inventory.give(state, "silver", 2)        -- 더한다 (반환은 더한 뒤의 개수)
+	Inventory.take(state, "silver", 2)        -- 뺀다 (모자라면 false, 아무것도 하지 않음)
+	Inventory.list(state, ITEMS)              -- 창이 그릴 목록 { id, name, desc, count }
+```
+
+`Inventory.list`는 표의 `order`로 정렬하므로 목록의 순서가 실행마다 흔들리지 않습니다. 표에 없는 id를 가지고 있으면 이름 자리에 id를 그대로 내보냅니다 — 표를 고치다가 물건이 조용히 사라지는 것보다 눈에 보이는 편이 낫기 때문입니다.
+
 # 데모 게임: 떠나기 전에
 
 앞의 요소를 전부 사용하는 짧은 데모입니다. 미니 게임 목록에서 **떠나기 전에**를 고르면 타이틀이 뜨고, 시작하면 항구 마을에 내린 여행자가 됩니다. 저녁 배가 뜰 때까지 마을을 둘러보고, 떠날지 하루 더 머물지 스스로 정하면 끝납니다. 3분이면 끝낼 수 있고 전부 보면 10분입니다. 같은 빌드에서 플래피 버드도 그대로 돌아갑니다 — "한 엔진에서 두 장르"가 이 데모의 요점입니다.
+
+마을 사람 다섯은 하나의 심부름으로 이어져 있습니다. 생선 장수에게 창고의 사연을 듣고, 여관 주인에게 열쇠를 받고, 창고에서 등유를 꺼내 등대지기에게 가져다 주면, 그날 밤 등대에 불이 켜지고 여관에 묵을 은화가 생깁니다. 하지만 사슬은 강제가 아닙니다 — 언제든 부두로 내려가 배를 타면 그대로 끝납니다. 본 만큼 에필로그에 줄이 붙습니다.
 
 세계관은 저자의 자작곡에서 왔습니다. 마을은 《Port》의 항구이고, 들어갈 수 있는 건물은 그 앨범 1번 트랙과 같은 이름의 여관이며, 마을에 걸리는 곡은 《Bless》입니다. 갈 수 없는 곳(《요정의 숲》, 《천공의 끝》)은 사람들의 말 속에만 있습니다. 기획서는 [docs/design/port-town.md](./docs/design/port-town.md)에 있고, 대사와 배치와 화면 구성이 전부 그 문서에서 나옵니다.
 
@@ -707,7 +794,7 @@ INITIAL2D_SCENE=rpg INITIAL2D_MAP=inn INITIAL2D_RPG_SCALE=3 ./build/Initial2D
 | :--- | :--- | :--- |
 | 이동, 커서 | 방향키 (정지 중 짧게 누르면 방향만 전환) | 왼쪽 아래 가상 D-패드 |
 | 결정 | Z, Enter, Space | 오른쪽 아래 **결정** 버튼 |
-| 취소 | X | 오른쪽 아래 **취소** 버튼 |
+| 취소, 소지품 창 | X | 오른쪽 아래 **취소** 버튼 |
 | 나가기 | ESC (맵→타이틀, 타이틀→목록) | 뒤로가기 |
 
 타이틀 화면에서는 항목을 직접 눌러도 선택됩니다 (`Choice:indexAt`).
@@ -719,6 +806,7 @@ INITIAL2D_SCENE=rpg INITIAL2D_MAP=inn INITIAL2D_RPG_SCALE=3 ./build/Initial2D
 | `scripts/games/rpgdemo/title.lua` | 타이틀 씬. 배경 한 장과 커서 메뉴(시작, 조작 방법, 나가기) |
 | `scripts/games/rpgdemo/game.lua` | 맵 씬. 맵 적재, 페이드 전환, 대화창과 실행기 연결, 장소 이름 |
 | `scripts/maps/port_town.lua`, `inn.lua` | 이벤트 정의와 대사 (커맨드 목록) |
+| `scripts/games/rpgdemo/items.lua` | 아이템 표 (이름, 설명, 목록 순서) |
 | `scripts/rpg/assets.lua` | 그림 고르기 — RTP가 있으면 RTP, 없으면 저장소의 플레이스홀더 |
 | `scripts/bgm.lua` | 지금 걸린 곡을 기억해, 같은 곡이면 다시 틀지 않는 배경음 층 |
 | `scripts/ui/buttons.lua` | 터치용 결정과 취소 버튼 |
@@ -728,7 +816,7 @@ INITIAL2D_SCENE=rpg INITIAL2D_MAP=inn INITIAL2D_RPG_SCALE=3 ./build/Initial2D
 데모의 그림은 전부 코드로 그려 커밋했습니다 (RPG Maker RTP가 없어도 그대로 돌아갑니다). 배치를 바꾸려면 도구를 고치고 다시 실행합니다.
 
 ```bash
-# 항구 타일 39종 (바다, 부두, 배, 등대, 우물, 게시판, 좌판, 난로 등)
+# 항구 타일 41종 (바다 2x2 한 벌, 부두, 배, 등대, 우물, 게시판, 좌판, 난로 등)
 python3 tools/generate_port_tileset.py
 
 # 맵 두 장 — 기획서 4절의 좌표 그대로, 난수를 쓰지 않습니다
@@ -765,10 +853,14 @@ INITIAL2D_NO_RTP=1 INITIAL2D_SCENE=title ./build/Initial2D
 
 ## 인수 테스트
 
-데모 전체가 로드맵의 인수 테스트입니다. `tests/engine/scenes/rpgdemo_scene.lua`가 실제 씬 파일을 그대로 얹고, 입력 재생기로 키를 눌러 **타이틀 → 부두 도착 → 생선 장수 → 창고 → 여관에서 방 잡기 → 등대지기 → 배 → 에필로그 → 타이틀**을 한 번에 통과시킨 뒤 좌표와 대사를 검사합니다 (`tests/run_all.sh`에 포함). 본 것에 따라 대사와 에필로그가 갈리는 것도 여기서 확인합니다.
+데모 전체가 로드맵의 인수 테스트입니다. `tests/engine/scenes/rpgdemo_scene.lua`가 실제 씬 파일을 그대로 얹고, 입력 재생기로 키를 눌러 심부름 사슬 전체를 한 번에 통과시킨 뒤 좌표와 대사와 소지품을 검사합니다 (`tests/run_all.sh`에 포함).
+
+> 타이틀 → 부두 도착 → 생선 장수 → 잠긴 창고 → 여관(열쇠를 받지만 은화가 없어 방을 못 잡는다) → 창고를 연다(등유) → 등대지기(등유를 주고 은화 두 닢) → 등대지기(하늘 끝) → 여관(은화로 방을 잡는다) → 배 → 에필로그 → 타이틀
+
+가진 것에 따라 문이 열리고 대사와 에필로그가 갈리는 것을 여기서 확인합니다. 배회하는 아이는 위치가 틱 수에 따라 흔들려 경로가 불안정해지므로 시나리오에 넣지 않고, 아이가 주는 물건은 단위 테스트가 확인합니다.
 
 ```bash
-# 시나리오 도중의 화면을 눈으로 확인 (title, town)
+# 시나리오 도중의 화면을 눈으로 확인 (title, town, bag)
 INITIAL2D_DEMO_STOP=town INITIAL2D_NO_RTP=1 \
   INITIAL2D_SCREENSHOT=/tmp/demo_%04ld.bmp INITIAL2D_SCREENSHOT_FRAME=20 \
   INITIAL2D_EXIT_AFTER=30 ./build/Initial2D

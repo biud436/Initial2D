@@ -305,6 +305,8 @@ def test_tilemap_scene():
 # 플레이스홀더 CharSet(tools/generate_charset.py)의 색. 맵 팔레트와 겹치지 않는
 # 색을 골라 두었기 때문에 색 카운트만으로 캐릭터를 특정할 수 있다.
 HAIR_PURPLE = (168, 96, 200)   # 3번 캐릭터 머리
+HAIR_BROWN = (96, 56, 32)      # 데모 주인공(0번 캐릭터) 머리
+HOUSE_WALL = (214, 188, 150)   # 집 벽 (village16.png의 벽 타일)
 SHIRT_WHITE = (236, 236, 240)  # 3번 캐릭터 옷
 SHIRT_RED = (206, 62, 62)      # 0번 캐릭터 옷
 
@@ -574,12 +576,17 @@ DEMO_SHIRT = SHIRT_RED           # 플레이어(0번 캐릭터)의 빨간 옷
 
 
 def test_rpgdemo_scene():
-    """9단계 인수 테스트: 기획서대로의 데모를 처음부터 끝까지 (docs/design/port-town.md).
+    """인수 테스트: 기획서대로의 데모를 처음부터 끝까지 (docs/design/port-town.md).
 
     가짜 씬이 아니라 게임이 실제로 여는 파일(scripts/games/rpgdemo/*.lua,
     scripts/maps/port_town.lua, inn.lua)을 얹고 입력 재생기로 키를 눌러
-    타이틀 → 부두 → 생선 장수 → 창고 → 여관 → 등대지기 → 배 → 에필로그를
-    한 번에 통과시킨다. 대사와 좌표가 stdout에 남고 여기서 검사한다.
+    10단계의 심부름 사슬을 한 줄로 통과시킨다 (docs/plans/11-game-systems.md).
+
+      타이틀 → 부두 → 생선 장수 → 잠긴 창고 → 여관(열쇠를 받지만 은화가 없어
+      방을 못 잡는다) → 창고를 연다(등유) → 등대지기(등유를 주고 은화 두 닢)
+      → 등대지기(하늘 끝) → 여관(은화로 방을 잡는다) → 배 → 에필로그
+
+    대사와 좌표와 소지품이 stdout에 남고 여기서 검사한다.
 
     RTP는 기계마다 있고 없고가 달라 INITIAL2D_NO_RTP=1로 저장소 자산만 쓰게
     고정한다 (골든도 그래야 커밋할 수 있다 — RTP는 재배포 금지).
@@ -622,29 +629,54 @@ def test_rpgdemo_scene():
     has("fishLine:오늘 물건은 아침에 다 나갔어요.", "생선 장수의 첫 대사")
     has("fishChoice:true", "생선 장수가 선택지를 띄운다")
     has("warehouseStory:저 창고요? 주인이 남쪽으로 떠난 지 삼 년째예요.", "창고의 사연")
-    has("warehouseLine:삼 년째 잠긴 문이다.", "사연을 들은 뒤 창고 문의 설명이 달라진다")
+    has("keyHint:열쇠는 여관 주인이 맡아 뒀어요.", "다음에 갈 곳을 대사가 말한다")
+    has("warehouseLocked:삼 년째 잠긴 문이다.", "사연을 들은 뒤 창고 문의 설명이 달라진다")
 
-    # [D] 여관: 문을 밟아 들어가고, 방을 잡고, 다시 나온다
+    # 소지품 창 (10단계): 아직 아무것도 없다
+    has("menuOpened:true", "취소키로 소지품 창이 열린다")
+    has("bagEmpty:[]", "처음에는 가진 것이 없다")
+    has("menuClosed:true", "같은 키로 닫힌다")
+
+    # [D] 여관: 열쇠를 받지만, 은화가 없어 방을 못 잡는다
     has("innAt:10,12", "여관 문으로 들어서면 1층 입구")
     has("innLocation:항구 여관", "실내에서도 장소 이름")
     has("hostLine:어서 오세요.", "여관 주인의 첫 대사")
+    has("hostKeyLine:창고 얘기를 들으셨군요.", "창고 사연을 듣고 오면 열쇠를 내준다")
+    has("hostKeyGot:창고 열쇠를 받았다.", "열쇠를 받는다 (giveItem)")
     has("hostChoice:true", "방을 잡을지 묻는 선택지")
-    has("bookedLine:그럼 짐을 올려 두세요.", "묵기로 하면 방을 내준다")
+    has("noSilverLine:...두 닢이 모자라시네요.", "은화가 없으면 방을 잡을 수 없다")
+    has("bookedAfterRefuse:false", "거절당하면 booked 깃발이 서지 않는다")
+    has("bagKey:창고 열쇠", "소지품 창에 열쇠가 보인다")
     has("backAt:13,30", "아래 문으로 나오면 여관 문 앞")
 
-    # [E] 언덕: 등대지기와, 그 뒤에 달라지는 북쪽 문
-    has("keeperLine:...배를 기다리나.", "등대지기의 첫 마디")
+    # [E] 열쇠로 창고를 연다
+    has("warehouseOpen:열쇠가 맞는다.", "열쇠를 가지고 있으면 창고가 열린다")
+    has("oilGot:선반에 등유 한 통이 남아 있다.", "창고 안에서 등유를 얻는다")
+    has("bagOil:창고 열쇠,등유 한 통", "소지품이 순서대로 쌓인다")
+
+    # [F] 언덕: 등유를 건네고 은화 두 닢을 받는다
+    has("keeperOilLine:...그건 창고 것이군.", "등유를 들고 가면 노인이 먼저 알아본다")
+    has("silverGot:은화 두 닢을 받았다.", "사례로 은화 두 닢")
+    has("lampReady:true", "오늘 밤 등대에 불이 켜진다")
+    has("bagSilver:창고 열쇠,은화x2", "등유는 나가고 은화가 둘 들어왔다 (takeItem/giveItem)")
+    has("keeperLine:...배를 기다리나.", "등유를 넘긴 뒤에는 원래의 대화로 돌아온다")
     has("altarLine:제단이 있었네.", "하늘 끝을 물으면 제단 이야기가 나온다")
     has("gateLine:숲으로 가는 길은 막혀 있다. 바람이",
         "그 이야기를 들은 뒤에는 북쪽 문의 설명도 달라진다")
 
-    # [F] 배: 마지막 선택과 에필로그, 그리고 타이틀 복귀
-    has("shipLine:저녁 배가 밧줄을 풀 준비를 하고 있다. 등대에는",
-        "등대 이야기를 들었으면 배 앞의 글도 달라진다")
+    # [G] 여관: 이번에는 은화로 방을 잡는다
+    has("bookedLine:그럼 짐을 올려 두세요.", "은화 두 닢이 있으면 방을 내준다")
+    has("booked:true", "방을 잡았다")
+    has("bagPaid:창고 열쇠", "방값으로 은화가 나갔다 (소지품에 열쇠만 남는다)")
+
+    # [H] 배: 마지막 선택과 에필로그, 그리고 타이틀 복귀
+    has("shipLine:저녁 배가 밧줄을 풀 준비를 하고 있다. 언덕의 등대에는",
+        "등대에 기름을 채웠으면 배 앞의 글도 달라진다")
     has("shipChoice:true", "떠날지 묻는 선택지")
     has("farewellLine:밧줄 푸네.", "떠나기로 하면 선장이 배웅한다")
-    has("epilogue:배가 항구를 떠날 때, 등 뒤에서 등대에 불이 켜졌다.",
-        "본 것에 따라 에필로그 한 줄이 달라진다")
+    has("epilogue1:배는 저녁 물때에 항구를 떠났다.", "에필로그 첫 줄")
+    has("epilogue2:등 뒤에서 등대에 불이 켜졌다.", "등대에 불을 켰으면 한 줄이 붙는다")
+    has("epilogue3:여관의 방 하나가 하룻밤 비어 있었다.", "방을 잡았으면 또 한 줄이 붙는다")
     has("finalScene:title", "에필로그 뒤에는 타이틀로 돌아온다")
     has("demoDone:true", "시나리오 끝까지 통과")
     check("걷다가 막힌 곳이 없다", "timeout" not in log,
@@ -679,6 +711,36 @@ def test_rpgdemo_scene():
         hero = count_color_in(img, scale, 187, 357, 197, 370, DEMO_SHIRT, 30)
         check("플레이어가 부두 위에 서 있다", hero > 5, f"px={hero}")
         check_golden("rpgdemo_town", img)
+
+    # 소지품 창이 열린 화면 (10단계). 창 두 칸과 커서, 개수와 설명이 한 장에 있다.
+    shot_env = {"INITIAL2D_NO_RTP": "1", "INITIAL2D_DEMO_STOP": "bag"}
+    _, r_bag, s_bag = run_scene("rpgdemo_scene.lua", [20], 30, shot_env)
+    check("소지품 창 덤프", 20 in s_bag, f"rc={r_bag.returncode}")
+    if 20 in s_bag:
+        img = s_bag[20]
+        scale = img.width / 384.0
+        frame = count_color_in(img, scale, 8, 170, 376, 280, SKIN_FRAME_LIGHT, 30)
+        check("소지품 창의 테두리", frame > 40, f"px={frame}")
+        check_golden("rpgdemo_bag", img)
+
+    # 여관 벽 앞에 선 캐릭터 (2026-08-20 사용자 보고의 회귀 테스트).
+    # 캐릭터 프레임(24x32)은 타일(16x16)보다 커서 머리가 윗 칸으로 올라간다.
+    # 장식 레이어를 캐릭터 **위**에 그리면 그 칸의 집 벽이 머리를 통째로 덮는다.
+    # 맵 정의의 groundLayers가 그 경계를 정하며(port_town은 2), 여기서 머리색
+    # 픽셀 수로 확인한다 — 되돌아가면 이 수가 0에 가까워진다.
+    shot_env = {"INITIAL2D_NO_RTP": "1", "INITIAL2D_DEMO_STOP": "wall"}
+    _, r_wall, s_wall = run_scene("rpgdemo_scene.lua", [20], 30, shot_env)
+    check("여관 문 앞 화면 덤프", 20 in s_wall, f"rc={r_wall.returncode}")
+    if 20 in s_wall:
+        img = s_wall[20]
+        scale = img.width / 384.0
+        wall = count_color_in(img, scale, 170, 196, 215, 214, HOUSE_WALL, 24)
+        check("캐릭터가 집 벽 앞에 서 있다", wall > 200, f"px={wall}")
+        # 허용 오차를 좁게 잡는다. 문 타일의 갈색(108,74,50)이 머리색과 가까워서
+        # 기본 오차(24)로는 "가려진 머리"까지 머리로 세어 버린다 — 이 테스트를
+        # 처음 넣었을 때 실제로 통과해 버렸다.
+        hair = count_color_in(img, scale, 184, 201, 199, 213, HAIR_BROWN, 8)
+        check("집 벽이 캐릭터의 머리를 덮지 않는다", hair > 40, f"머리색 px={hair}")
 
 
 def test_resolution():

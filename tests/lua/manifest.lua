@@ -25,6 +25,8 @@ return {
     "scripts/luatests/cases/rpg_text_test",
     "scripts/luatests/cases/rpg_window_test",
     "scripts/luatests/cases/rpg_choice_test",
+    "scripts/luatests/cases/rpg_inventory_test",
+    "scripts/luatests/cases/rpg_menu_test",
     "scripts/luatests/cases/rpg_message_test",
     "scripts/luatests/cases/rpg_assets_test",
 }

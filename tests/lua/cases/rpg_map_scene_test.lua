@@ -9,8 +9,42 @@ local M = {}
 local FIXTURE = "./fixtures/maps/sample_v1.json"
 local CHARSET = "./resources/charsets/placeholder.png"
 
+--- Draw 호출 구간만 기록하는 가짜 타일맵. 그리는 순서를 값으로 확인한다.
+local function fakeTilemap(layerCount)
+	local calls = {}
+	return {
+		calls = calls,
+		Load = function() return { fake = true } end,
+		Dispose = function() end,
+		GetSize = function() return 4, 3, 16, 16, layerCount end,
+		IsPassable = function() return true end,
+		GetTileId = function() return 0 end,
+		SetTileId = function() return true end,
+		Draw = function(_, from, to) calls[#calls + 1] = from .. ".." .. to end,
+	}
+end
+
 function M.run(t)
 	local MapScene = require("scripts/rpg/map_scene")
+
+	-- ---- [0] 그리는 순서: 하층 → 캐릭터 → 상층 ----------------------------
+	-- 캐릭터 프레임(24x32)이 타일(16x16)보다 커서 머리가 윗 칸으로 올라간다.
+	-- 그래서 "그 칸의 타일을 캐릭터보다 앞에 그릴지 뒤에 그릴지"가 화면에 그대로
+	-- 드러난다 — 집 벽을 상층에 두면 벽 앞에 선 캐릭터의 머리가 사라진다
+	-- (2026-08-20 사용자 보고).
+	local fake = fakeTilemap(3)
+	local split = MapScene.new{ mapPath = "x.json", tilemap = fake,
+		viewW = 100, viewH = 100, groundLayers = 2 }
+	split:draw()
+	t.check_eq(table.concat(fake.calls, " | "), "1..2 | 3..3",
+		"하층 2장을 먼저, 상층 1장을 캐릭터 뒤에 그린다")
+
+	local flat = fakeTilemap(2)
+	local allBelow = MapScene.new{ mapPath = "x.json", tilemap = flat,
+		viewW = 100, viewH = 100, groundLayers = 2 }
+	allBelow:draw()
+	t.check_eq(table.concat(flat.calls, " | "), "1..2",
+		"상층이 없으면 두 번째 Draw는 아예 부르지 않는다")
 
 	-- ---- [1] 로드 실패 계약 -------------------------------------------------
 	local missing, err = MapScene.new{ mapPath = "./no_such_map.json" }
@@ -26,6 +60,10 @@ function M.run(t)
 	t.check(scene.tileW == 16 and scene.tileH == 16, "타일 16x16")
 	t.check_eq(scene.layerCount, 2, "레이어 2장")
 	t.check_eq(scene.groundLayers, 1, "기본 하층은 1장 (캐릭터가 그 위에 선다)")
+	t.check_eq(MapScene.new{ mapPath = FIXTURE, groundLayers = 2 }.groundLayers, 2,
+		"하층 수는 맵마다 정할 수 있다")
+	t.check_eq(MapScene.new{ mapPath = FIXTURE, groundLayers = 9 }.groundLayers, 2,
+		"레이어 수를 넘으면 잘린다 (전부 캐릭터 아래)")
 	t.check(scene.camera.worldW == 64 and scene.camera.worldH == 48,
 		"카메라 세계 크기는 맵 픽셀 크기")
 
