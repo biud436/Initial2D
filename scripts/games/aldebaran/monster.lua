@@ -56,6 +56,9 @@ function M.new(def, opts)
 		chargeUsed = false,
 		regenTimer = 0,
 		hoverY = opts.y,         -- 공중형이 떠 있는 높이 (배치한 y가 기준이다)
+		phase = 1,               -- 보스의 페이즈 (def.phases가 있을 때만 뜻이 있다)
+		phaseGuard = 0,          -- 페이즈가 바뀐 직후의 무적 (초)
+		recoverTime = nil,       -- 씬이 페이즈마다 덮어쓰는 후딜
 		turnTimer = 0,           -- 방패형이 돌아서기까지 남은 초
 		blocked = 0,             -- 막은 직후의 짧은 경직 (연출과 반격 창)
 		strikeHit = false,       -- 이번 공격의 판정을 이미 썼는가 (씬이 세운다)
@@ -160,6 +163,7 @@ function M.update(m, dt, probe, px, py)
 	m.vx = 0
 
 	m.blocked = math.max(0, m.blocked - dt)
+	m.phaseGuard = math.max(0, m.phaseGuard - dt)
 
 	if m.state == "hurt" then
 		m.vx = m.dir * -60          -- 밀려난다 (바라보는 반대쪽으로)
@@ -265,7 +269,9 @@ function M.update(m, dt, probe, px, py)
 	elseif m.state == "strike" then
 		if m.timer <= 0 then
 			m.state = "recover"
-			m.timer = m.def.recover
+			-- 보스는 페이즈마다 후딜이 다르다 (씬이 recoverTime을 세운다).
+			-- 후딜이 곧 펀치 윈도우이므로 이 값이 난이도의 손잡이다.
+			m.timer = m.recoverTime or m.def.recover
 		end
 
 	elseif m.state == "recover" then
@@ -361,6 +367,7 @@ end
 --- 맞았다. 죽으면 true를 돌려준다 (보상은 씬이 준다).
 function M.hurt(m, dmg, fromDir)
 	if m.dead or m.state == "dying" or m.state == "boom" then return false end
+	if m.phaseGuard > 0 then return false end        -- 페이즈 전환 중에는 안 맞는다
 
 	-- 방패형: 바라보는 쪽에서 온 것은 막는다. 막으면 잠깐 굳고, 그때가 반격 창이다.
 	-- 등 뒤로 돌아가는 것이 이 적이 묻는 질문이다 (계획 5절).
@@ -372,9 +379,26 @@ function M.hurt(m, dmg, fromDir)
 	end
 
 	m.hp = m.hp - dmg
-	-- 보스는 절반에서 두 번째 판으로 넘어간다 (기획서 4.3.4절)
+	-- 짐도둑은 절반에서 두 번째 판으로 넘어간다 (기획서 4.3.4절)
 	if m.def.special == "throw" and not m.phase2 and m.hp <= m.def.hp / 2 then
 		m.phase2 = true
+	end
+	-- 페이즈가 있는 보스 (A7의 아포피스). 경계를 넘으면 잠깐 무적이 되고
+	-- 물러선다 — "지금 판이 바뀌었다"가 눈에 보여야 하기 때문이다.
+	if m.def.phases ~= nil and m.hp > 0 then
+		local ratio = m.hp / m.def.hp
+		local np = 1
+		for i, at in ipairs(m.def.phases) do
+			if ratio <= at then np = i end
+		end
+		if np ~= m.phase then
+			m.phase = np
+			m.phaseGuard = m.def.phaseGuard or 1.0
+			m.state = "recover"
+			m.timer = m.phaseGuard
+			m.chargeUsed = false
+			return false
+		end
 	end
 	m.regenTimer = 0
 	if m.hp <= 0 then

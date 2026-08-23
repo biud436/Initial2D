@@ -323,11 +323,63 @@ local function runEnding()
 	local s = st()
 	print("aldebaranResult:" .. tostring(s.ending == "result"))
 	print(string.format("aldebaranResultStats:level=%d gold=%d", s.level, s.gold))
+	print("aldebaranStageAtEnd:" .. tostring(s.stage))
 	tick(15)
 	r:tap("Z")
 	tick(6)
+	-- A7: 1-1의 결과 창을 닫으면 **타이틀이 아니라 1-2로 이어진다**.
+	-- 씬 이름은 그대로 aldebaran이고 무대만 바뀐다.
 	print("finalScene:" .. tostring(currentName))
+	local after = st()
+	print("aldebaranNextStage:" .. tostring(after.stage))
+	print(string.format("aldebaranCarry:level=%d gold=%d", after.level, after.gold))
+	print("aldebaranTombClimate:" .. tostring(after.climate))
 	print("aldebaranAcceptDone:true")
+end
+
+--- 1-2 주파. 방마다의 기후가 실제로 걸리는지, 새 적 셋을 만나는지를 본다.
+local function runTomb()
+	local s0 = st()
+	print(string.format("tombStart:%d,%d stage:%s level:%d",
+		s0.x, s0.y, tostring(s0.stage), s0.level))
+
+	local seen = {}          -- 겪은 기후
+	local met = {}           -- 만난 적
+	local maxX, hurt = s0.x, 0
+	local lastHp = s0.hp
+
+	r:press("RIGHT")
+	-- 맵이 5120px라 걷는 데만 60초 가까이 걸린다. CI에서는 150초를 쓰고,
+	-- 보스까지 보고 싶을 때 INITIAL2D_ALDEBARAN_TICKS로 늘린다.
+	local budget = tonumber((os.getenv ~= nil)
+		and os.getenv("INITIAL2D_ALDEBARAN_TICKS") or "") or 9000
+	for _ = 1, budget do
+		local s = st()
+		if s.ending ~= nil or s.gameOver ~= nil then break end
+		if s.climate ~= nil then seen[s.climate] = true end
+		for _, m in ipairs(s.monsters) do met[m.species] = true end
+		if s.x > maxX then maxX = s.x end
+		if s.hp ~= nil and lastHp ~= nil and s.hp < lastHp then hurt = hurt + 1 end
+		lastHp = s.hp
+		-- 흔적의 글이 뜨면 넘긴다 (대화창이 열려 있으면 조작이 잠긴다)
+		if s.dialogueShown then r:tap("Z") end
+		autoStep()
+	end
+	r:release("RIGHT")
+
+	local s = st()
+	print(string.format("tombReach:%d", math.floor(maxX)))
+	for _, kind in ipairs({ "snow", "light", "hail", "flood" }) do
+		print("tombClimate:" .. kind .. ":" .. tostring(seen[kind] == true))
+	end
+	for _, name in ipairs({ "무덤 번병", "순장된 영혼", "파괴의 조각" }) do
+		print("tombMet:" .. name .. ":" .. tostring(met[name] == true))
+	end
+	print("tombHurt:" .. tostring(hurt))
+	print("tombAlive:" .. tostring(s.hp ~= nil and s.hp > 0))
+	print("tombDeaths:" .. tostring(s.deaths) .. " gameOvers:" .. tostring(s.gameOvers))
+	print("tombEnding:" .. tostring(s.ending))
+	print("tombDone:true")
 end
 
 function Initialize()
@@ -347,6 +399,24 @@ function Initialize()
 		runTouch()
 		r:restore()
 		stopMode = "start"
+		return
+	end
+
+	-- A7: 1-2 황제의 무덤을 자율 봇이 주파한다. 1-1과 같은 봇이며 좌표를 박지
+	-- 않는다 — 무대가 달라도 "막히면 뛰고 적이 있으면 벤다"는 같기 때문이다.
+	if stopMode == "tomb" then
+		currentName = "aldebaran"
+		current = AldebaranScene
+		-- 1-1을 거쳐 온 것과 같은 상태로 연다. 레벨 1로 무덤에 넣으면 실제
+		-- 경로보다 가혹해서, 여기서 죽는 것이 설계 때문인지 시작 조건 때문인지
+		-- 알 수 없다 (1-1 주파의 실측이 레벨 4에 골드 115였다).
+		AldebaranScene.carry = { exp = 70, gold = 115 }
+		AldebaranScene.setStage("tomb")
+		r = replay.new({})
+		r:install()
+		current.init()
+		runTomb()
+		r:restore()
 		return
 	end
 

@@ -82,18 +82,48 @@ INITIAL2D_SCENE=aldebaran INITIAL2D_SKIP_INTRO=1 INITIAL2D_DEBUG=1 ./build/Initi
 | `scripts/games/aldebaran/player.lua` | 이동 물리와 콤보 (엔진에 닿지 않는 순수 모듈) |
 | `scripts/games/aldebaran/monster.lua` | 몬스터 상태 기계 (순찰, 추적, 공격, 돌격, 투척) |
 | `scripts/games/aldebaran/combat.lua` | 데미지, 명중 굴림, 레벨 표, 버서커 (순수 함수) |
-| `scripts/games/aldebaran/stage.lua` | 스테이지 데이터: 구간, 배치 좌표, 흔적과 이야기 글 |
-| `scripts/games/aldebaran/data/monsters.lua` | 몬스터 규격서: 종별 능력치와 원안 규격서 칸(`spec`), 공격 방식 4종, 이동 속도 5단계 |
+| `scripts/games/aldebaran/stages/init.lua` | 스테이지 목록과 순서 (1-1 검은 안개의 숲 → 1-2 황제의 무덤) |
+| `scripts/games/aldebaran/stages/forest.lua`, `tomb.lua` | 스테이지 데이터: 구간, 배치 좌표, 기후, 흔적과 이야기 글 |
+| `scripts/games/aldebaran/climate.lua` | 기후 규칙 (눈, 빛기둥, 우박, 홍수). 엔진에 닿지 않는 순수 모듈 |
+| `scripts/games/aldebaran/data/monsters.lua` | 몬스터 규격서: 종별 능력치와 원안 규격서 칸(`spec`), 공격 방식 4종, 보스 페이즈 표 |
 | `scripts/games/aldebaran/hud.lua` | HP/MP/EXP 막대와 목숨, 골드 |
 
 그림과 맵과 효과음은 전부 코드로 만들어 커밋했습니다. 도트는 단색 스케치 위에 디더링 명암을 얹고 테두리를 두르는 순서로 그립니다.
 
 ```bash
-# 시트(카르토, 몬스터 셋), 타일셋, 원경, 타이틀, HUD, 효과음 8종
+# 1-1: 시트(카르토, 몬스터 셋), 타일셋, 원경, 타이틀, HUD, 효과음 8종
 python3 tools/generate_aldebaran_assets.py
 
-# 스테이지 1-1 검은 안개의 숲 (128x28). 지형과 배치는 전부 손으로 정한 좌표
+# 1-1 검은 안개의 숲 (256x28). 지형과 배치는 전부 손으로 정한 좌표
 python3 tools/generate_aldebaran_maps.py
+
+# 1-2: 무덤의 시트 넷(영혼, 번병, 조각, 아포피스), 석회암 타일, 방 다섯의 배경
+python3 tools/generate_aldebaran_tomb.py
+
+# 1-2 황제의 무덤 (320x30). 방 다섯과 복도, 구덩이 둘
+python3 tools/generate_aldebaran_tomb_map.py
+```
+
+## 스테이지 둘과 방마다 바뀌는 기후
+
+1-1을 끝내면 **1-2 황제의 무덤**으로 이어집니다 (레벨과 골드를 들고 갑니다). 무덤은 원안 4.2.2절대로 석회암 바위산을 스핑크스 모양으로 깎아 만든 곳이고, 가슴부로 들어갑니다.
+
+무덤의 고유 기믹은 **기후**입니다. 원안 표 19의 "아포피스가 방마다 기후를 좌우한다"를 연출이 아니라 **조작을 바꾸는 규칙**으로 옮긴 것입니다.
+
+| 방 | 기후 | 무엇이 달라지는가 |
+| :--- | :--- | :--- |
+| 달의 방 | 눈 | 지면 마찰이 1/3. 멈추는 것도 돌아서는 것도 거리가 든다 |
+| 별들의 방 | 빛기둥 | 빛 안의 영혼만 실체가 됩니다. 그늘에서는 칼이 지나갑니다 |
+| 파괴의 방 | 우박 | 천장에서 떨어집니다. 떨어질 자리에 30프레임 먼저 표시가 뜹니다 |
+| 태양의 방 | 홍수 | 수위가 오르내립니다. 잠기면 이동 55%, 점프 72% |
+
+적도 셋 늘었고 각자 다른 것을 요구합니다. **순장된 영혼**(공중형)은 2단 점프의 정점을, **무덤 번병**(방패형)은 등 뒤로 돌아가기를, **파괴의 조각**(자폭형)은 거리 재기를 묻습니다. 마지막 방의 **아포피스**는 3페이즈이며 후딜이 1.2초에서 0.6초로 줄어듭니다.
+
+```bash
+# 무덤만 바로 열기 (검수용). AT은 시작 x 좌표입니다
+INITIAL2D_SCENE=aldebaran INITIAL2D_ALDEBARAN_STAGE=tomb \
+  INITIAL2D_ALDEBARAN_AT=2400 INITIAL2D_SKIP_INTRO=1 \
+  INITIAL2D_EXIT_AFTER=600 ./build/Initial2D
 ```
 
 인수 테스트(`tests/engine/scenes/aldebaran_scene.lua`)가 타이틀 → 도입 컷씬 → 게임 오버와 다시 하기 → 대쉬와 턱과 다리 → 전투와 성장 → 체크포인트 부활 → 짐도둑 → 배낭 → 에필로그 → 타이틀을 입력 재생기로 매번 다시 통과합니다. 전투 굴림이 시드 난수라 시나리오는 항상 같은 결과를 냅니다.

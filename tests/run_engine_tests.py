@@ -9,6 +9,7 @@
 """
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -817,8 +818,43 @@ def test_aldebaran_scene():
     has("aldebaranBossDown:true", "짐도둑을 쓰러뜨리면 배낭이 떨어진다")
     has("aldebaranEpilogue:epilogue", "배낭을 주우면 에필로그")
     has("aldebaranResult:true", "에필로그 뒤에 결과 창")
-    has("finalScene:aldebaran_title", "결과 창을 닫으면 타이틀로")
+    # A7: 결과 창을 닫으면 타이틀이 아니라 다음 스테이지로 이어진다.
+    # (1-1이 마지막이던 시절의 기대 finalScene:aldebaran_title 을 여기로 확장했다)
+    has("aldebaranStageAtEnd:forest", "1-1을 끝냈다")
+    has("finalScene:aldebaran", "결과 창을 닫아도 같은 씬이다")
+    has("aldebaranNextStage:tomb", "1-2 황제의 무덤으로 이어진다")
+    has("aldebaranTombClimate:", "무덤의 첫 방에 섰다")
     has("aldebaranAcceptDone:true", "시나리오 끝까지 통과")
+
+    # A7: 1-2 황제의 무덤을 자율 봇이 주파한다. 좌표를 박지 않은 같은 봇이며,
+    # 방마다의 기후가 실제로 걸리는지와 새 적 셋을 만나는지를 본다.
+    # 24000틱(400초분)이지만 헤드리스는 실시간이 아니라 벽시계로 12초쯤이다.
+    _, r_tomb, _ = run_scene("aldebaran_scene.lua", [], 300,
+                             {"INITIAL2D_ALDEBARAN_STOP": "tomb",
+                              "INITIAL2D_SKIP_INTRO": "1",
+                              "INITIAL2D_NO_RTP": "1",
+                              "INITIAL2D_ALDEBARAN_TICKS": "24000"})
+    log_tomb = r_tomb.stdout + r_tomb.stderr
+    check("무덤 실행 정상 종료", r_tomb.returncode == 0, f"rc={r_tomb.returncode}")
+    check("무덤 주파 완료", "tombDone:true" in log_tomb, log_tomb[-500:])
+    for needle, name in [
+            ("tombClimate:snow:true", "달의 방의 눈이 걸린다"),
+            ("tombClimate:light:true", "별들의 방의 빛기둥이 걸린다"),
+            ("tombClimate:hail:true", "파괴의 방의 우박이 걸린다"),
+            ("tombMet:무덤 번병:true", "무덤 번병을 만난다"),
+            ("tombMet:순장된 영혼:true", "순장된 영혼을 만난다"),
+            ("tombMet:파괴의 조각:true", "파괴의 조각을 만난다"),
+            ("tombClimate:flood:true", "태양의 방의 홍수가 걸린다")]:
+        check(name, needle in log_tomb, log_tomb[-800:])
+    m_reach = re.search(r"tombReach:(\d+)", log_tomb)
+    check("무덤을 끝까지 나아간다", m_reach is not None and int(m_reach.group(1)) > 4700,
+          log_tomb[-500:])
+    check("아포피스를 쓰러뜨리고 에필로그에 닿는다",
+          "tombEnding:epilogue" in log_tomb, log_tomb[-500:])
+    # 난이도 신호: 1-1은 같은 봇이 무피해로 지나가지만 무덤은 그렇지 않다.
+    m_hurt = re.search(r"tombHurt:(\d+)", log_tomb)
+    check("무덤에서는 봇이 여러 번 맞는다", m_hurt is not None and int(m_hurt.group(1)) >= 10,
+          log_tomb[-500:])
 
     # 터치 조작의 끝-끝 검증: 가상 패드로 걷고, 버튼으로 뛰고 베고, 정지 버튼과
     # 항목 누름으로 일시 정지를 여닫는다 (재생기의 마우스 = SDL의 첫 손가락)
@@ -853,6 +889,22 @@ def test_aldebaran_scene():
         star = count_color_in(img, scale, 288, 52, 312, 76, ALD_STAR, 40)
         check("원경의 붉은 별", star > 4, f"px={star}")
         check_golden("aldebaran_forest", img)
+
+    # 골든 3 (A7): 1-2 별들의 방. 빛기둥이 켜진 순간을 잡는다 — 이 스테이지에서
+    # 가장 많은 것이 한 화면에 있다 (기후, 공중형 적, 발판, 금별 벽).
+    _, r_tg, s_tg = run_scene("aldebaran_scene.lua", [20], 30,
+                              {"INITIAL2D_ALDEBARAN_STOP": "start",
+                               "INITIAL2D_ALDEBARAN_STAGE": "tomb",
+                               "INITIAL2D_ALDEBARAN_AT": "2480",
+                               "INITIAL2D_SKIP_INTRO": "1",
+                               "INITIAL2D_NO_RTP": "1"})
+    check("무덤 별들의 방 덤프", 20 in s_tg, f"rc={r_tg.returncode}")
+    if 20 in s_tg:
+        img = s_tg[20]
+        scale = img.width / 384.0
+        gold = count_color_in(img, scale, 0, 0, 384, 448, (214, 176, 84), 40)
+        check("무덤의 금박이 보인다", gold > 200, f"px={gold}")
+        check_golden("aldebaran_tomb_stars", img)
 
     # 골든 2: 타이틀 (배경에 글자가 구워져 있고 메뉴 창이 왼쪽 아래에 뜬다)
     _, r3, s_title = run_scene("aldebaran_scene.lua", [20], 30,

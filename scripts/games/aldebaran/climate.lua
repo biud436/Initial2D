@@ -50,6 +50,18 @@ local function addDrop(s, x, floorY)
 	}
 end
 
+--- 밖에서 우박 한 알을 떨군다 (보스의 패턴이 쓴다. 기후가 hail일 필요는 없다).
+function M.drop(s, x, floorY)
+	if s == nil or s.drops == nil then return end
+	addDrop(s, x, floorY)
+end
+
+--- 수위를 잠시 최고로 밀어 올린다 (보스의 2페이즈 패턴)
+function M.surge(s, seconds)
+	if s == nil or s.kind ~= "flood" then return end
+	s.surge = math.max(s.surge or 0, seconds)
+end
+
 --- 한 프레임. ctx는 { x = 플레이어 x, floorY = 발밑 지면 y, rng = 시드 난수 }
 function M.update(s, dt, ctx)
 	if s == nil then return end
@@ -85,6 +97,12 @@ function M.update(s, dt, ctx)
 		end
 
 	elseif s.kind == "flood" then
+		-- 보스가 밀어 올린 동안은 최고 수위로 고정된다
+		if (s.surge or 0) > 0 then
+			s.surge = s.surge - dt
+			s.waterY = s.def.high
+			return
+		end
 		-- 수위는 사인이 아니라 사다리꼴로 움직인다. 오르내리는 동안이 아니라
 		-- **멈춰 있는 동안**에 판단할 시간이 있어야 하기 때문이다.
 		local p = s.def.period or 9

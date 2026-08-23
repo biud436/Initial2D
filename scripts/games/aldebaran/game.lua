@@ -36,6 +36,7 @@ local Monster = require("scripts/games/aldebaran/monster")
 local Combat = require("scripts/games/aldebaran/combat")
 local Stages = require("scripts/games/aldebaran/stages/init")
 local Climate = require("scripts/games/aldebaran/climate")
+local Monsters = require("scripts/games/aldebaran/data/monsters")
 local Hud = require("scripts/games/aldebaran/hud")
 local Text = require("scripts/rpg/text")
 
@@ -56,6 +57,15 @@ end
 --- 지금 무대의 id (진행 저장과 결과 창이 쓴다)
 function AldebaranScene.stageId()
 	return Stage ~= nil and Stage.id or nil
+end
+
+-- 스테이지를 넘어갈 때 들고 가는 것 (원안 7.2절: 레벨은 이어진다).
+-- 씬은 전환할 때 destroy되고 다시 init되므로 지역 변수로는 남지 않는다.
+-- 타이틀로 돌아가면 지운다 — 한 회차가 끝난 것이다.
+AldebaranScene.carry = nil
+
+function AldebaranScene.clearCarry()
+	AldebaranScene.carry = nil
 end
 
 local BG_DIR = "./resources/aldebaran/"
@@ -127,8 +137,10 @@ local stones = {}              -- 짐도둑의 돌팔매 { x, y, vx, vy }
 local bag = nil                -- 떨어진 배낭 { x, y }
 local bossClear = nil          -- 보스를 쓰러뜨린 뒤 끝나기까지 남은 초
 local startAt = nil            -- 검수용 시작 x (INITIAL2D_ALDEBARAN_AT)
+local carriedExp, carriedGold = 0, 0   -- 앞 스테이지에서 들고 온 것
 local climates = {}            -- 구간 이름 → 기후 상태 (A7)
 local climate = nil            -- 지금 구간의 기후
+local bossHail = nil           -- 보스가 부르는 우박 (방의 기후와 별개다)
 local stats = nil
 local exp, gold, lives = 0, 0, 2
 local level = 1
@@ -205,6 +217,20 @@ local function pollInput()
 	return input
 end
 
+--- 몬스터 하나를 목록에 더한다 (배치와 보스의 소환이 함께 쓴다)
+local function addMonster(spawn)
+	local def = Stage.species[spawn.species]
+	if def == nil then return nil end
+	local model = Monster.new(def, spawn)
+	local img = Image(def.sheet, 0, 0, def.frameW, def.frameH,
+		def.cols * def.rows, "Aldebaran:" .. spawn.species)
+	img.setSheetGrid(def.cols, def.rows)
+	img.setLoop(false)
+	local e = { model = model, img = img, boss = spawn.boss }
+	monsters[#monsters + 1] = e
+	return e
+end
+
 --- 대화창(나레이션)이 보는 결정키. 화면 탭도 결정으로 친다.
 local function pollConfirm()
 	local confirm = Input.IsKeyDown(VK_Z) or Input.IsKeyDown(VK_RETURN)
@@ -220,13 +246,7 @@ local function spawnMonsters()
 	end
 	monsters = {}
 	for _, s in ipairs(Stage.spawns) do
-		local def = Stage.species[s.species]
-		local model = Monster.new(def, s)
-		local img = Image(def.sheet, 0, 0, def.frameW, def.frameH,
-			def.cols * def.rows, "Aldebaran:" .. s.species)
-		img.setSheetGrid(def.cols, def.rows)
-		img.setLoop(false)
-		monsters[#monsters + 1] = { model = model, img = img, boss = s.boss }
+		addMonster(s)
 	end
 end
 
@@ -242,9 +262,11 @@ end
 local function resetStage()
 	rng = Rng.new(Stage.SEED)
 	player = Player.new(startAt or Stage.START.x, Stage.START.y)
-	exp, gold = 0, 0
+	-- 앞 스테이지에서 이어 온 경험치와 골드. 첫 스테이지면 0이다.
+	-- 다시 하기에서도 유지된다 — 잃는 것은 이 판의 진행이지 지난 판이 아니다.
+	exp, gold = carriedExp, carriedGold
 	lives = Stage.LIVES
-	applyLevel(1)
+	applyLevel(Combat.levelFor(exp))
 	berserkTimer = 0
 	checkpoint = nil
 	checkpointHit = false
@@ -336,6 +358,63 @@ local function updateBolts(dt)
 			end
 		end
 		if gone then table.remove(bolts, i) end
+	end
+end
+
+-- ---- 보스의 패턴 (docs/plans/aldebaran-7-tomb.md 6절) -----------------------
+-- 페이즈 표는 data/monsters.lua의 M.BOSS_PHASES에 있다. 여기는 그 표를 읽어
+-- 도는 코드일 뿐이다.
+--
+-- 패턴은 **후딜에 들어서는 순간** 하나씩 나간다. 후딜이 곧 플레이어의 펀치
+-- 윈도우이므로, 그때 다음 위협을 예고하면 "때릴까 피할까"가 선택이 된다.
+
+local function bossFireHail(m, count)
+	if bossHail == nil then return end
+	local floorY = m.y
+	for ty = math.floor(m.y / 16), mapH - 1 do
+		if probe(m.x, ty * 16 + 1) then floorY = ty * 16 break end
+	end
+	for i = 1, count do
+		-- 보스 앞뒤로 고르게. 플레이어의 머리 위만 노리면 피할 수 없다
+		local spread = 60 + (i - 1) * 46
+		local side = (i % 2 == 0) and 1 or -1
+		Climate.drop(bossHail, player.x + side * spread * rng:float(), floorY)
+	end
+end
+
+local function bossSummon(m, count)
+	for i = 1, count do
+		local side = (i % 2 == 0) and 1 or -1
+		addMonster({ species = "soul", x = m.x + side * 70, y = m.y - 60,
+			minX = m.x - 150, maxX = m.x + 150 })
+	end
+end
+
+--- 보스 하나의 한 프레임. e는 monsters의 항목이다.
+local function updateBossPattern(e, dt)
+	local m = e.model
+	if m.def.phases == nil or m.dead or m.state == "dying" then return end
+	local ph = Monsters.BOSS_PHASES[m.phase or 1]
+	if ph == nil then return end
+	m.recoverTime = ph.recover
+
+	if m.state == "recover" then
+		if not m.patternFired then
+			m.patternFired = true
+			m.cycleIndex = ((m.cycleIndex or 0) % #ph.cycle) + 1
+			local pattern = ph.cycle[m.cycleIndex]
+			if pattern == "hail" then
+				bossFireHail(m, ph.hail or 3)
+			elseif pattern == "summon" then
+				bossSummon(m, ph.summon or 2)
+			elseif pattern == "flood" then
+				Climate.surge(climate, 4.0)
+			end
+			-- "charge"는 상태 기계가 스스로 한다 (def.chargeRepeat). 사이클에
+			-- 남겨 둔 것은 박자를 세기 위해서다.
+		end
+	else
+		m.patternFired = false
 	end
 end
 
@@ -462,7 +541,8 @@ function AldebaranScene.status()
 		if not m.dead then
 			ms[#ms + 1] = { species = m.def.name, x = math.floor(m.x),
 				y = math.floor(m.y), hp = m.hp, state = m.state,
-				boss = e.boss or false, phase2 = m.phase2 or false }
+				boss = e.boss or false, phase2 = m.phase2 or false,
+				phase = m.phase or 1 }
 		end
 	end
 	return {
@@ -475,6 +555,10 @@ function AldebaranScene.status()
 		mp = stats ~= nil and stats.mp or nil,
 		maxHp = stats ~= nil and stats.maxHp or nil,
 		exp = exp, gold = gold, level = level, lives = lives,
+		stage = Stage ~= nil and Stage.id or nil,
+		climate = climate ~= nil and climate.kind or nil,
+		waterY = Climate.waterY(climate),
+		lightOn = Climate.lightOn(climate),
 		berserk = berserkActive(),
 		paused = paused,
 		checkpoint = checkpointHit,
@@ -506,6 +590,10 @@ function AldebaranScene.init()
 	if FontReady then PreparaFont(UI_FONT) end
 
 	-- 검수용: 어느 스테이지를 열지 밖에서 지정한다 (INITIAL2D_ALDEBARAN_STAGE=tomb)
+	local carry = AldebaranScene.carry
+	carriedExp = (carry ~= nil) and carry.exp or 0
+	carriedGold = (carry ~= nil) and carry.gold or 0
+
 	local want = env("INITIAL2D_ALDEBARAN_STAGE")
 	if want ~= nil then
 		local ok, why = AldebaranScene.setStage(want)
@@ -545,6 +633,10 @@ function AldebaranScene.init()
 		climates[sec.name] = Climate.new(Stage.CLIMATE and Stage.CLIMATE[sec.name])
 	end
 	climate = nil
+	-- 보스의 우박은 방의 기후가 아니라 보스의 것이다. 간격을 무한대로 두고
+	-- 씬이 패턴을 돌 때마다 한 알씩 직접 떨군다.
+	bossHail = Climate.new({ kind = "hail", interval = 1e9, first = 1e9,
+		warn = 0.5, damage = 10, speed = 340, halfW = 5, count = 1 })
 
 	karto = Image(KARTO_PATH, 0, 0, 48, 48, 24, "AldebaranKarto")
 	karto.setSheetGrid(12, 2)
@@ -677,6 +769,7 @@ local function updatePause()
 		if picked == 2 then
 			resetStage()
 		elseif picked == 3 then
+			AldebaranScene.clearCarry()
 			SwitchScene("aldebaran_title")
 		end
 	end
@@ -732,11 +825,20 @@ local function updateEnding()
 			end
 		end
 	else
-		-- 결과 창 (기획서 4.4절): 결정키로 닫으면 타이틀로
+		-- 결과 창 (기획서 4.4절). 결정키로 닫으면 **다음 스테이지로 이어진다**.
+		-- 다음이 없으면 거기서 한 회차가 끝난 것이라 타이틀로 돌아간다.
 		dialogue:update({}, false)      -- 에필로그 창이 닫히는 것을 마저 본다
 		ending.wait = ending.wait + 1
 		if ending.wait > 10 and pollConfirm().confirm then
-			SwitchScene("aldebaran_title")
+			local nextStage = Stages.after(Stage.id)
+			if nextStage ~= nil then
+				AldebaranScene.carry = { exp = exp, gold = gold }
+				AldebaranScene.setStage(nextStage.id)
+				SwitchScene("aldebaran")     -- 같은 씬을 새 무대로 다시 연다
+			else
+				AldebaranScene.clearCarry()
+				SwitchScene("aldebaran_title")
+			end
 		end
 	end
 end
@@ -756,6 +858,7 @@ local function updateGameOver()
 		if not pauseChoice:isActive() then
 			local picked = pauseChoice:result()
 			if picked == 2 then
+				AldebaranScene.clearCarry()
 				SwitchScene("aldebaran_title")
 			else
 				resetStage()                 -- 취소를 포함해 기본은 다시 하기
@@ -912,6 +1015,25 @@ function AldebaranScene.update(elapsed)
 	for _, e in ipairs(monsters) do
 		if not e.model.dead then
 			Monster.update(e.model, dt, probe, player.x, player.y)
+			if e.boss then updateBossPattern(e, dt) end
+		end
+	end
+
+	-- 보스가 부른 우박은 방의 기후와 따로 흐른다
+	if bossHail ~= nil and #bossHail.drops > 0 then
+		Climate.update(bossHail, dt, { x = player.x, floorY = player.y,
+			ceilY = 96, rng = rng })
+		if player.invulnTimer <= 0 then
+			local px0, py0 = player.x - Player.HALF_W, player.y - Player.BODY_H
+			local px1, py1 = player.x + Player.HALF_W, player.y
+			for i, hz in ipairs(Climate.hazards(bossHail)) do
+				if overlap(px0, py0, px1, py1, hz.x0, hz.y0, hz.x1, hz.y1) then
+					Climate.consume(bossHail, i)
+					damagePlayer(hz.damage, hz.x0, nil)
+					break
+				end
+			end
+			if gameOver ~= nil then return end
 		end
 	end
 
@@ -970,28 +1092,34 @@ local function climatePiece(name, x, y, opacity)
 	img.draw()
 end
 
+--- 우박 알과 예고를 그린다 (방의 기후와 보스의 것이 같은 그림을 쓴다)
+local function drawDrops(state, cx)
+	if state == nil or state.drops == nil then return end
+	for _, dp in ipairs(state.drops) do
+		if dp.warn > 0 then
+			local a = 1 - dp.warn / (state.def.warn or 0.5)
+			climatePiece("warn", dp.x - 8 - cx, dp.floorY - 6,
+				math.floor(70 + 150 * a))
+		elseif dp.y ~= nil then
+			climatePiece("hail", dp.x - 4 - cx, dp.y - 4)
+		end
+	end
+end
+
 local function drawClimate(cx)
+	drawDrops(bossHail, cx)
 	if climate == nil then return end
 
 	if climate.kind == "light" then
 		-- 빛기둥 셋. 켜져 있는 동안만 영혼이 실체가 된다
 		if Climate.lightOn(climate) then
 			for _, px in ipairs(climate.def.pillars or {}) do
-				climatePiece("beam", px - 44 - cx, 0, 80)
+				climatePiece("beam", px - 44 - cx, 0, 115)
 			end
 		end
 
 	elseif climate.kind == "hail" then
-		for _, dp in ipairs(climate.drops) do
-			if dp.warn > 0 then
-				-- 예고: 떨어질 자리의 그림자. 남을수록 옅고, 임박하면 진하다
-				local a = 1 - dp.warn / (climate.def.warn or 0.5)
-				climatePiece("warn", dp.x - 8 - cx, dp.floorY - 6,
-					math.floor(70 + 150 * a))
-			elseif dp.y ~= nil then
-				climatePiece("hail", dp.x - 4 - cx, dp.y - 4)
-			end
-		end
+		drawDrops(climate, cx)
 
 	elseif climate.kind == "flood" then
 		local wy = climate.waterY
@@ -1071,7 +1199,7 @@ local function drawResult()
 	local by = math.floor((H - bh) / 2)
 	skin:drawPieces(Window.slices(bw, bh), bx, by)
 	if not FontReady then return end
-	drawCenteredText(by + 10, "1-1 검은 안개의 숲, 끝")
+	drawCenteredText(by + 10, Stage.number .. " " .. Stage.title .. ", 끝")
 	DrawText(bx + 16, by + 34, "레벨 " .. level .. "   경험치 " .. exp
 		.. "   골드 " .. gold)
 	DrawText(bx + 16, by + 52, string.format("걸린 시간 %d초", math.floor(stageTime)))
