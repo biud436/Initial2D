@@ -29,4 +29,5 @@ return {
     "scripts/luatests/cases/rpg_menu_test",
     "scripts/luatests/cases/rpg_message_test",
     "scripts/luatests/cases/rpg_assets_test",
+    "scripts/luatests/cases/aldebaran_player_test",
 }

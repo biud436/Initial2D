@@ -743,6 +743,64 @@ def test_rpgdemo_scene():
         check("집 벽이 캐릭터의 머리를 덮지 않는다", hair > 40, f"머리색 px={hair}")
 
 
+# 알데바란 자산의 색 (tools/generate_aldebaran_assets.py)
+ALD_COAT = (196, 164, 110)     # 카르토의 외투
+ALD_MOSS = (64, 84, 60)        # 진흙 땅 윗면의 이끼
+ALD_STAR = (232, 96, 66)       # 원경의 붉은 별
+
+
+def test_aldebaran_scene():
+    """알데바란 데모: 횡스크롤 코어 (docs/plans/aldebaran-1-core.md 8절).
+
+    진짜 씬과 맵을 입력 재생기로 몰아 스테이지 왼쪽 절반(입구 → 대쉬 → 바위 턱
+    셋 → 낡은 다리 → 이정표 구간)을 주파한다. 골든은 입력 없이 서 있는 첫 화면.
+    """
+    print("\n[9] aldebaran_scene — 알데바란 (이동, 대쉬, 2단 점프, 다리)")
+    work = make_workdir("aldebaran_scene.lua")
+    env = dict(os.environ)
+    env["INITIAL2D_EXIT_AFTER"] = "90"
+    result = subprocess.run([GAME], cwd=work, env=env,
+                            capture_output=True, text=True, timeout=300)
+    log = result.stdout + result.stderr
+
+    check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode}")
+    check("Lua 오류 없음", "PANIC" not in log and "attempt to" not in log, log[-300:])
+
+    def has(needle, name):
+        check(name, needle in log, f"'{needle}' 없음 | {log[-400:]}")
+
+    has("aldebaranView:384x448", "렌더 배율 2의 논리 해상도")
+    has("aldebaranStart:56,384", "숲 입구에서 시작")
+    has("aldebaranClimb:320", "바위 턱 셋을 올라 절벽 어깨(윗면 20)에 선다")
+    has("aldebaranDash:true", "더블탭 대쉬가 걷기보다 빠르다")
+    has("aldebaranBridge:true", "다리 구멍 둘을 뛰어넘었다")
+    has("aldebaranEnd:384", "늑대 숲의 턱을 넘어 공터 지면까지 내려온다")
+    has("aldebaranFalls:0", "낭떠러지에 떨어지지 않았다")
+    has("aldebaranDone:true", "스테이지 오른쪽 끝 도착")
+
+    # 터치 UI 스모크: 가상 패드와 점프 버튼을 그린 채로도 첫 화면이 뜬다
+    _, r_pad, s_pad = run_scene("aldebaran_scene.lua", [10], 15,
+                                {"INITIAL2D_ALDEBARAN_STOP": "start",
+                                 "INITIAL2D_VPAD": "1"})
+    check("터치 UI 표시 실행 정상 종료", r_pad.returncode == 0, f"rc={r_pad.returncode}")
+    check("터치 UI 화면 덤프", 10 in s_pad)
+
+    # 골든: 입력 없이 서 있는 첫 화면 (시간을 얼려 상태를 고정한다)
+    _, r2, shots = run_scene("aldebaran_scene.lua", [20], 30,
+                             {"INITIAL2D_ALDEBARAN_STOP": "start"})
+    check("첫 화면 덤프", 20 in shots, f"rc={r2.returncode}")
+    if 20 in shots:
+        img = shots[20]
+        scale = img.width / 384.0
+        coat = count_color_in(img, scale, 44, 360, 70, 380, ALD_COAT, 30)
+        check("카르토의 외투 픽셀", coat > 8, f"px={coat}")
+        moss = count_color_in(img, scale, 96, 384, 200, 389, ALD_MOSS, 24)
+        check("진흙 땅의 이끼 윗면", moss > 80, f"px={moss}")
+        star = count_color_in(img, scale, 288, 52, 312, 76, ALD_STAR, 40)
+        check("원경의 붉은 별", star > 4, f"px={star}")
+        check_golden("aldebaran_forest", img)
+
+
 def test_resolution():
     """game.json과 INITIAL2D_WINDOW의 해상도 설정, 렌더 배율을 검증한다 (1단계)."""
     print("\n[3] resolution_scene — 게임별 해상도 설정과 렌더 배율")
@@ -842,6 +900,7 @@ def main():
     test_rpg_event_scene()
     test_rpg_dialogue_scene()
     test_rpgdemo_scene()
+    test_aldebaran_scene()
     test_resolution()
     test_rtp_charset()
 

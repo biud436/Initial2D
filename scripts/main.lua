@@ -14,6 +14,7 @@ require("scripts/games/flappy")
 require("scripts/games/tilemap_demo")
 require("scripts/games/rpgdemo/title")
 require("scripts/games/rpgdemo/game")
+require("scripts/games/aldebaran/game")
 
 local scenes = {
 	menu = MenuScene,
@@ -21,6 +22,7 @@ local scenes = {
 	tilemap = TilemapDemoScene,
 	title = RpgDemoTitleScene,
 	rpg = RpgDemoScene,
+	aldebaran = AldebaranScene,
 }
 
 local current = nil
