@@ -761,7 +761,7 @@ local function drawResult()
 	local by = math.floor((H - bh) / 2)
 	skin:drawPieces(Window.slices(bw, bh), bx, by)
 	if FontReady then
-		drawCenteredText(by + 12, "— 1-1 검은 안개의 숲 끝 —")
+		drawCenteredText(by + 12, "1-1 검은 안개의 숲, 끝")
 		DrawText(bx + 20, by + 38, "레벨 " .. level .. "   경험치 " .. exp)
 		DrawText(bx + 20, by + 58, "골드 " .. gold)
 		DrawText(bx + 20, by + 78, string.format("걸린 시간 %d초", math.floor(stageTime)))
