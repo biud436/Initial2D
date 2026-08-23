@@ -1,1 +1,8 @@
 Spica_v0.9.docx
+
+# 원안에서 꺼낸 이미지 바이너리는 저자 자산이다 (tools/spica_extract.py --media).
+# 마크다운 채굴본(tables.md, text.md, media.md)은 커밋한다.
+# 예외 하나: 세계 지도 image6.png는 저자가 반입을 승인했다 (2026-08-23). P6의 원화다.
+# 디렉터리째 막으면 예외를 못 쓰므로 내용물을 막고 지도만 뚫는다.
+spica-source/media/*
+!spica-source/media/image6.png
