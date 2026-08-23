@@ -239,6 +239,84 @@ function M.run(t)
 		step(p, probe, 1, { { left = true } })
 		t.check(Player.frame(p) >= 12, "왼쪽을 보면 아랫줄 칸")
 	end
+
+	-- [O] 3단 콤보: 활성 이후의 입력이 다음 단으로 이어진다 (2단계)
+	do
+		local p, probe = flatGround()
+		step(p, probe, 1, { { attackEdge = true } })
+		t.check_eq(p.attackStage, 1, "첫 누름은 1단")
+		t.check(p.swung, "베기가 일어났다")
+		t.check_eq(Player.attackPhase(p), "wind", "처음에는 선딜레이")
+		t.check(not Player.attackActive(p), "선딜레이에는 판정이 없다")
+		step(p, probe, 7)                      -- 0.117초 — 활성 구간
+		t.check_eq(Player.attackPhase(p), "active", "판정 구간")
+		t.check(Player.attackActive(p), "판정이 살아 있다")
+		local x0, _, x1 = Player.attackBox(p)
+		t.check(x0 > p.x, "오른쪽을 보면 판정 상자는 앞쪽", x0)
+		step(p, probe, 1, { { attackEdge = true } })   -- 활성 중의 입력 = 예약
+		for _ = 1, 30 do
+			Player.update(p, {}, DT, probe)
+			if p.attackStage == 2 then break end
+		end
+		t.check_eq(p.attackStage, 2, "예약된 입력이 2단으로 이어진다")
+		t.check_eq(Player.attackMult(p), 1, "2단까지는 배율 1")
+		-- 2단이 끝난 뒤 유예 안의 입력은 3단
+		for _ = 1, 60 do
+			Player.update(p, {}, DT, probe)
+			if p.attackTimer <= 0 then break end
+		end
+		step(p, probe, 3)                      -- 유예(0.4초) 안
+		step(p, probe, 1, { { attackEdge = true } })
+		t.check_eq(p.attackStage, 3, "유예 안의 입력은 3단 십자 베기")
+		t.check(math.abs(Player.attackMult(p) - Player.COMBO_FINISHER) < 0.001,
+			"십자 베기는 데미지 배율 1.6")
+		-- 3단이 끝나면 콤보가 처음으로
+		for _ = 1, 60 do Player.update(p, {}, DT, probe) end
+		step(p, probe, 1, { { attackEdge = true } })
+		t.check_eq(p.attackStage, 1, "십자 베기 뒤에는 처음부터")
+	end
+
+	-- [P] 콤보 유예가 지나면 처음부터
+	do
+		local p, probe = flatGround()
+		step(p, probe, 1, { { attackEdge = true } })
+		step(p, probe, 60)                     -- 1초 — 베기와 유예가 다 지난다
+		step(p, probe, 1, { { attackEdge = true } })
+		t.check_eq(p.attackStage, 1, "유예가 지난 입력은 1단부터")
+	end
+
+	-- [Q] 베는 동안에는 제자리 (지상)
+	do
+		local p, probe = flatGround()
+		step(p, probe, 2, { { right = true }, { right = true } })
+		step(p, probe, 1, { { attackEdge = true, right = true } })
+		local x0 = p.x
+		step(p, probe, 5, { { right = true }, { right = true }, { right = true },
+			{ right = true }, { right = true } })
+		t.check(math.abs(p.x - x0) < 0.001, "베는 동안 방향키가 안 먹는다")
+	end
+
+	-- [R] 피격: 넉백, 경직, 무적 1초
+	do
+		local p, probe = flatGround()
+		local ok = Player.applyHit(p, p.x + 10)      -- 오른쪽에서 맞았다
+		t.check(ok, "맞았다")
+		t.check(p.vx < 0, "때린 반대쪽으로 밀린다")
+		t.check(p.hurtTimer > 0, "경직")
+		t.check(p.invulnTimer > 0, "무적 시간")
+		t.check_eq(Player.frame(p) % 12, 11, "피격 칸")
+		t.check(not Player.applyHit(p, p.x + 10), "무적 중에는 다시 맞지 않는다")
+		-- 경직 중에는 입력이 안 먹는다
+		local vy0 = p.vy
+		step(p, probe, 1, { { jumpEdge = true } })
+		t.check(p.vy >= vy0, "경직 중에는 점프가 안 된다")
+		-- 경직이 풀리고 무적이 끝나면 다시 맞는다
+		for _ = 1, 70 do Player.update(p, {}, DT, probe) end
+		t.check_eq(p.hurtTimer, 0, "경직이 풀렸다")
+		t.check_eq(p.invulnTimer, 0, "무적이 끝났다")
+		t.check(Player.applyHit(p, p.x - 10), "다시 맞을 수 있다")
+		t.check(p.vx > 0, "왼쪽에서 맞으면 오른쪽으로 밀린다")
+	end
 end
 
 return M

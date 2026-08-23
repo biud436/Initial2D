@@ -26,6 +26,17 @@ P.HALF_W = 6                -- 몸통 절반 폭
 P.BODY_H = 20               -- 몸통 높이
 P.RUN_GRACE = 0.18          -- 달리기 기억: 손을 뗀 직후의 점프가 앞으로 나아가는 유예
 
+-- 3단 콤보 (기획서 5.1절): 베기 1단 → 2단 → 십자 베기
+P.ATTACK_WIND = 0.08        -- 선딜레이
+P.ATTACK_ACTIVE = 0.10      -- 판정이 살아 있는 구간
+P.ATTACK_RECOVER = 0.16     -- 후딜레이 (이 동안의 입력이 다음 단으로 이어진다)
+P.COMBO_GRACE = 0.4         -- 베기가 끝나고도 이 시간 안의 입력은 콤보를 잇는다
+P.COMBO_FINISHER = 1.6      -- 십자 베기(3단)의 데미지 배율
+P.HURT_TIME = 0.25          -- 피격 경직
+P.INVULN_TIME = 1.0         -- 피격 뒤 무적
+P.KNOCKBACK_X = 110
+P.KNOCKBACK_Y = -140
+
 function P.new(x, y)
 	return {
 		x = x, y = y, vx = 0, vy = 0,
@@ -36,9 +47,73 @@ function P.new(x, y)
 		tapTimer = 0, tapDir = 0,
 		runVx = 0, runTimer = 0,   -- 직전 달리기 기억 (P.RUN_GRACE 참고)
 		animTime = 0,
+		-- 전투 (2단계)
+		attackStage = 0,           -- 0 없음, 1~3 콤보 단
+		attackTimer = 0,           -- 남은 베기 시간 (wind+active+recover에서 줄어든다)
+		comboQueued = false,       -- 베기 중의 입력이 다음 단을 예약했다
+		comboGrace = 0,            -- 베기가 끝난 뒤 콤보가 살아 있는 시간
+		attackHit = {},            -- 이번 베기가 이미 때린 몬스터 (씬이 쓴다)
+		hurtTimer = 0, invulnTimer = 0,
 		-- 이번 프레임에 일어난 일 (씬이 효과음과 연출에 쓴다)
-		jumped = false, landed = false, dashed = false,
+		jumped = false, landed = false, dashed = false, swung = false,
 	}
+end
+
+-- ---- 전투 ------------------------------------------------------------------
+
+local ATTACK_TOTAL = P.ATTACK_WIND + P.ATTACK_ACTIVE + P.ATTACK_RECOVER
+
+--- 지금 베기의 구간 ("wind" | "active" | "recover" | nil)
+function P.attackPhase(self)
+	if self.attackStage == 0 or self.attackTimer <= 0 then return nil end
+	local t = ATTACK_TOTAL - self.attackTimer
+	if t < P.ATTACK_WIND then return "wind" end
+	if t < P.ATTACK_WIND + P.ATTACK_ACTIVE then return "active" end
+	return "recover"
+end
+
+--- 판정이 살아 있는가
+function P.attackActive(self)
+	return P.attackPhase(self) == "active"
+end
+
+--- 베기 판정 상자 (바라보는 방향 앞 22x20)
+function P.attackBox(self)
+	local x0
+	if self.facing > 0 then
+		x0 = self.x + P.HALF_W - 2
+	else
+		x0 = self.x - P.HALF_W + 2 - 22
+	end
+	return x0, self.y - P.BODY_H, x0 + 22, self.y
+end
+
+--- 이번 단의 데미지 배율 (3단 십자 베기는 세다)
+function P.attackMult(self)
+	return self.attackStage >= 3 and P.COMBO_FINISHER or 1
+end
+
+local function startAttack(self, stage)
+	self.attackStage = stage
+	self.attackTimer = ATTACK_TOTAL
+	self.comboQueued = false
+	self.comboGrace = 0
+	self.attackHit = {}
+	self.swung = true
+end
+
+--- 맞았다 (데미지 적용은 씬이 한다). 무적이면 false.
+function P.applyHit(self, fromX)
+	if self.invulnTimer > 0 then return false end
+	self.hurtTimer = P.HURT_TIME
+	self.invulnTimer = P.INVULN_TIME
+	self.vy = P.KNOCKBACK_Y
+	self.vx = (self.x < fromX) and -P.KNOCKBACK_X or P.KNOCKBACK_X
+	self.onGround = false
+	self.attackStage = 0
+	self.attackTimer = 0
+	self.dashTimer = 0
+	return true
 end
 
 --- 발 밑 두 점 중 하나라도 막혀 있는가
@@ -96,9 +171,8 @@ function P.moveY(self, dy, probe)
 	end
 end
 
-function P.update(self, input, dt, probe)
-	self.jumped, self.landed, self.dashed = false, false, false
-
+--- 이동 의도: 대쉬, 걷기, 점프 (피격도 베기도 아닐 때만 불린다)
+local function updateMovement(self, input, dt)
 	-- 더블탭 대쉬 (기획서 5.1절: 같은 방향을 빠르게 두 번)
 	self.tapTimer = math.max(0, self.tapTimer - dt)
 	local tap = 0
@@ -154,20 +228,71 @@ function P.update(self, input, dt, probe)
 			self.jumped = true
 		end
 	end
+end
 
-	-- 중력
+function P.update(self, input, dt, probe)
+	self.jumped, self.landed, self.dashed, self.swung = false, false, false, false
+	self.invulnTimer = math.max(0, self.invulnTimer - dt)
+
+	-- 콤보 유예: 베기가 끝나고 이 시간이 지나면 콤보가 처음으로 돌아간다
+	if self.comboGrace > 0 and self.attackTimer <= 0 then
+		self.comboGrace = math.max(0, self.comboGrace - dt)
+		if self.comboGrace <= 0 then self.attackStage = 0 end
+	end
+
+	if self.hurtTimer > 0 then
+		-- 피격 경직: 입력을 받지 않고 넉백만 이어진다
+		self.hurtTimer = math.max(0, self.hurtTimer - dt)
+
+	elseif self.attackTimer > 0 then
+		-- 베기 중: 활성 이후의 입력이 다음 단을 예약한다 (기획서 5.1절)
+		if input.attackEdge and P.attackPhase(self) ~= "wind" then
+			self.comboQueued = true
+		end
+		self.attackTimer = math.max(0, self.attackTimer - dt)
+		if self.attackTimer <= 0 then
+			if self.comboQueued and self.attackStage < 3 then
+				startAttack(self, self.attackStage + 1)
+			elseif self.attackStage < 3 then
+				self.comboGrace = P.COMBO_GRACE
+			else
+				self.attackStage = 0        -- 십자 베기 뒤에는 처음부터
+			end
+		end
+		-- 베는 동안에는 방향 전환도 점프도 없다. 지상에서는 제자리에 선다.
+		if self.onGround then self.vx = 0 end
+		self.tapTimer = 0
+
+	elseif input.attackEdge then
+		-- 베기 시작 (유예 안의 입력은 다음 단으로)
+		if self.attackStage > 0 and self.attackStage < 3 and self.comboGrace > 0 then
+			startAttack(self, self.attackStage + 1)
+		else
+			startAttack(self, 1)
+		end
+		if self.onGround then self.vx = 0 end
+
+	else
+		updateMovement(self, input, dt)
+	end
+
+	-- 중력과 이동 (모든 상태 공통). 경직이 끝난 뒤의 넉백 잔속은 다음 프레임의
+	-- updateMovement가 지상 무입력 규칙으로 정리한다.
 	self.vy = math.min(self.vy + P.GRAVITY * dt, P.MAX_FALL)
-
 	P.moveX(self, self.vx * dt, probe)
 	P.moveY(self, self.vy * dt, probe)
 	self.animTime = self.animTime + dt
 end
 
 --- 지금 자세의 시트 칸 (karto.png, 그리드 12x2).
--- 칸: 0 서기A, 1 서기B, 2~5 걷기, 6 점프(상승), 7 낙하. 베기와 피격은 2단계.
+-- 칸: 0 서기A, 1 서기B, 2~5 걷기, 6 점프(상승), 7 낙하, 8~10 베기, 11 피격
 function P.frame(self)
 	local col
-	if not self.onGround then
+	if self.hurtTimer > 0 then
+		col = 11
+	elseif self.attackTimer > 0 then
+		col = 7 + math.min(3, math.max(1, self.attackStage))
+	elseif not self.onGround then
 		col = self.vy < 0 and 6 or 7
 	elseif self.vx ~= 0 then
 		local fps = self.dashTimer > 0 and 14 or 9
