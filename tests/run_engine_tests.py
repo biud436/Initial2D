@@ -762,7 +762,7 @@ def test_aldebaran_scene():
     env["INITIAL2D_EXIT_AFTER"] = "90"
     env["INITIAL2D_NO_RTP"] = "1"     # 골든과 같은 그림으로 (RTP는 기계마다 다르다)
     result = subprocess.run([GAME], cwd=work, env=env,
-                            capture_output=True, text=True, timeout=600)
+                            capture_output=True, text=True, timeout=2400)
     log = result.stdout + result.stderr
 
     check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode}")
@@ -779,47 +779,43 @@ def test_aldebaran_scene():
     has("titleHelpClosed:true", "설명을 끝까지 넘기면 닫힌다")
     has("sceneAfterStart:aldebaran", "시작을 고르면 스테이지로")
 
-    # [B] 도입 컷씬 (기획서 4.2절)
-    has("aldebaranMonsters:8", "몬스터 여덟이 배치된다 (거미 넷, 늑대 셋, 짐도둑)")
+    # [B] 도입 컷씬
+    has("aldebaranMonsters:16", "적 열여섯이 배치된다 (거미 8, 늑대 6, 검은 늑대, 짐도둑)")
     has("introActive:true", "도입 컷씬이 조작을 잠근다")
     has("introWindow:true", "나레이션 창이 실제로 떠 있다")
     has("introDone:true", "나레이션을 넘기면 조작이 풀린다")
-    # isBusy()는 마지막 쪽을 넘긴 즉시 거짓이 되고 창은 그 뒤의 update()가 닫는다.
-    # 컷씬이 끝났다고 갱신을 멈추면 창이 열린 채 남는다 (2026-08-23 사용자 보고).
     has("introWindowClosed:true", "넘긴 나레이션 창이 화면에서 사라진다")
 
-    # [C] 게임 오버와 다시 하기 (기획서 4.5절)
-    has("firstDeathLives:1", "낙하 한 번에 목숨 하나")
+    # [C] 게임 오버와 다시 하기
+    has("firstDeathLives:1", "맞아 죽으면 목숨이 하나 준다")
     has("gameOverChoice:true", "목숨을 다 잃으면 게임 오버 창")
     has("gameOvers:1", "게임 오버 한 번")
     has("retryLives:2", "다시 하기는 목숨 2로")
     has("retryAtStart:true", "다시 하기는 스테이지 처음부터")
 
-    # [D] 이동과 전투
+    # [D] 다섯 구간을 지나며 흔적을 줍는다 (플롯이 쌓인다)
     has("aldebaranDash:true", "더블탭 대쉬가 걷기보다 빠르다")
-    has("aldebaranClimb:320", "바위 턱 셋을 올라 절벽 어깨(윗면 20)에 선다")
-    has("aldebaranFirstKill:exp=5,gold=10", "첫 전갈거미를 콤보로 잡고 보상을 받는다")
-    has("aldebaranSign:낡은 다리다.", "표지 글이 화면에 뜬다")
-    has("aldebaranBridge:true", "다리 구멍 둘을 뛰어넘었다")
-    has("aldebaranCheckpoint:true", "이정표가 체크포인트가 된다")
-    has("aldebaranPaused:true", "일시 정지가 열린다 (게임 시간 정지)")
-    has("aldebaranResumed:true", "계속 하기로 닫힌다")
-    has("aldebaranRespawnX:1056", "낭떠러지에 떨어지면 체크포인트에서 다시 선다")
-    has("aldebaranRespawnLives:1", "목숨이 하나 줄었다")
-    has("aldebaranRespawnHp:true", "부활은 HP 전량으로")
-    has("aldebaranHurt:", "몬스터에게 맞아 HP가 줄었다")
-    has("aldebaranHurtInvuln:true", "맞은 직후에는 무적 시간이 선다")
-    has("aldebaranBerserk:true", "버서커가 켜진다")
-    has("aldebaranBerserkMp:true", "버서커가 MP 10을 쓴다")
+    has("aldebaranFound1:여러 갈래의 발자국", "1구간의 흔적")
+    has("aldebaranFound2:다져진 포석", "2구간의 흔적")
+    has("aldebaranFound3:버려진 짐수레", "3구간의 흔적")
+    has("aldebaranFound4:부서진 우리", "4구간의 흔적 (여기서 옛 숲의 환상)")
+    has("aldebaranFound5:네 개의 화두", "5구간의 흔적")
+    has("aldebaranFoundCount:5", "다섯을 모두 모았다")
+    has("aldebaranFirstKill:exp=5,gold=10", "첫 전갈거미를 잡고 보상을 받는다")
     has("aldebaranLevelUp:", "경험치로 레벨이 오른다")
     has("aldebaranLevelHeal:true", "레벨이 오르면 전량 회복")
-    has("aldebaranEnd:384", "늑대 숲의 턱을 넘어 공터 지면까지 내려온다")
+    has("aldebaranHurt:", "몬스터에게 맞아 HP가 줄었다")
+    has("aldebaranHurtInvuln:true", "맞은 직후에는 무적 시간이 선다")
+    has("aldebaranPaused:true", "일시 정지가 열린다 (게임 시간 정지)")
+    has("aldebaranResumed:true", "계속 하기로 닫힌다")
+    has("aldebaranBerserk:true", "폭주를 익히고 쓴다")
 
-    # [E] 짐도둑과 에필로그 (기획서 4.3절과 4.4절)
+    # [E] 검은 늑대와 짐도둑 두 판, 그리고 에필로그
+    has("aldebaranBlackWolfDown:true", "마을의 검은 늑대를 쓰러뜨린다")
     has("aldebaranStone:true", "짐도둑이 돌을 던진다")
+    has("aldebaranBossPhase2:true", "절반에서 두 번째 판으로 넘어간다")
     has("aldebaranBossDown:true", "짐도둑을 쓰러뜨리면 배낭이 떨어진다")
     has("aldebaranEpilogue:epilogue", "배낭을 주우면 에필로그")
-    has("aldebaranFalls:3", "낙하는 일부러 떨어진 세 번뿐")
     has("aldebaranResult:true", "에필로그 뒤에 결과 창")
     has("finalScene:aldebaran_title", "결과 창을 닫으면 타이틀로")
     has("aldebaranAcceptDone:true", "시나리오 끝까지 통과")

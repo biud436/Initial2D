@@ -601,6 +601,24 @@ def wolf_frame(pose):
     return f
 
 
+def make_blackwolf():
+    """검은 늑대. 마을의 우두머리라 늑대보다 크고 어둡고 눈이 밝다."""
+    frames = []
+    for pose in ({"legs": 0}, {"legs": 3},
+                 {"legs": 4, "lean": 3, "headdown": 2, "crouch": 1},
+                 {"legs": 1, "raise": True},
+                 {"legs": 1, "lean": -2, "hurt": True}):
+        f = wolf_frame(pose)
+        px = f.load()
+        for y in range(f.height):
+            for x in range(f.width):
+                r, g, b, a = px[x, y]
+                if a > 40 and (r, g, b) != WOLF_EYE:
+                    px[x, y] = (int(r * 0.55), int(g * 0.55), int(b * 0.62), a)
+        frames.append(f)
+    save(sheet(frames, 48, 48), OUT, "blackwolf.png")
+
+
 def make_wolf():
     frames = [
         wolf_frame({"legs": 0}),                                  # 0 걷기A
@@ -987,6 +1005,98 @@ def t_canopy_bare():
     return f
 
 
+def t_paving():
+    """옛 길의 포석. 많이 밟혀 다져져 주변보다 채도가 낮다 (원안 4.2.1절)."""
+    f = Image.new("RGBA", (16, 16), (86, 82, 78))
+    d = ImageDraw.Draw(f)
+    d.rectangle([0, 0, 15, 2], fill=(104, 100, 94))
+    for (x0, y0, x1, y1) in ((0, 3, 6, 8), (8, 3, 15, 8), (0, 10, 9, 15), (11, 10, 15, 15)):
+        d.rectangle([x0, y0, x1, y1], fill=(96, 92, 86))
+        d.line([x0, y1, x1, y1], fill=(66, 62, 60))
+        d.line([x1, y0, x1, y1], fill=(66, 62, 60))
+    shade_band(f, (70, 66, 62), 0, 9, 16, 16, axis="y", gamma=1.4)
+    return f
+
+
+def t_pillar(top):
+    """부서진 레굴루스 석주. 위 칸은 부러진 단면이다."""
+    f = blank(16, 16)
+    d = ImageDraw.Draw(f)
+    d.rectangle([4, 0 if not top else 3, 11, 15], fill=STATUE)
+    if top:
+        d.polygon([(4, 3), (7, 1), (11, 4), (11, 6), (4, 6)], fill=STATUE_SHADE)
+    for y in (4, 8, 12):
+        d.line([4, y, 11, y], fill=STATUE_SHADE)
+    shade_band(f, STATUE_SHADE, 8, 0, 12, 16, axis="x", gamma=1.3)
+    outline(f)
+    return f
+
+
+def t_hut_wall():
+    """늑대 인간의 오두막 벽. 사람 살림을 흉내 낸 판자다 (원안 4.2.1절)."""
+    f = Image.new("RGBA", (16, 16), PLANK_SHADE)
+    d = ImageDraw.Draw(f)
+    for x in (0, 5, 10, 15):
+        d.line([x, 0, x, 15], fill=(72, 54, 36))
+    d.line([0, 7, 15, 7], fill=(72, 54, 36))
+    for y in range(16):
+        for x in range(16):
+            if hash_noise(x + 11, y + 5) > 0.9:
+                d.point((x, y), fill=PLANK)
+    return f
+
+
+def t_hut_roof():
+    f = blank(16, 16)
+    d = ImageDraw.Draw(f)
+    d.polygon([(0, 15), (8, 4), (15, 15)], fill=(58, 48, 40))
+    d.line([0, 15, 8, 4], fill=(84, 70, 56))
+    shade_band(f, (40, 34, 30), 8, 0, 16, 16, axis="x", gamma=1.2)
+    outline(f)
+    return f
+
+
+def t_cage():
+    """매달린 우리. 실험실에서 도망친 것들이 쓰던 것이다."""
+    f = blank(16, 16)
+    d = ImageDraw.Draw(f)
+    d.line([8, 0, 8, 3], fill=ROPE)
+    d.rectangle([3, 3, 12, 13], outline=(96, 92, 88))
+    for x in (5, 8, 11):
+        d.line([x, 4, x, 12], fill=(96, 92, 88))
+    d.line([3, 8, 12, 8], fill=(78, 74, 70))
+    d.line([9, 13, 12, 15], fill=(96, 92, 88))     # 부서져 열린 문
+    outline(f)
+    return f
+
+
+def t_firepit():
+    """열매를 태우는 자리. 검은 안개가 여기서 나온다."""
+    f = blank(16, 16)
+    d = ImageDraw.Draw(f)
+    d.ellipse([2, 10, 13, 15], fill=(54, 50, 48))
+    for i, (x, ln) in enumerate(((5, 5), (8, 7), (11, 4))):
+        d.line([x, 14, x - 1, 14 - ln], fill=(58, 44, 36), width=2)
+    d.polygon([(6, 12), (8, 6), (10, 12)], fill=(226, 130, 60))
+    d.polygon([(7, 12), (8, 9), (9, 12)], fill=(250, 210, 120))
+    d.point((8, 4), fill=MIST)
+    d.point((9, 2), fill=MIST)
+    return f
+
+
+def t_altar_tile():
+    """제단의 바닥. 고대 마법사들의 언어가 새겨져 있고 굳은 피가 묻어 있다."""
+    f = Image.new("RGBA", (16, 16), (78, 74, 86))
+    d = ImageDraw.Draw(f)
+    d.rectangle([0, 0, 15, 0], fill=(104, 100, 114))
+    d.rectangle([1, 2, 14, 13], outline=(62, 58, 70))
+    for (x, y) in ((4, 5), (6, 5), (8, 5), (5, 8), (7, 8), (9, 8), (6, 11), (8, 11)):
+        d.point((x, y), fill=(140, 134, 156))       # 새겨진 글자
+    d.ellipse([10, 10, 13, 12], fill=(72, 34, 38))  # 굳은 피
+    shade_band(f, (60, 56, 68), 0, 9, 16, 16, axis="y", gamma=1.5)
+    return f
+
+
 def make_tileset():
     tiles = [
         # 줄 0 (gid 1~8): 땅과 다리
@@ -1002,6 +1112,9 @@ def make_tileset():
         t_mud_top_var(1), t_mud_top_var(2), t_rock_top_var(),
         t_rock_edge("left"), t_rock_edge("right"), t_canopy_bare(),
         blank(16, 16), blank(16, 16),
+        # 줄 4 (gid 33~40): 5단계의 구간 소품
+        t_paving(), t_pillar(True), t_pillar(False), t_hut_wall(),
+        t_hut_roof(), t_cage(), t_firepit(), t_altar_tile(),
     ]
     cols = 8
     rows = (len(tiles) + cols - 1) // cols
@@ -1106,27 +1219,189 @@ def mist_gradient(img, color, y0, y1, strength=0.85):
                 px[x, y] = mixed if len(px[x, y]) == 3 else mixed + (255,)
 
 
-def make_bg():
-    img = Image.new("RGBA", (384, 448))
-    paint_forest(img, 300, 64, 4)
-    save(img.convert("RGB"), OUT, "forest_bg.png")
+# ---- 구간별 무대 (기획서 4.3절) -------------------------------------------
+# 구간마다 먼 숲과 가까운 숲 한 벌씩. 씬이 경계에서 두 벌을 겹쳐 바꾼다.
+
+SKY_SETS = {
+    "entrance": ((14, 12, 24), (44, 36, 58)),
+    "road":     ((16, 15, 30), (52, 46, 66)),
+    "gorge":    ((10, 10, 26), (34, 34, 62)),      # 하늘이 트여 별이 많다
+    "den":      ((20, 10, 18), (62, 30, 34)),      # 안개가 붉다
+    "altar":    ((12, 10, 28), (58, 40, 70)),
+}
+MIST_SETS = {
+    "entrance": MIST, "road": (108, 106, 126), "gorge": (96, 104, 132),
+    "den": (150, 96, 96), "altar": (126, 112, 150),
+}
 
 
-def make_bg_near():
-    """가까운 숲 (원경 위에 겹쳐 더 빨리 흐른다). 투명 배경이라 하늘이 비친다."""
+def sky_gradient(img, top, low, stars=60, seed=7):
+    w, h = img.size
+    d = ImageDraw.Draw(img)
+    for y in range(h):
+        d.line([0, y, w, y], fill=lerp(top, low, y / h))
+    v = seed
+    for _ in range(stars):
+        v = (v * 1103515245 + 12345) % (2 ** 31)
+        d.point((v % w, (v // w) % (h * 2 // 3)), fill=STAR_DIM)
+    return d
+
+
+def aldebaran_star(d, x, y, r, w, h):
+    for rr, c in ((r * 3, lerp(SKY_TOP_C, STAR_RED, 0.25)),
+                  (r * 2, lerp(SKY_TOP_C, STAR_RED, 0.5))):
+        for yy in range(y - rr, y + rr):
+            for xx in range(x - rr, x + rr):
+                if 0 <= xx < w and 0 <= yy < h and (xx + yy) % 2 == 0 \
+                        and (xx - x) ** 2 + (yy - y) ** 2 <= rr * rr:
+                    d.point((xx, yy), fill=c)
+    d.ellipse([x - r, y - r, x + r, y + r], fill=STAR_RED)
+    d.line([x - r * 2, y, x + r * 2, y], fill=STAR_RED)
+    d.line([x, y - r * 2, x, y + r * 2], fill=STAR_RED)
+
+
+def red_eyes(d, spots):
+    """풀숲에서 빛나는 붉은 눈 (원안 4.2.1절). 구간이 깊어질수록 늘어난다."""
+    for x, y in spots:
+        d.point((x, y), fill=(220, 60, 50))
+        d.point((x + 2, y), fill=(220, 60, 50))
+
+
+def make_bg_far(name):
+    w, h = 384, 448
+    img = Image.new("RGBA", (w, h))
+    top, low = SKY_SETS[name]
+    stars = 110 if name in ("gorge", "altar") else 60
+    d = sky_gradient(img, top, low, stars, seed=7 + len(name))
+    if name == "altar":
+        aldebaran_star(d, 300, 80, 8, w, h)
+    else:
+        aldebaran_star(d, 300, 64, 4, w, h)
+
+    v = 91 + len(name) * 7
+    if name == "gorge":
+        # 먼 산 (나무가 끊기고 골짜기가 열린다)
+        for color, base, amp in (((26, 26, 48), int(h * 0.52), 26),
+                                 ((18, 18, 38), int(h * 0.60), 18)):
+            pts = [(0, h)]
+            x = 0
+            while x <= w:
+                v = (v * 1103515245 + 12345) % (2 ** 31)
+                pts.append((x, base + (v % amp) - amp // 2))
+                x += 24
+            pts.append((w, h))
+            d.polygon(pts, fill=color)
+    else:
+        density = {"entrance": 1.0, "road": 0.55, "den": 1.5, "altar": 0.5}[name]
+        for color, top0 in (((30, 26, 42), int(h * 0.42)), ((20, 16, 30), int(h * 0.30))):
+            x = -10
+            while x < w + 10:
+                v = (v * 1103515245 + 12345) % (2 ** 31)
+                tw = 5 + v % 6
+                tree_silhouette(d, x, h, top0 + (v // 7) % 40, tw, color, v)
+                x += int((tw + 10 + v % 16) / density)
+        if name == "road":
+            for x in (40, 150, 250, 340):        # 부서진 석주가 멀리 선다
+                d.rectangle([x, int(h * 0.52), x + 7, h], fill=(38, 36, 46))
+                d.polygon([(x, int(h * 0.52)), (x + 4, int(h * 0.49)),
+                           (x + 7, int(h * 0.53))], fill=(30, 28, 38))
+    mist_gradient(img, MIST_SETS[name], int(h * 0.70), h,
+                  strength={"entrance": 0.5, "road": 0.3, "gorge": 0.35,
+                            "den": 0.75, "altar": 0.4}[name])
+    save(img.convert("RGB"), OUT, f"far_{name}.png")
+
+
+def make_bg_near(name):
+    """가까운 숲. 투명 배경이라 먼 숲이 비친다. 구간의 성격이 여기서 드러난다."""
     w, h = 384, 448
     img = blank(w, h)
     d = ImageDraw.Draw(img)
-    v = 20260823
-    x = -14
-    while x < w + 14:
+    v = 20260823 + len(name)
+    ink = (14, 11, 22)
+
+    if name == "gorge":
+        # 절벽면 둘이 화면 양쪽에 선다
+        for x0, x1 in ((-20, 60), (330, 404)):
+            d.polygon([(x0, h), (x0 + 10, int(h * 0.34)), (x1 - 8, int(h * 0.30)),
+                       (x1, h)], fill=(20, 20, 34))
+    else:
+        gap = {"entrance": 34, "road": 60, "den": 26, "altar": 90}[name]
+        x = -14
+        while x < w + 14:
+            v = (v * 1103515245 + 12345) % (2 ** 31)
+            tw = 9 + v % 9
+            tree_silhouette(d, x, h, int(h * 0.16) + (v // 7) % 60, tw, ink, v)
+            x += tw + gap + v % 30
+
+    if name == "den":
+        # 오두막 지붕과 매달린 우리와 모닥불 (마을이라는 것을 실루엣으로)
+        for hx in (60, 210, 320):
+            d.polygon([(hx - 26, h), (hx, int(h * 0.62)), (hx + 26, h)], fill=(18, 14, 20))
+            d.rectangle([hx - 18, int(h * 0.74), hx + 18, h], fill=(16, 12, 18))
+            d.rectangle([hx - 5, int(h * 0.80), hx + 4, h], fill=(232, 150, 70))  # 창의 불빛
+        for cx0 in (140, 268):
+            d.line([cx0, int(h * 0.40), cx0, int(h * 0.58)], fill=(40, 36, 40))
+            d.rectangle([cx0 - 7, int(h * 0.58), cx0 + 7, int(h * 0.72)],
+                        outline=(60, 56, 58))
+        for fx in (110, 300):
+            d.polygon([(fx - 5, h - 6), (fx, h - 22), (fx + 5, h - 6)], fill=(226, 130, 60))
+            d.polygon([(fx - 2, h - 6), (fx, h - 14), (fx + 2, h - 6)], fill=(250, 210, 120))
+
+    if name == "altar":
+        # 마름모 제단과 네 화두
+        cxm, cym = w // 2, int(h * 0.66)
+        d.polygon([(cxm, cym - 46), (cxm + 86, cym), (cxm, cym + 46), (cxm - 86, cym)],
+                  fill=(26, 24, 34))
+        d.polygon([(cxm, cym - 34), (cxm + 64, cym), (cxm, cym + 34), (cxm - 64, cym)],
+                  fill=(34, 32, 44))
+        for fx, fy in ((cxm, cym - 46), (cxm + 86, cym), (cxm, cym + 46), (cxm - 86, cym)):
+            d.rectangle([fx - 4, fy - 10, fx + 4, fy], fill=(48, 44, 56))
+            d.ellipse([fx - 5, fy - 18, fx + 5, fy - 8], fill=(196, 90, 220))   # K0 의 빛
+            d.ellipse([fx - 2, fy - 15, fx + 2, fy - 11], fill=(240, 210, 255))
+
+    eyes = {"entrance": 1, "road": 2, "gorge": 0, "den": 4, "altar": 1}[name]
+    spots = []
+    for i in range(eyes):
         v = (v * 1103515245 + 12345) % (2 ** 31)
-        tw = 9 + v % 9
-        top = int(h * 0.16) + (v // 7) % 60
-        tree_silhouette(d, x, h, top, tw, (14, 11, 22), v)
-        x += tw + 34 + v % 40
-    mist_gradient(img, MIST, int(h * 0.78), h, strength=0.35)
-    save(img, OUT, "forest_near.png")
+        spots.append((30 + (v % (w - 60)), int(h * 0.86) + (v // 13) % 30))
+    red_eyes(d, spots)
+
+    mist_gradient(img, MIST_SETS[name], int(h * 0.78), h,
+                  strength=0.5 if name == "den" else 0.3)
+    save(img, OUT, f"near_{name}.png")
+
+
+def make_bg_bright():
+    """안개에 취해 보이는 옛 숲 (기획서 4.3.2절). 밝은 햇살과 초록 잎."""
+    w, h = 384, 448
+    img = Image.new("RGBA", (w, h))
+    d = ImageDraw.Draw(img)
+    for y in range(h):
+        d.line([0, y, w, y], fill=lerp((150, 200, 226), (206, 226, 200), y / h))
+    v = 4242
+    for color, top0 in (((120, 158, 110), int(h * 0.34)), ((78, 122, 78), int(h * 0.22))):
+        x = -10
+        while x < w + 10:
+            v = (v * 1103515245 + 12345) % (2 ** 31)
+            tw = 6 + v % 7
+            top = top0 + (v // 7) % 40
+            d.polygon([(x, h), (x + tw, h), (x + tw - 1, top + 8), (x + 1, top + 8)],
+                      fill=(96, 74, 52))
+            d.ellipse([x - tw * 2, top - tw * 2, x + tw * 3, top + tw * 2], fill=color)
+            x += tw + 14 + v % 18
+    # 햇살 몇 줄기
+    for sx in (70, 180, 300):
+        for i in range(26):
+            if (sx + i) % 3:
+                d.line([sx + i, 0, sx + i - 40, h], fill=(226, 240, 214))
+    save(img, OUT, "forest_bright.png")
+
+
+def make_backgrounds():
+    for name in SKY_SETS:
+        make_bg_far(name)
+        make_bg_near(name)
+    make_bg_bright()
 
 
 def find_ttf():
@@ -1258,13 +1533,13 @@ def main():
     make_karto()
     make_spider()
     make_wolf()
+    make_blackwolf()
     make_monkey()
     make_stone()
     make_bag()
     make_aura()
     make_tileset()
-    make_bg()
-    make_bg_near()
+    make_backgrounds()
     make_title()
     make_hud()
     make_sfx()

@@ -74,6 +74,25 @@ function M.run(t)
 	t.check_eq(Combat.expToNext(5), 5, "다음 레벨까지 5")
 	t.check_eq(Combat.expToNext(140), nil, "최고 레벨은 다음이 없다")
 
+	-- [H] 힘과 쿨타임 (기획서 5.3절)
+	do
+		local s = Combat.newSkills()
+		t.check(not s.berserk, "처음에는 아무 힘도 없다")
+		t.check(not Combat.canUse(s, "berserk", 99), "익히지 않으면 쓸 수 없다")
+		s.berserk = true
+		t.check(Combat.canUse(s, "berserk", 10), "익히고 MP가 있으면 쓸 수 있다")
+		t.check(not Combat.canUse(s, "berserk", 9), "MP가 모자라면 못 쓴다")
+		s.cooldown.berserk = 3
+		t.check(not Combat.canUse(s, "berserk", 99), "쿨타임이 돌면 못 쓴다")
+		Combat.tickCooldowns(s, 1)
+		t.check_eq(s.cooldown.berserk, 2, "쿨타임이 시간만큼 줄어든다")
+		Combat.tickCooldowns(s, 5)
+		t.check_eq(s.cooldown.berserk, 0, "0 아래로는 내려가지 않는다")
+		t.check(Combat.canUse(s, "berserk", 99), "다 식으면 다시 쓸 수 있다")
+		t.check(not Combat.canUse(s, "edge", 99), "늘 켜져 있는 힘은 쓰는 것이 아니다")
+		t.check_eq(#Combat.SKILL_ORDER, 5, "힘은 다섯이다")
+	end
+
 	-- [G] 버서커
 	t.check(Combat.canBerserk(10, false), "MP가 넉넉하면 발동")
 	t.check(not Combat.canBerserk(9, false), "MP가 모자라면 못 켠다")

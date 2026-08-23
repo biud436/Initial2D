@@ -6,9 +6,50 @@
 
 local M = {}
 
+-- ---- 구간 (기획서 4.3절) ---------------------------------------------------
+-- 걸을수록 무대가 바뀐다. 씬은 카메라 x로 지금 구간을 알아내고, 경계 앞뒤
+-- FADE 픽셀에서 두 벌을 겹쳐 서서히 바꾼다.
+
+M.SECTIONS = {
+	{ name = "entrance", x1 = 767 },     -- 타일 0~47
+	{ name = "road", x1 = 1599 },        -- 48~99
+	{ name = "gorge", x1 = 2367 },       -- 100~147
+	{ name = "den", x1 = 3263 },         -- 148~203
+	{ name = "altar", x1 = 4096 },       -- 204~255
+}
+M.SECTION_FADE = 96                      -- 경계 앞뒤로 겹치는 폭 (픽셀)
+
+--- 카메라 x가 속한 구간과, 다음 구간으로 얼마나 넘어갔는가 (0..1)
+function M.sectionAt(x)
+	for i, s in ipairs(M.SECTIONS) do
+		if x <= s.x1 then
+			local blend = 0
+			if i < #M.SECTIONS then
+				local d = s.x1 - x
+				if d < M.SECTION_FADE then
+					blend = (M.SECTION_FADE - d) / (M.SECTION_FADE * 2)
+				end
+			end
+			if i > 1 then
+				local prev = M.SECTIONS[i - 1]
+				local d = x - prev.x1
+				if d < M.SECTION_FADE then
+					return prev.name, M.SECTIONS[i].name, 0.5 + d / (M.SECTION_FADE * 2)
+				end
+			end
+			local nextName = (i < #M.SECTIONS) and M.SECTIONS[i + 1].name or s.name
+			return s.name, nextName, blend
+		end
+	end
+	return "altar", "altar", 0
+end
+
 M.START = { x = 56, y = 384 }        -- 숲 입구 (타일 3.5, 지면 24)
-M.CHECKPOINT_X = 1056                -- 이정표 (타일 66). 지나면 부활 지점이 된다
-M.CHECKPOINT_Y = 320
+-- 체크포인트 둘 (2구간 끝의 석주, 4구간 초입의 우리). 지나면 부활 지점이 된다.
+M.CHECKPOINTS = {
+	{ x = 1552, y = 304 },
+	{ x = 2400, y = 352 },
+}
 M.LIVES = 2                          -- 원안 1절의 "2번의 목숨"
 M.SEED = 20260823                    -- 전투 굴림의 시드 (테스트 재현용)
 
@@ -48,6 +89,24 @@ M.species = {
 		frames = { walk = { 0, 1 }, charge = 2, attack = 3, hurt = 4 },
 	},
 
+	-- 검은 늑대: 마을의 우두머리. 늑대의 1.5배이고 돌격을 다시 쓴다.
+	blackwolf = {
+		name = "검은 늑대",
+		hp = 72, atk = 24, def = 6, exp = 16, gold = 25,
+		walkSpeed = 34, chaseSpeed = 82,
+		alertRange = 150, attackRange = 26,
+		windup = 0.26, active = 0.16, recover = 0.45,
+		halfW = 10, bodyH = 32,
+		special = "charge",
+		chargeSpeed = 170, chargeTime = 0.9, chargeAtk = 20,
+		chargeRepeat = true,             -- 한 번 쓰고 끝내지 않는다
+		regen = true,
+		sheet = "./resources/aldebaran/blackwolf.png",
+		cols = 5, rows = 2, frameW = 48, frameH = 48,
+		anchorX = 22, anchorY = 46,
+		frames = { walk = { 0, 1 }, charge = 2, attack = 3, hurt = 4 },
+	},
+
 	-- 가면 원숭이 짐도둑: 투척형 (보스, 3단계에서 배치된다)
 	monkey = {
 		name = "가면 원숭이",
@@ -67,22 +126,60 @@ M.species = {
 
 -- ---- 배치 (지형: 입구 24, 턱 22/21/20, 다리, 어깨 20, 내리막 22, 숲 24) ----
 
+-- 배치는 지면 높이를 계산해 정했다 (계획 3.5절의 레벨 디자인 원칙).
+-- 적은 구간 경계에서 100px 이상 안쪽에 두어, 넘어오는 순간 맞지 않게 한다.
 M.spawns = {
-	-- 전갈거미 넷
-	{ species = "spider", x = 456, y = 352, minX = 396, maxX = 496 },     -- 턱 1
-	{ species = "spider", x = 712, y = 320, minX = 652, maxX = 756 },     -- 왼쪽 어깨
-	{ species = "spider", x = 1224, y = 352, minX = 1164, maxX = 1268 },  -- 내리막 턱
-	{ species = "spider", x = 1736, y = 384, minX = 1680, maxX = 1790 },  -- 공터 앞
+	-- 1구간 숲 입구 (지면 384 / 턱 352): 베기를 가르치고, 점프한 뒤 싸우게 한다
+	{ species = "spider", x = 224, y = 384, minX = 180, maxX = 280 },
+	{ species = "spider", x = 672, y = 352, minX = 630, maxX = 730 },
 
-	-- 늑대 인간 셋 (늑대 숲의 지면, 낮은 바위 턱 사이사이)
-	{ species = "wolf", x = 1330, y = 384, minX = 1296, maxX = 1360 },
-	{ species = "wolf", x = 1496, y = 384, minX = 1464, maxX = 1528 },
-	{ species = "wolf", x = 1650, y = 384, minX = 1620, maxX = 1670 },
+	-- 2구간 옛 길 (계단 352 → 336 → 320 → 304): 턱마다 하나, 마지막에 둘
+	{ species = "spider", x = 900, y = 352, minX = 860, maxX = 960 },
+	{ species = "spider", x = 1056, y = 336, minX = 1010, maxX = 1120 },
+	{ species = "spider", x = 1400, y = 304, minX = 1370, maxX = 1450 },
+	{ species = "spider", x = 1470, y = 304, minX = 1440, maxX = 1520 },
 
-	-- 짐도둑 (보스): 부서진 석상 앞. 배낭을 지고 있고, 쓰러지면 떨군다.
-	-- 공터(minX~maxX)를 벗어나지 않는다 — 오른쪽 끝에 몰리면 던지기만 한다.
-	{ species = "monkey", x = 1860, y = 384, minX = 1720, maxX = 2020, boss = true },
+	-- 3구간 기암 절벽: 어깨 한가운데 (착지하자마자 맞지 않게)
+	{ species = "spider", x = 1700, y = 304, minX = 1660, maxX = 1760 },
+	{ species = "wolf", x = 1990, y = 304, minX = 1950, maxX = 2030 },
+	{ species = "spider", x = 2290, y = 320, minX = 2260, maxX = 2340 },
+
+	-- 4구간 늑대 마을: 둘씩 두 번, 그리고 안쪽에 검은 늑대
+	{ species = "wolf", x = 2760, y = 368, minX = 2700, maxX = 2820 },
+	{ species = "wolf", x = 2830, y = 368, minX = 2770, maxX = 2890 },
+	{ species = "wolf", x = 3060, y = 368, minX = 3010, maxX = 3120 },
+	{ species = "wolf", x = 3120, y = 368, minX = 3060, maxX = 3180 },
+	{ species = "blackwolf", x = 3220, y = 368, minX = 3160, maxX = 3250 },
+
+	-- 5구간 제단 앞: 전초 하나와 짐도둑
+	{ species = "wolf", x = 3450, y = 384, minX = 3400, maxX = 3520 },
+	{ species = "monkey", x = 3860, y = 384, minX = 3640, maxX = 4040, boss = true },
 }
+
+-- ---- 흔적 (기획서 4.3.1절) --------------------------------------------------
+-- 구간마다 하나. 밟으면 글이 뜨고 발견 기록에 남는다. 강제가 아니다.
+
+M.LANDMARKS = {
+	-- 첫 거미를 잡은 뒤, 턱 앞의 평지 (읽는 동안 맞지 않는 자리)
+	{ id = "tracks", x0 = 300, x1 = 348, title = "여러 갈래의 발자국",
+	  text = "발자국이 여럿이다. 그놈은 혼자가 아니었다.", skill = "edge" },
+	-- 포석이 시작되는 자리 (2구간 초입)
+	{ id = "road", x0 = 790, x1 = 838, title = "다져진 포석",
+	  text = "밟혀 다져진 돌길이다. 숲이 나중에 덮은 것이다.", skill = "read" },
+	-- 다리를 건너기 전 어깨 (체크포인트 바로 뒤)
+	{ id = "cart", x0 = 1640, x1 = 1688, title = "버려진 짐수레",
+	  text = "짐이 그대로 실려 있다. 사람들은 급히 떠났다.", skill = "leap" },
+	-- 마을 초입의 우리. 여기서 안개에 취해 옛 숲이 보인다
+	{ id = "cage", x0 = 2440, x1 = 2488, title = "부서진 우리",
+	  text = "실험실의 우리다. 안개는 저들이 열매를 태워 만든다.",
+	  hallucination = 3.0, skill = "berserk" },
+	-- 제단 앞. 보스와 붙기 전에 읽는다
+	{ id = "altar", x0 = 3700, x1 = 3748, title = "네 개의 화두",
+	  text = "고대 문자와 굳은 피. 지도에 그려진 것이 이곳이었다.", skill = "bolt" },
+}
+
+-- 다섯을 다 모은 플레이어만 읽는 마지막 한 줄
+M.EPILOGUE_FULL = "도둑이 노린 것은 금괴가 아니었다. 이 숲의 지형을 그린 그 지도였다."
 
 -- ---- 이야기 글 (기획서 4절) -------------------------------------------------
 
@@ -104,9 +201,6 @@ M.EPILOGUE = {
 M.GAMEOVER = "검은 안개가 시야를 덮었다. ...멀리서 늑대 울음이 들린다."
 
 -- 표지 글: 그 x 구간에 처음 닿으면 화면 위에 잠깐 뜬다 (컷씬이 아니다)
-M.SIGNS = {
-	{ x0 = 726, x1 = 762, text = "낡은 다리다. 널이 몇 장 빠져 있다." },
-	{ x0 = 1040, x1 = 1076, text = "이정표다. 원숭이 발자국이 오른쪽으로 이어진다." },
-}
+M.SIGNS = {}     -- 표지 글은 흔적(M.LANDMARKS)으로 바뀌었다
 
 return M

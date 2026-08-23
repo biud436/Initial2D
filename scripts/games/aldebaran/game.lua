@@ -40,8 +40,8 @@ local Hud = require("scripts/games/aldebaran/hud")
 AldebaranScene = {}
 
 local MAP_PATH = "./resources/maps/aldebaran_forest.json"
-local BG_PATH = "./resources/aldebaran/forest_bg.png"
-local BG_NEAR_PATH = "./resources/aldebaran/forest_near.png"
+local BG_DIR = "./resources/aldebaran/"
+local BRIGHT_PATH = "./resources/aldebaran/forest_bright.png"
 local KARTO_PATH = "./resources/aldebaran/karto.png"
 local AURA_PATH = "./resources/aldebaran/aura.png"
 local STONE_PATH = "./resources/aldebaran/stone.png"
@@ -79,12 +79,20 @@ local STONE_GRAVITY = 720
 
 local VK_ESCAPE, VK_LEFT, VK_RIGHT, VK_UP, VK_DOWN = 27, 37, 39, 38, 40
 local VK_SPACE, VK_RETURN, VK_Z, VK_X, VK_C, VK_P = 32, 13, 90, 88, 67, 80
+local VK_V = 86
 
 local W, H = 384, 448
 local map, mapError = nil, nil
 local mapW, mapH, tileW, tileH, layerCount = 0, 0, 16, 16, 0
 local worldW, worldH = 0, 0
-local bg1, bg2, near1, near2 = nil, nil, nil, nil
+local layers = {}              -- 구간 이름 → { far = {a, b}, near = {a, b} }
+local brightImg = nil          -- 안개에 취해 보이는 옛 숲 (기획서 4.3.2절)
+local hallucination = 0        -- 남은 시간 (초)
+local skills = nil             -- 익힌 힘과 쿨타임 (combat.lua)
+local found = {}               -- 발견한 흔적 (id → true)
+local foundOrder = {}          -- 발견한 순서 (결과 창이 보여 준다)
+local bolts = {}               -- 날린 검기 { x, y, vx }
+local learnedText, learnedTimer = nil, 0
 local karto, aura, fadeImg, stoneImg, bagImg, thiefImg = nil, nil, nil, nil, nil, nil
 local player = nil
 local camX = 0
@@ -149,6 +157,7 @@ local function pollInput()
 		jumpEdge = Input.IsKeyDown(VK_Z) or Input.IsKeyDown(VK_SPACE),
 		attackEdge = Input.IsKeyDown(VK_X),
 		skillEdge = Input.IsKeyDown(VK_C),
+		boltEdge = Input.IsKeyDown(VK_V),
 		pauseEdge = Input.IsKeyDown(VK_ESCAPE) or Input.IsKeyDown(VK_P),
 	}
 
@@ -166,6 +175,7 @@ local function pollInput()
 		input.jumpEdge = input.jumpEdge or buttons.pressed("jump")
 		input.attackEdge = input.attackEdge or buttons.pressed("attack")
 		input.skillEdge = input.skillEdge or buttons.pressed("skill")
+		input.boltEdge = input.boltEdge or buttons.pressed("bolt")
 		input.pauseEdge = input.pauseEdge or buttons.pressed("pause")
 	end
 	return input
@@ -214,6 +224,11 @@ local function resetStage()
 	berserkTimer = 0
 	checkpoint = nil
 	checkpointHit = false
+	for _, cp in ipairs(Stage.CHECKPOINTS) do cp.taken = false end
+	hallucination = 0
+	skills = Combat.newSkills()
+	found, foundOrder, bolts = {}, {}, {}
+	learnedText, learnedTimer = nil, 0
 	spawnMonsters()
 	stones = {}
 	bag = nil
@@ -260,6 +275,34 @@ local function gainReward(def)
 	end
 end
 
+--- 날린 검기. 몬스터에 닿으면 터지고, 벽이나 화면 밖에서 사라진다.
+local function updateBolts(dt)
+	local def = Combat.SKILLS.bolt
+	for i = #bolts, 1, -1 do
+		local b = bolts[i]
+		b.x = b.x + b.vx * dt
+		local gone = probe(b.x, b.y) or b.x < camX - 32 or b.x > camX + W + 32
+		if not gone then
+			for _, e in ipairs(monsters) do
+				local m = e.model
+				if not m.dead and m.state ~= "dying" then
+					local bx0, by0, bx1, by1 = Monster.body(m)
+					if overlap(b.x - 5, b.y - 4, b.x + 5, b.y + 4, bx0, by0, bx1, by1) then
+						playSe("hit")
+						if Monster.hurt(m, def.damage, b.vx > 0 and 1 or -1) then
+							gainReward(m.def)
+							if e.boss then bag = { x = m.x, y = m.y } end
+						end
+						gone = true
+						break
+					end
+				end
+			end
+		end
+		if gone then table.remove(bolts, i) end
+	end
+end
+
 local function resolvePlayerAttack()
 	if not Player.attackActive(player) then return end
 	local ax0, ay0, ax1, ay1 = Player.attackBox(player)
@@ -270,6 +313,7 @@ local function resolvePlayerAttack()
 			if overlap(ax0, ay0, ax1, ay1, bx0, by0, bx1, by1) then
 				player.attackHit[m] = true
 				local atk = stats.atk * Player.attackMult(player)
+				if skills.edge then atk = atk + Combat.SKILLS.edge.atkBonus end
 				if berserkActive() then atk = atk * Combat.BERSERK.atkMult end
 				local r = Combat.resolve(atk, m.def.def, rng, stats.luck)
 				if r.dmg > 0 then
@@ -322,7 +366,7 @@ local function resolveMonsterAttacks()
 				end
 				m.strikeHit = true               -- 회피당해도 그 공격은 끝났다
 				if damagePlayer(base, m.x, sting) and charging then
-					m.chargeUsed = true
+					m.chargeUsed = not m.def.chargeRepeat
 					m.timer = 0
 				end
 				if gameOver ~= nil then return end
@@ -339,10 +383,14 @@ local function updateStones(dt)
 		local m = e.model
 		if m.def.special == "throw" and m.state == "strike" and not m.thrown then
 			m.thrown = true
-			stones[#stones + 1] = {
-				x = m.x + m.dir * 12, y = m.y - 24,
-				vx = m.dir * STONE_SPEED, vy = STONE_TOSS,
-			}
+			-- 두 번째 판에서는 돌을 두 개씩 던진다 (기획서 4.3.4절)
+			local shots = m.phase2 and 2 or 1
+			for k = 1, shots do
+				stones[#stones + 1] = {
+					x = m.x + m.dir * 12, y = m.y - 24 - (k - 1) * 6,
+					vx = m.dir * STONE_SPEED, vy = STONE_TOSS + (k - 1) * 40,
+				}
+			end
 			playSe("throw")
 		end
 	end
@@ -376,7 +424,7 @@ function AldebaranScene.status()
 		if not m.dead then
 			ms[#ms + 1] = { species = m.def.name, x = math.floor(m.x),
 				y = math.floor(m.y), hp = m.hp, state = m.state,
-				boss = e.boss or false }
+				boss = e.boss or false, phase2 = m.phase2 or false }
 		end
 	end
 	return {
@@ -406,6 +454,10 @@ function AldebaranScene.status()
 		gameOver = gameOver ~= nil and gameOver.phase or nil,
 		sign = signText,
 		time = stageTime,
+		found = foundOrder,
+		skills = skills,
+		bolts = #bolts,
+		hallucination = hallucination > 0,
 	}
 end
 
@@ -421,10 +473,20 @@ function AldebaranScene.init()
 		worldW, worldH = mapW * tileW, mapH * tileH
 	end
 
-	bg1 = Image(BG_PATH, 0, 0, W, H, 1, "AldebaranBg")
-	bg2 = Image(BG_PATH, 0, 0, W, H, 1, "AldebaranBg")
-	near1 = Image(BG_NEAR_PATH, 0, 0, W, H, 1, "AldebaranBgNear")
-	near2 = Image(BG_NEAR_PATH, 0, 0, W, H, 1, "AldebaranBgNear")
+	-- 구간마다 배경 한 벌. 두 장씩 두는 것은 가로로 이어 붙여 흘리기 위해서다.
+	layers = {}
+	for _, s in ipairs(Stage.SECTIONS) do
+		local far = BG_DIR .. "far_" .. s.name .. ".png"
+		local near = BG_DIR .. "near_" .. s.name .. ".png"
+		layers[s.name] = {
+			far = { Image(far, 0, 0, W, H, 1, "AldFar:" .. s.name),
+				Image(far, 0, 0, W, H, 1, "AldFar:" .. s.name) },
+			near = { Image(near, 0, 0, W, H, 1, "AldNear:" .. s.name),
+				Image(near, 0, 0, W, H, 1, "AldNear:" .. s.name) },
+		}
+	end
+	brightImg = Image(BRIGHT_PATH, 0, 0, W, H, 1, "AldBright")
+	hallucination = 0
 
 	karto = Image(KARTO_PATH, 0, 0, 48, 48, 24, "AldebaranKarto")
 	karto.setSheetGrid(12, 2)
@@ -486,6 +548,7 @@ function AldebaranScene.init()
 				{ id = "attack", label = "공격", x = W - 60, y = H - 64, size = 52 },
 				{ id = "jump", label = "점프", x = W - 116, y = H - 52, size = 44 },
 				{ id = "skill", label = "폭주", x = W - 56, y = H - 122, size = 40 },
+				{ id = "bolt", label = "검기", x = W - 108, y = H - 112, size = 36 },
 				{ id = "pause", label = "II", x = W - 34, y = 8, size = 26 },
 			},
 		}
@@ -563,12 +626,22 @@ local function updateIntro(dt)
 	end
 end
 
+--- 에필로그의 쪽 목록. 흔적을 다 모은 플레이어만 마지막 한 줄을 읽는다.
+local function epiloguePages()
+	local pages = {}
+	for _, line in ipairs(Stage.EPILOGUE) do pages[#pages + 1] = line end
+	if #foundOrder >= #Stage.LANDMARKS then
+		pages[#pages + 1] = Stage.EPILOGUE_FULL
+	end
+	return pages
+end
+
 local function startEnding()
 	playSe("pick")
 	bag = nil
-	ending = { phase = "epilogue", page = 1 }
+	ending = { phase = "epilogue", page = 1, pages = epiloguePages() }
 	Bgm.stop()
-	dialogue:showMessage(Stage.EPILOGUE[1])
+	dialogue:showMessage(ending.pages[1])
 end
 
 local function updateEnding()
@@ -576,8 +649,8 @@ local function updateEnding()
 		dialogue:update(pollConfirm(), false)
 		if not dialogue:isBusy() then
 			ending.page = ending.page + 1
-			if Stage.EPILOGUE[ending.page] ~= nil then
-				dialogue:showMessage(Stage.EPILOGUE[ending.page])
+			if ending.pages[ending.page] ~= nil then
+				dialogue:showMessage(ending.pages[ending.page])
 			else
 				ending.phase = "result"
 				ending.wait = 0
@@ -653,6 +726,7 @@ function AldebaranScene.update(elapsed)
 	dialogue:update({}, false)
 
 	stageTime = stageTime + dt
+	hallucination = math.max(0, hallucination - dt)
 	local input = pollInput()
 
 	if input.pauseEdge then
@@ -660,12 +734,27 @@ function AldebaranScene.update(elapsed)
 		return
 	end
 
-	-- 버서커 (기획서 7.3절)
+	-- 힘 (기획서 5.3절): 익힌 것만 쓸 수 있고, 쓰면 쿨타임이 돈다
 	berserkTimer = math.max(0, berserkTimer - dt)
-	if input.skillEdge and Combat.canBerserk(stats.mp, berserkActive()) then
-		stats.mp = stats.mp - Combat.BERSERK.cost
-		berserkTimer = Combat.BERSERK.time
+	Combat.tickCooldowns(skills, dt)
+
+	if input.skillEdge and not berserkActive()
+			and Combat.canUse(skills, "berserk", stats.mp) then
+		local def = Combat.SKILLS.berserk
+		stats.mp = stats.mp - def.mp
+		skills.cooldown.berserk = def.cooldown
+		berserkTimer = def.time
 		playSe("berserk")
+	end
+	if input.boltEdge and Combat.canUse(skills, "bolt", stats.mp) then
+		local def = Combat.SKILLS.bolt
+		stats.mp = stats.mp - def.mp
+		skills.cooldown.bolt = def.cooldown
+		bolts[#bolts + 1] = {
+			x = player.x + player.facing * 10, y = player.y - 12,
+			vx = player.facing * def.speed,
+		}
+		playSe("swing")
 	end
 
 	Player.update(player, input, dt, probe)
@@ -678,20 +767,36 @@ function AldebaranScene.update(elapsed)
 		if gameOver ~= nil then return end
 	end
 
-	if not checkpointHit and player.x >= Stage.CHECKPOINT_X then
-		checkpointHit = true
-		checkpoint = { x = Stage.CHECKPOINT_X, y = Stage.CHECKPOINT_Y }
-		playSe("pick")
+	for _, cp in ipairs(Stage.CHECKPOINTS) do
+		if not cp.taken and player.x >= cp.x then
+			cp.taken = true
+			checkpointHit = true
+			checkpoint = { x = cp.x, y = cp.y }
+			playSe("pick")
+		end
 	end
 
-	-- 표지 글 (기획서 4.3절): 닿으면 화면 위에 잠깐 뜬다
+	-- 흔적 (기획서 4.3.1절): 밟으면 글이 뜨고, 기록에 남고, 힘을 하나 준다
 	signTimer = math.max(0, signTimer - dt)
 	if signTimer <= 0 then signText = nil end
-	for i, sign in ipairs(Stage.SIGNS) do
-		if not signSeen[i] and player.x >= sign.x0 and player.x <= sign.x1 then
-			signSeen[i] = true
-			signText = sign.text
+	learnedTimer = math.max(0, learnedTimer - dt)
+	if learnedTimer <= 0 then learnedText = nil end
+	for _, mark in ipairs(Stage.LANDMARKS) do
+		if not found[mark.id] and player.x >= mark.x0 and player.x <= mark.x1 then
+			found[mark.id] = true
+			foundOrder[#foundOrder + 1] = mark.title
+			signText = mark.text
 			signTimer = SIGN_SECONDS
+			playSe("pick")
+			if mark.skill ~= nil and skills[mark.skill] == false then
+				skills[mark.skill] = true
+				local def = Combat.SKILLS[mark.skill]
+				learnedText = def.name .. "을(를) 익혔다"
+				learnedTimer = SIGN_SECONDS
+			end
+			if mark.hallucination then
+				hallucination = mark.hallucination
+			end
 		end
 	end
 
@@ -701,6 +806,7 @@ function AldebaranScene.update(elapsed)
 		end
 	end
 
+	updateBolts(dt)
 	resolvePlayerAttack()
 	resolveMonsterAttacks()
 	if gameOver ~= nil then return end
@@ -753,6 +859,20 @@ local function drawHud()
 		DrawText(88, 16, tostring(gold))
 		DrawText(76, 30, "Lv " .. level)
 	end
+
+	-- 스킬 슬롯 (원안 8.2절의 스킬 1~3 자리). 쿨타임이 슬롯에서 줄어든다.
+	local sx = W - 8
+	for _, id in ipairs({ "bolt", "berserk" }) do
+		local def = Combat.SKILLS[id]
+		sx = sx - 20
+		local left = skills.cooldown[id] or 0
+		local ratio = (def.cooldown > 0) and (left / def.cooldown) or 0
+		hud.skillSlot(sx, 6, 18, skills[id], ratio,
+			Combat.canUse(skills, id, stats.mp))
+		if FontReady and skills[id] then
+			DrawText(sx + 6, 8, def.key)
+		end
+	end
 end
 
 local function drawCenteredText(y, text)
@@ -762,15 +882,23 @@ end
 
 --- 결과 창 (기획서 4.4절)
 local function drawResult()
-	local bw, bh = 200, 110
+	local bw, bh = 280, 190
 	local bx = math.floor((W - bw) / 2)
 	local by = math.floor((H - bh) / 2)
 	skin:drawPieces(Window.slices(bw, bh), bx, by)
-	if FontReady then
-		drawCenteredText(by + 12, "1-1 검은 안개의 숲, 끝")
-		DrawText(bx + 20, by + 38, "레벨 " .. level .. "   경험치 " .. exp)
-		DrawText(bx + 20, by + 58, "골드 " .. gold)
-		DrawText(bx + 20, by + 78, string.format("걸린 시간 %d초", math.floor(stageTime)))
+	if not FontReady then return end
+	drawCenteredText(by + 10, "1-1 검은 안개의 숲, 끝")
+	DrawText(bx + 16, by + 34, "레벨 " .. level .. "   경험치 " .. exp
+		.. "   골드 " .. gold)
+	DrawText(bx + 16, by + 52, string.format("걸린 시간 %d초", math.floor(stageTime)))
+	-- 알아낸 것: 흔적을 밟은 만큼만 남는다 (기획서 4.3.1절)
+	DrawText(bx + 16, by + 76, string.format("알아낸 것  %d / %d",
+		#foundOrder, #Stage.LANDMARKS))
+	for i, title in ipairs(foundOrder) do
+		DrawText(bx + 26, by + 94 + (i - 1) * 18, "- " .. title)
+	end
+	if #foundOrder < #Stage.LANDMARKS then
+		DrawText(bx + 26, by + 94 + #foundOrder * 18, "...")
 	end
 end
 
@@ -788,17 +916,37 @@ function AldebaranScene.render()
 	-- 스프라이트의 트랜스폼은 update()에서 커밋된다. 위치를 render에서 정하므로
 	-- 그리기 직전에 update(0)을 불러야 한다 — 그러지 않으면 한 프레임 늦고,
 	-- 컷씬처럼 update가 일찍 반환하는 동안에는 아예 반영되지 않는다.
-	local function drawLayer(a, b, factor)
+	local function drawLayer(pair, factor, opacity)
+		if pair == nil or opacity <= 0 then return end
 		local bx = -math.floor(camX * factor) % W
-		a.setPosition(bx - W, 0)
-		b.setPosition(bx, 0)
-		a.update(0)
-		b.update(0)
-		a.draw()
-		b.draw()
+		for i, img in ipairs(pair) do
+			img.setPosition(bx - W + (i - 1) * W, 0)
+			img.setOpacity(math.floor(math.max(0, math.min(255, opacity))))
+			img.update(0)
+			img.draw()
+		end
 	end
-	drawLayer(bg1, bg2, PARALLAX_FAR)
-	drawLayer(near1, near2, PARALLAX_NEAR)
+
+	-- 구간 둘을 겹쳐 서서히 바꾼다 (문이 열리는 것이 아니라 어느새 다른 곳)
+	local cur, nxt, blend = Stage.sectionAt(camX)
+	local a, b = layers[cur], layers[nxt]
+	drawLayer(a and a.far, PARALLAX_FAR, 255)
+	if blend > 0 and nxt ~= cur then
+		drawLayer(b and b.far, PARALLAX_FAR, 255 * blend)
+	end
+	drawLayer(a and a.near, PARALLAX_NEAR, 255)
+	if blend > 0 and nxt ~= cur then
+		drawLayer(b and b.near, PARALLAX_NEAR, 255 * blend)
+	end
+
+	-- 안개에 취하면 잠깐 옛 숲이 겹쳐 보인다
+	if hallucination > 0 and brightImg ~= nil then
+		local fade = math.min(1, hallucination / 0.6)
+		brightImg.setPosition(0, 0)
+		brightImg.setOpacity(math.floor(200 * fade))
+		brightImg.update(0)
+		brightImg.draw()
+	end
 
 	Tilemap.Draw(map, 1, layerCount, cx, 0)
 
@@ -853,10 +1001,22 @@ function AldebaranScene.render()
 
 	drawHud()
 
-	-- 표지 글 (상단 가운데). HUD가 왼쪽 위 y 46까지 쓰므로 그 아래에 둔다 —
-	-- 44에 두었더니 레벨 표시와 겹쳤다.
+	-- 흔적의 글과 익힌 힘 (상단 가운데). HUD가 왼쪽 위 y 46까지 쓰므로 그 아래에 둔다.
 	if signText ~= nil and FontReady then
 		drawCenteredText(58, signText)
+	end
+	if learnedText ~= nil and FontReady then
+		drawCenteredText(78, learnedText)
+	end
+
+	-- 날린 검기
+	for _, b in ipairs(bolts) do
+		if stoneImg ~= nil then
+			stoneImg.setPosition(math.floor(b.x) - 4 - cx, math.floor(b.y) - 4)
+			stoneImg.setOpacity(255)
+			stoneImg.update(0)
+			stoneImg.draw()
+		end
 	end
 
 	if DEBUG_HUD and FontReady then
@@ -908,11 +1068,17 @@ function AldebaranScene.destroy()
 		if e.img ~= nil then e.img.dispose() end
 	end
 	monsters = {}
-	for _, img in ipairs({ bg1, bg2, near1, near2, karto, aura, fadeImg,
+	for _, set in pairs(layers) do
+		for _, pair in pairs(set) do
+			for _, img in ipairs(pair) do img.dispose() end
+		end
+	end
+	layers = {}
+	for _, img in ipairs({ brightImg, karto, aura, fadeImg,
 			stoneImg, bagImg, thiefImg }) do
 		if img ~= nil then img.dispose() end
 	end
-	bg1, bg2, near1, near2 = nil, nil, nil, nil
+	brightImg = nil
 	karto, aura, fadeImg, stoneImg, bagImg, thiefImg = nil, nil, nil, nil, nil, nil
 	if hud ~= nil then
 		hud.dispose()
