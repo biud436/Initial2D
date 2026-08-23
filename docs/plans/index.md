@@ -83,6 +83,14 @@ graph LR
 | 10 | [11-game-systems.md](11-game-systems.md) | 아이템과 소지품, 심부름 사슬 | `inventory.lua`, `menu.lua`, 커맨드 2종과 아이템 조건 | Opus 5 |
 | 11 | [12-editor-events.md](12-editor-events.md) | 에디터가 이벤트를 만든다 (구상) | 커맨드 스키마, 이벤트 배치와 커맨드 편집 UI | **Fable 5** |
 | 검수 | [09-testing.md](09-testing.md) | **모든 단계에 내장되는 교차 절차.** 테스트 전략, 단계별 게이트, AI 자율 검증 루프 | 테스트 인프라 (`tests/run_all.sh`, 골든 스크린샷, 시나리오 재생기) | **Fable 5** (인프라 설계) |
+| A1 | [aldebaran-1-core.md](aldebaran-1-core.md) | 알데바란: 횡스크롤 코어 (자산, 스테이지, 플랫포머 물리) | `scripts/games/aldebaran/`, 자산과 맵 생성기 | **Fable 5** |
+| A2 | [aldebaran-2-combat.md](aldebaran-2-combat.md) | 알데바란: 전투와 성장 (몬스터 AI, 콤보, HUD) | `combat.lua`, `monster.lua`, 일시 정지 | **Fable 5** |
+| A3 | [aldebaran-3-content.md](aldebaran-3-content.md) | 알데바란: 콘텐츠와 인수 (타이틀, 보스, 에필로그) | 인수 시나리오, 골든, README | Opus 5 |
+
+**알데바란 트랙 (A1~A3)**: 저자의 기획서(`docs/design/Spica_v0.9.docx`, 2026-08-23 반입)를
+데모로 만드는 별도 트랙이다. 정돈한 기획서는 [docs/design/aldebaran.md](../design/aldebaran.md).
+roadmap-v2의 후보였던 "전투 (장르를 넓히고 싶다)"가 앞당겨진 것이며, 기존 12~14단계
+번호(저장, 오토타일, 씬 스택)와 부딪히지 않게 번호 대신 A를 쓴다.
 
 ### 모델 선정 기준
 
@@ -111,6 +119,9 @@ graph LR
 | 10. 아이템과 소지품 | ✅ 완료 | 2026-08-20 | 완료 기준 6개 충족. `inventory.lua`(소지품, 순수 함수), `menu.lua`(목록과 설명 두 칸짜리 창, 취소키로 여닫기), 커맨드 `giveItem`/`takeItem`과 `{ item = ... }` 조건(커맨드 15종 → 17종), 데모의 아이템 표 `scripts/games/rpgdemo/items.lua`. 콘텐츠: 인물 다섯을 잇는 심부름 사슬 하나(생선 장수 → 여관 주인의 열쇠 → 창고의 등유 → 등대지기의 은화 → 여관 방 → 배)와 쌓이는 에필로그. **곁들여 타일링 버그 셋을 고쳤다**: 바다 타일의 어두운 윗줄이 16px마다 가로줄 격자로 보이던 것(2x2 이음매 없는 한 벌로 교체), `TREE_TOP=26/TREE_BOT=34`가 실은 바위 조각과 울타리 기둥이라 마을 테두리가 어그러져 있던 것(타일셋에 나무가 없다 — 바위 테두리 한 벌로 교체), 그리고 타일셋에 있는 잔디↔모래 가장자리 타일을 쓰지 않아 길과 광장과 물가가 각진 사각형이던 것(생성기의 후처리 `blend_sand`). 검수: Lua 단위 1064건(소지품 24건, 소지품 창 27건, 아이템 커맨드 12건 추가), 인수 시나리오를 사슬 전체로 다시 써 통과(엔진 씬 204건), 골든 3장(`rpgdemo_town` 갱신, `rpgdemo_bag` 신규), 전체 스위트 통과, 안드로이드 APK 빌드 성공. **2026-08-20 사용자 검수**: "아래에서 집에 접근하면 집이 캐릭터 머리를 가린다" — 데모 씬이 `groundLayers = 1`을 모든 맵에 못 박아 장식 레이어가 통째로 캐릭터 위에 그려지고 있었다. 장식을 `deco`(앞에 서는 것, 캐릭터 아래)와 `over`(밑을 지나가는 것, 캐릭터 위)로 나누고 `groundLayers`를 맵 정의 파일이 정하게 고쳤다. 회귀 테스트는 단위(Draw 구간 기록)와 픽셀(`INITIAL2D_DEMO_STOP=wall`의 머리색) 두 겹. **손맛(소지품 창 크기, 사슬의 호흡)과 안드로이드 실기는 사용자 확인 필요** |
 | 11. 에디터가 이벤트를 만든다 | ⬜ 대기 | 2026-08-20 | 구상 문서만 있다 ([12-editor-events.md](12-editor-events.md)). 핵심은 커맨드 명세를 두 저장소가 함께 읽는 스키마 한 장(`resources/schema/event-commands.json`)으로 못 박고, 에디터의 폼을 그 스키마에서 만드는 것. **마일스톤 1(잃지 않기)이 가장 급하다** — 지금 에디터로 v2 맵을 열어 저장하면 events가 사라진다 |
 | 검수 인프라 | ✅ 완료 | 2026-08-15 | 작업 항목 전부 완료. 마지막 항목이던 맵 픽스처(`tests/fixtures/maps/sample_v1.json`)를 2단계 포맷 확정과 함께 추가 |
+| A1. 알데바란 코어 | 🟡 진행 중 | 2026-08-23 | 기획서 정돈 완료([aldebaran.md](../design/aldebaran.md), 원안 스피카를 지시에 따라 알데바란으로 개명). 자산 생성기와 플랫포머 물리 진행 중 |
+| A2. 알데바란 전투 | ⬜ 대기 | 2026-08-23 | 계획 문서만 ([aldebaran-2-combat.md](aldebaran-2-combat.md)) |
+| A3. 알데바란 콘텐츠 | ⬜ 대기 | 2026-08-23 | 계획 문서만 ([aldebaran-3-content.md](aldebaran-3-content.md)) |
 
 ### 갱신 규칙
 
