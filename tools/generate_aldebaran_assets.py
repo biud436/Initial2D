@@ -60,6 +60,8 @@ HAIR = (88, 58, 34)
 PANTS = (84, 76, 96)
 PANTS_SHADE = (60, 54, 72)
 BOOT = (110, 74, 44)
+BOOT_SHADE = (78, 52, 32)
+SKIN_SHADE = (196, 154, 118)
 BLADE = (222, 226, 236)
 GLOW = (176, 106, 226)          # 단검의 보라색 검기
 
@@ -78,8 +80,8 @@ CLAW = (224, 220, 208)
 MONKEY = (134, 96, 58)          # 가면 원숭이
 MONKEY_SHADE = (98, 68, 42)
 MASK = (230, 226, 210)          # 가면 (흰 나무 가면)
-BAG = (172, 132, 78)            # 배낭
-BAG_SHADE = (130, 96, 56)
+BAG = (146, 138, 106)           # 배낭 (거친 천. 원숭이 털과 색이 겹치지 않게)
+BAG_SHADE = (104, 98, 74)
 STONE = (150, 146, 138)
 STONE_SHADE = (104, 100, 96)
 
@@ -183,123 +185,210 @@ def save(img, *path):
 
 
 # ---- 카르토 ---------------------------------------------------------------
-# 프레임 48x48, 발 기준선 y=46, 몸통 가운데 x=24. 오른쪽 보기.
+# 프레임 48x48, 발 기준선 y=46, 몸 중심 x=24. 오른쪽 보기 (왼쪽은 시트가 미러링).
+#
+# 사각형을 쌓지 않고 **실루엣 다각형**으로 그린다. 어깨는 머리보다 넓고, 외투는
+# 허리에서 좁아졌다가 자락에서 퍼지며, 부츠는 발목보다 넓다. 그래야 형태만으로
+# 무엇을 입은 사람인지 읽힌다 (docs/plans/aldebaran-4-pixelart.md 4절).
+#
 # 칸: 0 서기A, 1 서기B, 2~5 걷기, 6 점프, 7 낙하, 8 베기1, 9 베기2, 10 베기3, 11 피격
+
+FOOT_Y = 46          # 발 기준선
+HEAD_TOP = 8         # 머리 꼭대기 (bob=0일 때)
+
+
+def limb(d, p0, p1, w0, w1, color):
+    """(x0,y0)에서 (x1,y1)로 가는, 굵기가 변하는 팔다리 하나."""
+    (x0, y0), (x1, y1) = p0, p1
+    d.polygon([(x0 - w0 / 2, y0), (x0 + w0 / 2, y0),
+               (x1 + w1 / 2, y1), (x1 - w1 / 2, y1)], fill=color)
+
 
 def karto_frame(pose):
     f = blank(48, 48)
     d = ImageDraw.Draw(f)
-    cx, fy = 24, 46
-    bob = pose.get("bob", 0)          # 몸 전체의 상하 (점프 자세 등)
-    lean = pose.get("lean", 0)        # 앞뒤 기울기 (픽셀)
+    cx, fy = 24, FOOT_Y
+    bob = pose.get("bob", 0)          # 몸 전체의 상하 (걸음의 흔들림, 점프)
+    lean = pose.get("lean", 0)        # 앞으로 기울기 (베기, 돌진)
 
-    # 다리 (스케치: 단색) — legs = (앞다리 dx, 뒷다리 dx, 들어올림)
-    fdx, bdx, lift = pose.get("legs", (1, -2, 0))
-    for dx, boot_dx, up in ((bdx, bdx, lift), (fdx, fdx, 0)):
-        x0 = cx + dx - 1
-        d.rectangle([x0, fy - 9 + bob - up, x0 + 2, fy - 3 + bob - up], fill=PANTS)
-        d.rectangle([x0, fy - 3 + bob - up, x0 + 3, fy + bob - up], fill=BOOT)
-    # 몸통 (외투)
-    tx = cx + lean
-    d.rectangle([tx - 5, fy - 20 + bob, tx + 5, fy - 9 + bob], fill=COAT)
-    # 목도리
-    d.rectangle([tx - 5, fy - 20 + bob, tx + 5, fy - 18 + bob], fill=SCARF)
-    # 머리 (얼굴은 앞쪽, 머리칼은 위와 뒤)
-    hx = tx + pose.get("head", 1)
-    d.rectangle([hx - 5, fy - 29 + bob, hx + 5, fy - 20 + bob], fill=SKIN)
-    d.rectangle([hx - 5, fy - 29 + bob, hx + 5, fy - 26 + bob], fill=HAIR)
-    d.rectangle([hx - 5, fy - 26 + bob, hx - 2, fy - 20 + bob], fill=HAIR)
-    if not pose.get("hurt"):
-        d.point((hx + 3, fy - 24 + bob), fill=INK)      # 눈
-    else:
-        d.line([hx + 2, fy - 24 + bob, hx + 4, fy - 24 + bob], fill=INK)  # 감은 눈
-    # 뒷팔
+    tx = cx + lean                    # 몸통 중심
+    hip_y = fy - 14 + bob
+    waist_y = fy - 20 + bob
+    sh_y = fy - 27 + bob              # 어깨
+    head_b = fy - 29 + bob
+    head_t = fy - 38 + bob
+    hx = tx + pose.get("head", 1)     # 머리는 진행 방향으로 조금 나간다
+
+    # --- 다리와 부츠 (몸통보다 먼저: 외투 자락이 위를 덮는다) ---------------
+    # leg = (발 dx, 들어올림). 뒷다리는 그늘색으로 칠해 앞뒤가 구분되게 한다.
+    for leg, shade in ((pose.get("back_leg", (-2, 0)), True),
+                       (pose.get("front_leg", (2, 0)), False)):
+        dx, lift = leg
+        pants = PANTS_SHADE if shade else PANTS
+        boot = BOOT_SHADE if shade else BOOT
+        knee = (tx + dx * 0.4, hip_y + 6 - lift * 0.6)
+        ankle = (tx + dx, fy - 4 - lift)
+        limb(d, (tx + dx * 0.2, hip_y - 1), knee, 5, 4, pants)
+        limb(d, knee, ankle, 4, 4, pants)
+        # 부츠: 발목보다 넓고 앞쪽으로 코가 나온다
+        by = fy - lift
+        d.polygon([(ankle[0] - 2.5, ankle[1]), (ankle[0] + 2.5, ankle[1]),
+                   (ankle[0] + 4, by), (ankle[0] - 3, by)], fill=boot)
+
+    # --- 뒷팔 (몸통 뒤) ------------------------------------------------------
     bax, bay = pose.get("backarm", (-5, -16))
-    rect(d, tx + bax - 1, fy + bay + bob, tx + bax + 1, fy + bay + 6 + bob, COAT_SHADE)
-    # 앞팔과 단검 — arm = (손 dx, 손 dy), dagger = (dx, dy, 길이, 세로 여부)
+    limb(d, (tx - 4, sh_y + 2), (tx + bax, fy + bay + bob), 4, 3, COAT_SHADE)
+
+    # --- 몸통: 어깨에서 허리로 좁아졌다 자락에서 퍼지는 외투 ----------------
+    d.polygon([
+        (tx - 7, sh_y), (tx + 7, sh_y),              # 어깨 (머리보다 넓다)
+        (tx + 5, waist_y), (tx + 6, hip_y + 1),      # 허리 → 자락 (앞)
+        (tx - 6, hip_y + 1), (tx - 5, waist_y),      # 자락 → 허리 (뒤)
+    ], fill=COAT)
+
+    # --- 목과 머리 ----------------------------------------------------------
+    d.rectangle([tx - 2, sh_y - 2, tx + 2, sh_y], fill=SKIN_SHADE)   # 목 (2px)
+    d.ellipse([hx - 4, head_t, hx + 4, head_b], fill=SKIN)
+    # 머리칼이 정수리와 뒤통수와 옆을 덮고, 앞쪽에 얼굴 만큼만 남긴다
+    d.chord([hx - 4, head_t, hx + 4, head_b], 140, 375, fill=HAIR)
+    d.rectangle([hx - 4, head_t + 3, hx - 1, head_t + 8], fill=HAIR)  # 뒷머리
+    d.polygon([(hx - 1, head_t + 2), (hx + 4, head_t + 3),
+               (hx + 4, head_t + 4), (hx - 1, head_t + 4)], fill=HAIR)  # 앞머리
+    if pose.get("hurt"):
+        d.line([hx + 1, head_t + 6, hx + 3, head_t + 6], fill=INK)   # 감은 눈
+    else:
+        d.rectangle([hx + 2, head_t + 5, hx + 2, head_t + 6], fill=INK)   # 눈
+    d.point((hx + 3, head_b - 1), fill=SKIN_SHADE)                   # 턱 그늘
+
+    # 목도리: 외투의 목선 위에 얹고 뒤로 한 자락 날린다
+    d.rectangle([tx - 5, sh_y, tx + 5, sh_y + 1], fill=SCARF)
+    d.polygon([(tx - 4, sh_y), (tx - 8 - lean, sh_y + 3),
+               (tx - 7 - lean, sh_y + 5), (tx - 3, sh_y + 2)], fill=SCARF)
+
+    # --- 앞팔과 단검 --------------------------------------------------------
+    # arm = (손 dx, 손 dy). 팔꿈치는 어깨와 손의 가운데에서 조금 바깥으로 나간다.
     ax, ay = pose.get("arm", (6, -14))
-    rect(d, tx + 3, fy - 17 + bob, tx + ax, fy + ay + 2 + bob, COAT)
-    rect(d, tx + ax - 1, fy + ay + bob, tx + ax + 1, fy + ay + 2 + bob, SKIN)
+    hand = (tx + ax, fy + ay + bob)
+    elbow = ((tx + 4 + hand[0]) / 2 + 1, (sh_y + 3 + hand[1]) / 2)
+    limb(d, (tx + 4, sh_y + 3), elbow, 5, 4, COAT)
+    limb(d, elbow, hand, 4, 3, COAT)
+    d.ellipse([hand[0] - 1.5, hand[1] - 1.5, hand[0] + 1.5, hand[1] + 1.5], fill=SKIN)
+
     dg = pose.get("dagger")
     if dg:
         dgx, dgy, ln, vert = dg
         if vert:
-            d.rectangle([tx + dgx, fy + dgy + bob, tx + dgx + 1, fy + dgy + ln + bob], fill=BLADE)
+            d.polygon([(hand[0] + dgx - 1, hand[1] + dgy),
+                       (hand[0] + dgx + 1, hand[1] + dgy),
+                       (hand[0] + dgx, hand[1] + dgy + ln)], fill=BLADE)
         else:
-            d.rectangle([tx + dgx, fy + dgy + bob, tx + dgx + ln, fy + dgy + 1 + bob], fill=BLADE)
+            d.polygon([(hand[0] + dgx, hand[1] + dgy - 1),
+                       (hand[0] + dgx + ln, hand[1] + dgy),
+                       (hand[0] + dgx, hand[1] + dgy + 1)], fill=BLADE)
 
-    # 명암 (디더 덧칠): 광원은 왼쪽 위 — 몸의 오른쪽 아래를 어둡게
-    dither_over(f, tx, fy - 20 + bob, tx + 6, fy - 9 + bob, COAT_SHADE)
-    dither_over(f, cx - 4, fy - 9 + bob, cx + 5, fy + bob, PANTS_SHADE)
+    # --- 명암 (마일스톤 2에서 디더 띠로 바뀐다) -----------------------------
+    dither_over(f, tx + 1, sh_y + 4, tx + 8, hip_y + 1, COAT_SHADE)
+    dither_over(f, tx - 5, hip_y, tx + 6, fy, PANTS_SHADE)
 
     outline(f)
 
-    # 검기 (테두리 뒤에 얹는다 — 빛이라 테두리가 없다)
+    # 검기 (테두리 뒤에 얹는다. 빛이라 테두리가 없다)
     for arc in pose.get("slash", []):
         x0, y0, x1, y1, start, end = arc
         ImageDraw.Draw(f).arc([x0, y0 + bob, x1, y1 + bob], start, end, fill=GLOW, width=2)
     return f
 
 
+# 걷기 4프레임: 접지 → 최저점 → 반대 접지 → 최저점. 몸이 1px 위아래로 흔들리고
+# 팔은 다리와 반대로 흔들린다. (다리 = (발 dx, 들어올림))
+WALK = [
+    {"front_leg": (4, 0), "back_leg": (-4, 0), "bob": 0, "arm": (4, -15), "backarm": (-6, -15)},
+    {"front_leg": (2, 0), "back_leg": (-1, 3), "bob": 1, "arm": (6, -14), "backarm": (-4, -16)},
+    {"front_leg": (-4, 0), "back_leg": (4, 0), "bob": 0, "arm": (7, -14), "backarm": (-3, -16)},
+    {"front_leg": (-1, 3), "back_leg": (2, 0), "bob": 1, "arm": (5, -15), "backarm": (-5, -15)},
+]
+
+
 def make_karto():
     frames = [
         karto_frame({}),                                                    # 0 서기A
-        karto_frame({"bob": 1}),                                            # 1 서기B
-        karto_frame({"legs": (4, -4, 0)}),                                  # 2 걷기1
-        karto_frame({"legs": (2, -1, 1)}),                                  # 3 걷기2
-        karto_frame({"legs": (-2, 3, 0)}),                                  # 4 걷기3
-        karto_frame({"legs": (1, -1, 1)}),                                  # 5 걷기4
-        karto_frame({"legs": (3, -4, 3), "bob": -2, "arm": (7, -20),        # 6 점프
-                     "backarm": (-6, -20)}),
-        karto_frame({"legs": (2, -3, 1), "arm": (7, -22),                   # 7 낙하
-                     "backarm": (-6, -22)}),
-        karto_frame({"legs": (4, -4, 0), "lean": 2, "arm": (10, -15),      # 8 베기1
-                     "dagger": (10, -16, 8, False),
+        karto_frame({"bob": 1, "arm": (6, -13)}),                           # 1 서기B (숨)
+    ]
+    frames += [karto_frame(p) for p in WALK]                                # 2~5 걷기
+    frames += [
+        karto_frame({"front_leg": (3, 4), "back_leg": (-3, 1), "bob": -2,   # 6 점프
+                     "arm": (7, -20), "backarm": (-6, -20)}),
+        karto_frame({"front_leg": (2, 1), "back_leg": (-3, 0), "bob": 1,    # 7 낙하
+                     "arm": (7, -22), "backarm": (-6, -21)}),
+        karto_frame({"front_leg": (4, 0), "back_leg": (-4, 0), "lean": 2,   # 8 베기1
+                     "arm": (11, -16), "dagger": (1, -1, 8, False),
                      "slash": [(28, 20, 44, 40, 300, 60)]}),
-        karto_frame({"legs": (4, -4, 0), "lean": 2, "arm": (10, -12),      # 9 베기2
-                     "dagger": (10, -12, 8, False),
+        karto_frame({"front_leg": (4, 0), "back_leg": (-4, 0), "lean": 2,   # 9 베기2
+                     "arm": (11, -12), "dagger": (1, 0, 8, False),
                      "slash": [(28, 18, 44, 38, 120, 210)]}),
-        karto_frame({"legs": (5, -5, 0), "lean": 3, "arm": (11, -14),      # 10 베기3
-                     "dagger": (11, -15, 9, False),
+        karto_frame({"front_leg": (5, 0), "back_leg": (-5, 0), "lean": 3,   # 10 베기3
+                     "arm": (12, -14), "dagger": (1, -1, 9, False),
                      "slash": [(26, 16, 46, 40, 300, 60), (26, 16, 46, 40, 120, 210)]}),
-        karto_frame({"legs": (3, -3, 0), "lean": -3, "head": -1,           # 11 피격
-                     "hurt": True, "arm": (6, -20), "backarm": (-7, -19)}),
+        karto_frame({"front_leg": (3, 0), "back_leg": (-3, 0), "lean": -3,  # 11 피격
+                     "head": -1, "hurt": True, "arm": (5, -21),
+                     "backarm": (-7, -20)}),
     ]
     save(sheet(frames, 48, 48), OUT, "karto.png")
 
 
 # ---- 몬스터 ---------------------------------------------------------------
+# 셋은 실루엣만으로 구분되어야 한다 (docs/plans/aldebaran-4-pixelart.md 4.3절).
+#   전갈거미  낮고 넓다. 마디가 셋이고 다리가 꺾여 있으며 꼬리가 위로 말린다.
+#   늑대 인간 곧추서서 굽은 등. 어깨의 갈기가 실루엣을 키운다.
+#   가면 원숭이 작고 둥글다. 흰 가면이 먼저 보이고 등에 배낭이 있다.
+
 
 def spider_frame(pose):
-    """전갈거미 48x32. 낮고 넓은 몸, 다리 여덟, 앞의 큰 턱, 위로 말린 독침 꼬리."""
+    """밀림 전갈거미 48x32. 발 기준선 y=30, 몸 중심 x=22. 오른쪽 보기."""
     f = blank(48, 32)
     d = ImageDraw.Draw(f)
     cx, fy = 22, 30
-    crouch = pose.get("crouch", 0)
-    # 몸통 (스케치)
-    d.ellipse([cx - 11, fy - 12 + crouch, cx + 9, fy - 2], fill=SPIDER)
-    # 머리
-    d.ellipse([cx + 6, fy - 9 + crouch, cx + 15, fy - 2], fill=SPIDER)
-    # 다리 (걸음 위상에 따라 벌림)
+    crouch = pose.get("crouch", 0)      # 움츠림 (공격 선딜레이)
+    by = fy - 8 + crouch                # 몸통 중심선
+
+    # --- 다리 여덟: 무릎이 몸보다 높이 솟았다가 발끝이 땅으로 내려온다 -------
     ph = pose.get("legs", 0)
     for i in range(4):
-        sx = cx - 8 + i * 5
-        spread = 3 if (i + ph) % 2 == 0 else 1
-        d.line([sx, fy - 5, sx - spread, fy], fill=SPIDER_SHADE, width=2)
-        d.line([sx + 2, fy - 5, sx + 2 + spread, fy], fill=SPIDER_SHADE, width=2)
-    # 턱 (공격이면 크게 벌린다)
+        base = cx - 6 + i * 4
+        up = 8 if (i + ph) % 2 == 0 else 10     # 무릎이 몸통 위로 솟는다 (걸음 위상)
+        for side, spread in ((1, 5), (-1, 3)):  # 앞다리 쪽이 더 멀리 짚는다
+            knee = (base + side * 4, by - up)
+            foot = (base + side * (spread + 6), fy)
+            d.line([base, by - 1, knee[0], knee[1]], fill=SPIDER, width=2)
+            d.line([knee[0], knee[1], foot[0], foot[1]], fill=SPIDER, width=1)
+
+    # --- 꼬리: 마디 셋이 뒤에서 위로 말리고 끝에 독침 ----------------------
+    tail = [(cx - 10, by - 1), (cx - 14, by - 4), (cx - 16, by - 9), (cx - 15, by - 13)]
+    for i, (px, py) in enumerate(tail):
+        r = 3 - i * 0.5
+        d.ellipse([px - r, py - r, px + r, py + r], fill=SPIDER_SHADE if i else SPIDER)
+    d.polygon([(tail[-1][0] - 1, tail[-1][1] - 1), (tail[-1][0] + 2, tail[-1][1] - 2),
+               (tail[-1][0] + 1, tail[-1][1] + 2)], fill=STING)
+
+    # --- 몸통 마디 셋: 배, 가슴, 머리 ---------------------------------------
+    d.ellipse([cx - 11, by - 5, cx - 1, by + 4], fill=SPIDER)          # 배
+    d.ellipse([cx - 3, by - 4, cx + 7, by + 4], fill=SPIDER)           # 가슴
+    d.ellipse([cx + 5, by - 3, cx + 13, by + 3], fill=SPIDER)          # 머리
+    d.line([cx - 2, by - 4, cx - 2, by + 3], fill=SPIDER_SHADE)        # 마디 경계
+    d.line([cx + 5, by - 3, cx + 5, by + 2], fill=SPIDER_SHADE)
+    d.point((cx - 7, by - 3), fill=SPIDER_BELLY)                       # 등의 무늬
+    d.point((cx - 5, by - 1), fill=SPIDER_BELLY)
+
+    # --- 큰 턱: 공격 프레임에서 벌어진다 ------------------------------------
     jaw = pose.get("jaw", 2)
-    d.line([cx + 14, fy - 6 + crouch, cx + 14 + jaw + 2, fy - 8 - jaw + crouch], fill=SPIDER_BELLY, width=2)
-    d.line([cx + 14, fy - 4 + crouch, cx + 14 + jaw + 2, fy - 2 + jaw + crouch], fill=SPIDER_BELLY, width=2)
-    # 독침 꼬리 (뒤에서 위로 말림)
-    d.arc([cx - 18, fy - 20 + crouch, cx - 4, fy - 4 + crouch], 90, 250, fill=SPIDER, width=3)
-    d.rectangle([cx - 18, fy - 14 + crouch, cx - 16, fy - 11 + crouch], fill=STING)
-    # 눈
-    d.point((cx + 10, fy - 7 + crouch), fill=SPIDER_EYE)
-    d.point((cx + 12, fy - 6 + crouch), fill=SPIDER_EYE)
-    # 명암: 등에 밝은 점, 배 쪽 어둡게
-    dither_over(f, cx - 10, fy - 12 + crouch, cx + 8, fy - 8 + crouch, SPIDER_BELLY)
-    dither_over(f, cx - 10, fy - 5, cx + 14, fy, SPIDER_SHADE)
+    for sgn in (-1, 1):
+        tip = (cx + 15 + jaw, by + sgn * (2 + jaw))
+        d.polygon([(cx + 11, by + sgn), (cx + 13, by + sgn * 3),
+                   (tip[0], tip[1]), (tip[0], tip[1] - sgn * 2)], fill=SPIDER_BELLY)
+    d.point((cx + 9, by - 1), fill=SPIDER_EYE)
+    d.point((cx + 11, by), fill=SPIDER_EYE)
+
+    dither_over(f, cx - 11, by, cx + 13, by + 5, SPIDER_SHADE)         # 배 쪽 그늘
     if pose.get("hurt"):
         dither_over(f, 0, 0, 48, 32, SPIDER_BELLY, phase=1)
     outline(f)
@@ -317,42 +406,70 @@ def make_spider():
 
 
 def wolf_frame(pose):
-    """늑대 인간 48x48. 곧추선 야수 — 굽은 등, 붉은 눈, 발톱."""
+    """늑대 인간 48x48. 발 기준선 y=46, 몸 중심 x=22. 곧추선 야수."""
     f = blank(48, 48)
     d = ImageDraw.Draw(f)
     cx, fy = 22, 46
     lean = pose.get("lean", 0)          # 앞으로 기울기 (돌격)
-    # 다리 (digitigrade — 무릎이 뒤로 꺾임)
     ph = pose.get("legs", 0)
-    for dx in (-4 + ph, 3 - ph):
-        d.line([cx + dx, fy - 14, cx + dx - 2, fy - 7], fill=WOLF, width=3)
-        d.line([cx + dx - 2, fy - 7, cx + dx + 1, fy], fill=WOLF, width=3)
-        d.rectangle([cx + dx - 1, fy - 2, cx + dx + 3, fy], fill=WOLF_SHADE)
-    # 몸통 (굽은 등)
-    d.ellipse([cx - 8 + lean, fy - 30, cx + 8 + lean, fy - 10], fill=WOLF)
-    d.ellipse([cx - 4 + lean, fy - 26, cx + 7 + lean, fy - 14], fill=WOLF_BELLY)
-    # 머리 (주둥이가 앞으로)
+
+    hip_y = fy - 20
+    sh_y = fy - 34 + pose.get("crouch", 0)
+
+    # --- 뒷다리 둘: 무릎이 앞, 뒤꿈치가 뒤로 꺾이는 야수의 다리 -------------
+    for dx, shade in ((-4 + ph, True), (3 - ph, False)):
+        col = WOLF_SHADE if shade else WOLF
+        knee = (cx + dx + 3, hip_y + 7)
+        hock = (cx + dx - 2, hip_y + 15)
+        limb(d, (cx + dx, hip_y), knee, 7, 5, col)
+        limb(d, knee, hock, 5, 4, col)
+        d.polygon([(hock[0] - 2, hock[1]), (hock[0] + 2, hock[1]),
+                   (hock[0] + 5, fy), (hock[0] - 2, fy)], fill=WOLF_SHADE)
+
+    # --- 꼬리 ---------------------------------------------------------------
+    d.line([cx - 7, hip_y - 2, cx - 13, hip_y - 8], fill=WOLF, width=3)
+    d.line([cx - 13, hip_y - 8, cx - 15, hip_y - 15], fill=WOLF_SHADE, width=2)
+
+    # --- 몸통: 엉덩이에서 어깨로 굽어 오르는 등 -----------------------------
+    d.polygon([
+        (cx - 7, hip_y + 2), (cx + 6, hip_y + 1),            # 엉덩이
+        (cx + 8 + lean, sh_y + 8), (cx + 7 + lean, sh_y + 1),  # 가슴
+        (cx - 4 + lean, sh_y - 1), (cx - 8, hip_y - 6),        # 굽은 등
+    ], fill=WOLF)
+    d.ellipse([cx - 2 + lean, sh_y + 4, cx + 8 + lean, hip_y + 2], fill=WOLF_BELLY)
+
+    # --- 갈기: 어깨를 키워 실루엣을 늑대로 만든다 ---------------------------
+    for i in range(5):
+        x = cx - 5 + i * 3 + lean
+        d.polygon([(x, sh_y + 1), (x + 3, sh_y + 3), (x - 1, sh_y + 7)], fill=WOLF_SHADE)
+
+    # --- 머리: 주둥이가 앞으로, 귀가 뒤로 ------------------------------------
     hx = cx + 6 + lean * 2
-    hy = fy - 34 + pose.get("headdown", 0)
+    hy = sh_y - 6 + pose.get("headdown", 0)
     d.ellipse([hx - 5, hy, hx + 4, hy + 8], fill=WOLF)
-    d.rectangle([hx + 3, hy + 3, hx + 9, hy + 6], fill=WOLF)          # 주둥이
-    d.polygon([(hx - 4, hy + 1), (hx - 2, hy - 4), (hx, hy + 1)], fill=WOLF)   # 귀
-    d.point((hx + 1, hy + 3), fill=WOLF_EYE)
-    d.point((hx + 8, hy + 5), fill=INK)                                # 코
-    # 팔 — attack이면 머리 위로 치켜든다
+    d.polygon([(hx + 2, hy + 2), (hx + 11, hy + 4), (hx + 11, hy + 7),
+               (hx + 2, hy + 7)], fill=WOLF)                     # 주둥이
+    d.polygon([(hx - 4, hy + 1), (hx - 2, hy - 5), (hx + 1, hy + 1)], fill=WOLF)  # 귀
+    d.polygon([(hx - 1, hy), (hx + 1, hy - 4), (hx + 3, hy + 1)], fill=WOLF_SHADE)
+    d.point((hx + 2, hy + 3), fill=WOLF_EYE)
+    d.rectangle([hx + 10, hy + 4, hx + 11, hy + 5], fill=INK)     # 코
+    if pose.get("raise"):                                          # 이빨 (공격)
+        for i in range(3):
+            d.point((hx + 5 + i * 2, hy + 7), fill=CLAW)
+
+    # --- 팔: 내리찍기면 머리 위로, 아니면 앞으로 ----------------------------
     if pose.get("raise"):
-        d.line([cx + 5 + lean, fy - 26, cx + 12 + lean, fy - 38], fill=WOLF, width=3)
+        wrist = (cx + 12 + lean, sh_y - 8)
+        limb(d, (cx + 5 + lean, sh_y + 4), wrist, 6, 4, WOLF)
         for i in range(3):
-            d.line([cx + 11 + lean + i * 2, fy - 38, cx + 13 + lean + i * 2, fy - 42], fill=CLAW, width=1)
+            d.line([wrist[0] + i * 2 - 1, wrist[1], wrist[0] + i * 2, wrist[1] - 4], fill=CLAW)
     else:
-        d.line([cx + 5 + lean, fy - 24, cx + 11 + lean * 2, fy - 16], fill=WOLF, width=3)
+        wrist = (cx + 10 + lean * 2, sh_y + 14)
+        limb(d, (cx + 5 + lean, sh_y + 5), wrist, 6, 4, WOLF)
         for i in range(3):
-            d.line([cx + 10 + lean * 2 + i, fy - 16, cx + 11 + lean * 2 + i, fy - 12], fill=CLAW, width=1)
-    # 꼬리
-    d.arc([cx - 18, fy - 22, cx - 4, fy - 8], 120, 260, fill=WOLF, width=3)
-    # 명암
-    dither_over(f, cx - 8 + lean, fy - 18, cx + 9 + lean, fy - 10, WOLF_SHADE)
-    dither_over(f, cx - 8 + lean, fy - 30, cx + 2 + lean, fy - 24, WOLF_SHADE, phase=1)
+            d.line([wrist[0] + i - 1, wrist[1], wrist[0] + i + 1, wrist[1] + 3], fill=CLAW)
+
+    dither_over(f, cx - 8, hip_y - 4, cx + 9 + lean, hip_y + 3, WOLF_SHADE)
     if pose.get("hurt"):
         dither_over(f, 0, 0, 48, 48, WOLF_BELLY, phase=1)
     outline(f)
@@ -363,7 +480,7 @@ def make_wolf():
     frames = [
         wolf_frame({"legs": 0}),                                  # 0 걷기A
         wolf_frame({"legs": 3}),                                  # 1 걷기B
-        wolf_frame({"legs": 4, "lean": 4, "headdown": 4}),        # 2 돌격
+        wolf_frame({"legs": 4, "lean": 3, "headdown": 2, "crouch": 1}),  # 2 돌격
         wolf_frame({"legs": 1, "raise": True}),                   # 3 내리찍기
         wolf_frame({"legs": 1, "lean": -2, "hurt": True}),        # 4 피격
     ]
@@ -371,38 +488,60 @@ def make_wolf():
 
 
 def monkey_frame(pose):
-    """가면 원숭이 짐도둑 48x48. 흰 가면, 등의 배낭."""
+    """가면 원숭이 짐도둑 48x48. 발 기준선 y=46, 몸 중심 x=24."""
     f = blank(48, 48)
     d = ImageDraw.Draw(f)
     cx, fy = 24, 46
-    # 다리 (달리기)
     ph = pose.get("legs", 0)
-    for dx in (-3 + ph * 2, 2 - ph * 2):
-        d.line([cx + dx, fy - 10, cx + dx + 1, fy], fill=MONKEY, width=3)
-    # 배낭 (등 뒤 — 몸통보다 먼저 그린다)
+    hip_y = fy - 12
+    sh_y = fy - 24
+
+    # --- 다리 (짧고 굽었다) --------------------------------------------------
+    for dx, shade in ((-3 + ph * 2, True), (2 - ph * 2, False)):
+        col = MONKEY_SHADE if shade else MONKEY
+        knee = (cx + dx + 1, hip_y + 5)
+        limb(d, (cx + dx, hip_y), knee, 5, 4, col)
+        limb(d, knee, (cx + dx - 1, fy - 1), 4, 3, col)
+        d.polygon([(cx + dx - 3, fy - 2), (cx + dx + 3, fy - 2),
+                   (cx + dx + 3, fy), (cx + dx - 4, fy)], fill=col)
+
+    # --- 배낭 (등 뒤: 몸통보다 먼저 그린다) ---------------------------------
     if pose.get("bag", True):
-        d.rectangle([cx - 14, fy - 26, cx - 5, fy - 12], fill=BAG)
-        d.line([cx - 13, fy - 22, cx - 6, fy - 22], fill=BAG_SHADE, width=1)
-        dither_over(f, cx - 14, fy - 19, cx - 5, fy - 12, BAG_SHADE)
-    # 몸통
-    d.ellipse([cx - 7, fy - 24, cx + 6, fy - 8], fill=MONKEY)
-    # 꼬리
-    d.arc([cx - 16, fy - 18, cx - 2, fy - 4], 100, 250, fill=MONKEY, width=2)
-    # 머리와 가면
-    hy = fy - 32
-    d.ellipse([cx - 5, hy, cx + 7, hy + 10], fill=MONKEY)
-    d.ellipse([cx - 1, hy + 1, cx + 7, hy + 9], fill=MASK)          # 가면
-    d.point((cx + 2, hy + 4), fill=INK)
+        d.polygon([(cx - 14, sh_y + 3), (cx - 5, sh_y + 1),
+                   (cx - 4, hip_y - 1), (cx - 13, hip_y + 1)], fill=BAG)
+        d.line([cx - 13, sh_y + 8, cx - 5, sh_y + 7], fill=BAG_SHADE)
+        dither_over(f, cx - 14, sh_y + 9, cx - 4, hip_y + 1, BAG_SHADE)
+
+    # --- 몸통 ---------------------------------------------------------------
+    d.ellipse([cx - 7, sh_y + 2, cx + 6, hip_y + 2], fill=MONKEY)
+    d.ellipse([cx - 3, sh_y + 6, cx + 5, hip_y], fill=MONKEY_SHADE)
+    # 배낭 끈이 어깨를 지나간다
+    if pose.get("bag", True):
+        d.line([cx - 5, sh_y + 3, cx + 2, sh_y + 5], fill=BAG_SHADE, width=1)
+
+    # --- 꼬리 (길게 말린다) --------------------------------------------------
+    d.arc([cx - 18, hip_y - 8, cx - 2, hip_y + 6], 100, 250, fill=MONKEY, width=2)
+    d.arc([cx - 20, hip_y - 14, cx - 10, hip_y - 4], 60, 220, fill=MONKEY_SHADE, width=2)
+
+    # --- 머리: 가면이 얼굴보다 커서 먼저 보인다 -----------------------------
+    hy = fy - 34
+    d.ellipse([cx - 6, hy, cx + 6, hy + 11], fill=MONKEY)        # 머리통
+    d.polygon([(cx - 6, hy + 2), (cx - 4, hy - 2), (cx - 2, hy + 2)], fill=MONKEY_SHADE)  # 귀
+    d.polygon([(cx + 3, hy + 1), (cx + 6, hy - 2), (cx + 7, hy + 3)], fill=MONKEY_SHADE)
+    d.ellipse([cx - 2, hy + 1, cx + 8, hy + 10], fill=MASK)      # 흰 가면
+    d.point((cx + 1, hy + 4), fill=INK)
     d.point((cx + 5, hy + 4), fill=INK)
-    d.line([cx + 3, hy + 7, cx + 5, hy + 7], fill=SPIDER_EYE)       # 가면의 붉은 무늬
-    # 팔 — 던지기면 앞으로 뻗고 돌을 쥔다
+    d.line([cx + 1, hy + 2, cx + 7, hy + 3], fill=SPIDER_EYE)    # 이마를 가로지르는 표식
+    d.line([cx + 2, hy + 8, cx + 5, hy + 8], fill=MONKEY_SHADE)  # 가면의 입 자국
+
+    # --- 팔: 던지기면 돌을 쥐고 뒤로 젖힌다 ---------------------------------
     if pose.get("throw"):
-        d.line([cx + 3, fy - 20, cx + 13, fy - 26], fill=MONKEY, width=2)
-        d.ellipse([cx + 12, fy - 30, cx + 17, fy - 25], fill=STONE)
+        wrist = (cx + 12, sh_y - 4)
+        limb(d, (cx + 3, sh_y + 5), wrist, 5, 3, MONKEY)
+        d.ellipse([wrist[0] - 1, wrist[1] - 4, wrist[0] + 4, wrist[1] + 1], fill=STONE)
     else:
-        d.line([cx + 3, fy - 20, cx + 9, fy - 13], fill=MONKEY, width=2)
-    # 명암
-    dither_over(f, cx - 6, fy - 14, cx + 7, fy - 8, MONKEY_SHADE)
+        limb(d, (cx + 3, sh_y + 5), (cx + 9, hip_y - 1), 5, 3, MONKEY)
+
     if pose.get("hurt"):
         dither_over(f, 0, 0, 48, 48, MASK, phase=1)
     outline(f)
