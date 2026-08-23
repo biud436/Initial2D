@@ -77,6 +77,72 @@ function M.expRatio(exp)
 	return (exp - floor) / (ceil - floor)
 end
 
+-- ---- 힘 (기획서 5.3절) ------------------------------------------------------
+--
+-- 카르토는 마법에 취약한 보물 사냥꾼이다. 단검 한 자루로 늑대 인간을 상대할 수는
+-- 없다. 숲을 지날수록 **검은 안개가 단검에 스며** 힘이 붙는 것으로 푼다 (원안의
+-- "보라색 검기"와 "마법 캐스팅" 그래픽이 여기에 쓰인다).
+--
+-- 다섯 흔적이 하나씩 준다. 셋은 늘 켜져 있는 것(passive)이고 둘은 쓰는 것(active)이다.
+-- 쓰는 것에는 **쿨타임**이 있고 HUD의 슬롯에 남은 시간이 보인다.
+
+M.SKILLS = {
+	edge = {
+		name = "검기", kind = "passive",
+		desc = "단검에 안개가 스민다. 베기가 길고 세진다.",
+		reach = 8, atkBonus = 3,
+	},
+	read = {
+		name = "흔적 읽기", kind = "passive",
+		desc = "보물 사냥꾼의 눈. 적의 남은 힘이 보인다.",
+	},
+	leap = {
+		name = "도약", kind = "passive",
+		desc = "골짜기의 바람이 몸을 든다. 두 번째 도약이 높아진다.",
+		airJump = -330,
+	},
+	berserk = {
+		name = "폭주", kind = "active", slot = 1, key = "C",
+		desc = "안개에 취한다. 4초 동안 세지고 덜 아프다.",
+		mp = 10, cooldown = 12, time = 4,
+	},
+	bolt = {
+		name = "검기 방출", kind = "active", slot = 2, key = "V",
+		desc = "검기를 날린다. 닿으면 터진다.",
+		mp = 8, cooldown = 2.5, damage = 14, speed = 260,
+	},
+}
+
+M.SKILL_ORDER = { "edge", "read", "leap", "berserk", "bolt" }
+
+--- 익힌 힘 표를 하나 만든다 (전부 꺼진 채로)
+function M.newSkills()
+	local s = { cooldown = {} }
+	for _, id in ipairs(M.SKILL_ORDER) do
+		s[id] = false
+		s.cooldown[id] = 0
+	end
+	return s
+end
+
+--- 쓸 수 있는가 (익혔고, 쿨타임이 돌지 않았고, MP가 있다)
+function M.canUse(skills, id, mp)
+	local def = M.SKILLS[id]
+	if def == nil or def.kind ~= "active" then return false end
+	if not skills[id] then return false end
+	if (skills.cooldown[id] or 0) > 0 then return false end
+	return mp >= def.mp
+end
+
+--- 매 프레임 쿨타임을 흘린다
+function M.tickCooldowns(skills, dt)
+	for id, left in pairs(skills.cooldown) do
+		if left > 0 then
+			skills.cooldown[id] = math.max(0, left - dt)
+		end
+	end
+end
+
 -- ---- 버서커 (기획서 7.3절) -------------------------------------------------
 
 M.BERSERK = {

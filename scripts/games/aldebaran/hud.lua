@@ -58,6 +58,33 @@ function M.new(opts)
 		piece(r.x, r.y, M.ICON_SIZE, M.ICON_SIZE, x, y)
 	end
 
+	--- 스킬 슬롯 하나. 익히지 않았으면 흐리고, 쿨타임이 돌면 위에서 아래로 찬다.
+	-- ratio 는 남은 쿨타임의 비율(1이면 방금 썼다), ready 는 지금 쓸 수 있는가.
+	function self.skillSlot(x, y, size, learned, ratio, ready)
+		-- 테두리 (막대의 바탕 띠를 잘라 쓴다)
+		for i = 0, size - 1 do
+			piece(0, STRIP_Y.bg, 1, 1, x + i, y)
+			piece(0, STRIP_Y.bg, 1, 1, x + i, y + size - 1)
+			piece(0, STRIP_Y.bg, 1, 1, x, y + i)
+			piece(0, STRIP_Y.bg, 1, 1, x + size - 1, y + i)
+		end
+		if not learned then return end
+
+		-- 안쪽: 쓸 수 있으면 노랑(EXP 띠), 아니면 파랑(MP 띠)
+		local kind = ready and "exp" or "mp"
+		local inner = size - 2
+		for i = 0, inner - 1 do
+			piece(0, STRIP_Y[kind], inner, 1, x + 1, y + 1 + i)
+		end
+		-- 쿨타임: 위에서부터 어둡게 덮는다
+		if ratio and ratio > 0 then
+			local h = math.floor(inner * math.min(1, ratio))
+			for i = 0, h - 1 do
+				piece(0, STRIP_Y.bg, inner, 1, x + 1, y + 1 + i)
+			end
+		end
+	end
+
 	function self.dispose()
 		for _, img in pairs(cache) do
 			img.dispose()

@@ -151,7 +151,8 @@ function M.update(m, dt, probe, px, py)
 		-- 돌격 (원안: 첫 발동 뒤로는 다시 쓰지 않는다). 벽이나 시간에서 끝난다.
 		m.vx = m.dir * m.def.chargeSpeed
 		if m.timer <= 0 then
-			m.chargeUsed = true
+			-- 검은 늑대는 돌격을 다시 쓴다 (chargeRepeat). 늑대는 한 번뿐이다.
+			m.chargeUsed = not m.def.chargeRepeat
 			m.state = "chase"
 		end
 
@@ -258,6 +259,10 @@ end
 function M.hurt(m, dmg, fromDir)
 	if m.dead or m.state == "dying" then return false end
 	m.hp = m.hp - dmg
+	-- 보스는 절반에서 두 번째 판으로 넘어간다 (기획서 4.3.4절)
+	if m.def.special == "throw" and not m.phase2 and m.hp <= m.def.hp / 2 then
+		m.phase2 = true
+	end
 	m.regenTimer = 0
 	if m.hp <= 0 then
 		m.state = "dying"

@@ -46,6 +46,29 @@ end
 -- 원문의 개행(\n)은 그대로 유지한다.
 -- @param measure function(text) -> 픽셀 폭
 -- @return 줄 문자열 배열
+--- 한글 조사 고르기. 앞말의 받침 유무로 갈린다.
+--
+--   Text.particle("폭주", "을", "를")  -->  "를"   (받침 없음)
+--   Text.particle("도약", "을", "를")  -->  "을"   (받침 ㄱ)
+--
+-- "폭주을(를)"처럼 둘 다 적는 것은 글이 아니라 코드가 새어 나온 것이다.
+-- 한글 음절은 U+AC00 부터 28개 종성 주기로 늘어서므로, (코드 - 0xAC00) % 28 이
+-- 0이 아니면 받침이 있다. 한글이 아닌 글자로 끝나면 뒤엣것을 쓴다.
+function M.particle(word, withJong, withoutJong)
+	local chars = M.chars(word)
+	local last = chars[#chars]
+	if last == nil or #last ~= 3 then return withoutJong end
+	local b1, b2, b3 = last:byte(1, 3)
+	local code = (b1 - 0xE0) * 0x1000 + (b2 - 0x80) * 0x40 + (b3 - 0x80)
+	if code < 0xAC00 or code > 0xD7A3 then return withoutJong end
+	return ((code - 0xAC00) % 28 ~= 0) and withJong or withoutJong
+end
+
+--- 앞말에 맞는 조사를 붙여 돌려준다 (`Text.with("도약", "을", "를")` → "도약을")
+function M.with(word, withJong, withoutJong)
+	return word .. M.particle(word, withJong, withoutJong)
+end
+
 function M.wrap(text, maxWidth, measure)
 	assert(type(measure) == "function", "text.wrap: 폭 측정 함수가 필요하다")
 	local lines = {}

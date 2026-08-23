@@ -57,9 +57,13 @@ COAT_SHADE = (150, 120, 76)
 SCARF = (202, 70, 58)           # 붉은 목도리
 SKIN = (232, 194, 156)
 HAIR = (88, 58, 34)
+HAIR_LIGHT = (124, 86, 52)
+RIM = (150, 170, 220)      # 역광 (숲의 푸른 밤빛)
 PANTS = (84, 76, 96)
 PANTS_SHADE = (60, 54, 72)
 BOOT = (110, 74, 44)
+BOOT_SHADE = (78, 52, 32)
+SKIN_SHADE = (196, 154, 118)
 BLADE = (222, 226, 236)
 GLOW = (176, 106, 226)          # 단검의 보라색 검기
 
@@ -78,8 +82,8 @@ CLAW = (224, 220, 208)
 MONKEY = (134, 96, 58)          # 가면 원숭이
 MONKEY_SHADE = (98, 68, 42)
 MASK = (230, 226, 210)          # 가면 (흰 나무 가면)
-BAG = (172, 132, 78)            # 배낭
-BAG_SHADE = (130, 96, 56)
+BAG = (146, 138, 106)           # 배낭 (거친 천. 원숭이 털과 색이 겹치지 않게)
+BAG_SHADE = (104, 98, 74)
 STONE = (150, 146, 138)
 STONE_SHADE = (104, 100, 96)
 
@@ -124,19 +128,85 @@ def blank(w, h):
     return Image.new("RGBA", (w, h), (0, 0, 0, 0))
 
 
+# 순서 있는 디더 (Bayer 4x4). 문턱값이 0..15 로 흩어져 있어, 밀도 t 를 0에서 1로
+# 옮기면 두 색이 **점점 엇갈리며** 섞인다. 면 전체를 50% 체커로 덮는 것과 다르다.
+BAYER4 = [
+    [0, 8, 2, 10],
+    [12, 4, 14, 6],
+    [3, 11, 1, 9],
+    [15, 7, 13, 5],
+]
+
+
+def bayer(x, y):
+    """(x, y) 자리의 문턱값 (0.0 ~ 1.0)."""
+    return (BAYER4[y % 4][x % 4] + 0.5) / 16.0
+
+
 def dither(d, x0, y0, x1, y1, color, phase=0):
-    """체커보드 디더 — 두 색이 점점이 엇갈리며 중간 톤을 만든다 (경계 포함 안 함)."""
+    """체커보드 디더. 무늬가 필요한 자리(작은 소품)에만 쓴다."""
     for y in range(y0, y1):
         for x in range(x0, x1):
             if (x + y + phase) % 2 == 0:
                 d.point((x, y), color)
 
 
-def dither_over(img, x0, y0, x1, y1, color, phase=0):
-    """이미 칠해진 픽셀 위에만 디더를 얹는다 (실루엣 밖으로 새지 않는다)."""
+def shade_band(img, color, x0, y0, x1, y1, axis="y", invert=False, gamma=1.0):
+    """그늘(또는 빛)을 **밀도가 변하는 띠**로 얹는다.
+
+    띠의 시작에서는 한 픽셀도 찍지 않고, 끝으로 갈수록 촘촘해진다. 이미 칠해진
+    픽셀 위에만 얹으므로 실루엣 밖으로 새지 않는다.
+
+    axis  "y" 면 위에서 아래로, "x" 면 왼쪽에서 오른쪽으로 짙어진다.
+    invert 반대 방향으로 짙어지게 한다.
+    gamma  1보다 크면 늦게 짙어진다 (띠가 얇게 느껴진다).
+    """
     px = img.load()
+    x0, y0 = max(0, int(x0)), max(0, int(y0))
+    x1, y1 = min(img.width, int(x1)), min(img.height, int(y1))
+    span = (y1 - y0) if axis == "y" else (x1 - x0)
+    if span <= 0:
+        return
+    for y in range(y0, y1):
+        for x in range(x0, x1):
+            if px[x, y][3] <= 40:
+                continue
+            pos = (y - y0) if axis == "y" else (x - x0)
+            t = pos / (span - 1) if span > 1 else 1.0
+            if invert:
+                t = 1.0 - t
+            t = t ** gamma
+            # 디더가 눈에 띄는 것은 밀도가 0.5 언저리일 때다. 그 구간을 띠의
+            # 가운데 절반으로 좁히고, 바깥은 아예 비우고 안쪽은 꽉 채운다.
+            t = (t - 0.25) / 0.5
+            if t <= 0:
+                continue
+            if t >= 1 or t > bayer(x, y):
+                px[x, y] = color + (255,)
+
+
+def tint(img, color, amount=0.5, box=None):
+    """영역을 한 색 쪽으로 섞는다 (피격 번쩍임처럼 무늬가 아니라 색이 변해야 하는 곳)."""
+    px = img.load()
+    x0, y0, x1, y1 = box or (0, 0, img.width, img.height)
     for y in range(max(0, y0), min(img.height, y1)):
         for x in range(max(0, x0), min(img.width, x1)):
+            r, g, b, a = px[x, y]
+            if a <= 40:
+                continue
+            px[x, y] = (
+                int(r + (color[0] - r) * amount),
+                int(g + (color[1] - g) * amount),
+                int(b + (color[2] - b) * amount),
+                255,
+            )
+
+
+def dither_over(img, x0, y0, x1, y1, color, phase=0):
+    """예전 방식(면 전체 50% 체커). 남은 호출부가 없어질 때까지만 둔다."""
+    px = img.load()
+    for y in range(max(0, int(y0)), min(img.height, int(y1))):
+        for x in range(max(0, int(x0)), min(img.width, int(x1))):
             if (x + y + phase) % 2 == 0 and px[x, y][3] > 40:
                 px[x, y] = color + (255,)
 
@@ -146,8 +216,16 @@ def rect(d, x0, y0, x1, y1, fill):
     d.rectangle([min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)], fill=fill)
 
 
-def outline(img, color=INK, thresh=40):
-    """실루엣 가장자리 픽셀을 테두리 색으로 바꾼다 — 지침 3번 (명확한 테두리)."""
+def darker(color, k=0.45):
+    return tuple(max(0, int(c * k)) for c in color)
+
+
+def outline(img, thresh=40, ink=None):
+    """실루엣 가장자리를 두른다 (지침 3번: 테두리가 명확할 것).
+
+    잉크 한 색으로 두르면 스티커처럼 보이므로, 기본은 **그 자리 색을 어둡게 한 것**을
+    쓴다. ink 를 주면 예전처럼 단색으로 두른다.
+    """
     px = img.load()
     w, h = img.size
     edges = []
@@ -160,7 +238,43 @@ def outline(img, color=INK, thresh=40):
                         edges.append((x, y))
                         break
     for x, y in edges:
-        px[x, y] = color + (255,)
+        if ink is not None:
+            px[x, y] = ink + (255,)
+        else:
+            r, g, b, _ = px[x, y]
+            px[x, y] = darker((r, g, b)) + (255,)
+
+
+def rim_light(img, color, thresh=40, side=0.55):
+    """실루엣의 **바깥 오른쪽** 가장자리에만 1px 역광을 넣는다.
+
+    어두운 숲에서 인물이 배경에 묻히지 않게 하는 장치다. 안쪽 가장자리(다리
+    사이 같은 곳)까지 넣으면 전부 파랗게 테두리가 지므로, 채워진 영역의
+    오른쪽 side 비율 안에 드는 픽셀만 고른다.
+    """
+    px = img.load()
+    w, h = img.size
+    xs = [x for y in range(h) for x in range(w) if px[x, y][3] > thresh]
+    if not xs:
+        return
+    x0, x1 = min(xs), max(xs)
+    limit = x0 + (x1 - x0) * side
+    hits = []
+    for y in range(1, h):
+        for x in range(w - 1):
+            if x < limit:
+                continue
+            if px[x, y][3] > thresh and px[x + 1, y][3] <= thresh:
+                if px[x, y - 1][3] > thresh:
+                    hits.append((x, y))
+    for x, y in hits:
+        r, g, b, _ = px[x, y]
+        px[x, y] = (
+            min(255, int(r + (color[0] - r) * 0.45)),
+            min(255, int(g + (color[1] - g) * 0.45)),
+            min(255, int(b + (color[2] - b) * 0.45)),
+            255,
+        )
 
 
 def sheet(frames_right, fw, fh, mirror=True):
@@ -183,126 +297,222 @@ def save(img, *path):
 
 
 # ---- 카르토 ---------------------------------------------------------------
-# 프레임 48x48, 발 기준선 y=46, 몸통 가운데 x=24. 오른쪽 보기.
+# 프레임 48x48, 발 기준선 y=46, 몸 중심 x=24. 오른쪽 보기 (왼쪽은 시트가 미러링).
+#
+# 사각형을 쌓지 않고 **실루엣 다각형**으로 그린다. 어깨는 머리보다 넓고, 외투는
+# 허리에서 좁아졌다가 자락에서 퍼지며, 부츠는 발목보다 넓다. 그래야 형태만으로
+# 무엇을 입은 사람인지 읽힌다 (docs/plans/aldebaran-4-pixelart.md 4절).
+#
 # 칸: 0 서기A, 1 서기B, 2~5 걷기, 6 점프, 7 낙하, 8 베기1, 9 베기2, 10 베기3, 11 피격
+
+FOOT_Y = 46          # 발 기준선
+HEAD_TOP = 8         # 머리 꼭대기 (bob=0일 때)
+
+
+def limb(d, p0, p1, w0, w1, color):
+    """(x0,y0)에서 (x1,y1)로 가는, 굵기가 변하는 팔다리 하나."""
+    (x0, y0), (x1, y1) = p0, p1
+    d.polygon([(x0 - w0 / 2, y0), (x0 + w0 / 2, y0),
+               (x1 + w1 / 2, y1), (x1 - w1 / 2, y1)], fill=color)
+
 
 def karto_frame(pose):
     f = blank(48, 48)
     d = ImageDraw.Draw(f)
-    cx, fy = 24, 46
-    bob = pose.get("bob", 0)          # 몸 전체의 상하 (점프 자세 등)
-    lean = pose.get("lean", 0)        # 앞뒤 기울기 (픽셀)
+    cx, fy = 24, FOOT_Y
+    bob = pose.get("bob", 0)          # 몸 전체의 상하 (걸음의 흔들림, 점프)
+    lean = pose.get("lean", 0)        # 앞으로 기울기 (베기, 돌진)
 
-    # 다리 (스케치: 단색) — legs = (앞다리 dx, 뒷다리 dx, 들어올림)
-    fdx, bdx, lift = pose.get("legs", (1, -2, 0))
-    for dx, boot_dx, up in ((bdx, bdx, lift), (fdx, fdx, 0)):
-        x0 = cx + dx - 1
-        d.rectangle([x0, fy - 9 + bob - up, x0 + 2, fy - 3 + bob - up], fill=PANTS)
-        d.rectangle([x0, fy - 3 + bob - up, x0 + 3, fy + bob - up], fill=BOOT)
-    # 몸통 (외투)
-    tx = cx + lean
-    d.rectangle([tx - 5, fy - 20 + bob, tx + 5, fy - 9 + bob], fill=COAT)
-    # 목도리
-    d.rectangle([tx - 5, fy - 20 + bob, tx + 5, fy - 18 + bob], fill=SCARF)
-    # 머리 (얼굴은 앞쪽, 머리칼은 위와 뒤)
-    hx = tx + pose.get("head", 1)
-    d.rectangle([hx - 5, fy - 29 + bob, hx + 5, fy - 20 + bob], fill=SKIN)
-    d.rectangle([hx - 5, fy - 29 + bob, hx + 5, fy - 26 + bob], fill=HAIR)
-    d.rectangle([hx - 5, fy - 26 + bob, hx - 2, fy - 20 + bob], fill=HAIR)
-    if not pose.get("hurt"):
-        d.point((hx + 3, fy - 24 + bob), fill=INK)      # 눈
-    else:
-        d.line([hx + 2, fy - 24 + bob, hx + 4, fy - 24 + bob], fill=INK)  # 감은 눈
-    # 뒷팔
+    tx = cx + lean                    # 몸통 중심
+    hip_y = fy - 14 + bob
+    waist_y = fy - 20 + bob
+    sh_y = fy - 27 + bob              # 어깨
+    head_b = fy - 29 + bob
+    head_t = fy - 38 + bob
+    hx = tx + pose.get("head", 1)     # 머리는 진행 방향으로 조금 나간다
+
+    # --- 다리와 부츠 (몸통보다 먼저: 외투 자락이 위를 덮는다) ---------------
+    # leg = (발 dx, 들어올림). 뒷다리는 그늘색으로 칠해 앞뒤가 구분되게 한다.
+    for leg, shade in ((pose.get("back_leg", (-2, 0)), True),
+                       (pose.get("front_leg", (2, 0)), False)):
+        dx, lift = leg
+        pants = PANTS_SHADE if shade else PANTS
+        boot = BOOT_SHADE if shade else BOOT
+        knee = (tx + dx * 0.4, hip_y + 6 - lift * 0.6)
+        ankle = (tx + dx, fy - 4 - lift)
+        limb(d, (tx + dx * 0.2, hip_y - 1), knee, 5, 4, pants)
+        limb(d, knee, ankle, 4, 4, pants)
+        # 부츠: 발목보다 넓고 앞쪽으로 코가 나온다
+        by = fy - lift
+        d.polygon([(ankle[0] - 2.5, ankle[1]), (ankle[0] + 2.5, ankle[1]),
+                   (ankle[0] + 4, by), (ankle[0] - 3, by)], fill=boot)
+
+    # --- 뒷팔 (몸통 뒤) ------------------------------------------------------
     bax, bay = pose.get("backarm", (-5, -16))
-    rect(d, tx + bax - 1, fy + bay + bob, tx + bax + 1, fy + bay + 6 + bob, COAT_SHADE)
-    # 앞팔과 단검 — arm = (손 dx, 손 dy), dagger = (dx, dy, 길이, 세로 여부)
+    limb(d, (tx - 4, sh_y + 2), (tx + bax, fy + bay + bob), 4, 3, COAT_SHADE)
+
+    # --- 몸통: 어깨에서 허리로 좁아졌다 자락에서 퍼지는 외투 ----------------
+    d.polygon([
+        (tx - 7, sh_y), (tx + 7, sh_y),              # 어깨 (머리보다 넓다)
+        (tx + 5, waist_y), (tx + 6, hip_y + 1),      # 허리 → 자락 (앞)
+        (tx - 6, hip_y + 1), (tx - 5, waist_y),      # 자락 → 허리 (뒤)
+    ], fill=COAT)
+
+    # --- 목과 머리 ----------------------------------------------------------
+    d.rectangle([tx - 2, sh_y - 2, tx + 2, sh_y], fill=SKIN_SHADE)   # 목 (2px)
+    d.ellipse([hx - 4, head_t, hx + 4, head_b], fill=SKIN)
+    # 머리칼이 정수리와 뒤통수와 옆을 덮고, 앞쪽에 얼굴 만큼만 남긴다
+    d.chord([hx - 4, head_t, hx + 4, head_b], 140, 375, fill=HAIR)
+    d.rectangle([hx - 4, head_t + 3, hx - 1, head_t + 8], fill=HAIR)  # 뒷머리
+    d.polygon([(hx - 1, head_t + 2), (hx + 4, head_t + 3),
+               (hx + 4, head_t + 4), (hx - 1, head_t + 4)], fill=HAIR)  # 앞머리
+    if pose.get("hurt"):
+        d.line([hx + 1, head_t + 6, hx + 3, head_t + 6], fill=INK)   # 감은 눈
+    else:
+        d.rectangle([hx + 2, head_t + 5, hx + 2, head_t + 6], fill=INK)   # 눈
+    d.point((hx + 3, head_b - 1), fill=SKIN_SHADE)                   # 턱 그늘
+
+    # 목도리: 외투의 목선 위에 얹고 뒤로 한 자락 날린다
+    d.rectangle([tx - 5, sh_y, tx + 5, sh_y + 1], fill=SCARF)
+    d.polygon([(tx - 4, sh_y), (tx - 8 - lean, sh_y + 3),
+               (tx - 7 - lean, sh_y + 5), (tx - 3, sh_y + 2)], fill=SCARF)
+
+    # --- 앞팔과 단검 --------------------------------------------------------
+    # arm = (손 dx, 손 dy). 팔꿈치는 어깨와 손의 가운데에서 조금 바깥으로 나간다.
     ax, ay = pose.get("arm", (6, -14))
-    rect(d, tx + 3, fy - 17 + bob, tx + ax, fy + ay + 2 + bob, COAT)
-    rect(d, tx + ax - 1, fy + ay + bob, tx + ax + 1, fy + ay + 2 + bob, SKIN)
+    hand = (tx + ax, fy + ay + bob)
+    elbow = ((tx + 4 + hand[0]) / 2 + 1, (sh_y + 3 + hand[1]) / 2)
+    limb(d, (tx + 4, sh_y + 3), elbow, 5, 4, COAT)
+    limb(d, elbow, hand, 4, 3, COAT)
+    d.ellipse([hand[0] - 1.5, hand[1] - 1.5, hand[0] + 1.5, hand[1] + 1.5], fill=SKIN)
+
     dg = pose.get("dagger")
     if dg:
         dgx, dgy, ln, vert = dg
         if vert:
-            d.rectangle([tx + dgx, fy + dgy + bob, tx + dgx + 1, fy + dgy + ln + bob], fill=BLADE)
+            d.polygon([(hand[0] + dgx - 1, hand[1] + dgy),
+                       (hand[0] + dgx + 1, hand[1] + dgy),
+                       (hand[0] + dgx, hand[1] + dgy + ln)], fill=BLADE)
         else:
-            d.rectangle([tx + dgx, fy + dgy + bob, tx + dgx + ln, fy + dgy + 1 + bob], fill=BLADE)
+            d.polygon([(hand[0] + dgx, hand[1] + dgy - 1),
+                       (hand[0] + dgx + ln, hand[1] + dgy),
+                       (hand[0] + dgx, hand[1] + dgy + 1)], fill=BLADE)
 
-    # 명암 (디더 덧칠): 광원은 왼쪽 위 — 몸의 오른쪽 아래를 어둡게
-    dither_over(f, tx, fy - 20 + bob, tx + 6, fy - 9 + bob, COAT_SHADE)
-    dither_over(f, cx - 4, fy - 9 + bob, cx + 5, fy + bob, PANTS_SHADE)
+    # --- 명암: 광원은 왼쪽 위. 오른쪽 아래로 갈수록 그늘이 촘촘해진다 -------
+    shade_band(f, COAT_SHADE, tx - 2, sh_y + 3, tx + 8, hip_y + 2, axis="x", gamma=1.4)
+    shade_band(f, COAT_SHADE, tx - 7, waist_y, tx + 8, hip_y + 2, axis="y", gamma=1.6)
+    shade_band(f, PANTS_SHADE, tx - 6, hip_y + 2, tx + 7, fy, axis="y", gamma=1.5)
+    shade_band(f, HAIR_LIGHT, hx - 4, head_t, hx + 5, head_t + 4, axis="y",
+               invert=True, gamma=1.2)
+    if pose.get("hurt"):
+        tint(f, SKIN, 0.35)
 
     outline(f)
+    rim_light(f, RIM)
 
-    # 검기 (테두리 뒤에 얹는다 — 빛이라 테두리가 없다)
+    # 검기 (테두리 뒤에 얹는다. 빛이라 테두리가 없다)
     for arc in pose.get("slash", []):
         x0, y0, x1, y1, start, end = arc
         ImageDraw.Draw(f).arc([x0, y0 + bob, x1, y1 + bob], start, end, fill=GLOW, width=2)
     return f
 
 
+# 걷기 4프레임: 접지 → 최저점 → 반대 접지 → 최저점. 몸이 1px 위아래로 흔들리고
+# 팔은 다리와 반대로 흔들린다. (다리 = (발 dx, 들어올림))
+WALK = [
+    {"front_leg": (4, 0), "back_leg": (-4, 0), "bob": 0, "arm": (4, -15), "backarm": (-6, -15)},
+    {"front_leg": (2, 0), "back_leg": (-1, 3), "bob": 1, "arm": (6, -14), "backarm": (-4, -16)},
+    {"front_leg": (-4, 0), "back_leg": (4, 0), "bob": 0, "arm": (7, -14), "backarm": (-3, -16)},
+    {"front_leg": (-1, 3), "back_leg": (2, 0), "bob": 1, "arm": (5, -15), "backarm": (-5, -15)},
+]
+
+
 def make_karto():
     frames = [
         karto_frame({}),                                                    # 0 서기A
-        karto_frame({"bob": 1}),                                            # 1 서기B
-        karto_frame({"legs": (4, -4, 0)}),                                  # 2 걷기1
-        karto_frame({"legs": (2, -1, 1)}),                                  # 3 걷기2
-        karto_frame({"legs": (-2, 3, 0)}),                                  # 4 걷기3
-        karto_frame({"legs": (1, -1, 1)}),                                  # 5 걷기4
-        karto_frame({"legs": (3, -4, 3), "bob": -2, "arm": (7, -20),        # 6 점프
-                     "backarm": (-6, -20)}),
-        karto_frame({"legs": (2, -3, 1), "arm": (7, -22),                   # 7 낙하
-                     "backarm": (-6, -22)}),
-        karto_frame({"legs": (4, -4, 0), "lean": 2, "arm": (10, -15),      # 8 베기1
-                     "dagger": (10, -16, 8, False),
+        karto_frame({"bob": 1, "arm": (6, -13)}),                           # 1 서기B (숨)
+    ]
+    frames += [karto_frame(p) for p in WALK]                                # 2~5 걷기
+    frames += [
+        karto_frame({"front_leg": (3, 4), "back_leg": (-3, 1), "bob": -2,   # 6 점프
+                     "arm": (7, -20), "backarm": (-6, -20)}),
+        karto_frame({"front_leg": (2, 1), "back_leg": (-3, 0), "bob": 1,    # 7 낙하
+                     "arm": (7, -22), "backarm": (-6, -21)}),
+        karto_frame({"front_leg": (4, 0), "back_leg": (-4, 0), "lean": 2,   # 8 베기1
+                     "arm": (11, -16), "dagger": (1, -1, 8, False),
                      "slash": [(28, 20, 44, 40, 300, 60)]}),
-        karto_frame({"legs": (4, -4, 0), "lean": 2, "arm": (10, -12),      # 9 베기2
-                     "dagger": (10, -12, 8, False),
+        karto_frame({"front_leg": (4, 0), "back_leg": (-4, 0), "lean": 2,   # 9 베기2
+                     "arm": (11, -12), "dagger": (1, 0, 8, False),
                      "slash": [(28, 18, 44, 38, 120, 210)]}),
-        karto_frame({"legs": (5, -5, 0), "lean": 3, "arm": (11, -14),      # 10 베기3
-                     "dagger": (11, -15, 9, False),
+        karto_frame({"front_leg": (5, 0), "back_leg": (-5, 0), "lean": 3,   # 10 베기3
+                     "arm": (12, -14), "dagger": (1, -1, 9, False),
                      "slash": [(26, 16, 46, 40, 300, 60), (26, 16, 46, 40, 120, 210)]}),
-        karto_frame({"legs": (3, -3, 0), "lean": -3, "head": -1,           # 11 피격
-                     "hurt": True, "arm": (6, -20), "backarm": (-7, -19)}),
+        karto_frame({"front_leg": (3, 0), "back_leg": (-3, 0), "lean": -3,  # 11 피격
+                     "head": -1, "hurt": True, "arm": (5, -21),
+                     "backarm": (-7, -20)}),
     ]
     save(sheet(frames, 48, 48), OUT, "karto.png")
 
 
 # ---- 몬스터 ---------------------------------------------------------------
+# 셋은 실루엣만으로 구분되어야 한다 (docs/plans/aldebaran-4-pixelart.md 4.3절).
+#   전갈거미  낮고 넓다. 마디가 셋이고 다리가 꺾여 있으며 꼬리가 위로 말린다.
+#   늑대 인간 곧추서서 굽은 등. 어깨의 갈기가 실루엣을 키운다.
+#   가면 원숭이 작고 둥글다. 흰 가면이 먼저 보이고 등에 배낭이 있다.
+
 
 def spider_frame(pose):
-    """전갈거미 48x32. 낮고 넓은 몸, 다리 여덟, 앞의 큰 턱, 위로 말린 독침 꼬리."""
+    """밀림 전갈거미 48x32. 발 기준선 y=30, 몸 중심 x=22. 오른쪽 보기."""
     f = blank(48, 32)
     d = ImageDraw.Draw(f)
     cx, fy = 22, 30
-    crouch = pose.get("crouch", 0)
-    # 몸통 (스케치)
-    d.ellipse([cx - 11, fy - 12 + crouch, cx + 9, fy - 2], fill=SPIDER)
-    # 머리
-    d.ellipse([cx + 6, fy - 9 + crouch, cx + 15, fy - 2], fill=SPIDER)
-    # 다리 (걸음 위상에 따라 벌림)
+    crouch = pose.get("crouch", 0)      # 움츠림 (공격 선딜레이)
+    by = fy - 8 + crouch                # 몸통 중심선
+
+    # --- 다리 여덟: 무릎이 몸보다 높이 솟았다가 발끝이 땅으로 내려온다 -------
     ph = pose.get("legs", 0)
     for i in range(4):
-        sx = cx - 8 + i * 5
-        spread = 3 if (i + ph) % 2 == 0 else 1
-        d.line([sx, fy - 5, sx - spread, fy], fill=SPIDER_SHADE, width=2)
-        d.line([sx + 2, fy - 5, sx + 2 + spread, fy], fill=SPIDER_SHADE, width=2)
-    # 턱 (공격이면 크게 벌린다)
+        base = cx - 6 + i * 4
+        up = 8 if (i + ph) % 2 == 0 else 10     # 무릎이 몸통 위로 솟는다 (걸음 위상)
+        for side, spread in ((1, 5), (-1, 3)):  # 앞다리 쪽이 더 멀리 짚는다
+            knee = (base + side * 4, by - up)
+            foot = (base + side * (spread + 6), fy)
+            d.line([base, by - 1, knee[0], knee[1]], fill=SPIDER, width=2)
+            d.line([knee[0], knee[1], foot[0], foot[1]], fill=SPIDER, width=1)
+
+    # --- 꼬리: 마디 셋이 뒤에서 위로 말리고 끝에 독침 ----------------------
+    tail = [(cx - 10, by - 1), (cx - 14, by - 4), (cx - 16, by - 9), (cx - 15, by - 13)]
+    for i, (px, py) in enumerate(tail):
+        r = 3 - i * 0.5
+        d.ellipse([px - r, py - r, px + r, py + r], fill=SPIDER_SHADE if i else SPIDER)
+    d.polygon([(tail[-1][0] - 1, tail[-1][1] - 1), (tail[-1][0] + 2, tail[-1][1] - 2),
+               (tail[-1][0] + 1, tail[-1][1] + 2)], fill=STING)
+
+    # --- 몸통 마디 셋: 배, 가슴, 머리 ---------------------------------------
+    d.ellipse([cx - 11, by - 5, cx - 1, by + 4], fill=SPIDER)          # 배
+    d.ellipse([cx - 3, by - 4, cx + 7, by + 4], fill=SPIDER)           # 가슴
+    d.ellipse([cx + 5, by - 3, cx + 13, by + 3], fill=SPIDER)          # 머리
+    d.line([cx - 2, by - 4, cx - 2, by + 3], fill=SPIDER_SHADE)        # 마디 경계
+    d.line([cx + 5, by - 3, cx + 5, by + 2], fill=SPIDER_SHADE)
+    d.point((cx - 7, by - 3), fill=SPIDER_BELLY)                       # 등의 무늬
+    d.point((cx - 5, by - 1), fill=SPIDER_BELLY)
+
+    # --- 큰 턱: 공격 프레임에서 벌어진다 ------------------------------------
     jaw = pose.get("jaw", 2)
-    d.line([cx + 14, fy - 6 + crouch, cx + 14 + jaw + 2, fy - 8 - jaw + crouch], fill=SPIDER_BELLY, width=2)
-    d.line([cx + 14, fy - 4 + crouch, cx + 14 + jaw + 2, fy - 2 + jaw + crouch], fill=SPIDER_BELLY, width=2)
-    # 독침 꼬리 (뒤에서 위로 말림)
-    d.arc([cx - 18, fy - 20 + crouch, cx - 4, fy - 4 + crouch], 90, 250, fill=SPIDER, width=3)
-    d.rectangle([cx - 18, fy - 14 + crouch, cx - 16, fy - 11 + crouch], fill=STING)
-    # 눈
-    d.point((cx + 10, fy - 7 + crouch), fill=SPIDER_EYE)
-    d.point((cx + 12, fy - 6 + crouch), fill=SPIDER_EYE)
-    # 명암: 등에 밝은 점, 배 쪽 어둡게
-    dither_over(f, cx - 10, fy - 12 + crouch, cx + 8, fy - 8 + crouch, SPIDER_BELLY)
-    dither_over(f, cx - 10, fy - 5, cx + 14, fy, SPIDER_SHADE)
+    for sgn in (-1, 1):
+        tip = (cx + 15 + jaw, by + sgn * (2 + jaw))
+        d.polygon([(cx + 11, by + sgn), (cx + 13, by + sgn * 3),
+                   (tip[0], tip[1]), (tip[0], tip[1] - sgn * 2)], fill=SPIDER_BELLY)
+    d.point((cx + 9, by - 1), fill=SPIDER_EYE)
+    d.point((cx + 11, by), fill=SPIDER_EYE)
+
+    shade_band(f, SPIDER_SHADE, cx - 12, by - 1, cx + 14, by + 5, axis="y", gamma=1.4)
+    shade_band(f, SPIDER_BELLY, cx - 11, by - 6, cx + 12, by - 4, axis="y",
+               invert=True, gamma=1.1)
     if pose.get("hurt"):
-        dither_over(f, 0, 0, 48, 32, SPIDER_BELLY, phase=1)
+        tint(f, SPIDER_BELLY, 0.45)
     outline(f)
+    rim_light(f, RIM, side=0.82)     # 다리마다 걸리지 않게 앞쪽 끝에만
     return f
 
 
@@ -317,53 +527,103 @@ def make_spider():
 
 
 def wolf_frame(pose):
-    """늑대 인간 48x48. 곧추선 야수 — 굽은 등, 붉은 눈, 발톱."""
+    """늑대 인간 48x48. 발 기준선 y=46, 몸 중심 x=22. 곧추선 야수."""
     f = blank(48, 48)
     d = ImageDraw.Draw(f)
     cx, fy = 22, 46
     lean = pose.get("lean", 0)          # 앞으로 기울기 (돌격)
-    # 다리 (digitigrade — 무릎이 뒤로 꺾임)
     ph = pose.get("legs", 0)
-    for dx in (-4 + ph, 3 - ph):
-        d.line([cx + dx, fy - 14, cx + dx - 2, fy - 7], fill=WOLF, width=3)
-        d.line([cx + dx - 2, fy - 7, cx + dx + 1, fy], fill=WOLF, width=3)
-        d.rectangle([cx + dx - 1, fy - 2, cx + dx + 3, fy], fill=WOLF_SHADE)
-    # 몸통 (굽은 등)
-    d.ellipse([cx - 8 + lean, fy - 30, cx + 8 + lean, fy - 10], fill=WOLF)
-    d.ellipse([cx - 4 + lean, fy - 26, cx + 7 + lean, fy - 14], fill=WOLF_BELLY)
-    # 머리 (주둥이가 앞으로)
+
+    hip_y = fy - 20
+    sh_y = fy - 34 + pose.get("crouch", 0)
+
+    # --- 뒷다리 둘: 무릎이 앞, 뒤꿈치가 뒤로 꺾이는 야수의 다리 -------------
+    for dx, shade in ((-4 + ph, True), (3 - ph, False)):
+        col = WOLF_SHADE if shade else WOLF
+        knee = (cx + dx + 3, hip_y + 7)
+        hock = (cx + dx - 2, hip_y + 15)
+        limb(d, (cx + dx, hip_y), knee, 7, 5, col)
+        limb(d, knee, hock, 5, 4, col)
+        d.polygon([(hock[0] - 2, hock[1]), (hock[0] + 2, hock[1]),
+                   (hock[0] + 5, fy), (hock[0] - 2, fy)], fill=WOLF_SHADE)
+
+    # --- 꼬리 ---------------------------------------------------------------
+    d.line([cx - 7, hip_y - 2, cx - 13, hip_y - 8], fill=WOLF, width=3)
+    d.line([cx - 13, hip_y - 8, cx - 15, hip_y - 15], fill=WOLF_SHADE, width=2)
+
+    # --- 몸통: 엉덩이에서 어깨로 굽어 오르는 등 -----------------------------
+    d.polygon([
+        (cx - 7, hip_y + 2), (cx + 6, hip_y + 1),            # 엉덩이
+        (cx + 8 + lean, sh_y + 8), (cx + 7 + lean, sh_y + 1),  # 가슴
+        (cx - 4 + lean, sh_y - 1), (cx - 8, hip_y - 6),        # 굽은 등
+    ], fill=WOLF)
+    d.ellipse([cx - 2 + lean, sh_y + 4, cx + 8 + lean, hip_y + 2], fill=WOLF_BELLY)
+
+    # --- 갈기: 어깨를 키워 실루엣을 늑대로 만든다 ---------------------------
+    for i in range(5):
+        x = cx - 5 + i * 3 + lean
+        d.polygon([(x, sh_y + 1), (x + 3, sh_y + 3), (x - 1, sh_y + 7)], fill=WOLF_SHADE)
+
+    # --- 머리: 주둥이가 앞으로, 귀가 뒤로 ------------------------------------
     hx = cx + 6 + lean * 2
-    hy = fy - 34 + pose.get("headdown", 0)
+    hy = sh_y - 6 + pose.get("headdown", 0)
     d.ellipse([hx - 5, hy, hx + 4, hy + 8], fill=WOLF)
-    d.rectangle([hx + 3, hy + 3, hx + 9, hy + 6], fill=WOLF)          # 주둥이
-    d.polygon([(hx - 4, hy + 1), (hx - 2, hy - 4), (hx, hy + 1)], fill=WOLF)   # 귀
-    d.point((hx + 1, hy + 3), fill=WOLF_EYE)
-    d.point((hx + 8, hy + 5), fill=INK)                                # 코
-    # 팔 — attack이면 머리 위로 치켜든다
+    d.polygon([(hx + 2, hy + 2), (hx + 11, hy + 4), (hx + 11, hy + 7),
+               (hx + 2, hy + 7)], fill=WOLF)                     # 주둥이
+    d.polygon([(hx - 4, hy + 1), (hx - 2, hy - 5), (hx + 1, hy + 1)], fill=WOLF)  # 귀
+    d.polygon([(hx - 1, hy), (hx + 1, hy - 4), (hx + 3, hy + 1)], fill=WOLF_SHADE)
+    d.point((hx + 2, hy + 3), fill=WOLF_EYE)
+    d.rectangle([hx + 10, hy + 4, hx + 11, hy + 5], fill=INK)     # 코
+    if pose.get("raise"):                                          # 이빨 (공격)
+        for i in range(3):
+            d.point((hx + 5 + i * 2, hy + 7), fill=CLAW)
+
+    # --- 팔: 내리찍기면 머리 위로, 아니면 앞으로 ----------------------------
     if pose.get("raise"):
-        d.line([cx + 5 + lean, fy - 26, cx + 12 + lean, fy - 38], fill=WOLF, width=3)
+        wrist = (cx + 12 + lean, sh_y - 8)
+        limb(d, (cx + 5 + lean, sh_y + 4), wrist, 6, 4, WOLF)
         for i in range(3):
-            d.line([cx + 11 + lean + i * 2, fy - 38, cx + 13 + lean + i * 2, fy - 42], fill=CLAW, width=1)
+            d.line([wrist[0] + i * 2 - 1, wrist[1], wrist[0] + i * 2, wrist[1] - 4], fill=CLAW)
     else:
-        d.line([cx + 5 + lean, fy - 24, cx + 11 + lean * 2, fy - 16], fill=WOLF, width=3)
+        wrist = (cx + 10 + lean * 2, sh_y + 14)
+        limb(d, (cx + 5 + lean, sh_y + 5), wrist, 6, 4, WOLF)
         for i in range(3):
-            d.line([cx + 10 + lean * 2 + i, fy - 16, cx + 11 + lean * 2 + i, fy - 12], fill=CLAW, width=1)
-    # 꼬리
-    d.arc([cx - 18, fy - 22, cx - 4, fy - 8], 120, 260, fill=WOLF, width=3)
-    # 명암
-    dither_over(f, cx - 8 + lean, fy - 18, cx + 9 + lean, fy - 10, WOLF_SHADE)
-    dither_over(f, cx - 8 + lean, fy - 30, cx + 2 + lean, fy - 24, WOLF_SHADE, phase=1)
+            d.line([wrist[0] + i - 1, wrist[1], wrist[0] + i + 1, wrist[1] + 3], fill=CLAW)
+
+    shade_band(f, WOLF_SHADE, cx - 9, hip_y - 6, cx + 10 + lean, hip_y + 4,
+               axis="y", gamma=1.4)
+    shade_band(f, WOLF_BELLY, cx - 6, sh_y - 2, cx + 10 + lean, sh_y + 6,
+               axis="y", invert=True, gamma=1.5)
     if pose.get("hurt"):
-        dither_over(f, 0, 0, 48, 48, WOLF_BELLY, phase=1)
+        tint(f, WOLF_BELLY, 0.45)
     outline(f)
+    rim_light(f, RIM)
     return f
+
+
+def make_blackwolf():
+    """검은 늑대. 마을의 우두머리라 늑대보다 크고 어둡고 눈이 밝다."""
+    frames = []
+    for pose in ({"legs": 0}, {"legs": 3},
+                 {"legs": 4, "lean": 3, "headdown": 2, "crouch": 1},
+                 {"legs": 1, "raise": True},
+                 {"legs": 1, "lean": -2, "hurt": True}):
+        f = wolf_frame(pose)
+        px = f.load()
+        for y in range(f.height):
+            for x in range(f.width):
+                r, g, b, a = px[x, y]
+                if a > 40 and (r, g, b) != WOLF_EYE:
+                    px[x, y] = (int(r * 0.55), int(g * 0.55), int(b * 0.62), a)
+        frames.append(f)
+    save(sheet(frames, 48, 48), OUT, "blackwolf.png")
 
 
 def make_wolf():
     frames = [
         wolf_frame({"legs": 0}),                                  # 0 걷기A
         wolf_frame({"legs": 3}),                                  # 1 걷기B
-        wolf_frame({"legs": 4, "lean": 4, "headdown": 4}),        # 2 돌격
+        wolf_frame({"legs": 4, "lean": 3, "headdown": 2, "crouch": 1}),  # 2 돌격
         wolf_frame({"legs": 1, "raise": True}),                   # 3 내리찍기
         wolf_frame({"legs": 1, "lean": -2, "hurt": True}),        # 4 피격
     ]
@@ -371,41 +631,65 @@ def make_wolf():
 
 
 def monkey_frame(pose):
-    """가면 원숭이 짐도둑 48x48. 흰 가면, 등의 배낭."""
+    """가면 원숭이 짐도둑 48x48. 발 기준선 y=46, 몸 중심 x=24."""
     f = blank(48, 48)
     d = ImageDraw.Draw(f)
     cx, fy = 24, 46
-    # 다리 (달리기)
     ph = pose.get("legs", 0)
-    for dx in (-3 + ph * 2, 2 - ph * 2):
-        d.line([cx + dx, fy - 10, cx + dx + 1, fy], fill=MONKEY, width=3)
-    # 배낭 (등 뒤 — 몸통보다 먼저 그린다)
+    hip_y = fy - 12
+    sh_y = fy - 24
+
+    # --- 다리 (짧고 굽었다) --------------------------------------------------
+    for dx, shade in ((-3 + ph * 2, True), (2 - ph * 2, False)):
+        col = MONKEY_SHADE if shade else MONKEY
+        knee = (cx + dx + 1, hip_y + 5)
+        limb(d, (cx + dx, hip_y), knee, 5, 4, col)
+        limb(d, knee, (cx + dx - 1, fy - 1), 4, 3, col)
+        d.polygon([(cx + dx - 3, fy - 2), (cx + dx + 3, fy - 2),
+                   (cx + dx + 3, fy), (cx + dx - 4, fy)], fill=col)
+
+    # --- 배낭 (등 뒤: 몸통보다 먼저 그린다) ---------------------------------
     if pose.get("bag", True):
-        d.rectangle([cx - 14, fy - 26, cx - 5, fy - 12], fill=BAG)
-        d.line([cx - 13, fy - 22, cx - 6, fy - 22], fill=BAG_SHADE, width=1)
-        dither_over(f, cx - 14, fy - 19, cx - 5, fy - 12, BAG_SHADE)
-    # 몸통
-    d.ellipse([cx - 7, fy - 24, cx + 6, fy - 8], fill=MONKEY)
-    # 꼬리
-    d.arc([cx - 16, fy - 18, cx - 2, fy - 4], 100, 250, fill=MONKEY, width=2)
-    # 머리와 가면
-    hy = fy - 32
-    d.ellipse([cx - 5, hy, cx + 7, hy + 10], fill=MONKEY)
-    d.ellipse([cx - 1, hy + 1, cx + 7, hy + 9], fill=MASK)          # 가면
-    d.point((cx + 2, hy + 4), fill=INK)
+        d.polygon([(cx - 14, sh_y + 3), (cx - 5, sh_y + 1),
+                   (cx - 4, hip_y - 1), (cx - 13, hip_y + 1)], fill=BAG)
+        d.line([cx - 13, sh_y + 8, cx - 5, sh_y + 7], fill=BAG_SHADE)
+        shade_band(f, BAG_SHADE, cx - 14, sh_y + 8, cx - 4, hip_y + 1, axis="y", gamma=1.3)
+
+    # --- 몸통 ---------------------------------------------------------------
+    d.ellipse([cx - 7, sh_y + 2, cx + 6, hip_y + 2], fill=MONKEY)
+    d.ellipse([cx - 3, sh_y + 6, cx + 5, hip_y], fill=MONKEY_SHADE)
+    # 배낭 끈이 어깨를 지나간다
+    if pose.get("bag", True):
+        d.line([cx - 5, sh_y + 3, cx + 2, sh_y + 5], fill=BAG_SHADE, width=1)
+
+    # --- 꼬리 (길게 말린다) --------------------------------------------------
+    d.arc([cx - 18, hip_y - 8, cx - 2, hip_y + 6], 100, 250, fill=MONKEY, width=2)
+    d.arc([cx - 20, hip_y - 14, cx - 10, hip_y - 4], 60, 220, fill=MONKEY_SHADE, width=2)
+
+    # --- 머리: 가면이 얼굴보다 커서 먼저 보인다 -----------------------------
+    hy = fy - 34
+    d.ellipse([cx - 6, hy, cx + 6, hy + 11], fill=MONKEY)        # 머리통
+    d.polygon([(cx - 6, hy + 2), (cx - 4, hy - 2), (cx - 2, hy + 2)], fill=MONKEY_SHADE)  # 귀
+    d.polygon([(cx + 3, hy + 1), (cx + 6, hy - 2), (cx + 7, hy + 3)], fill=MONKEY_SHADE)
+    d.ellipse([cx - 2, hy + 1, cx + 8, hy + 10], fill=MASK)      # 흰 가면
+    d.point((cx + 1, hy + 4), fill=INK)
     d.point((cx + 5, hy + 4), fill=INK)
-    d.line([cx + 3, hy + 7, cx + 5, hy + 7], fill=SPIDER_EYE)       # 가면의 붉은 무늬
-    # 팔 — 던지기면 앞으로 뻗고 돌을 쥔다
+    d.line([cx + 1, hy + 2, cx + 7, hy + 3], fill=SPIDER_EYE)    # 이마를 가로지르는 표식
+    d.line([cx + 2, hy + 8, cx + 5, hy + 8], fill=MONKEY_SHADE)  # 가면의 입 자국
+
+    # --- 팔: 던지기면 돌을 쥐고 뒤로 젖힌다 ---------------------------------
     if pose.get("throw"):
-        d.line([cx + 3, fy - 20, cx + 13, fy - 26], fill=MONKEY, width=2)
-        d.ellipse([cx + 12, fy - 30, cx + 17, fy - 25], fill=STONE)
+        wrist = (cx + 12, sh_y - 4)
+        limb(d, (cx + 3, sh_y + 5), wrist, 5, 3, MONKEY)
+        d.ellipse([wrist[0] - 1, wrist[1] - 4, wrist[0] + 4, wrist[1] + 1], fill=STONE)
     else:
-        d.line([cx + 3, fy - 20, cx + 9, fy - 13], fill=MONKEY, width=2)
-    # 명암
-    dither_over(f, cx - 6, fy - 14, cx + 7, fy - 8, MONKEY_SHADE)
+        limb(d, (cx + 3, sh_y + 5), (cx + 9, hip_y - 1), 5, 3, MONKEY)
+
+    shade_band(f, MONKEY_SHADE, cx - 8, sh_y + 6, cx + 7, fy, axis="y", gamma=1.5)
     if pose.get("hurt"):
-        dither_over(f, 0, 0, 48, 48, MASK, phase=1)
+        tint(f, MASK, 0.45)
     outline(f)
+    rim_light(f, RIM)
     return f
 
 
@@ -470,11 +754,16 @@ def t_mud_top():
 
 
 def t_mud_fill():
+    """진흙 속살. 면 전체를 체커로 덮지 않고 잡티만 성글게 흩는다."""
     f = Image.new("RGBA", (16, 16), MUD)
     d = ImageDraw.Draw(f)
-    dither(d, 0, 0, 16, 16, MUD_SHADE, phase=1)
-    d.point((4, 6), fill=MUD_SHADE)
-    d.point((11, 12), fill=MOSS_SHADE)
+    for y in range(16):
+        for x in range(16):
+            if hash_noise(x + 40, y + 90) > 0.86:
+                d.point((x, y), fill=MUD_SHADE)
+    d.line([3, 5, 6, 5], fill=MUD_SHADE)
+    d.line([10, 11, 12, 11], fill=MUD_SHADE)
+    d.point((13, 3), fill=MOSS_SHADE)
     return f
 
 
@@ -489,11 +778,16 @@ def t_rock_top():
 
 
 def t_rock_fill():
+    """바위 속살. 결을 몇 줄 넣고 잡티는 성글게."""
     f = Image.new("RGBA", (16, 16), ROCK)
     d = ImageDraw.Draw(f)
-    dither(d, 0, 0, 16, 16, ROCK_SHADE, phase=1)
-    d.line([3, 5, 7, 5], fill=ROCK_SHADE)
-    d.line([10, 11, 13, 11], fill=ROCK_SHADE)
+    for y in range(16):
+        for x in range(16):
+            if hash_noise(x + 7, y + 3) > 0.88:
+                d.point((x, y), fill=ROCK_SHADE)
+    d.line([2, 4, 7, 4], fill=ROCK_SHADE)
+    d.line([9, 10, 14, 10], fill=ROCK_SHADE)
+    d.line([4, 12, 8, 12], fill=ROCK_SHADE)
     return f
 
 
@@ -658,6 +952,151 @@ def t_pebble():
     return f
 
 
+def t_mud_top_var(kind):
+    """진흙 윗면 변형. 같은 도장을 되풀이하지 않도록 셋을 섞어 쓴다."""
+    f = t_mud_top()
+    d = ImageDraw.Draw(f)
+    if kind == 1:
+        for x in (2, 3, 9, 10, 11):                 # 풀 포기
+            d.line([x, 3, x - 1, 0], fill=MOSS_SHADE)
+        d.point((13, 5), fill=MUD_SHADE)
+    else:
+        d.ellipse([4, 4, 7, 6], fill=STONE_SHADE)   # 박힌 잔돌
+        d.point((5, 4), fill=STONE)
+        d.line([11, 2, 13, 2], fill=MOSS_SHADE)
+    return f
+
+
+def t_rock_top_var():
+    f = t_rock_top()
+    d = ImageDraw.Draw(f)
+    d.line([3, 4, 6, 4], fill=ROCK_SHADE)
+    d.line([9, 6, 12, 6], fill=ROCK_SHADE)
+    d.point((13, 3), fill=ROCK_LIGHT)
+    return f
+
+
+def t_rock_edge(side):
+    """바위 턱의 끝. 잘린 단면 대신 모서리가 깎여 보이게 한다."""
+    f = t_rock_top()
+    d = ImageDraw.Draw(f)
+    if side == "left":
+        d.polygon([(0, 0), (4, 0), (0, 6)], fill=(0, 0, 0, 0))
+        d.line([0, 6, 4, 0], fill=ROCK_LIGHT)
+        d.line([1, 8, 1, 15], fill=ROCK_SHADE)
+    else:
+        d.polygon([(11, 0), (15, 0), (15, 6)], fill=(0, 0, 0, 0))
+        d.line([11, 0, 15, 6], fill=ROCK_SHADE)
+        d.line([14, 8, 14, 15], fill=ROCK_SHADE)
+    return f
+
+
+def t_canopy_bare():
+    """마른 우듬지. 둥근 덩어리가 아니라 잔가지가 퍼진 모양 (원경의 나무와 맞춘다)."""
+    f = blank(16, 16)
+    d = ImageDraw.Draw(f)
+    d.polygon([(6, 15), (9, 15), (9, 8), (6, 8)], fill=TREE)
+    for ang, ln in ((-2.6, 7), (-2.0, 6), (-1.5, 8), (-1.0, 6), (-0.5, 7)):
+        import math as _m
+        d.line([7.5, 9, 7.5 + _m.cos(ang) * ln, 9 + _m.sin(ang) * ln],
+               fill=TREE, width=2)
+    shade_band(f, TREE_SHADE, 8, 0, 16, 16, axis="x", gamma=1.2)
+    outline(f)
+    return f
+
+
+def t_paving():
+    """옛 길의 포석. 많이 밟혀 다져져 주변보다 채도가 낮다 (원안 4.2.1절)."""
+    f = Image.new("RGBA", (16, 16), (86, 82, 78))
+    d = ImageDraw.Draw(f)
+    d.rectangle([0, 0, 15, 2], fill=(104, 100, 94))
+    for (x0, y0, x1, y1) in ((0, 3, 6, 8), (8, 3, 15, 8), (0, 10, 9, 15), (11, 10, 15, 15)):
+        d.rectangle([x0, y0, x1, y1], fill=(96, 92, 86))
+        d.line([x0, y1, x1, y1], fill=(66, 62, 60))
+        d.line([x1, y0, x1, y1], fill=(66, 62, 60))
+    shade_band(f, (70, 66, 62), 0, 9, 16, 16, axis="y", gamma=1.4)
+    return f
+
+
+def t_pillar(top):
+    """부서진 레굴루스 석주. 위 칸은 부러진 단면이다."""
+    f = blank(16, 16)
+    d = ImageDraw.Draw(f)
+    d.rectangle([4, 0 if not top else 3, 11, 15], fill=STATUE)
+    if top:
+        d.polygon([(4, 3), (7, 1), (11, 4), (11, 6), (4, 6)], fill=STATUE_SHADE)
+    for y in (4, 8, 12):
+        d.line([4, y, 11, y], fill=STATUE_SHADE)
+    shade_band(f, STATUE_SHADE, 8, 0, 12, 16, axis="x", gamma=1.3)
+    outline(f)
+    return f
+
+
+def t_hut_wall():
+    """늑대 인간의 오두막 벽. 사람 살림을 흉내 낸 판자다 (원안 4.2.1절)."""
+    f = Image.new("RGBA", (16, 16), PLANK_SHADE)
+    d = ImageDraw.Draw(f)
+    for x in (0, 5, 10, 15):
+        d.line([x, 0, x, 15], fill=(72, 54, 36))
+    d.line([0, 7, 15, 7], fill=(72, 54, 36))
+    for y in range(16):
+        for x in range(16):
+            if hash_noise(x + 11, y + 5) > 0.9:
+                d.point((x, y), fill=PLANK)
+    return f
+
+
+def t_hut_roof():
+    f = blank(16, 16)
+    d = ImageDraw.Draw(f)
+    d.polygon([(0, 15), (8, 4), (15, 15)], fill=(58, 48, 40))
+    d.line([0, 15, 8, 4], fill=(84, 70, 56))
+    shade_band(f, (40, 34, 30), 8, 0, 16, 16, axis="x", gamma=1.2)
+    outline(f)
+    return f
+
+
+def t_cage():
+    """매달린 우리. 실험실에서 도망친 것들이 쓰던 것이다."""
+    f = blank(16, 16)
+    d = ImageDraw.Draw(f)
+    d.line([8, 0, 8, 3], fill=ROPE)
+    d.rectangle([3, 3, 12, 13], outline=(96, 92, 88))
+    for x in (5, 8, 11):
+        d.line([x, 4, x, 12], fill=(96, 92, 88))
+    d.line([3, 8, 12, 8], fill=(78, 74, 70))
+    d.line([9, 13, 12, 15], fill=(96, 92, 88))     # 부서져 열린 문
+    outline(f)
+    return f
+
+
+def t_firepit():
+    """열매를 태우는 자리. 검은 안개가 여기서 나온다."""
+    f = blank(16, 16)
+    d = ImageDraw.Draw(f)
+    d.ellipse([2, 10, 13, 15], fill=(54, 50, 48))
+    for i, (x, ln) in enumerate(((5, 5), (8, 7), (11, 4))):
+        d.line([x, 14, x - 1, 14 - ln], fill=(58, 44, 36), width=2)
+    d.polygon([(6, 12), (8, 6), (10, 12)], fill=(226, 130, 60))
+    d.polygon([(7, 12), (8, 9), (9, 12)], fill=(250, 210, 120))
+    d.point((8, 4), fill=MIST)
+    d.point((9, 2), fill=MIST)
+    return f
+
+
+def t_altar_tile():
+    """제단의 바닥. 고대 마법사들의 언어가 새겨져 있고 굳은 피가 묻어 있다."""
+    f = Image.new("RGBA", (16, 16), (78, 74, 86))
+    d = ImageDraw.Draw(f)
+    d.rectangle([0, 0, 15, 0], fill=(104, 100, 114))
+    d.rectangle([1, 2, 14, 13], outline=(62, 58, 70))
+    for (x, y) in ((4, 5), (6, 5), (8, 5), (5, 8), (7, 8), (9, 8), (6, 11), (8, 11)):
+        d.point((x, y), fill=(140, 134, 156))       # 새겨진 글자
+    d.ellipse([10, 10, 13, 12], fill=(72, 34, 38))  # 굳은 피
+    shade_band(f, (60, 56, 68), 0, 9, 16, 16, axis="y", gamma=1.5)
+    return f
+
+
 def make_tileset():
     tiles = [
         # 줄 0 (gid 1~8): 땅과 다리
@@ -669,6 +1108,13 @@ def make_tileset():
         # 줄 2 (gid 17~24): 석상과 잔해
         t_statue("tl"), t_statue("tr"), t_statue("bl"), t_statue("br"),
         t_skull(), t_pebble(), blank(16, 16), blank(16, 16),
+        # 줄 3 (gid 25~32): 나중에 더한 변형. 앞의 gid 는 그대로 둔다.
+        t_mud_top_var(1), t_mud_top_var(2), t_rock_top_var(),
+        t_rock_edge("left"), t_rock_edge("right"), t_canopy_bare(),
+        blank(16, 16), blank(16, 16),
+        # 줄 4 (gid 33~40): 5단계의 구간 소품
+        t_paving(), t_pillar(True), t_pillar(False), t_hut_wall(),
+        t_hut_roof(), t_cage(), t_firepit(), t_altar_tile(),
     ]
     cols = 8
     rows = (len(tiles) + cols - 1) // cols
@@ -708,31 +1154,254 @@ def paint_forest(img, star_x, star_y, star_r, seed=7):
     d.ellipse([star_x - star_r, star_y - star_r, star_x + star_r, star_y + star_r], fill=STAR_RED)
     d.line([star_x - star_r * 2, star_y, star_x + star_r * 2, star_y], fill=STAR_RED)
     d.line([star_x, star_y - star_r * 2, star_x, star_y + star_r * 2], fill=STAR_RED)
-    # 나무 실루엣 두 겹
+    # 나무 실루엣 두 겹 (가지가 있는 실루엣. 기둥 사각형이 아니다)
     v = seed * 3 + 1
-    for layer, (color, top0, sway) in enumerate(
-            (((30, 26, 42), int(h * 0.42), 5), ((20, 16, 30), int(h * 0.30), 8))):
+    for color, top0 in (((30, 26, 42), int(h * 0.42)), ((20, 16, 30), int(h * 0.30))):
         x = -10
         while x < w + 10:
             v = (v * 1103515245 + 12345) % (2 ** 31)
-            tw = 6 + v % 8
+            tw = 5 + v % 6
             top = top0 + (v // 7) % 40
-            d.rectangle([x, top, x + tw, h], fill=color)
-            d.ellipse([x - tw, top - tw * 2, x + tw * 2, top + tw], fill=color)
-            x += tw + 8 + v % 14
-    # 검은 안개 (아래쪽 디더 띠 — 아래로 갈수록 짙어지되 단색이 되지는 않게)
-    for band, alpha_step in ((int(h * 0.70), 4), (int(h * 0.80), 3), (int(h * 0.88), 2)):
-        for y in range(band, h):
-            for x in range(0, w):
-                if (x + y) % alpha_step == 0:
-                    d.point((x, y), fill=MIST)
+            tree_silhouette(d, x, h, top, tw, color, v)
+            x += tw + 10 + v % 16
+    mist_gradient(img, MIST, int(h * 0.70), h, strength=0.5)
     return img
 
 
-def make_bg():
-    img = Image.new("RGBA", (384, 448))
-    paint_forest(img, 300, 64, 4)
-    save(img.convert("RGB"), OUT, "forest_bg.png")
+def tree_silhouette(d, x, base_y, top_y, tw, color, seed):
+    """검은 늑대 인간의 나무 하나. 마른 기둥에서 가지가 몇 갈래 뻗는다."""
+    # 기둥은 위로 갈수록 가늘어진다
+    d.polygon([(x, base_y), (x + tw, base_y),
+               (x + tw - 1, top_y + 6), (x + 1, top_y + 6)], fill=color)
+    v = seed
+    for i in range(3):
+        v = (v * 1103515245 + 12345) % (2 ** 31)
+        y = top_y + 6 + (v % 30)
+        if y > base_y - 10:
+            continue
+        side = 1 if (v // 31) % 2 else -1
+        ln = 6 + (v // 7) % 10
+        d.line([x + tw / 2, y, x + tw / 2 + side * ln, y - ln], fill=color, width=2)
+        d.line([x + tw / 2 + side * ln, y - ln,
+                x + tw / 2 + side * (ln + 4), y - ln - 6], fill=color, width=1)
+    # 우듬지: 둥근 덩어리 대신 잔가지가 퍼진 모양
+    for i in range(5):
+        v = (v * 1103515245 + 12345) % (2 ** 31)
+        ang = -0.3 - (i / 4.0) * 2.4
+        ln = 5 + v % 7
+        import math as _m
+        d.line([x + tw / 2, top_y + 6,
+                x + tw / 2 + _m.cos(ang) * ln, top_y + 6 + _m.sin(ang) * ln],
+               fill=color, width=2)
+
+
+def hash_noise(x, y):
+    """(x, y) 자리의 결정적 잡음 (0.0 ~ 1.0). 안개처럼 무늬가 보이면 안 되는 곳에 쓴다."""
+    n = (x * 374761393 + y * 668265263) & 0xFFFFFFFF
+    n = (n ^ (n >> 13)) * 1274126177 & 0xFFFFFFFF
+    return ((n ^ (n >> 16)) & 0xFFFF) / 65535.0
+
+
+def mist_gradient(img, color, y0, y1, strength=0.85):
+    """검은 안개. 아래로 갈수록 짙어지되 격자가 보이지 않게 잡음으로 흩는다."""
+    px = img.load()
+    w = img.width
+    span = max(1, y1 - y0)
+    for y in range(max(0, y0), min(img.height, y1)):
+        t = ((y - y0) / span) ** 1.6 * strength
+        for x in range(w):
+            if t > hash_noise(x, y):
+                r, g, b = px[x, y][:3]
+                # 덮어쓰지 않고 섞는다. 그래야 한 점 한 점이 튀지 않는다.
+                mixed = (int(r + (color[0] - r) * 0.55),
+                         int(g + (color[1] - g) * 0.55),
+                         int(b + (color[2] - b) * 0.55))
+                px[x, y] = mixed if len(px[x, y]) == 3 else mixed + (255,)
+
+
+# ---- 구간별 무대 (기획서 4.3절) -------------------------------------------
+# 구간마다 먼 숲과 가까운 숲 한 벌씩. 씬이 경계에서 두 벌을 겹쳐 바꾼다.
+
+SKY_SETS = {
+    "entrance": ((14, 12, 24), (44, 36, 58)),
+    "road":     ((16, 15, 30), (52, 46, 66)),
+    "gorge":    ((10, 10, 26), (34, 34, 62)),      # 하늘이 트여 별이 많다
+    "den":      ((20, 10, 18), (62, 30, 34)),      # 안개가 붉다
+    "altar":    ((12, 10, 28), (58, 40, 70)),
+}
+MIST_SETS = {
+    "entrance": MIST, "road": (108, 106, 126), "gorge": (96, 104, 132),
+    "den": (150, 96, 96), "altar": (126, 112, 150),
+}
+
+
+def sky_gradient(img, top, low, stars=60, seed=7):
+    w, h = img.size
+    d = ImageDraw.Draw(img)
+    for y in range(h):
+        d.line([0, y, w, y], fill=lerp(top, low, y / h))
+    v = seed
+    for _ in range(stars):
+        v = (v * 1103515245 + 12345) % (2 ** 31)
+        d.point((v % w, (v // w) % (h * 2 // 3)), fill=STAR_DIM)
+    return d
+
+
+def aldebaran_star(d, x, y, r, w, h):
+    for rr, c in ((r * 3, lerp(SKY_TOP_C, STAR_RED, 0.25)),
+                  (r * 2, lerp(SKY_TOP_C, STAR_RED, 0.5))):
+        for yy in range(y - rr, y + rr):
+            for xx in range(x - rr, x + rr):
+                if 0 <= xx < w and 0 <= yy < h and (xx + yy) % 2 == 0 \
+                        and (xx - x) ** 2 + (yy - y) ** 2 <= rr * rr:
+                    d.point((xx, yy), fill=c)
+    d.ellipse([x - r, y - r, x + r, y + r], fill=STAR_RED)
+    d.line([x - r * 2, y, x + r * 2, y], fill=STAR_RED)
+    d.line([x, y - r * 2, x, y + r * 2], fill=STAR_RED)
+
+
+def red_eyes(d, spots):
+    """풀숲에서 빛나는 붉은 눈 (원안 4.2.1절). 구간이 깊어질수록 늘어난다."""
+    for x, y in spots:
+        d.point((x, y), fill=(220, 60, 50))
+        d.point((x + 2, y), fill=(220, 60, 50))
+
+
+def make_bg_far(name):
+    w, h = 384, 448
+    img = Image.new("RGBA", (w, h))
+    top, low = SKY_SETS[name]
+    stars = 110 if name in ("gorge", "altar") else 60
+    d = sky_gradient(img, top, low, stars, seed=7 + len(name))
+    if name == "altar":
+        aldebaran_star(d, 300, 80, 8, w, h)
+    else:
+        aldebaran_star(d, 300, 64, 4, w, h)
+
+    v = 91 + len(name) * 7
+    if name == "gorge":
+        # 먼 산 (나무가 끊기고 골짜기가 열린다)
+        for color, base, amp in (((26, 26, 48), int(h * 0.52), 26),
+                                 ((18, 18, 38), int(h * 0.60), 18)):
+            pts = [(0, h)]
+            x = 0
+            while x <= w:
+                v = (v * 1103515245 + 12345) % (2 ** 31)
+                pts.append((x, base + (v % amp) - amp // 2))
+                x += 24
+            pts.append((w, h))
+            d.polygon(pts, fill=color)
+    else:
+        density = {"entrance": 1.0, "road": 0.55, "den": 1.5, "altar": 0.5}[name]
+        for color, top0 in (((30, 26, 42), int(h * 0.42)), ((20, 16, 30), int(h * 0.30))):
+            x = -10
+            while x < w + 10:
+                v = (v * 1103515245 + 12345) % (2 ** 31)
+                tw = 5 + v % 6
+                tree_silhouette(d, x, h, top0 + (v // 7) % 40, tw, color, v)
+                x += int((tw + 10 + v % 16) / density)
+        if name == "road":
+            for x in (40, 150, 250, 340):        # 부서진 석주가 멀리 선다
+                d.rectangle([x, int(h * 0.52), x + 7, h], fill=(38, 36, 46))
+                d.polygon([(x, int(h * 0.52)), (x + 4, int(h * 0.49)),
+                           (x + 7, int(h * 0.53))], fill=(30, 28, 38))
+    mist_gradient(img, MIST_SETS[name], int(h * 0.70), h,
+                  strength={"entrance": 0.5, "road": 0.3, "gorge": 0.35,
+                            "den": 0.75, "altar": 0.4}[name])
+    save(img.convert("RGB"), OUT, f"far_{name}.png")
+
+
+def make_bg_near(name):
+    """가까운 숲. 투명 배경이라 먼 숲이 비친다. 구간의 성격이 여기서 드러난다."""
+    w, h = 384, 448
+    img = blank(w, h)
+    d = ImageDraw.Draw(img)
+    v = 20260823 + len(name)
+    ink = (14, 11, 22)
+
+    if name == "gorge":
+        # 절벽면 둘이 화면 양쪽에 선다
+        for x0, x1 in ((-20, 60), (330, 404)):
+            d.polygon([(x0, h), (x0 + 10, int(h * 0.34)), (x1 - 8, int(h * 0.30)),
+                       (x1, h)], fill=(20, 20, 34))
+    else:
+        gap = {"entrance": 34, "road": 60, "den": 26, "altar": 90}[name]
+        x = -14
+        while x < w + 14:
+            v = (v * 1103515245 + 12345) % (2 ** 31)
+            tw = 9 + v % 9
+            tree_silhouette(d, x, h, int(h * 0.16) + (v // 7) % 60, tw, ink, v)
+            x += tw + gap + v % 30
+
+    if name == "den":
+        # 오두막 지붕과 매달린 우리와 모닥불 (마을이라는 것을 실루엣으로)
+        for hx in (60, 210, 320):
+            d.polygon([(hx - 26, h), (hx, int(h * 0.62)), (hx + 26, h)], fill=(18, 14, 20))
+            d.rectangle([hx - 18, int(h * 0.74), hx + 18, h], fill=(16, 12, 18))
+            d.rectangle([hx - 5, int(h * 0.80), hx + 4, h], fill=(232, 150, 70))  # 창의 불빛
+        for cx0 in (140, 268):
+            d.line([cx0, int(h * 0.40), cx0, int(h * 0.58)], fill=(40, 36, 40))
+            d.rectangle([cx0 - 7, int(h * 0.58), cx0 + 7, int(h * 0.72)],
+                        outline=(60, 56, 58))
+        for fx in (110, 300):
+            d.polygon([(fx - 5, h - 6), (fx, h - 22), (fx + 5, h - 6)], fill=(226, 130, 60))
+            d.polygon([(fx - 2, h - 6), (fx, h - 14), (fx + 2, h - 6)], fill=(250, 210, 120))
+
+    if name == "altar":
+        # 마름모 제단과 네 화두
+        cxm, cym = w // 2, int(h * 0.66)
+        d.polygon([(cxm, cym - 46), (cxm + 86, cym), (cxm, cym + 46), (cxm - 86, cym)],
+                  fill=(26, 24, 34))
+        d.polygon([(cxm, cym - 34), (cxm + 64, cym), (cxm, cym + 34), (cxm - 64, cym)],
+                  fill=(34, 32, 44))
+        for fx, fy in ((cxm, cym - 46), (cxm + 86, cym), (cxm, cym + 46), (cxm - 86, cym)):
+            d.rectangle([fx - 4, fy - 10, fx + 4, fy], fill=(48, 44, 56))
+            d.ellipse([fx - 5, fy - 18, fx + 5, fy - 8], fill=(196, 90, 220))   # K0 의 빛
+            d.ellipse([fx - 2, fy - 15, fx + 2, fy - 11], fill=(240, 210, 255))
+
+    eyes = {"entrance": 1, "road": 2, "gorge": 0, "den": 4, "altar": 1}[name]
+    spots = []
+    for i in range(eyes):
+        v = (v * 1103515245 + 12345) % (2 ** 31)
+        spots.append((30 + (v % (w - 60)), int(h * 0.86) + (v // 13) % 30))
+    red_eyes(d, spots)
+
+    mist_gradient(img, MIST_SETS[name], int(h * 0.78), h,
+                  strength=0.5 if name == "den" else 0.3)
+    save(img, OUT, f"near_{name}.png")
+
+
+def make_bg_bright():
+    """안개에 취해 보이는 옛 숲 (기획서 4.3.2절). 밝은 햇살과 초록 잎."""
+    w, h = 384, 448
+    img = Image.new("RGBA", (w, h))
+    d = ImageDraw.Draw(img)
+    for y in range(h):
+        d.line([0, y, w, y], fill=lerp((150, 200, 226), (206, 226, 200), y / h))
+    v = 4242
+    for color, top0 in (((120, 158, 110), int(h * 0.34)), ((78, 122, 78), int(h * 0.22))):
+        x = -10
+        while x < w + 10:
+            v = (v * 1103515245 + 12345) % (2 ** 31)
+            tw = 6 + v % 7
+            top = top0 + (v // 7) % 40
+            d.polygon([(x, h), (x + tw, h), (x + tw - 1, top + 8), (x + 1, top + 8)],
+                      fill=(96, 74, 52))
+            d.ellipse([x - tw * 2, top - tw * 2, x + tw * 3, top + tw * 2], fill=color)
+            x += tw + 14 + v % 18
+    # 햇살 몇 줄기
+    for sx in (70, 180, 300):
+        for i in range(26):
+            if (sx + i) % 3:
+                d.line([sx + i, 0, sx + i - 40, h], fill=(226, 240, 214))
+    save(img, OUT, "forest_bright.png")
+
+
+def make_backgrounds():
+    for name in SKY_SETS:
+        make_bg_far(name)
+        make_bg_near(name)
+    make_bg_bright()
 
 
 def find_ttf():
@@ -864,12 +1533,13 @@ def main():
     make_karto()
     make_spider()
     make_wolf()
+    make_blackwolf()
     make_monkey()
     make_stone()
     make_bag()
     make_aura()
     make_tileset()
-    make_bg()
+    make_backgrounds()
     make_title()
     make_hud()
     make_sfx()
