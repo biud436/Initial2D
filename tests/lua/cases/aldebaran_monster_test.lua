@@ -209,6 +209,133 @@ function M.run(t)
 		m.state = "hurt"
 		t.check_eq(Monster.frame(m), 3, "피격 칸")
 	end
+
+	-- ---- A7: 1-2 황제의 무덤의 적 셋 ------------------------------------------
+	-- (docs/plans/aldebaran-7-tomb.md 5절) 적 하나는 질문 하나다. 그 질문이
+	-- 코드에서 실제로 성립하는지를 여기서 본다.
+
+	-- [I] 공중형: 중력이 없다. 떠 있다가 내려찍고 다시 올라간다
+	do
+		local solids = {}
+		fillRow(solids, 24, 0, 499)
+		local probe = makeProbe(solids)
+		local def = makeDef{
+			flies = true, flySpeed = 60, diveSpeed = 380,
+			alertRange = 120, attackRange = 40, alertRangeY = 96,
+			windup = 0.55, active = 0.28, recover = 0.7, riseSpeed = 190,
+		}
+		local hoverY = 24 * 16 - 60          -- 지면보다 60px 위
+		local m = Monster.new(def, { x = 200, y = hoverY, minX = 160, maxX = 260 })
+
+		step(m, probe, 60)                    -- 플레이어가 멀다
+		t.check_eq(m.y, hoverY, "공중형은 떨어지지 않는다 (중력 없음)")
+		t.check_eq(m.onGround, false, "땅에 닿지 않는다")
+
+		-- 플레이어가 아래 멀찍이 선다 → 추적 (아직 사거리 밖)
+		local py = 24 * 16
+		step(m, probe, 10, 280, py)
+		t.check_eq(m.state, "chase", "가까우면 추적")
+
+		-- 사거리 안으로 들어오면 움츠리며 위로 → 내려찍기
+		local px = 210
+
+		local rose = false
+		for _ = 1, 240 do
+			Monster.update(m, DT, probe, px, py)
+			if m.state == "windup" and m.y < hoverY - 6 then rose = true end
+			if m.state == "strike" then break end
+		end
+		t.check(rose, "움츠릴 때 위로 뜬다 (내려찍기의 예고)")
+		t.check_eq(m.state, "strike", "내려찍는다")
+
+		for _ = 1, 60 do
+			Monster.update(m, DT, probe, px, py)
+			if m.y >= py - 2 then break end
+		end
+		t.check(m.y >= py - 8, "플레이어 발치까지 내려온다")
+
+		local box = { Monster.attackBox(m) }
+		t.check(box[1] ~= nil, "내려찍는 동안 판정이 있다")
+	end
+
+	-- [J] 방패형: 앞은 막고 등은 열린다. 돌아서는 데 시간이 걸린다
+	do
+		local m, probe = flat({ guardFront = true, turnDelay = 0.5, hp = 30 },
+			{ x = 200, minX = 160, maxX = 260 })
+		m.dir = -1                            -- 왼쪽을 본다
+
+		-- 왼쪽에서 오는 것(플레이어가 오른쪽을 보고 친다)은 앞이다 → 막는다
+		local died = Monster.hurt(m, 10, 1)
+		t.check_eq(died, false, "막았으니 죽지 않는다")
+		t.check_eq(m.hp, 30, "앞에서 온 것은 체력을 깎지 못한다")
+		t.check_eq(m.state, "block", "막으면 굳는다 (반격 창)")
+
+		-- 굳은 동안은 다시 막지 않는다 (막기 연타로 무적이 되면 안 된다)
+		step(m, probe, 40, FAR)
+		t.check(m.state ~= "block", "굳은 것은 풀린다")
+
+		-- 오른쪽에서 오는 것(플레이어가 왼쪽을 보고 친다)은 등이다 → 들어간다
+		m.dir = -1
+		local before = m.hp
+		Monster.hurt(m, 10, -1)
+		t.check_eq(m.hp, before - 10, "등은 그대로 맞는다")
+
+		-- 돌아서는 데 turnDelay가 걸린다
+		local m2 = flat({ guardFront = true, turnDelay = 0.5 },
+			{ x = 200, minX = 160, maxX = 260 })
+		m2.dir = -1
+		m2.state = "chase"
+		Monster.update(m2, DT, probe, 260, m2.y)   -- 플레이어가 오른쪽에
+		t.check_eq(m2.dir, -1, "한 프레임에 홱 돌지 않는다")
+		for _ = 1, 40 do Monster.update(m2, DT, probe, 260, m2.y) end
+		t.check_eq(m2.dir, 1, "0.5초가 지나면 돌아선다")
+	end
+
+	-- [K] 자폭형: 붙으면 심지가 타고 터진다. 그 사이에 베면 터지지 않는다
+	do
+		local m, probe = flat({ special = "fuse", hp = 14, atk = 26,
+			alertRange = 150, chaseSpeed = 95,
+			fuseRange = 26, fuseTime = 0.75, blastTime = 0.15, blastRadius = 30 },
+			{ x = 200, minX = 100, maxX = 300 })
+
+		local px = 215
+		for _ = 1, 120 do
+			Monster.update(m, DT, probe, px, m.y)
+			if m.state == "fuse" then break end
+		end
+		t.check_eq(m.state, "fuse", "붙으면 심지에 불이 붙는다")
+		t.check(Monster.attackBox(m) == nil, "심지가 타는 동안은 아직 안 아프다")
+
+		for _ = 1, 60 do
+			Monster.update(m, DT, probe, px, m.y)
+			if m.state == "boom" then break end
+		end
+		t.check_eq(m.state, "boom", "터진다")
+		local bx0, by0, bx1, by1 = Monster.attackBox(m)
+		t.check(bx0 ~= nil, "터지는 순간 판정이 있다")
+		t.check(bx1 - bx0 > 2 * 26, "폭발이 사거리보다 넓다")
+		t.check(by0 < m.y - 16, "위로도 퍼진다")
+
+		-- 터지는 중에는 더 맞지 않는다 (터진 것을 또 베는 일이 없게)
+		t.check_eq(Monster.hurt(m, 99, 1), false, "터지는 중에는 판정을 받지 않는다")
+
+		for _ = 1, 30 do Monster.update(m, DT, probe, px, m.y) end
+		t.check_eq(m.state, "dying", "터지고 나면 스러진다")
+
+		-- 심지가 타는 동안 베면 터지지 않고 그대로 죽는다
+		local m2, probe2 = flat({ special = "fuse", hp = 14,
+			alertRange = 150, chaseSpeed = 95,
+			fuseRange = 26, fuseTime = 0.75, blastTime = 0.15, blastRadius = 30 },
+			{ x = 200, minX = 100, maxX = 300 })
+		for _ = 1, 120 do
+			Monster.update(m2, DT, probe2, 215, m2.y)
+			if m2.state == "fuse" then break end
+		end
+		t.check_eq(m2.state, "fuse", "심지가 탄다")
+		t.check_eq(Monster.hurt(m2, 14, 1), true, "이때 베면 죽는다")
+		t.check_eq(m2.state, "dying", "터지지 않고 스러진다 (boom을 건너뛴다)")
+		t.check(Monster.attackBox(m2) == nil, "그래서 아프지 않다")
+	end
 end
 
 return M

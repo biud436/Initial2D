@@ -34,23 +34,51 @@ local Dialogue = require("scripts/rpg/message")
 local Player = require("scripts/games/aldebaran/player")
 local Monster = require("scripts/games/aldebaran/monster")
 local Combat = require("scripts/games/aldebaran/combat")
-local Stage = require("scripts/games/aldebaran/stage")
+local Stages = require("scripts/games/aldebaran/stages/init")
+local Climate = require("scripts/games/aldebaran/climate")
+local Monsters = require("scripts/games/aldebaran/data/monsters")
 local Hud = require("scripts/games/aldebaran/hud")
 local Text = require("scripts/rpg/text")
 
 AldebaranScene = {}
 
-local MAP_PATH = "./resources/maps/aldebaran_forest.json"
+-- 지금 무대. 씬을 열기 전에 AldebaranScene.setStage(id)로 바꾼다 (타이틀과
+-- 결과 창이 그렇게 한다). 기본은 목록의 첫 스테이지다.
+local Stage = Stages.first()
+
+--- 다음에 열 스테이지를 정한다. load() 전에 불러야 한다.
+function AldebaranScene.setStage(id)
+	local stage, why = Stages.get(id)
+	if stage == nil then return false, why end
+	Stage = stage
+	return true
+end
+
+--- 지금 무대의 id (진행 저장과 결과 창이 쓴다)
+function AldebaranScene.stageId()
+	return Stage ~= nil and Stage.id or nil
+end
+
+-- 스테이지를 넘어갈 때 들고 가는 것 (원안 7.2절: 레벨은 이어진다).
+-- 씬은 전환할 때 destroy되고 다시 init되므로 지역 변수로는 남지 않는다.
+-- 타이틀로 돌아가면 지운다 — 한 회차가 끝난 것이다.
+AldebaranScene.carry = nil
+
+function AldebaranScene.clearCarry()
+	AldebaranScene.carry = nil
+end
+
 local BG_DIR = "./resources/aldebaran/"
-local BRIGHT_PATH = "./resources/aldebaran/forest_bright.png"
 local KARTO_PATH = "./resources/aldebaran/karto.png"
 local AURA_PATH = "./resources/aldebaran/aura.png"
 local STONE_PATH = "./resources/aldebaran/stone.png"
 local BAG_PATH = "./resources/aldebaran/bag.png"
+local CLIMATE_PATH = "./resources/aldebaran/climate.png"
+local BEAM_PATH = "./resources/aldebaran/beam.png"
+local WATER_PATH = "./resources/aldebaran/water.png"
 local FADE_PATH = "./resources/ui/fade.png"
 local UI_FONT = "./resources/fonts/hangul16.fnt"
 local BASE_FONT = "./resources/fonts/hangul.fnt"
-local BGM_SLOT = "./resources/audio/aldebaran_forest.ogg"   -- 없으면 bless로
 local BGM_FALLBACK = "./resources/audio/bless.ogg"
 
 local SE = {
@@ -95,6 +123,7 @@ local foundOrder = {}          -- 발견한 순서 (결과 창이 보여 준다)
 local bolts = {}               -- 날린 검기 { x, y, vx }
 local learnedText, learnedTimer = nil, 0
 local karto, aura, fadeImg, stoneImg, bagImg, thiefImg = nil, nil, nil, nil, nil, nil
+local climateImg = {}          -- 기후 조각 (크기마다 하나. hud.lua와 같은 사정)
 local player = nil
 local camX = 0
 local pad, buttons = nil, nil
@@ -106,6 +135,12 @@ local rng = nil
 local monsters = {}            -- { model = Monster, img = Image, boss = bool }
 local stones = {}              -- 짐도둑의 돌팔매 { x, y, vx, vy }
 local bag = nil                -- 떨어진 배낭 { x, y }
+local bossClear = nil          -- 보스를 쓰러뜨린 뒤 끝나기까지 남은 초
+local startAt = nil            -- 검수용 시작 x (INITIAL2D_ALDEBARAN_AT)
+local carriedExp, carriedGold = 0, 0   -- 앞 스테이지에서 들고 온 것
+local climates = {}            -- 구간 이름 → 기후 상태 (A7)
+local climate = nil            -- 지금 구간의 기후
+local bossHail = nil           -- 보스가 부르는 우박 (방의 기후와 별개다)
 local stats = nil
 local exp, gold, lives = 0, 0, 2
 local level = 1
@@ -182,6 +217,20 @@ local function pollInput()
 	return input
 end
 
+--- 몬스터 하나를 목록에 더한다 (배치와 보스의 소환이 함께 쓴다)
+local function addMonster(spawn)
+	local def = Stage.species[spawn.species]
+	if def == nil then return nil end
+	local model = Monster.new(def, spawn)
+	local img = Image(def.sheet, 0, 0, def.frameW, def.frameH,
+		def.cols * def.rows, "Aldebaran:" .. spawn.species)
+	img.setSheetGrid(def.cols, def.rows)
+	img.setLoop(false)
+	local e = { model = model, img = img, boss = spawn.boss }
+	monsters[#monsters + 1] = e
+	return e
+end
+
 --- 대화창(나레이션)이 보는 결정키. 화면 탭도 결정으로 친다.
 local function pollConfirm()
 	local confirm = Input.IsKeyDown(VK_Z) or Input.IsKeyDown(VK_RETURN)
@@ -197,13 +246,7 @@ local function spawnMonsters()
 	end
 	monsters = {}
 	for _, s in ipairs(Stage.spawns) do
-		local def = Stage.species[s.species]
-		local model = Monster.new(def, s)
-		local img = Image(def.sheet, 0, 0, def.frameW, def.frameH,
-			def.cols * def.rows, "Aldebaran:" .. s.species)
-		img.setSheetGrid(def.cols, def.rows)
-		img.setLoop(false)
-		monsters[#monsters + 1] = { model = model, img = img, boss = s.boss }
+		addMonster(s)
 	end
 end
 
@@ -218,10 +261,12 @@ end
 --- 스테이지를 처음부터 (첫 진입, 그리고 다시 하기)
 local function resetStage()
 	rng = Rng.new(Stage.SEED)
-	player = Player.new(Stage.START.x, Stage.START.y)
-	exp, gold = 0, 0
+	player = Player.new(startAt or Stage.START.x, Stage.START.y)
+	-- 앞 스테이지에서 이어 온 경험치와 골드. 첫 스테이지면 0이다.
+	-- 다시 하기에서도 유지된다 — 잃는 것은 이 판의 진행이지 지난 판이 아니다.
+	exp, gold = carriedExp, carriedGold
 	lives = Stage.LIVES
-	applyLevel(1)
+	applyLevel(Combat.levelFor(exp))
 	berserkTimer = 0
 	checkpoint = nil
 	checkpointHit = false
@@ -233,6 +278,7 @@ local function resetStage()
 	spawnMonsters()
 	stones = {}
 	bag = nil
+	bossClear = nil
 	ending = nil
 	gameOver = nil
 	stageTime = 0
@@ -277,6 +323,17 @@ local function gainReward(def)
 end
 
 --- 날린 검기. 몬스터에 닿으면 터지고, 벽이나 화면 밖에서 사라진다.
+--- 보스가 쓰러졌다. 무엇으로 끝나는가는 스테이지가 정한다.
+--   숲: 짐도둑이 배낭을 떨구고, 그것을 주워야 끝난다 (기획서 4.3절).
+--   그 밖: 쓰러뜨린 것으로 끝난다. 죽는 연출을 보여 주고 잠시 뒤 에필로그.
+local function bossDown(m)
+	if Stage.boss.drops == "bag" then
+		bag = { x = m.x, y = m.y }
+	else
+		bossClear = 1.2
+	end
+end
+
 local function updateBolts(dt)
 	local def = Combat.SKILLS.bolt
 	for i = #bolts, 1, -1 do
@@ -292,7 +349,7 @@ local function updateBolts(dt)
 						playSe("hit")
 						if Monster.hurt(m, def.damage, b.vx > 0 and 1 or -1) then
 							gainReward(m.def)
-							if e.boss then bag = { x = m.x, y = m.y } end
+							if e.boss then bossDown(m) end
 						end
 						gone = true
 						break
@@ -301,6 +358,63 @@ local function updateBolts(dt)
 			end
 		end
 		if gone then table.remove(bolts, i) end
+	end
+end
+
+-- ---- 보스의 패턴 (docs/plans/aldebaran-7-tomb.md 6절) -----------------------
+-- 페이즈 표는 data/monsters.lua의 M.BOSS_PHASES에 있다. 여기는 그 표를 읽어
+-- 도는 코드일 뿐이다.
+--
+-- 패턴은 **후딜에 들어서는 순간** 하나씩 나간다. 후딜이 곧 플레이어의 펀치
+-- 윈도우이므로, 그때 다음 위협을 예고하면 "때릴까 피할까"가 선택이 된다.
+
+local function bossFireHail(m, count)
+	if bossHail == nil then return end
+	local floorY = m.y
+	for ty = math.floor(m.y / 16), mapH - 1 do
+		if probe(m.x, ty * 16 + 1) then floorY = ty * 16 break end
+	end
+	for i = 1, count do
+		-- 보스 앞뒤로 고르게. 플레이어의 머리 위만 노리면 피할 수 없다
+		local spread = 60 + (i - 1) * 46
+		local side = (i % 2 == 0) and 1 or -1
+		Climate.drop(bossHail, player.x + side * spread * rng:float(), floorY)
+	end
+end
+
+local function bossSummon(m, count)
+	for i = 1, count do
+		local side = (i % 2 == 0) and 1 or -1
+		addMonster({ species = "soul", x = m.x + side * 70, y = m.y - 60,
+			minX = m.x - 150, maxX = m.x + 150 })
+	end
+end
+
+--- 보스 하나의 한 프레임. e는 monsters의 항목이다.
+local function updateBossPattern(e, dt)
+	local m = e.model
+	if m.def.phases == nil or m.dead or m.state == "dying" then return end
+	local ph = Monsters.BOSS_PHASES[m.phase or 1]
+	if ph == nil then return end
+	m.recoverTime = ph.recover
+
+	if m.state == "recover" then
+		if not m.patternFired then
+			m.patternFired = true
+			m.cycleIndex = ((m.cycleIndex or 0) % #ph.cycle) + 1
+			local pattern = ph.cycle[m.cycleIndex]
+			if pattern == "hail" then
+				bossFireHail(m, ph.hail or 3)
+			elseif pattern == "summon" then
+				bossSummon(m, ph.summon or 2)
+			elseif pattern == "flood" then
+				Climate.surge(climate, 4.0)
+			end
+			-- "charge"는 상태 기계가 스스로 한다 (def.chargeRepeat). 사이클에
+			-- 남겨 둔 것은 박자를 세기 위해서다.
+		end
+	else
+		m.patternFired = false
 	end
 end
 
@@ -313,17 +427,19 @@ local function resolvePlayerAttack()
 			local bx0, by0, bx1, by1 = Monster.body(m)
 			if overlap(ax0, ay0, ax1, ay1, bx0, by0, bx1, by1) then
 				player.attackHit[m] = true
-				local atk = stats.atk * Player.attackMult(player)
-				if skills.edge then atk = atk + Combat.SKILLS.edge.atkBonus end
-				if berserkActive() then atk = atk * Combat.BERSERK.atkMult end
-				local r = Combat.resolve(atk, m.def.def, rng, stats.luck)
-				if r.dmg > 0 then
-					playSe("hit")
-					if Monster.hurt(m, r.dmg, player.facing) then
-						gainReward(m.def)
-						if e.boss then
-							-- 짐도둑이 쓰러지면 배낭이 떨어진다 (기획서 4.3절)
-							bag = { x = m.x, y = m.y }
+				-- 별들의 방: 빛 안의 영혼만 실체가 된다. 그늘에서는 칼이
+				-- 그냥 지나간다 (원안 표 16의 '빛의 축제'를 규칙으로 삼았다).
+				local solid = not m.def.flies or Climate.lit(climate, m.x)
+				if solid then
+					local atk = stats.atk * Player.attackMult(player)
+					if skills.edge then atk = atk + Combat.SKILLS.edge.atkBonus end
+					if berserkActive() then atk = atk * Combat.BERSERK.atkMult end
+					local r = Combat.resolve(atk, m.def.def, rng, stats.luck)
+					if r.dmg > 0 then
+						playSe("hit")
+						if Monster.hurt(m, r.dmg, player.facing) then
+							gainReward(m.def)
+							if e.boss then bossDown(m) end
 						end
 					end
 				end
@@ -408,7 +524,7 @@ local function updateStones(dt)
 			gone = true
 		elseif player.invulnTimer <= 0
 				and overlap(s.x - 4, s.y - 4, s.x + 4, s.y + 4, px0, py0, px1, py1) then
-			damagePlayer(Stage.species.monkey.atk, s.x, nil)
+			damagePlayer(Stage.species[Stage.boss.species].atk, s.x, nil)
 			gone = true
 		end
 		if gone then table.remove(stones, i) end
@@ -425,7 +541,8 @@ function AldebaranScene.status()
 		if not m.dead then
 			ms[#ms + 1] = { species = m.def.name, x = math.floor(m.x),
 				y = math.floor(m.y), hp = m.hp, state = m.state,
-				boss = e.boss or false, phase2 = m.phase2 or false }
+				boss = e.boss or false, phase2 = m.phase2 or false,
+				phase = m.phase or 1 }
 		end
 	end
 	return {
@@ -438,6 +555,10 @@ function AldebaranScene.status()
 		mp = stats ~= nil and stats.mp or nil,
 		maxHp = stats ~= nil and stats.maxHp or nil,
 		exp = exp, gold = gold, level = level, lives = lives,
+		stage = Stage ~= nil and Stage.id or nil,
+		climate = climate ~= nil and climate.kind or nil,
+		waterY = Climate.waterY(climate),
+		lightOn = Climate.lightOn(climate),
 		berserk = berserkActive(),
 		paused = paused,
 		checkpoint = checkpointHit,
@@ -468,7 +589,21 @@ function AldebaranScene.init()
 	DEBUG_HUD = env("INITIAL2D_DEBUG") ~= nil
 	if FontReady then PreparaFont(UI_FONT) end
 
-	map, mapError = Tilemap.Load(MAP_PATH)
+	-- 검수용: 어느 스테이지를 열지 밖에서 지정한다 (INITIAL2D_ALDEBARAN_STAGE=tomb)
+	local carry = AldebaranScene.carry
+	carriedExp = (carry ~= nil) and carry.exp or 0
+	carriedGold = (carry ~= nil) and carry.gold or 0
+
+	local want = env("INITIAL2D_ALDEBARAN_STAGE")
+	if want ~= nil then
+		local ok, why = AldebaranScene.setStage(want)
+		if not ok then print("알데바란: " .. tostring(why)) end
+	end
+	-- 검수용: 시작 x를 옮긴다 (INITIAL2D_ALDEBARAN_AT=2200). 방마다의 기후를
+	-- 눈으로 확인하려면 그 방까지 걸어가지 않고 바로 서 볼 수 있어야 한다.
+	startAt = tonumber(env("INITIAL2D_ALDEBARAN_AT") or "")
+
+	map, mapError = Tilemap.Load(Stage.map)
 	if map ~= nil then
 		mapW, mapH, tileW, tileH, layerCount = Tilemap.GetSize(map)
 		worldW, worldH = mapW * tileW, mapH * tileH
@@ -486,8 +621,22 @@ function AldebaranScene.init()
 				Image(near, 0, 0, W, H, 1, "AldNear:" .. s.name) },
 		}
 	end
-	brightImg = Image(BRIGHT_PATH, 0, 0, W, H, 1, "AldBright")
+	-- 환각 때 겹쳐 보이는 옛 무대. 스테이지마다 있을 수도 없을 수도 있다
+	brightImg = (Stage.bright ~= nil)
+		and Image(Stage.bright, 0, 0, W, H, 1, "AldBright:" .. Stage.id) or nil
 	hallucination = 0
+
+	-- 구간마다 기후 하나 (원안 표 19: 아포피스가 방마다 기후를 좌우한다).
+	-- 표가 없는 스테이지는 전부 nil이고, 그러면 아무 규칙도 걸리지 않는다.
+	climates = {}
+	for _, sec in ipairs(Stage.SECTIONS) do
+		climates[sec.name] = Climate.new(Stage.CLIMATE and Stage.CLIMATE[sec.name])
+	end
+	climate = nil
+	-- 보스의 우박은 방의 기후가 아니라 보스의 것이다. 간격을 무한대로 두고
+	-- 씬이 패턴을 돌 때마다 한 알씩 직접 떨군다.
+	bossHail = Climate.new({ kind = "hail", interval = 1e9, first = 1e9,
+		warn = 0.5, damage = 10, speed = 340, halfW = 5, count = 1 })
 
 	karto = Image(KARTO_PATH, 0, 0, 48, 48, 24, "AldebaranKarto")
 	karto.setSheetGrid(12, 2)
@@ -500,12 +649,21 @@ function AldebaranScene.init()
 	stoneImg = Image(STONE_PATH, 0, 0, 8, 8, 1, "AldebaranStone")
 	bagImg = Image(BAG_PATH, 0, 0, 16, 16, 1, "AldebaranBag")
 
-	-- 도입 컷씬의 짐도둑 (몬스터와 같은 시트, 다른 스프라이트)
-	local mk = Stage.species.monkey
-	thiefImg = Image(mk.sheet, 0, 0, mk.frameW, mk.frameH,
-		mk.cols * mk.rows, "Aldebaran:monkey")
-	thiefImg.setSheetGrid(mk.cols, mk.rows)
-	thiefImg.setLoop(false)
+	-- 기후 조각. 엔진의 스프라이트는 만들 때의 크기를 소스 사각형으로 쓰므로
+	-- 크기마다 하나씩 둔다 (hud.lua와 같은 사정).
+	climateImg = {}
+
+	-- 도입 컷씬의 짐도둑 (몬스터와 같은 시트, 다른 스프라이트).
+	-- 컷씬이 없는 스테이지에서는 만들지 않는다.
+	if Stage.intro == "thief" then
+		local mk = Stage.species[Stage.boss.species]
+		thiefImg = Image(mk.sheet, 0, 0, mk.frameW, mk.frameH,
+			mk.cols * mk.rows, "Aldebaran:" .. Stage.boss.species)
+		thiefImg.setSheetGrid(mk.cols, mk.rows)
+		thiefImg.setLoop(false)
+	else
+		thiefImg = nil
+	end
 
 	fadeImg = Image(FADE_PATH, 0, 0, 16, 16, 1, "AldebaranFade")
 	fadeImg.setScale(math.max(W, H) / 16)
@@ -535,10 +693,15 @@ function AldebaranScene.init()
 	resetStage()
 
 	-- 도입 컷씬 (기획서 4.2절): 짐도둑이 배낭을 지고 달아난다 → 나레이션
-	if env("INITIAL2D_SKIP_INTRO") == nil then
+	if Stage.intro == nil or env("INITIAL2D_SKIP_INTRO") ~= nil then
+		intro = nil
+	elseif Stage.intro == "thief" then
 		intro = { phase = "thief", timer = 0, x = Stage.START.x + 40 }
 	else
-		intro = nil
+		-- 컷씬 없이 나레이션만. 글을 지금 띄우지 않으면 isBusy()가 거짓이라
+		-- 첫 프레임에 그대로 사라진다 (A3에서 한 번 당한 자리다).
+		intro = { phase = "text", timer = 0 }
+		dialogue:showMessage(Stage.INTRO)
 	end
 
 	if VirtualPad.shouldShow() then
@@ -555,7 +718,9 @@ function AldebaranScene.init()
 		}
 	end
 
-	Bgm.play(Assets.exists(BGM_SLOT) and BGM_SLOT or BGM_FALLBACK, { volume = 64 })
+	local slot = Stage.bgmSlot
+	Bgm.play((slot ~= nil and Assets.exists(slot)) and slot or BGM_FALLBACK,
+		{ volume = 64 })
 end
 
 -- ---- 일시 정지 (기획서 8.3절) ----------------------------------------------
@@ -604,6 +769,7 @@ local function updatePause()
 		if picked == 2 then
 			resetStage()
 		elseif picked == 3 then
+			AldebaranScene.clearCarry()
 			SwitchScene("aldebaran_title")
 		end
 	end
@@ -659,11 +825,20 @@ local function updateEnding()
 			end
 		end
 	else
-		-- 결과 창 (기획서 4.4절): 결정키로 닫으면 타이틀로
+		-- 결과 창 (기획서 4.4절). 결정키로 닫으면 **다음 스테이지로 이어진다**.
+		-- 다음이 없으면 거기서 한 회차가 끝난 것이라 타이틀로 돌아간다.
 		dialogue:update({}, false)      -- 에필로그 창이 닫히는 것을 마저 본다
 		ending.wait = ending.wait + 1
 		if ending.wait > 10 and pollConfirm().confirm then
-			SwitchScene("aldebaran_title")
+			local nextStage = Stages.after(Stage.id)
+			if nextStage ~= nil then
+				AldebaranScene.carry = { exp = exp, gold = gold }
+				AldebaranScene.setStage(nextStage.id)
+				SwitchScene("aldebaran")     -- 같은 씬을 새 무대로 다시 연다
+			else
+				AldebaranScene.clearCarry()
+				SwitchScene("aldebaran_title")
+			end
 		end
 	end
 end
@@ -683,6 +858,7 @@ local function updateGameOver()
 		if not pauseChoice:isActive() then
 			local picked = pauseChoice:result()
 			if picked == 2 then
+				AldebaranScene.clearCarry()
 				SwitchScene("aldebaran_title")
 			else
 				resetStage()                 -- 취소를 포함해 기본은 다시 하기
@@ -758,9 +934,44 @@ function AldebaranScene.update(elapsed)
 		playSe("swing")
 	end
 
+	-- ---- 기후 (원안 표 19) --------------------------------------------------
+	-- 지금 선 방의 기후를 흘리고, 그 결과를 플레이어의 환경으로 씌운다.
+	do
+		local here = Stage.sectionAt(player.x)
+		climate = climates[here]
+		if climate ~= nil then
+			-- 발밑 지면과 천장을 찾아 우박이 떨어질 구간을 정한다
+			local floorY = player.y
+			local ceilY = 0
+			for ty = math.floor(player.y / 16), mapH - 1 do
+				if probe(player.x, ty * 16 + 1) then floorY = ty * 16 break end
+			end
+			for ty = math.floor(player.y / 16) - 1, 0, -1 do
+				if probe(player.x, ty * 16 + 8) then ceilY = ty * 16 + 16 break end
+			end
+			Climate.update(climate, dt, { x = player.x, floorY = floorY,
+				ceilY = ceilY, rng = rng })
+		end
+		player.env = Climate.env(climate, player.y)
+	end
+
 	Player.update(player, input, dt, probe)
 	if player.jumped then playSe("jump") end
 	if player.swung then playSe("swing") end
+
+	-- 우박에 맞았는가 (예고를 지나 실제로 떨어지는 것만 아프다)
+	if climate ~= nil and player.invulnTimer <= 0 then
+		local px0, py0 = player.x - Player.HALF_W, player.y - Player.BODY_H
+		local px1, py1 = player.x + Player.HALF_W, player.y
+		for i, hz in ipairs(Climate.hazards(climate)) do
+			if overlap(px0, py0, px1, py1, hz.x0, hz.y0, hz.x1, hz.y1) then
+				Climate.consume(climate, i)
+				damagePlayer(hz.damage, hz.x0, nil)
+				break
+			end
+		end
+		if gameOver ~= nil then return end
+	end
 
 	if player.y > worldH + 60 then
 		falls = falls + 1
@@ -804,6 +1015,25 @@ function AldebaranScene.update(elapsed)
 	for _, e in ipairs(monsters) do
 		if not e.model.dead then
 			Monster.update(e.model, dt, probe, player.x, player.y)
+			if e.boss then updateBossPattern(e, dt) end
+		end
+	end
+
+	-- 보스가 부른 우박은 방의 기후와 따로 흐른다
+	if bossHail ~= nil and #bossHail.drops > 0 then
+		Climate.update(bossHail, dt, { x = player.x, floorY = player.y,
+			ceilY = 96, rng = rng })
+		if player.invulnTimer <= 0 then
+			local px0, py0 = player.x - Player.HALF_W, player.y - Player.BODY_H
+			local px1, py1 = player.x + Player.HALF_W, player.y
+			for i, hz in ipairs(Climate.hazards(bossHail)) do
+				if overlap(px0, py0, px1, py1, hz.x0, hz.y0, hz.x1, hz.y1) then
+					Climate.consume(bossHail, i)
+					damagePlayer(hz.damage, hz.x0, nil)
+					break
+				end
+			end
+			if gameOver ~= nil then return end
 		end
 	end
 
@@ -821,10 +1051,91 @@ function AldebaranScene.update(elapsed)
 		return
 	end
 
+	-- 배낭이 없는 무대는 보스를 쓰러뜨린 것으로 끝난다
+	if bossClear ~= nil then
+		bossClear = bossClear - dt
+		if bossClear <= 0 then
+			bossClear = nil
+			startEnding()
+			return
+		end
+	end
+
 	camX = math.max(0, math.min(player.x - W / 2, worldW - W))
 end
 
 -- ---- 그리기 ----------------------------------------------------------------
+
+-- ---- 기후 그리기 (원안 표 19) ----------------------------------------------
+-- 조각들 (tools/generate_aldebaran_tomb.py). 엔진의 setScale은 균등 배율뿐이라
+-- (scripts/image.lua) 늘여 쓸 수 없다 — 빛기둥과 물은 쓸 크기 그대로 구워 뒀다.
+local CLIP = {
+	hail = { CLIMATE_PATH, 0, 0, 8, 8 },
+	warn = { CLIMATE_PATH, 8, 0, 16, 8 },
+	flake = { CLIMATE_PATH, 56, 0, 8, 8 },
+	beam = { BEAM_PATH, 0, 0, 88, 448 },
+	water = { WATER_PATH, 0, 0, 384, 128 },
+}
+
+local function climatePiece(name, x, y, opacity)
+	local c = CLIP[name]
+	if climateImg[name] == nil then
+		local img = Image(c[1], 0, 0, c[4], c[5], 1, "AldClimate:" .. name)
+		img.setLoop(false)
+		climateImg[name] = img
+	end
+	local img = climateImg[name]
+	img.setRect(c[2], c[3], c[4], c[5])
+	img.setPosition(math.floor(x), math.floor(y))
+	img.setOpacity(opacity or 255)
+	img.update(0)
+	img.draw()
+end
+
+--- 우박 알과 예고를 그린다 (방의 기후와 보스의 것이 같은 그림을 쓴다)
+local function drawDrops(state, cx)
+	if state == nil or state.drops == nil then return end
+	for _, dp in ipairs(state.drops) do
+		if dp.warn > 0 then
+			local a = 1 - dp.warn / (state.def.warn or 0.5)
+			climatePiece("warn", dp.x - 8 - cx, dp.floorY - 6,
+				math.floor(70 + 150 * a))
+		elseif dp.y ~= nil then
+			climatePiece("hail", dp.x - 4 - cx, dp.y - 4)
+		end
+	end
+end
+
+local function drawClimate(cx)
+	drawDrops(bossHail, cx)
+	if climate == nil then return end
+
+	if climate.kind == "light" then
+		-- 빛기둥 셋. 켜져 있는 동안만 영혼이 실체가 된다
+		if Climate.lightOn(climate) then
+			for _, px in ipairs(climate.def.pillars or {}) do
+				climatePiece("beam", px - 44 - cx, 0, 115)
+			end
+		end
+
+	elseif climate.kind == "hail" then
+		drawDrops(climate, cx)
+
+	elseif climate.kind == "flood" then
+		local wy = climate.waterY
+		if wy ~= nil and wy < H then
+			climatePiece("water", 0, wy, 150)
+		end
+
+	elseif climate.kind == "snow" then
+		-- 눈: 규칙은 마찰이고 이것은 그 표시다. 좌표 해시라 흔들리지 않는다
+		for i = 0, 23 do
+			local fx = (i * 79 + math.floor(cx * 0.5)) % (W + 32) - 16
+			local fy = ((i * 137 + math.floor(climate.t * 40)) % (H + 32)) - 16
+			climatePiece("flake", fx, fy, 150)
+		end
+	end
+end
 
 local function drawMonsters(cx)
 	for _, e in ipairs(monsters) do
@@ -888,7 +1199,7 @@ local function drawResult()
 	local by = math.floor((H - bh) / 2)
 	skin:drawPieces(Window.slices(bw, bh), bx, by)
 	if not FontReady then return end
-	drawCenteredText(by + 10, "1-1 검은 안개의 숲, 끝")
+	drawCenteredText(by + 10, Stage.number .. " " .. Stage.title .. ", 끝")
 	DrawText(bx + 16, by + 34, "레벨 " .. level .. "   경험치 " .. exp
 		.. "   골드 " .. gold)
 	DrawText(bx + 16, by + 52, string.format("걸린 시간 %d초", math.floor(stageTime)))
@@ -951,6 +1262,7 @@ function AldebaranScene.render()
 
 	Tilemap.Draw(map, 1, layerCount, cx, 0)
 
+	drawClimate(cx)
 	drawMonsters(cx)
 
 	-- 떨어진 배낭
@@ -969,7 +1281,7 @@ function AldebaranScene.render()
 
 	-- 도입 컷씬의 짐도둑
 	if intro ~= nil and intro.phase == "thief" then
-		local mk = Stage.species.monkey
+		local mk = Stage.species[Stage.boss.species]
 		local f = math.floor(intro.timer * 8) % 2
 		thiefImg.setFrames(f, f)
 		thiefImg.setCurrentFrame(f)

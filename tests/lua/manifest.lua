@@ -33,4 +33,5 @@ return {
     "scripts/luatests/cases/aldebaran_combat_test",
     "scripts/luatests/cases/aldebaran_monster_test",
     "scripts/luatests/cases/aldebaran_monsters_data_test",
+    "scripts/luatests/cases/aldebaran_climate_test",
 }

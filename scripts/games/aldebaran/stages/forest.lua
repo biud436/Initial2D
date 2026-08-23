@@ -1,14 +1,27 @@
--- 알데바란 — 스테이지 1-1 「검은 안개의 숲」의 데이터 (기획서 6절)
+-- 알데바란 — 스테이지 1-1 「검은 안개의 숲」 (기획서 4.3절)
 --
--- 몬스터의 종별 표와 배치. 좌표는 전부 손으로 정한 자리다 (픽셀,
+-- 배치와 구간과 이야기 글. 좌표는 전부 손으로 정한 자리다 (픽셀,
 -- tools/generate_aldebaran_maps.py의 지형과 짝이 맞아야 한다).
--- 코드가 아니라 표다 — 다른 스테이지는 다른 표를 만든다.
+-- 코드가 아니라 표다 — 다른 스테이지는 다른 표를 만든다 (stages/tomb.lua).
 --
--- 종별 표는 data/monsters.lua에 있다. 이 파일은 스테이지 1-1의 배치만 담는다.
+-- 종별 표는 data/monsters.lua에 있다.
 
 local Monsters = require("scripts/games/aldebaran/data/monsters")
 
 local M = {}
+
+-- ---- 스테이지가 씬에게 알려 주는 것 -----------------------------------------
+-- game.lua는 이 칸들만 보고 무대를 차린다. 새 스테이지는 같은 칸을 채우면 된다.
+
+M.id = "forest"
+M.number = "1-1"
+M.title = "검은 안개의 숲"
+M.map = "./resources/maps/aldebaran_forest.json"
+M.bgmSlot = "./resources/audio/aldebaran_forest.ogg"
+M.bright = "./resources/aldebaran/forest_bright.png"   -- 환각 때 겹치는 옛 숲
+M.fog = true                                            -- 안개 입자를 뿌린다
+M.boss = { species = "monkey", kind = "thief", drops = "bag" }  -- 짐도둑
+M.intro = "thief"                                       -- 도입 컷씬의 종류
 
 -- ---- 구간 (기획서 4.3절) ---------------------------------------------------
 -- 걸을수록 무대가 바뀐다. 씬은 카메라 x로 지금 구간을 알아내고, 경계 앞뒤

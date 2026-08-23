@@ -12,12 +12,22 @@
 --   hp, atk, def, exp, gold          능력치와 보상
 --   walkSpeed, chaseSpeed            이동 속도 (px/초)
 --   alertRange, attackRange          경계와 공격 거리 (수평 px)
+--   alertRangeY                      경계의 세로 폭 (기본 48. 공중형은 넓다)
 --   windup, active, recover          공격의 선딜레이, 판정, 후딜레이 (초)
 --   halfW, bodyH                     몸통 상자
---   special                          "sting" | "charge" | "throw" | nil
+--   special                          "sting" | "charge" | "throw" | "fuse" | nil
 --   chargeSpeed, chargeTime          돌격형 전용
 --   regen                            비전투 회복 (원안: 4초마다 최대 HP의 1/20)
 --   cols, frames                     시트 열 수와 상태별 칸 번호
+--
+-- A7에서 더한 칸 (1-2 황제의 무덤의 적 셋. docs/plans/aldebaran-7-tomb.md 5절):
+--   flies, flySpeed, diveSpeed        공중형. 중력이 없고 정해진 높이를 떠다닌다
+--   riseSpeed                        내려찍은 뒤 도로 올라가는 속도
+--   guardFront, turnDelay            방패형. 앞은 막고, 돌아서는 데 시간이 걸린다
+--   fuseRange, fuseTime, blastTime   자폭형. 붙으면 심지가 타고 터진다
+--
+-- 상태는 여덟이다: patrol, chase, charge, windup, strike, recover, hurt, dying.
+-- A7이 둘을 더했다: fuse(심지가 탄다)와 boom(터지는 순간, 판정이 있다).
 --
 -- 씬이 하는 일: strike 상태의 공격 상자와 플레이어의 겹침 판정, 데미지 계산,
 -- Monster.hurt 호출. 여기는 움직임과 상태 전이만 안다.
@@ -30,6 +40,7 @@ M.HOP_V = -250              -- 추적 중 한 타일 턱을 뛰어넘는 힘 (�
 M.HURT_TIME = 0.25
 M.DYING_TIME = 0.5
 M.REGEN_TICK = 4
+M.BLOCK_TIME = 0.3          -- 방패형이 막은 뒤 굳어 있는 시간 (반격 창)
 
 function M.new(def, opts)
 	return {
@@ -44,6 +55,12 @@ function M.new(def, opts)
 		animTime = 0,
 		chargeUsed = false,
 		regenTimer = 0,
+		hoverY = opts.y,         -- 공중형이 떠 있는 높이 (배치한 y가 기준이다)
+		phase = 1,               -- 보스의 페이즈 (def.phases가 있을 때만 뜻이 있다)
+		phaseGuard = 0,          -- 페이즈가 바뀐 직후의 무적 (초)
+		recoverTime = nil,       -- 씬이 페이즈마다 덮어쓰는 후딜
+		turnTimer = 0,           -- 방패형이 돌아서기까지 남은 초
+		blocked = 0,             -- 막은 직후의 짧은 경직 (연출과 반격 창)
 		strikeHit = false,       -- 이번 공격의 판정을 이미 썼는가 (씬이 세운다)
 		dead = false, fade = 0,
 	}
@@ -94,6 +111,25 @@ local function moveY(m, dy, probe)
 end
 
 --- 진행 방향 바로 앞이 벼랑인가 (순찰이 스스로 떨어지지 않게)
+--- 그쪽을 보게 한다. def.turnDelay가 있으면 그만큼 뜸을 들인다 —
+-- 방패형의 등이 열리는 시간이 여기서 나온다.
+local function face(m, want, dt)
+	if m.dir == want then
+		m.turnTimer = 0
+		return
+	end
+	local delay = m.def.turnDelay
+	if delay == nil then
+		m.dir = want
+		return
+	end
+	m.turnTimer = m.turnTimer + dt
+	if m.turnTimer >= delay then
+		m.dir = want
+		m.turnTimer = 0
+	end
+end
+
 local function cliffAhead(m, probe)
 	local ahead = m.x + m.dir * (m.def.halfW + 3)
 	return not probe(ahead, m.y + 4)
@@ -118,13 +154,38 @@ function M.update(m, dt, probe, px, py)
 
 	local dx = px - m.x
 	local dist = math.abs(dx)
-	local near = dist <= m.def.alertRange and math.abs(py - m.y) <= 48
+	-- 경계 판정 (원안 7.1.1절의 거리 체크). 세로 폭은 종마다 다르다 —
+	-- 공중형은 머리 위에 떠 있으므로 48px로는 플레이어를 보지 못한다.
+	local alertY = m.def.alertRangeY or 48
+	local near = dist <= m.def.alertRange and math.abs(py - m.y) <= alertY
 
 	m.timer = math.max(0, m.timer - dt)
 	m.vx = 0
 
+	m.blocked = math.max(0, m.blocked - dt)
+	m.phaseGuard = math.max(0, m.phaseGuard - dt)
+
 	if m.state == "hurt" then
 		m.vx = m.dir * -60          -- 밀려난다 (바라보는 반대쪽으로)
+		if m.timer <= 0 then m.state = "chase" end
+
+	elseif m.state == "fuse" then
+		-- 자폭형: 심지가 탄다. 이 동안 베어 쓰러뜨리면 터지지 않는다.
+		-- 멈춰 서는 것이 예고다 (다가오다 멈추면 물러날 때다).
+		if m.timer <= 0 then
+			m.state = "boom"
+			m.timer = m.def.blastTime or 0.15
+			m.strikeHit = false
+		end
+
+	elseif m.state == "boom" then
+		if m.timer <= 0 then
+			m.state = "dying"
+			m.fade = 0
+		end
+
+	elseif m.state == "block" then
+		-- 방패형이 앞을 막은 직후. 굳어 있는 동안이 반격 창이다.
 		if m.timer <= 0 then m.state = "chase" end
 
 	elseif m.state == "patrol" then
@@ -174,20 +235,30 @@ function M.update(m, dt, probe, px, py)
 				m.dir = dx > 0 and 1 or -1
 				m.vx = m.dir * m.def.walkSpeed
 			end
+		elseif m.def.special == "fuse" then
+			-- 자폭형: 물러나지 않는다. 붙으면 심지에 불이 붙는다.
+			face(m, dx > 0 and 1 or -1, dt)
+			if dist <= (m.def.fuseRange or m.def.attackRange) then
+				m.state = "fuse"
+				m.timer = m.def.fuseTime or 0.75
+			else
+				m.vx = m.dir * m.def.chaseSpeed
+			end
+
 		elseif dist > m.def.alertRange * 1.5 then
 			m.state = "patrol"
-			m.dir = dx > 0 and 1 or -1
-		elseif dist <= m.def.attackRange and m.onGround then
+			face(m, dx > 0 and 1 or -1, dt)
+		elseif dist <= m.def.attackRange and (m.onGround or m.def.flies) then
 			m.state = "windup"
 			m.timer = m.def.windup
-			m.dir = dx > 0 and 1 or -1
+			face(m, dx > 0 and 1 or -1, dt)
 		else
-			m.dir = dx > 0 and 1 or -1
+			face(m, dx > 0 and 1 or -1, dt)
 			m.vx = m.dir * m.def.chaseSpeed
 		end
 
 	elseif m.state == "windup" then
-		m.dir = dx > 0 and 1 or -1      -- 움츠리는 동안 상대를 계속 본다
+		face(m, dx > 0 and 1 or -1, dt)  -- 움츠리는 동안 상대를 계속 본다
 		if m.timer <= 0 then
 			m.state = "strike"
 			m.timer = m.def.active
@@ -198,7 +269,9 @@ function M.update(m, dt, probe, px, py)
 	elseif m.state == "strike" then
 		if m.timer <= 0 then
 			m.state = "recover"
-			m.timer = m.def.recover
+			-- 보스는 페이즈마다 후딜이 다르다 (씬이 recoverTime을 세운다).
+			-- 후딜이 곧 펀치 윈도우이므로 이 값이 난이도의 손잡이다.
+			m.timer = m.recoverTime or m.def.recover
 		end
 
 	elseif m.state == "recover" then
@@ -217,8 +290,8 @@ function M.update(m, dt, probe, px, py)
 		end
 	end
 	if m.state == "patrol" then
-		if cliffAhead(m, probe) and m.onGround then
-			m.dir = -m.dir              -- 순찰은 벼랑에서 돌아선다
+		if not m.def.flies and cliffAhead(m, probe) and m.onGround then
+			m.dir = -m.dir              -- 순찰은 벼랑에서 돌아선다 (발이 있는 것만)
 		end
 		if m.x <= m.minX then m.dir = 1 end
 		if m.x >= m.maxX then m.dir = -1 end
@@ -227,8 +300,37 @@ function M.update(m, dt, probe, px, py)
 		-- 투척형은 어느 상태에서든 제 구간(공터)을 벗어나지 않는다
 		m.x = math.max(m.minX, math.min(m.maxX, m.x))
 	end
-	m.vy = math.min(m.vy + M.GRAVITY * dt, M.MAX_FALL)
-	moveY(m, m.vy * dt, probe)
+	if m.def.flies then
+		-- 공중형에는 중력이 없다. 상태마다 있고 싶은 높이가 있고, 그리로 다가간다.
+		--   떠 있을 때  hoverY (배치한 자리)
+		--   움츠릴 때   조금 더 위로 — 이것이 내려찍기의 예고다
+		--   내려찍을 때 플레이어의 발치까지, 빠르게
+		local want = m.hoverY
+		local speed = m.def.flySpeed or 60
+		if m.state == "windup" then
+			want = m.hoverY - 14
+			speed = (m.def.flySpeed or 60) * 2      -- 홱 떠오르는 것이 눈에 띄어야 한다
+		elseif m.state == "strike" then
+			want = py
+			speed = m.def.diveSpeed or 260
+		elseif m.state == "recover" then
+			-- 내려간 만큼 도로 올라와야 한다. 후딜 안에 못 올라오면 지면에 붙어
+			-- 버려서 "공중형"이 아니게 된다.
+			speed = m.def.riseSpeed or ((m.def.flySpeed or 60) * 3)
+		end
+		local d = want - m.y
+		local step = speed * dt
+		if math.abs(d) <= step then
+			m.y = want
+			m.vy = 0
+		else
+			m.vy = (d > 0) and speed or -speed
+			moveY(m, m.vy * dt, probe)
+		end
+	else
+		m.vy = math.min(m.vy + M.GRAVITY * dt, M.MAX_FALL)
+		moveY(m, m.vy * dt, probe)
+	end
 end
 
 -- ---- 씬이 쓰는 조회 ---------------------------------------------------------
@@ -242,7 +344,14 @@ end
 -- 투척형은 몸이 아니라 돌(씬의 투사체)이 아프므로 상자가 없다.
 function M.attackBox(m)
 	if m.def.special == "throw" then return nil end
-	if m.state == "strike" then
+	if m.state == "boom" then
+		-- 자폭: 몸이 아니라 터진 반경이 아프다. 위아래로도 퍼진다.
+		local r = m.def.blastRadius or 28
+		return m.x - r, m.y - m.def.bodyH - r, m.x + r, m.y + r / 2
+	elseif m.state == "strike" then
+		if m.def.flies then
+			return M.body(m)         -- 내려찍기는 몸이 곧 판정이다
+		end
 		local reach = m.def.attackRange + 6
 		if m.dir > 0 then
 			return m.x, m.y - m.def.bodyH, m.x + reach, m.y
@@ -257,11 +366,39 @@ end
 
 --- 맞았다. 죽으면 true를 돌려준다 (보상은 씬이 준다).
 function M.hurt(m, dmg, fromDir)
-	if m.dead or m.state == "dying" then return false end
+	if m.dead or m.state == "dying" or m.state == "boom" then return false end
+	if m.phaseGuard > 0 then return false end        -- 페이즈 전환 중에는 안 맞는다
+
+	-- 방패형: 바라보는 쪽에서 온 것은 막는다. 막으면 잠깐 굳고, 그때가 반격 창이다.
+	-- 등 뒤로 돌아가는 것이 이 적이 묻는 질문이다 (계획 5절).
+	if m.def.guardFront and m.dir == -fromDir and m.state ~= "block" then
+		m.state = "block"
+		m.timer = M.BLOCK_TIME
+		m.blocked = M.BLOCK_TIME
+		return false
+	end
+
 	m.hp = m.hp - dmg
-	-- 보스는 절반에서 두 번째 판으로 넘어간다 (기획서 4.3.4절)
+	-- 짐도둑은 절반에서 두 번째 판으로 넘어간다 (기획서 4.3.4절)
 	if m.def.special == "throw" and not m.phase2 and m.hp <= m.def.hp / 2 then
 		m.phase2 = true
+	end
+	-- 페이즈가 있는 보스 (A7의 아포피스). 경계를 넘으면 잠깐 무적이 되고
+	-- 물러선다 — "지금 판이 바뀌었다"가 눈에 보여야 하기 때문이다.
+	if m.def.phases ~= nil and m.hp > 0 then
+		local ratio = m.hp / m.def.hp
+		local np = 1
+		for i, at in ipairs(m.def.phases) do
+			if ratio <= at then np = i end
+		end
+		if np ~= m.phase then
+			m.phase = np
+			m.phaseGuard = m.def.phaseGuard or 1.0
+			m.state = "recover"
+			m.timer = m.phaseGuard
+			m.chargeUsed = false
+			return false
+		end
 	end
 	m.regenTimer = 0
 	if m.hp <= 0 then
@@ -281,6 +418,12 @@ function M.frame(m)
 	local col
 	if m.state == "dying" or m.state == "hurt" then
 		col = f.hurt
+	elseif m.state == "boom" then
+		col = f.boom or f.attack
+	elseif m.state == "fuse" then
+		col = f.fuse or f.attack
+	elseif m.state == "block" then
+		col = f.block or f.attack
 	elseif m.state == "windup" or m.state == "strike" then
 		col = f.attack
 	elseif m.state == "charge" then

@@ -6,7 +6,8 @@
 -- 바뀌면 안 되므로 몇 개를 못 박아 둔다.
 
 local Monsters = require("scripts/games/aldebaran/data/monsters")
-local Stage = require("scripts/games/aldebaran/stage")
+local Stages = require("scripts/games/aldebaran/stages/init")
+local Stage = Stages.get("forest")
 
 local M = {}
 
@@ -21,7 +22,7 @@ function M.run(t)
 	do
 		local problems = Monsters.validate()
 		t.check_eq(#problems, 0, "스키마 문제 없음: " .. table.concat(problems, " / "))
-		t.check_eq(count(Monsters.species), 4, "지금 종은 넷이다")
+		t.check_eq(count(Monsters.species), 8, "종은 여덟이다 (숲 넷, 무덤 셋, 보스 아포피스)")
 	end
 
 	-- [B] 검사기가 진짜로 잡는가 (통과만 보면 검사기가 죽어도 모른다)
@@ -51,17 +52,66 @@ function M.run(t)
 			"모르는 이동 속도 단계는 걸러진다")
 	end
 
-	-- [C] 원안 2.3.1절 표 6: 공격 방식 넷이 전부 있다. 자폭형은 아직 아무도 안 쓴다
+	-- [C] 원안 2.3.1절 표 6: 공격 방식 넷. 사료 표에 우리 것이 섞이면 안 된다
 	do
-		t.check_eq(count(Monsters.ATTACK_TYPES), 4, "공격 방식은 넷이다")
+		t.check_eq(count(Monsters.ATTACK_TYPES), 4, "원안의 공격 방식은 넷이다")
 		for _, key in ipairs({ "melee", "charge", "throw", "suicide" }) do
-			t.check(Monsters.ATTACK_TYPES[key] ~= nil, "공격 방식 " .. key)
+			t.check(Monsters.ATTACK_TYPES[key] ~= nil, "원안의 공격 방식 " .. key)
 		end
+		t.check_eq(count(Monsters.EXTRA_ATTACK_TYPES), 2, "우리가 더한 것은 둘이다")
+		for _, key in ipairs({ "air", "shield" }) do
+			t.check(Monsters.ATTACK_TYPES[key] == nil, key .. "는 원안 표에 없다")
+			t.check(Monsters.EXTRA_ATTACK_TYPES[key] ~= nil, "우리 공격 방식 " .. key)
+			t.check(Monsters.EXTRA_ATTACK_TYPES[key].question ~= nil,
+				key .. "는 묻는 질문이 적혀 있다")
+		end
+		t.check(Monsters.attackType("melee") ~= nil, "attackType은 원안 것을 찾는다")
+		t.check(Monsters.attackType("air") ~= nil, "attackType은 우리 것도 찾는다")
+		t.check(Monsters.attackType("없는형") == nil, "모르는 것은 nil")
+
+		-- 자폭형은 A7에서 처음 쓰인다 (원안 표 6의 넷 중 마지막 빈 칸이었다)
 		local used = {}
 		for _, def in pairs(Monsters.species) do
 			if def.spec and def.spec.attackType then used[def.spec.attackType] = true end
 		end
-		t.check(not used.suicide, "자폭형은 아직 쓰지 않는다 (P5의 몫)")
+		for _, key in ipairs({ "melee", "charge", "throw", "suicide", "air", "shield" }) do
+			t.check(used[key], "공격 방식 " .. key .. "을 쓰는 종이 있다")
+		end
+	end
+
+	-- [C2] 텔레그래프 부등식 (계획 aldebaran-7-tomb.md 5절):
+	--      선딜 >= 회피 성립 프레임 + 인지 반응(15프레임).
+	--
+	--      **이 규칙은 1-1의 적에게는 아직 적용할 수 없다.** 부등식의 왼쪽 항은
+	--      "회피 수단의 성립 프레임"인데, 지금 게임에는 무적 프레임을 가진 회피가
+	--      없다 (대쉬는 그냥 빠른 이동이다). 진짜 회피는 P3의 일이고, 그때 1-1의
+	--      수치도 함께 본다.
+	--
+	--      그래서 여기서는 둘로 나눠 검사한다.
+	--        1) A7의 새 적 셋 — 부등식을 지켜 설계했으므로 지킨다.
+	--        2) 1-1의 적 넷 — 지금 값을 못 박아 둔다. 누가 바꾸면 여기가 알려 준다.
+	do
+		local MIN_WINDUP = 32 / 60
+		for _, key in ipairs({ "soul", "sentinel", "shard" }) do
+			local def = Monsters.species[key]
+			t.check(def.windup >= MIN_WINDUP - 1e-9,
+				key .. "의 선딜이 32프레임 이상 (" .. tostring(def.windup) .. ")")
+		end
+		local shard = Monsters.species.shard
+		t.check(shard.fuseTime >= 45 / 60 - 1e-9,
+			"자폭 예고는 45프레임 이상 (" .. tostring(shard.fuseTime) .. ")")
+
+		-- 1-1의 적은 셋 다 부등식을 깬다 (21, 18, 16프레임). 알고 두는 것이다.
+		local known = { spider = 0.35, wolf = 0.3, blackwolf = 0.26, monkey = 0.4 }
+		-- 아포피스는 A7에서 설계했으므로 부등식을 지킨다
+		t.check(Monsters.species.apophis.windup >= MIN_WINDUP - 1e-9,
+			"아포피스의 선딜이 32프레임 이상")
+		for key, want in pairs(known) do
+			t.check_eq(Monsters.species[key].windup, want,
+				"1-1 " .. key .. "의 선딜은 아직 " .. tostring(want) .. "초다 (P3에서 다시 본다)")
+			t.check(want < MIN_WINDUP,
+				"기록: " .. key .. "은 부등식을 깬다 — P3가 회피를 넣을 때 함께 고친다")
+		end
 	end
 
 	-- [D] 원안 6.2.2절 표 37: 이동 속도 5단계
@@ -96,6 +146,62 @@ function M.run(t)
 		t.check_eq(wolf.specials[1].damage, 27, "돌격 27 데미지 (원안)")
 	end
 
+	-- [E2] 무덤의 적 셋: 각자 다른 질문을 한다 (질문이 겹치면 적이 아니라 장식이다)
+	do
+		local soul = Monsters.species.soul
+		t.check_eq(soul.flies, true, "순장된 영혼은 떠다닌다")
+		t.check(soul.diveSpeed > soul.flySpeed, "내려찍기가 떠다니기보다 빠르다")
+		t.check_eq(soul.spec.attackType, "air", "공중형")
+
+		local sen = Monsters.species.sentinel
+		t.check_eq(sen.guardFront, true, "무덤 번병은 앞을 막는다")
+		t.check(sen.turnDelay > 0, "돌아서는 데 시간이 걸린다 (등이 열리는 시간)")
+		t.check_eq(sen.spec.attackType, "shield", "방패형")
+
+		local shard = Monsters.species.shard
+		t.check_eq(shard.special, "fuse", "파괴의 조각은 심지가 탄다")
+		t.check(shard.blastRadius > shard.attackRange, "폭발이 사거리보다 넓다")
+		t.check_eq(shard.spec.attackType, "suicide", "자폭형 (원안 표 6)")
+		t.check_eq(shard.spec.source.table, 6, "자폭형만은 원안에 출처가 있다")
+
+		local types = {}
+		for _, key in ipairs({ "soul", "sentinel", "shard" }) do
+			local at = Monsters.species[key].spec.attackType
+			t.check(not types[at], key .. "의 공격 방식이 다른 둘과 겹치지 않는다")
+			types[at] = true
+		end
+	end
+
+	-- [E3] 보스 아포피스: 3페이즈, 즉사기 없음, 펀치 윈도우가 줄어든다
+	do
+		local boss = Monsters.species.apophis
+		t.check_eq(#boss.phases, 3, "페이즈는 셋이다")
+		t.check_eq(#Monsters.BOSS_PHASES, 3, "페이즈 표도 셋이다")
+		t.check(boss.phaseGuard > 0, "페이즈 전환에 무적이 있다 (언제 때리는지 보이게)")
+
+		-- 후딜은 페이즈마다 짧아진다. 그래야 두 번째 시도에서 더 잘하게 된다
+		local prev = nil
+		for i, ph in ipairs(Monsters.BOSS_PHASES) do
+			t.check(ph.recover > 0, i .. "페이즈에 펀치 윈도우가 있다")
+			if prev then
+				t.check(ph.recover < prev, i .. "페이즈의 후딜이 앞보다 짧다")
+			end
+			t.check(#ph.cycle > 0, i .. "페이즈의 패턴 사이클이 비어 있지 않다")
+			prev = ph.recover
+		end
+
+		-- 즉사가 없다: 한 방이 레벨 1의 최대 HP(60)보다 작아야 한다
+		t.check(boss.atk < 60, "평타로 즉사하지 않는다")
+		t.check(boss.chargeAtk < 60, "돌진으로도 즉사하지 않는다")
+
+		t.check_eq(Monsters.phaseFor(1.0), 1, "가득 차 있으면 1페이즈")
+		t.check_eq(Monsters.phaseFor(0.7), 1, "0.7은 아직 1페이즈")
+		t.check_eq(Monsters.phaseFor(0.66), 2, "0.66에서 2페이즈")
+		t.check_eq(Monsters.phaseFor(0.4), 2, "0.4는 2페이즈")
+		t.check_eq(Monsters.phaseFor(0.33), 3, "0.33에서 3페이즈")
+		t.check_eq(Monsters.phaseFor(0.0), 3, "바닥은 3페이즈")
+	end
+
 	-- [F] 원안에 규격서가 없는 종은 그 사실이 남아 있다
 	do
 		t.check_eq(Monsters.species.blackwolf.spec.source, nil,
@@ -106,9 +212,9 @@ function M.run(t)
 		t.check(#Monsters.species.monkey.spec.notes > 0, "그 사실이 note에 있다")
 	end
 
-	-- [G] 회귀: stage.lua를 거쳐도 게임이 읽던 값 그대로다 (A6는 수치를 바꾸지 않는다)
+	-- [G] 회귀: 스테이지를 거쳐도 게임이 읽던 값 그대로다 (A6는 수치를 바꾸지 않는다)
 	do
-		t.check(Stage.species == Monsters.species, "stage.species는 같은 표를 가리킨다")
+		t.check(Stage.species == Monsters.species, "스테이지의 종별 표는 같은 표를 가리킨다")
 		t.check_eq(Stage.species.spider.hp, 26, "거미 HP 26")
 		t.check_eq(Stage.species.spider.atk, 9, "거미 공격 9")
 		t.check_eq(Stage.species.spider.stingBonus, 8, "거미 독침 보너스 8 (구현값)")

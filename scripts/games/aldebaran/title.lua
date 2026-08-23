@@ -143,6 +143,11 @@ function AldebaranTitleScene.update(elapsed)
 		help:update({}, false)
 		if leaveTimer >= LEAVE_DELAY then
 			if leaving == START then
+				-- 새 회차다. 첫 스테이지부터, 들고 온 것 없이 시작한다.
+				if AldebaranScene ~= nil then
+					AldebaranScene.clearCarry()
+					AldebaranScene.setStage("forest")
+				end
 				SwitchScene("aldebaran")
 			else
 				GameExit()          -- "나가기"
