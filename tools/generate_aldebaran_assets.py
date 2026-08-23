@@ -736,11 +736,16 @@ def t_mud_top():
 
 
 def t_mud_fill():
+    """진흙 속살. 면 전체를 체커로 덮지 않고 잡티만 성글게 흩는다."""
     f = Image.new("RGBA", (16, 16), MUD)
     d = ImageDraw.Draw(f)
-    dither(d, 0, 0, 16, 16, MUD_SHADE, phase=1)
-    d.point((4, 6), fill=MUD_SHADE)
-    d.point((11, 12), fill=MOSS_SHADE)
+    for y in range(16):
+        for x in range(16):
+            if hash_noise(x + 40, y + 90) > 0.86:
+                d.point((x, y), fill=MUD_SHADE)
+    d.line([3, 5, 6, 5], fill=MUD_SHADE)
+    d.line([10, 11, 12, 11], fill=MUD_SHADE)
+    d.point((13, 3), fill=MOSS_SHADE)
     return f
 
 
@@ -755,11 +760,16 @@ def t_rock_top():
 
 
 def t_rock_fill():
+    """바위 속살. 결을 몇 줄 넣고 잡티는 성글게."""
     f = Image.new("RGBA", (16, 16), ROCK)
     d = ImageDraw.Draw(f)
-    dither(d, 0, 0, 16, 16, ROCK_SHADE, phase=1)
-    d.line([3, 5, 7, 5], fill=ROCK_SHADE)
-    d.line([10, 11, 13, 11], fill=ROCK_SHADE)
+    for y in range(16):
+        for x in range(16):
+            if hash_noise(x + 7, y + 3) > 0.88:
+                d.point((x, y), fill=ROCK_SHADE)
+    d.line([2, 4, 7, 4], fill=ROCK_SHADE)
+    d.line([9, 10, 14, 10], fill=ROCK_SHADE)
+    d.line([4, 12, 8, 12], fill=ROCK_SHADE)
     return f
 
 
@@ -924,6 +934,59 @@ def t_pebble():
     return f
 
 
+def t_mud_top_var(kind):
+    """진흙 윗면 변형. 같은 도장을 되풀이하지 않도록 셋을 섞어 쓴다."""
+    f = t_mud_top()
+    d = ImageDraw.Draw(f)
+    if kind == 1:
+        for x in (2, 3, 9, 10, 11):                 # 풀 포기
+            d.line([x, 3, x - 1, 0], fill=MOSS_SHADE)
+        d.point((13, 5), fill=MUD_SHADE)
+    else:
+        d.ellipse([4, 4, 7, 6], fill=STONE_SHADE)   # 박힌 잔돌
+        d.point((5, 4), fill=STONE)
+        d.line([11, 2, 13, 2], fill=MOSS_SHADE)
+    return f
+
+
+def t_rock_top_var():
+    f = t_rock_top()
+    d = ImageDraw.Draw(f)
+    d.line([3, 4, 6, 4], fill=ROCK_SHADE)
+    d.line([9, 6, 12, 6], fill=ROCK_SHADE)
+    d.point((13, 3), fill=ROCK_LIGHT)
+    return f
+
+
+def t_rock_edge(side):
+    """바위 턱의 끝. 잘린 단면 대신 모서리가 깎여 보이게 한다."""
+    f = t_rock_top()
+    d = ImageDraw.Draw(f)
+    if side == "left":
+        d.polygon([(0, 0), (4, 0), (0, 6)], fill=(0, 0, 0, 0))
+        d.line([0, 6, 4, 0], fill=ROCK_LIGHT)
+        d.line([1, 8, 1, 15], fill=ROCK_SHADE)
+    else:
+        d.polygon([(11, 0), (15, 0), (15, 6)], fill=(0, 0, 0, 0))
+        d.line([11, 0, 15, 6], fill=ROCK_SHADE)
+        d.line([14, 8, 14, 15], fill=ROCK_SHADE)
+    return f
+
+
+def t_canopy_bare():
+    """마른 우듬지. 둥근 덩어리가 아니라 잔가지가 퍼진 모양 (원경의 나무와 맞춘다)."""
+    f = blank(16, 16)
+    d = ImageDraw.Draw(f)
+    d.polygon([(6, 15), (9, 15), (9, 8), (6, 8)], fill=TREE)
+    for ang, ln in ((-2.6, 7), (-2.0, 6), (-1.5, 8), (-1.0, 6), (-0.5, 7)):
+        import math as _m
+        d.line([7.5, 9, 7.5 + _m.cos(ang) * ln, 9 + _m.sin(ang) * ln],
+               fill=TREE, width=2)
+    shade_band(f, TREE_SHADE, 8, 0, 16, 16, axis="x", gamma=1.2)
+    outline(f)
+    return f
+
+
 def make_tileset():
     tiles = [
         # 줄 0 (gid 1~8): 땅과 다리
@@ -935,6 +998,10 @@ def make_tileset():
         # 줄 2 (gid 17~24): 석상과 잔해
         t_statue("tl"), t_statue("tr"), t_statue("bl"), t_statue("br"),
         t_skull(), t_pebble(), blank(16, 16), blank(16, 16),
+        # 줄 3 (gid 25~32): 나중에 더한 변형. 앞의 gid 는 그대로 둔다.
+        t_mud_top_var(1), t_mud_top_var(2), t_rock_top_var(),
+        t_rock_edge("left"), t_rock_edge("right"), t_canopy_bare(),
+        blank(16, 16), blank(16, 16),
     ]
     cols = 8
     rows = (len(tiles) + cols - 1) // cols
@@ -974,31 +1041,92 @@ def paint_forest(img, star_x, star_y, star_r, seed=7):
     d.ellipse([star_x - star_r, star_y - star_r, star_x + star_r, star_y + star_r], fill=STAR_RED)
     d.line([star_x - star_r * 2, star_y, star_x + star_r * 2, star_y], fill=STAR_RED)
     d.line([star_x, star_y - star_r * 2, star_x, star_y + star_r * 2], fill=STAR_RED)
-    # 나무 실루엣 두 겹
+    # 나무 실루엣 두 겹 (가지가 있는 실루엣. 기둥 사각형이 아니다)
     v = seed * 3 + 1
-    for layer, (color, top0, sway) in enumerate(
-            (((30, 26, 42), int(h * 0.42), 5), ((20, 16, 30), int(h * 0.30), 8))):
+    for color, top0 in (((30, 26, 42), int(h * 0.42)), ((20, 16, 30), int(h * 0.30))):
         x = -10
         while x < w + 10:
             v = (v * 1103515245 + 12345) % (2 ** 31)
-            tw = 6 + v % 8
+            tw = 5 + v % 6
             top = top0 + (v // 7) % 40
-            d.rectangle([x, top, x + tw, h], fill=color)
-            d.ellipse([x - tw, top - tw * 2, x + tw * 2, top + tw], fill=color)
-            x += tw + 8 + v % 14
-    # 검은 안개 (아래쪽 디더 띠 — 아래로 갈수록 짙어지되 단색이 되지는 않게)
-    for band, alpha_step in ((int(h * 0.70), 4), (int(h * 0.80), 3), (int(h * 0.88), 2)):
-        for y in range(band, h):
-            for x in range(0, w):
-                if (x + y) % alpha_step == 0:
-                    d.point((x, y), fill=MIST)
+            tree_silhouette(d, x, h, top, tw, color, v)
+            x += tw + 10 + v % 16
+    mist_gradient(img, MIST, int(h * 0.70), h, strength=0.5)
     return img
+
+
+def tree_silhouette(d, x, base_y, top_y, tw, color, seed):
+    """검은 늑대 인간의 나무 하나. 마른 기둥에서 가지가 몇 갈래 뻗는다."""
+    # 기둥은 위로 갈수록 가늘어진다
+    d.polygon([(x, base_y), (x + tw, base_y),
+               (x + tw - 1, top_y + 6), (x + 1, top_y + 6)], fill=color)
+    v = seed
+    for i in range(3):
+        v = (v * 1103515245 + 12345) % (2 ** 31)
+        y = top_y + 6 + (v % 30)
+        if y > base_y - 10:
+            continue
+        side = 1 if (v // 31) % 2 else -1
+        ln = 6 + (v // 7) % 10
+        d.line([x + tw / 2, y, x + tw / 2 + side * ln, y - ln], fill=color, width=2)
+        d.line([x + tw / 2 + side * ln, y - ln,
+                x + tw / 2 + side * (ln + 4), y - ln - 6], fill=color, width=1)
+    # 우듬지: 둥근 덩어리 대신 잔가지가 퍼진 모양
+    for i in range(5):
+        v = (v * 1103515245 + 12345) % (2 ** 31)
+        ang = -0.3 - (i / 4.0) * 2.4
+        ln = 5 + v % 7
+        import math as _m
+        d.line([x + tw / 2, top_y + 6,
+                x + tw / 2 + _m.cos(ang) * ln, top_y + 6 + _m.sin(ang) * ln],
+               fill=color, width=2)
+
+
+def hash_noise(x, y):
+    """(x, y) 자리의 결정적 잡음 (0.0 ~ 1.0). 안개처럼 무늬가 보이면 안 되는 곳에 쓴다."""
+    n = (x * 374761393 + y * 668265263) & 0xFFFFFFFF
+    n = (n ^ (n >> 13)) * 1274126177 & 0xFFFFFFFF
+    return ((n ^ (n >> 16)) & 0xFFFF) / 65535.0
+
+
+def mist_gradient(img, color, y0, y1, strength=0.85):
+    """검은 안개. 아래로 갈수록 짙어지되 격자가 보이지 않게 잡음으로 흩는다."""
+    px = img.load()
+    w = img.width
+    span = max(1, y1 - y0)
+    for y in range(max(0, y0), min(img.height, y1)):
+        t = ((y - y0) / span) ** 1.6 * strength
+        for x in range(w):
+            if t > hash_noise(x, y):
+                r, g, b = px[x, y][:3]
+                # 덮어쓰지 않고 섞는다. 그래야 한 점 한 점이 튀지 않는다.
+                mixed = (int(r + (color[0] - r) * 0.55),
+                         int(g + (color[1] - g) * 0.55),
+                         int(b + (color[2] - b) * 0.55))
+                px[x, y] = mixed if len(px[x, y]) == 3 else mixed + (255,)
 
 
 def make_bg():
     img = Image.new("RGBA", (384, 448))
     paint_forest(img, 300, 64, 4)
     save(img.convert("RGB"), OUT, "forest_bg.png")
+
+
+def make_bg_near():
+    """가까운 숲 (원경 위에 겹쳐 더 빨리 흐른다). 투명 배경이라 하늘이 비친다."""
+    w, h = 384, 448
+    img = blank(w, h)
+    d = ImageDraw.Draw(img)
+    v = 20260823
+    x = -14
+    while x < w + 14:
+        v = (v * 1103515245 + 12345) % (2 ** 31)
+        tw = 9 + v % 9
+        top = int(h * 0.16) + (v // 7) % 60
+        tree_silhouette(d, x, h, top, tw, (14, 11, 22), v)
+        x += tw + 34 + v % 40
+    mist_gradient(img, MIST, int(h * 0.78), h, strength=0.35)
+    save(img, OUT, "forest_near.png")
 
 
 def find_ttf():
@@ -1136,6 +1264,7 @@ def main():
     make_aura()
     make_tileset()
     make_bg()
+    make_bg_near()
     make_title()
     make_hud()
     make_sfx()

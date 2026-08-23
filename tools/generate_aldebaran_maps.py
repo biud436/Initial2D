@@ -33,6 +33,17 @@ TRUNK, TRUNK_THICK, CANOPY, VINE = 9, 10, 11, 12
 BAMBOO, SHROOM, WEED, SPIRE = 13, 14, 15, 16
 STATUE_TL, STATUE_TR, STATUE_BL, STATUE_BR = 17, 18, 19, 20
 SKULL, PEBBLE = 21, 22
+# 나중에 더한 변형 (gid 25~30). 같은 도장이 되풀이되지 않게 섞어 쓴다.
+MUD_TOP_B, MUD_TOP_C, ROCK_TOP_B = 25, 26, 27
+ROCK_EDGE_L, ROCK_EDGE_R, CANOPY_BARE = 28, 29, 30
+
+MUD_TOPS = (MUD_TOP, MUD_TOP_B, MUD_TOP_C)
+ROCK_TOPS = (ROCK_TOP, ROCK_TOP_B)
+
+
+def variant(seq, x, y):
+    """좌표로 고르는 결정적 변형. 난수가 아니라 같은 맵은 늘 같은 그림이다."""
+    return seq[(x * 7 + y * 13) % len(seq)]
 
 # 구간별 지면 높이 (윗면 타일의 y). 절벽 구간(48~63)은 None — 낭떠러지.
 # 바위 턱(rock=True)은 흙이 아니라 바위 타일로 그린다.
@@ -105,7 +116,17 @@ def main():
         if top is None:
             continue
         rock = is_rock(x)
-        g(x, top, ROCK_TOP if rock else MUD_TOP)
+        if rock:
+            left = ground_top(x - 1) != top or not is_rock(x - 1)
+            right = ground_top(x + 1) != top or not is_rock(x + 1)
+            if left:
+                g(x, top, ROCK_EDGE_L)
+            elif right:
+                g(x, top, ROCK_EDGE_R)
+            else:
+                g(x, top, variant(ROCK_TOPS, x, top))
+        else:
+            g(x, top, variant(MUD_TOPS, x, top))
         block(x, top)
         for y in range(top + 1, H):
             g(x, y, ROCK_FILL if rock else MUD_FILL)
@@ -126,7 +147,12 @@ def main():
     # 낮은 바위 턱 (늑대 숲)
     for x0, x1, top in LEDGES:
         for x in range(x0, x1 + 1):
-            g(x, top, ROCK_TOP)
+            if x == x0:
+                g(x, top, ROCK_EDGE_L)
+            elif x == x1:
+                g(x, top, ROCK_EDGE_R)
+            else:
+                g(x, top, variant(ROCK_TOPS, x, top))
             block(x, top)
             for y in range(top + 1, ground_top(x)):
                 g(x, y, ROCK_FILL)
@@ -138,7 +164,7 @@ def main():
         tall = 3 if kind == "thick" else 2
         for i in range(1, tall + 1):
             d(x, top - i, TRUNK_THICK if kind == "thick" else TRUNK)
-        d(x, top - tall - 1, CANOPY)
+        d(x, top - tall - 1, CANOPY_BARE)
 
     # 풀과 소품
     for x, gid in SHRUBS:

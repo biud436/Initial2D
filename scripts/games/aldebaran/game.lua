@@ -41,6 +41,7 @@ AldebaranScene = {}
 
 local MAP_PATH = "./resources/maps/aldebaran_forest.json"
 local BG_PATH = "./resources/aldebaran/forest_bg.png"
+local BG_NEAR_PATH = "./resources/aldebaran/forest_near.png"
 local KARTO_PATH = "./resources/aldebaran/karto.png"
 local AURA_PATH = "./resources/aldebaran/aura.png"
 local STONE_PATH = "./resources/aldebaran/stone.png"
@@ -67,7 +68,9 @@ local SE = {
 }
 
 local SCALE = 2
-local PARALLAX = 0.4
+-- 원경 두 겹: 먼 숲은 느리게, 가까운 숲은 그보다 빠르게 흐른다 (깊이).
+local PARALLAX_FAR = 0.25
+local PARALLAX_NEAR = 0.5
 local PAD_DEVICE_SIZE = 160
 local SIGN_SECONDS = 4.0
 local STONE_SPEED = 140
@@ -81,7 +84,8 @@ local W, H = 384, 448
 local map, mapError = nil, nil
 local mapW, mapH, tileW, tileH, layerCount = 0, 0, 16, 16, 0
 local worldW, worldH = 0, 0
-local bg1, bg2, karto, aura, fadeImg, stoneImg, bagImg, thiefImg = nil, nil, nil, nil, nil, nil, nil, nil
+local bg1, bg2, near1, near2 = nil, nil, nil, nil
+local karto, aura, fadeImg, stoneImg, bagImg, thiefImg = nil, nil, nil, nil, nil, nil
 local player = nil
 local camX = 0
 local pad, buttons = nil, nil
@@ -419,6 +423,8 @@ function AldebaranScene.init()
 
 	bg1 = Image(BG_PATH, 0, 0, W, H, 1, "AldebaranBg")
 	bg2 = Image(BG_PATH, 0, 0, W, H, 1, "AldebaranBg")
+	near1 = Image(BG_NEAR_PATH, 0, 0, W, H, 1, "AldebaranBgNear")
+	near2 = Image(BG_NEAR_PATH, 0, 0, W, H, 1, "AldebaranBgNear")
 
 	karto = Image(KARTO_PATH, 0, 0, 48, 48, 24, "AldebaranKarto")
 	karto.setSheetGrid(12, 2)
@@ -782,13 +788,17 @@ function AldebaranScene.render()
 	-- 스프라이트의 트랜스폼은 update()에서 커밋된다. 위치를 render에서 정하므로
 	-- 그리기 직전에 update(0)을 불러야 한다 — 그러지 않으면 한 프레임 늦고,
 	-- 컷씬처럼 update가 일찍 반환하는 동안에는 아예 반영되지 않는다.
-	local bx = -math.floor(camX * PARALLAX) % W
-	bg1.setPosition(bx - W, 0)
-	bg2.setPosition(bx, 0)
-	bg1.update(0)
-	bg2.update(0)
-	bg1.draw()
-	bg2.draw()
+	local function drawLayer(a, b, factor)
+		local bx = -math.floor(camX * factor) % W
+		a.setPosition(bx - W, 0)
+		b.setPosition(bx, 0)
+		a.update(0)
+		b.update(0)
+		a.draw()
+		b.draw()
+	end
+	drawLayer(bg1, bg2, PARALLAX_FAR)
+	drawLayer(near1, near2, PARALLAX_NEAR)
 
 	Tilemap.Draw(map, 1, layerCount, cx, 0)
 
@@ -898,11 +908,12 @@ function AldebaranScene.destroy()
 		if e.img ~= nil then e.img.dispose() end
 	end
 	monsters = {}
-	for _, img in ipairs({ bg1, bg2, karto, aura, fadeImg, stoneImg, bagImg, thiefImg }) do
+	for _, img in ipairs({ bg1, bg2, near1, near2, karto, aura, fadeImg,
+			stoneImg, bagImg, thiefImg }) do
 		if img ~= nil then img.dispose() end
 	end
-	bg1, bg2, karto, aura, fadeImg, stoneImg, bagImg, thiefImg =
-		nil, nil, nil, nil, nil, nil, nil, nil
+	bg1, bg2, near1, near2 = nil, nil, nil, nil
+	karto, aura, fadeImg, stoneImg, bagImg, thiefImg = nil, nil, nil, nil, nil, nil
 	if hud ~= nil then
 		hud.dispose()
 		hud = nil
