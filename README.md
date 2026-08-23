@@ -23,6 +23,66 @@
 |  동영상 재생   |                   미지원                    |
 |     암호화     |                   미지원                    |
 
+# 데모 게임: 알데바란 (횡스크롤 액션)
+
+이 엔진으로 만든 **횡스크롤 액션** 게임입니다. 엔진 코드는 손대지 않고, 물리와 충돌과 전투를 전부 `scripts/games/aldebaran/`의 Lua로 작성했습니다.
+
+보물 사냥꾼 카르토가 금단의 숲 알데바란에서 가면 원숭이에게 배낭과 지도를 빼앗기고, 검은 안개의 숲을 헤쳐 그것을 되찾는 한 판(3~5분)입니다. 원안은 저자의 기획서 「스피카」(Spica_v0.9)이며, 데모 분량으로 정돈한 기획서가 [docs/design/aldebaran.md](./docs/design/aldebaran.md)에 있습니다. `./build/Initial2D`를 실행하면 타이틀이 바로 뜹니다.
+
+| 검은 안개의 숲, 늑대 인간과의 전투 | 공터의 짐도둑과 돌팔매 |
+| :---: | :---: |
+| ![알데바란 전투](./docs/img/aldebaran_fight.png) | ![알데바란 짐도둑](./docs/img/aldebaran_boss.png) |
+
+```bash
+# 실행하면 타이틀부터 시작합니다
+./build/Initial2D
+
+# 스테이지 바로 열기 (도입 컷씬 생략, 좌표 표시)
+INITIAL2D_SCENE=aldebaran INITIAL2D_SKIP_INTRO=1 INITIAL2D_DEBUG=1 ./build/Initial2D
+```
+
+엔진이 장르에 중립이라는 것을 보이는 데모 셋(플래피 버드, 타일맵, 떠나기 전에)이 저장소에 남아 있지만 게임의 흐름에는 들어 있지 않습니다. `INITIAL2D_SCENE=flappy` 처럼 이름을 주면 그 씬으로 바로 열립니다.
+
+| 조작 | PC | 모바일 |
+| :--- | :--- | :--- |
+| 이동 | ← → (같은 방향 빠르게 두 번 = 대쉬) | 왼쪽 아래 가상 패드 |
+| 점프 | Z 또는 Space (공중에서 한 번 더 = 2단 점프) | **점프** 버튼 |
+| 공격 | X 연타 (3단 베기 콤보) | **공격** 버튼 |
+| 버서커 | C (MP 10, 4초 동안 공격 1.5배, 받는 데미지 절반) | **폭주** 버튼 |
+| 일시 정지 | ESC 또는 P | 오른쪽 위 정지 버튼 |
+
+터치는 단일 터치라 패드와 버튼을 동시에 누를 수 없습니다. 그래서 공중에서는 관성이 유지되고, 패드에서 손을 뗀 직후(0.18초)의 점프는 직전 달리기 속도를 잇습니다. "달리다 손을 떼고 점프"가 키보드의 "달리며 점프"와 같은 궤적이 되도록 한 것입니다.
+
+몬스터는 셋입니다. 밀림 전갈거미(근접형, 움츠림이 공격 신호이고 독침을 씁니다)와 늑대 인간(돌격형, 발견하면 한 번 돌진하고 전투가 아닐 때 회복합니다), 그리고 스테이지 끝의 가면 원숭이 짐도둑(투척형, 다가가면 달아나고 멀면 돌팔매를 던집니다)입니다. 상태는 순찰 → 추적 → 공격으로 흐르고, 종별 차이는 코드가 아니라 표(`stage.lua`)입니다. 접촉 데미지는 없습니다. 선딜레이가 보이는 공격만 아픕니다.
+
+| 파일 | 역할 |
+| :--- | :--- |
+| `scripts/games/aldebaran/title.lua`, `game.lua` | 타이틀과 스테이지 씬 (컷씬, HUD, 일시 정지, 에필로그) |
+| `scripts/games/aldebaran/player.lua` | 이동 물리와 콤보 (엔진에 닿지 않는 순수 모듈) |
+| `scripts/games/aldebaran/monster.lua` | 몬스터 상태 기계 (순찰, 추적, 공격, 돌격, 투척) |
+| `scripts/games/aldebaran/combat.lua` | 데미지, 명중 굴림, 레벨 표, 버서커 (순수 함수) |
+| `scripts/games/aldebaran/stage.lua` | 스테이지 데이터: 종별 능력치, 배치 좌표, 이야기 글 |
+| `scripts/games/aldebaran/hud.lua` | HP/MP/EXP 막대와 목숨, 골드 |
+
+그림과 맵과 효과음은 전부 코드로 만들어 커밋했습니다. 도트는 단색 스케치 위에 디더링 명암을 얹고 테두리를 두르는 순서로 그립니다.
+
+```bash
+# 시트(카르토, 몬스터 셋), 타일셋, 원경, 타이틀, HUD, 효과음 8종
+python3 tools/generate_aldebaran_assets.py
+
+# 스테이지 1-1 검은 안개의 숲 (128x28). 지형과 배치는 전부 손으로 정한 좌표
+python3 tools/generate_aldebaran_maps.py
+```
+
+인수 테스트(`tests/engine/scenes/aldebaran_scene.lua`)가 타이틀 → 도입 컷씬 → 게임 오버와 다시 하기 → 대쉬와 턱과 다리 → 전투와 성장 → 체크포인트 부활 → 짐도둑 → 배낭 → 에필로그 → 타이틀을 입력 재생기로 매번 다시 통과합니다. 전투 굴림이 시드 난수라 시나리오는 항상 같은 결과를 냅니다.
+
+```bash
+# 첫 화면을 헤드리스로 찍어 눈으로 확인
+INITIAL2D_SCENE=aldebaran INITIAL2D_SKIP_INTRO=1 INITIAL2D_NO_RTP=1 \
+  INITIAL2D_SCREENSHOT=/tmp/aldebaran_%04ld.bmp INITIAL2D_SCREENSHOT_FRAME=20 \
+  INITIAL2D_EXIT_AFTER=30 ./build/Initial2D
+```
+
 # 개발 히스토리
 
 엔진과 에디터의 발전 과정을 시간 순으로 정리합니다. 초기의 엔진과 에디터는 전부 손수 개발했으며, 최근의 포팅과 검수 자동화부터는 AI와의 협업으로 진행하고 있습니다.
@@ -77,12 +137,15 @@ macOS 포팅을 기반으로 Android까지 확장하였습니다. 역시 AI와�
 
 롤플레잉 게임 제작이 가능한 수준까지 엔진을 확장하는 것이 다음 목표입니다. 단계별 계획과 진행 상황은 [docs/plans](./docs/plans/index.md)에서 관리합니다.
 
-- 타일맵 시스템과 맵 파일 포맷 정리 — 완료 (2026-08)
-- InitialEditor 연동: 로컬 브리지 서버를 통한 맵 저장과 스크립트 편집 — 완료 (2026-08)
-- 리소스 파이프라인: RPG Maker 2003 RTP 변환과 규격 데이터 — 완료 (2026-08)
-- Lua로 작성하는 RPG 프레임워크: 캐릭터 이동, 이벤트, 대화창 — 완료 (2026-08)
-- 위 요소를 모두 사용하는 데모 게임 — 완료 (2026-08). 기획서를 먼저 쓰고 그대로 만든 「떠나기 전에」 ([기획서](./docs/design/port-town.md))
-- 이벤트를 데이터 커맨드로 적어 맵 에디터가 만들 수 있게 — 진행 중 ([계획](./docs/plans/10-demo-v2.md))
+- 타일맵 시스템과 맵 파일 포맷 정리 (완료, 2026-08)
+- InitialEditor 연동: 로컬 브리지 서버를 통한 맵 저장과 스크립트 편집 (완료, 2026-08)
+- 리소스 파이프라인: RPG Maker 2003 RTP 변환과 규격 데이터 (완료, 2026-08)
+- Lua로 작성하는 RPG 프레임워크: 캐릭터 이동, 이벤트, 대화창 (완료, 2026-08)
+- 위 요소를 모두 사용하는 데모 게임 (완료, 2026-08). 기획서를 먼저 쓰고 그대로 만든 「떠나기 전에」 ([기획서](./docs/design/port-town.md))
+- 이벤트를 데이터 커맨드로 적어 맵 에디터가 만들 수 있게 (엔진 쪽 완료, 2026-08). 맵 포맷 v2가 이벤트를 실어 나릅니다 ([계획](./docs/plans/10-demo-v2.md))
+- 아이템과 소지품, 그리고 마을 사람들을 잇는 심부름 (완료, 2026-08). 걷고 읽는 것 말고 할 일이 생겼습니다 ([계획](./docs/plans/11-game-systems.md))
+- 세 번째 장르: 횡스크롤 액션 「알데바란」 (완료, 2026-08). 저자의 기획서 「스피카」를 데모로 만들었고, 엔진 코드는 손대지 않았습니다 ([기획서](./docs/design/aldebaran.md))
+- 다음 로드맵: 에디터의 이벤트 편집기, 저장과 로드, 오토타일, 씬 스택 ([로드맵 v2](./docs/plans/roadmap-v2.md))
 
 # 스크립트 예제
 
@@ -316,7 +379,7 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 
 ```
 
-키 입력은 고정 스텝(16ms)마다 상태를 읽습니다. 그 사이에 눌렸다 떼어진 입력 — 리맵 도구나 매크로가 만든 키는 눌림과 뗌이 같은 프레임에 들어옵니다 — 은 상태만 봐서는 관측되지 않으므로, SDL 키 이벤트를 래치해 한 틱 동안 눌린 것으로 반영합니다. 마우스 클릭도 같은 방식입니다. (macOS에서 ESC가 어느 씬에서도 먹지 않던 원인이었습니다.)
+키 입력은 고정 스텝(16ms)마다 상태를 읽습니다. 그 사이에 눌렸다 떼어진 입력(리맵 도구나 매크로가 만든 키는 눌림과 뗌이 같은 프레임에 들어옵니다)은 상태만 봐서는 관측되지 않으므로, SDL 키 이벤트를 래치해 한 틱 동안 눌린 것으로 반영합니다. 마우스 클릭도 같은 방식입니다. (macOS에서 ESC가 어느 씬에서도 먹지 않던 원인이었습니다.)
 
 # Bitmap Text
 
@@ -476,8 +539,8 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 | `event.lua` | 맵 위의 이벤트와 트리거 감지 (아래 "이벤트와 상호작용") |
 | `interpreter.lua` | 이벤트 스크립트를 코루틴으로 실행, 실행 중 조작 잠금 |
 | `window.lua` | 스킨을 잘라 조립하는 창 (나인 슬라이스, 여닫기) |
-| `message.lua` | 대화창 — 타자 효과, 자동 줄바꿈, 쪽 넘김, 얼굴, 이름 |
-| `choice.lua` | 선택지 창 — 커서, 스크롤, 취소 |
+| `message.lua` | 대화창 (타자 효과, 자동 줄바꿈, 쪽 넘김, 얼굴, 이름) |
+| `choice.lua` | 선택지 창 (커서, 스크롤, 취소) |
 | `text.lua` | UTF-8 글자 단위 분할과 픽셀 폭 기준 줄바꿈 |
 | `rng.lua` | 시드를 주입하는 난수 |
 | `specs.lua` | CharSet, FaceSet, ChipSet의 규격 데이터 |
@@ -507,6 +570,19 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 
 캐릭터는 타일맵의 하층과 상층 사이에 발 y좌표 순으로 그려집니다. 한 프레임(24x32)이 타일(16x16)보다 커서 머리가 윗 칸으로 올라가므로 울타리나 지붕 뒤로 지나갑니다.
 
+**어디까지가 하층인지는 맵마다 정합니다.** 머리가 윗 칸으로 올라간다는 것은, 그 칸의 타일이 캐릭터보다 앞에 그려지면 머리를 덮는다는 뜻이기도 합니다. 집 벽처럼 **앞에 서는** 것은 하층이어야 하고, 빨래줄처럼 **밑을 지나가는** 것만 상층입니다.
+
+```lua
+	-- scripts/maps/port_town.lua
+	return {
+		map = "./resources/maps/port_town.json",   -- 레이어: ground, deco, over
+		groundLayers = 2,                          -- ground와 deco가 캐릭터 아래
+		...
+	}
+```
+
+맵의 레이어 이름은 관례상 `ground`(땅), `deco`(앞에 서는 것), `over`(밑을 지나가는 것)를 씁니다. `groundLayers`를 생략하면 1이라 `deco`가 캐릭터 위로 올라가고, 집 벽 앞에 서면 머리가 벽에 가려집니다.
+
 데모는 렌더 배율 2로 돌아갑니다 (16픽셀 타일을 1:1로 그리면 캐릭터가 점처럼 보입니다). 배율은 `INITIAL2D_RPG_SCALE`로 바꿀 수 있고, 씬을 나갈 때 1로 되돌아갑니다. 조작 안내는 4초 뒤 사라지며, 좌표와 FPS는 `INITIAL2D_DEBUG=1`일 때만 표시됩니다.
 
 캐릭터 시트 규격(288x256 한 장에 8명, 한 명은 24x32 3프레임 4방향)은 `scripts/rpg/specs.lua`에 데이터로 있습니다. 커밋된 `resources/charsets/placeholder.png`는 `python3 tools/generate_charset.py`로 다시 만들 수 있습니다. RPG Maker 2003 정품 보유자가 `tools/rtp_import.py`로 변환해 두었다면 데모가 `resources/rtp/CharSet/Actor1.png`를 자동으로 쓰며, `INITIAL2D_CHARSET`으로 다른 시트를 지정할 수도 있습니다.
@@ -517,7 +593,7 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 
 맵 위의 NPC나 문에 스크립트를 붙이는 방법입니다. 이벤트 커맨드 목록을 쌓는 대신 **Lua 함수를 그대로 씁니다.** 코루틴으로 실행되므로 "대화창이 닫힐 때까지 기다린다"를 콜백 없이 순서대로 적을 수 있고, 조건과 반복은 Lua 문법 그대로입니다.
 
-이벤트는 두 곳에서 옵니다. **맵 파일(JSON)의 `events` 배열**(맵 포맷 v2 — 에디터가 놓는 자리)과 **`scripts/maps/<맵이름>.lua`**(사람이 쓰는 자리: 배회 설정, `script` 함수, BGM, 시작 위치)입니다. 둘은 `id`로 합쳐지며 같은 `id`면 Lua 쪽이 이깁니다 (`scripts/rpg/mapdata.lua`). v1 맵 파일(이벤트 없음)도 그대로 열립니다.
+이벤트는 두 곳에서 옵니다. **맵 파일(JSON)의 `events` 배열**(맵 포맷 v2, 에디터가 놓는 자리)과 **`scripts/maps/<맵이름>.lua`**(사람이 쓰는 자리: 배회 설정, `script` 함수, BGM, 시작 위치)입니다. 둘은 `id`로 합쳐지며 같은 `id`면 Lua 쪽이 이깁니다 (`scripts/rpg/mapdata.lua`). v1 맵 파일(이벤트 없음)도 그대로 열립니다.
 
 ```lua
 	-- scripts/maps/village.lua
@@ -584,7 +660,7 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 
 조건은 `{ flag = "gotHerb" }`, `{ flag = "booked", equals = false }`, `{ var = "silver", op = ">=", value = 2 }` 세 형태입니다.
 
-커맨드로 적기 어려운 이벤트는 예전처럼 `script = function(self, ctx) ... end`으로 적으면 됩니다. 데이터 안에서 부르려면 맵 정의 파일의 `scripts` 표에 이름을 등록하고 `{ code = "script", name = "이름", args = {...} }`으로 부릅니다 — 이름으로 부르므로 JSON을 오가도 왕복이 깨지지 않습니다.
+커맨드로 적기 어려운 이벤트는 예전처럼 `script = function(self, ctx) ... end`으로 적으면 됩니다. 데이터 안에서 부르려면 맵 정의 파일의 `scripts` 표에 이름을 등록하고 `{ code = "script", name = "이름", args = {...} }`으로 부릅니다. 이름으로 부르므로 JSON을 오가도 왕복이 깨지지 않습니다.
 
 잘못된 커맨드는 **맵을 열 때** 어느 자리인지와 함께 걸립니다 (`[4].branches[1][1]: 알 수 없는 code`). 실행 도중에 조용히 실패하지 않습니다.
 
@@ -617,6 +693,8 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 	ctx.state.flag = true                      -- 이벤트끼리 공유하는 저장용 테이블
 ```
 
+아이템을 주고 뺏고 가졌는지 묻는 커맨드는 [아이템과 소지품](#아이템과-소지품) 절에 있습니다.
+
 이동 루트의 명령은 방향(`up`, `down`, `left`, `right`), `turn:방향`, `wait:밀리초`입니다. `{ loop = true }`로 순찰을 만들고, `{ wait = false }`로 루트를 걸어만 두고 스크립트를 계속 진행할 수 있습니다.
 
 `charset`을 주면 눈에 보이는 NPC가 되고 통행을 막습니다. 생략하면 보이지 않는 트리거 타일이며, `solid = true`를 주면 보이지 않으면서 길을 막는 벽이 됩니다. 외형이 있는 이벤트에 `wander`를 주면 5단계의 배회가 그대로 붙습니다.
@@ -634,7 +712,7 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 | `village.json`, `room.json` | `village16.png` | 저장소에 포함, 어디서나 동작 |
 | `village_rtp.json`, `room_rtp.json` | RPG Maker 2003 RTP 칩셋 | 그림은 로컬 자산이라 저장소에 없음 |
 
-어느 쪽을 열지는 `scripts/rpg/assets.lua`가 정합니다 — 칩셋과 CharSet, FaceSet, 창 스킨 모두 "RTP가 있으면 RTP, 없으면 저장소의 플레이스홀더"이며, `INITIAL2D_NO_RTP=1`로 RTP를 아예 보지 않게 할 수 있습니다. RTP 소재 자체는 재배포할 수 없으므로 저장소에 넣지 않습니다.
+어느 쪽을 열지는 `scripts/rpg/assets.lua`가 정합니다. 칩셋과 CharSet, FaceSet, 창 스킨 모두 "RTP가 있으면 RTP, 없으면 저장소의 플레이스홀더"이며, `INITIAL2D_NO_RTP=1`로 RTP를 아예 보지 않게 할 수 있습니다. RTP 소재 자체는 재배포할 수 없으므로 저장소에 넣지 않습니다.
 
 # 대화창과 창 UI
 
@@ -679,19 +757,89 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 스킨과 얼굴 그림도 `scripts/rpg/assets.lua`가 고릅니다. RTP가 있으면 그쪽(`resources/rtp/System/System.png`, `resources/rtp/FaceSet/People1.png`)을, 없으면 저장소에 커밋된 플레이스홀더를 씁니다. 플레이스홀더는 다음 명령으로 다시 만듭니다.
 
 ```bash
-# 대화창 스킨 (resources/ui/window.png, 160x80 — System과 같은 배치)
+# 대화창 스킨 (resources/ui/window.png, 160x80, System과 같은 배치)
 python3 tools/generate_windowskin.py
 
-# 얼굴 그림 (resources/faces/placeholder.png, 192x192 — CharSet과 같은 팔레트)
+# 얼굴 그림 (resources/faces/placeholder.png, 192x192, CharSet과 같은 팔레트)
 python3 tools/generate_faceset.py
 
 # UI 효과음(커서, 결정, 글자, 문)과 그 밖의 UI 이미지
 python3 tools/generate_ui_assets.py
 ```
 
+# 아이템과 소지품
+
+열쇠와 증표를 들고 다니고, 가진 것에 따라 문이 열리거나 대사가 바뀌게 하는 층입니다. 소지품은 별도의 저장소가 아니라 이벤트가 공유하는 `ctx.state` 안의 표 하나(`state.items`)입니다. 맵을 넘는 상태 공유가 이미 그 테이블로 되고 있어서, 나중에 저장 기능이 붙으면 소지품도 함께 저장됩니다.
+
+아이템 목록은 **데이터**입니다. 프레임워크(`scripts/rpg/inventory.lua`)는 표를 주입받을 뿐 내용을 모르므로, 다른 게임은 다른 표를 넣으면 됩니다.
+
+```lua
+	-- scripts/games/rpgdemo/items.lua
+	return {
+		warehouse_key = { name = "창고 열쇠", order = 10,
+			desc = "여관 주인이 삼 년째 맡아 둔 열쇠. 손잡이가 반들반들하다." },
+		silver = { name = "은화", order = 30,
+			desc = "이 지방에서 쓰는 은화. 여관 하루치가 두 닢이다." },
+	}
+```
+
+이벤트에서는 커맨드 둘과 조건 하나를 씁니다.
+
+```lua
+	commands = {
+		{ code = "if", cond = { item = "warehouse_key" },
+		  thenDo = {
+			{ code = "message", text = "열쇠가 맞는다. 삼 년 만에 문이 열렸다." },
+			{ code = "giveItem", item = "lamp_oil" },
+		  },
+		  elseDo = {
+			{ code = "message", text = "창고 문은 잠겨 있다." },
+		  } },
+
+		-- 개수 비교와 지불
+		{ code = "if", cond = { item = "silver", op = ">=", value = 2 },
+		  thenDo = {
+			{ code = "takeItem", item = "silver", count = 2 },
+			{ code = "setFlag", key = "booked" },
+		  } },
+	}
+```
+
+`giveItem`은 `count`를 생략하면 하나, `takeItem`은 모자라면 **아무 일도 일으키지 않고** 넘어갑니다 (반쯤 빼고 실패하는 경우가 없어야 이벤트가 스스로를 되돌릴 필요가 없습니다). 조건 `{ item = ... }`은 `op`와 `value`가 없으면 "하나라도 가졌는가"입니다.
+
+소지품 창은 `scripts/rpg/menu.lua`이며, 목록과 설명 두 칸으로 되어 있습니다. 창과 커서와 스크롤은 대화창과 같은 `window.lua`를 씁니다.
+
+```lua
+	local Inventory = require("scripts/rpg/inventory")
+	local Menu = require("scripts/rpg/menu")
+
+	local menu = Menu.new{ skin = skin, measure = GetTextWidth, drawText = DrawText,
+		screenW = W, screenH = H, maxVisible = 6 }
+
+	menu:open(Inventory.list(interp.state, ITEMS))   -- 취소키를 눌렀을 때
+	menu:update({ up = ..., down = ..., cancel = ..., confirm = ... })
+	menu:draw()
+```
+
+씬이 창을 들고, 열려 있는 동안 플레이어 입력을 잠급니다. 대화창과 같은 구조입니다. 대화나 이벤트가 도는 중에는 열리지 않습니다.
+
+엔진 밖에서 쓸 수 있는 함수는 다섯입니다. 전부 순수 함수라 엔진 없이 단위 테스트로 검증됩니다.
+
+```lua
+	Inventory.count(state, "silver")          -- 몇 개 (없으면 0)
+	Inventory.has(state, "silver", 2)         -- 두 개 이상 가졌는가
+	Inventory.give(state, "silver", 2)        -- 더한다 (반환은 더한 뒤의 개수)
+	Inventory.take(state, "silver", 2)        -- 뺀다 (모자라면 false, 아무것도 하지 않음)
+	Inventory.list(state, ITEMS)              -- 창이 그릴 목록 { id, name, desc, count }
+```
+
+`Inventory.list`는 표의 `order`로 정렬하므로 목록의 순서가 실행마다 흔들리지 않습니다. 표에 없는 id를 가지고 있으면 이름 자리에 id를 그대로 내보냅니다. 표를 고치다가 물건이 조용히 사라지는 것보다 눈에 보이는 편이 낫기 때문입니다.
+
 # 데모 게임: 떠나기 전에
 
-앞의 요소를 전부 사용하는 짧은 데모입니다. 미니 게임 목록에서 **떠나기 전에**를 고르면 타이틀이 뜨고, 시작하면 항구 마을에 내린 여행자가 됩니다. 저녁 배가 뜰 때까지 마을을 둘러보고, 떠날지 하루 더 머물지 스스로 정하면 끝납니다. 3분이면 끝낼 수 있고 전부 보면 10분입니다. 같은 빌드에서 플래피 버드도 그대로 돌아갑니다 — "한 엔진에서 두 장르"가 이 데모의 요점입니다.
+앞의 요소를 전부 사용하는 짧은 데모입니다. 게임 본편은 아니며 `INITIAL2D_SCENE=title`로 엽니다. 타이틀에서 시작하면 항구 마을에 내린 여행자가 됩니다. 저녁 배가 뜰 때까지 마을을 둘러보고, 떠날지 하루 더 머물지 스스로 정하면 끝납니다. 3분이면 끝낼 수 있고 전부 보면 10분입니다. 같은 빌드에서 플래피 버드와 알데바란도 그대로 돌아갑니다. "한 엔진에서 세 장르"가 이 데모들의 요점입니다.
+
+마을 사람 다섯은 하나의 심부름으로 이어져 있습니다. 생선 장수에게 창고의 사연을 듣고, 여관 주인에게 열쇠를 받고, 창고에서 등유를 꺼내 등대지기에게 가져다 주면, 그날 밤 등대에 불이 켜지고 여관에 묵을 은화가 생깁니다. 하지만 사슬은 강제가 아닙니다. 언제든 부두로 내려가 배를 타면 그대로 끝납니다. 본 만큼 에필로그에 줄이 붙습니다.
 
 세계관은 저자의 자작곡에서 왔습니다. 마을은 《Port》의 항구이고, 들어갈 수 있는 건물은 그 앨범 1번 트랙과 같은 이름의 여관이며, 마을에 걸리는 곡은 《Bless》입니다. 갈 수 없는 곳(《요정의 숲》, 《천공의 끝》)은 사람들의 말 속에만 있습니다. 기획서는 [docs/design/port-town.md](./docs/design/port-town.md)에 있고, 대사와 배치와 화면 구성이 전부 그 문서에서 나옵니다.
 
@@ -707,7 +855,7 @@ INITIAL2D_SCENE=rpg INITIAL2D_MAP=inn INITIAL2D_RPG_SCALE=3 ./build/Initial2D
 | :--- | :--- | :--- |
 | 이동, 커서 | 방향키 (정지 중 짧게 누르면 방향만 전환) | 왼쪽 아래 가상 D-패드 |
 | 결정 | Z, Enter, Space | 오른쪽 아래 **결정** 버튼 |
-| 취소 | X | 오른쪽 아래 **취소** 버튼 |
+| 취소, 소지품 창 | X | 오른쪽 아래 **취소** 버튼 |
 | 나가기 | ESC (맵→타이틀, 타이틀→목록) | 뒤로가기 |
 
 타이틀 화면에서는 항목을 직접 눌러도 선택됩니다 (`Choice:indexAt`).
@@ -719,7 +867,8 @@ INITIAL2D_SCENE=rpg INITIAL2D_MAP=inn INITIAL2D_RPG_SCALE=3 ./build/Initial2D
 | `scripts/games/rpgdemo/title.lua` | 타이틀 씬. 배경 한 장과 커서 메뉴(시작, 조작 방법, 나가기) |
 | `scripts/games/rpgdemo/game.lua` | 맵 씬. 맵 적재, 페이드 전환, 대화창과 실행기 연결, 장소 이름 |
 | `scripts/maps/port_town.lua`, `inn.lua` | 이벤트 정의와 대사 (커맨드 목록) |
-| `scripts/rpg/assets.lua` | 그림 고르기 — RTP가 있으면 RTP, 없으면 저장소의 플레이스홀더 |
+| `scripts/games/rpgdemo/items.lua` | 아이템 표 (이름, 설명, 목록 순서) |
+| `scripts/rpg/assets.lua` | 그림 고르기 (RTP가 있으면 RTP, 없으면 저장소의 플레이스홀더) |
 | `scripts/bgm.lua` | 지금 걸린 곡을 기억해, 같은 곡이면 다시 틀지 않는 배경음 층 |
 | `scripts/ui/buttons.lua` | 터치용 결정과 취소 버튼 |
 
@@ -728,13 +877,13 @@ INITIAL2D_SCENE=rpg INITIAL2D_MAP=inn INITIAL2D_RPG_SCALE=3 ./build/Initial2D
 데모의 그림은 전부 코드로 그려 커밋했습니다 (RPG Maker RTP가 없어도 그대로 돌아갑니다). 배치를 바꾸려면 도구를 고치고 다시 실행합니다.
 
 ```bash
-# 항구 타일 39종 (바다, 부두, 배, 등대, 우물, 게시판, 좌판, 난로 등)
+# 항구 타일 41종 (바다 2x2 한 벌, 부두, 배, 등대, 우물, 게시판, 좌판, 난로 등)
 python3 tools/generate_port_tileset.py
 
-# 맵 두 장 — 기획서 4절의 좌표 그대로, 난수를 쓰지 않습니다
+# 맵 두 장. 기획서 4절의 좌표 그대로, 난수를 쓰지 않습니다
 python3 tools/generate_port_maps.py
 
-# 타이틀 배경 (제목 글자가 그림에 구워집니다 — 한글 TTF 필요)
+# 타이틀 배경 (제목 글자가 그림에 구워집니다. 한글 TTF 필요)
 python3 tools/generate_title.py
 ```
 
@@ -751,13 +900,13 @@ BGM은 씬과 맵이 각자 정합니다. 맵 정의 파일에 `bgm`을 적으�
 	}
 ```
 
-저장소에 들어 있는 곡은 저자의 자작곡 `resources/audio/bless.ogg` 한 곡입니다 (분석은 [docs/music/bless-analysis.md](./docs/music/bless-analysis.md)). 여관은 《Port》의 "Inn"을 위한 자리를 비워 두었습니다 — `resources/audio/inn.ogg`에 파일을 두면 그 곡이 걸리고, 없으면 마을 곡을 낮춰 씁니다. RTP의 MIDI에 의존하지 않습니다.
+저장소에 들어 있는 곡은 저자의 자작곡 `resources/audio/bless.ogg` 한 곡입니다 (분석은 [docs/music/bless-analysis.md](./docs/music/bless-analysis.md)). 여관은 《Port》의 "Inn"을 위한 자리를 비워 두었습니다. `resources/audio/inn.ogg`에 파일을 두면 그 곡이 걸리고, 없으면 마을 곡을 낮춰 씁니다. RTP의 MIDI에 의존하지 않습니다.
 
 효과음(커서, 결정, 글자, 문)은 코드로 합성해 커밋했습니다: `python3 tools/generate_ui_assets.py`.
 
 ## RTP 없이 보기
 
-데모는 RPG Maker 2003 RTP가 로컬에 있으면 캐릭터와 얼굴, 창 스킨을 그쪽에서 가져오고, 없으면 저장소에 커밋된 플레이스홀더를 씁니다. `INITIAL2D_NO_RTP=1`을 주면 RTP가 있어도 보지 않습니다 — 검수가 어느 기계에서나 같은 화면을 내야 하기 때문이고(골든 스크린샷), "RTP가 없는 사람에게 어떻게 보이는가"를 확인할 때도 씁니다.
+데모는 RPG Maker 2003 RTP가 로컬에 있으면 캐릭터와 얼굴, 창 스킨을 그쪽에서 가져오고, 없으면 저장소에 커밋된 플레이스홀더를 씁니다. `INITIAL2D_NO_RTP=1`을 주면 RTP가 있어도 보지 않습니다. 검수가 어느 기계에서나 같은 화면을 내야 하기 때문이고(골든 스크린샷), "RTP가 없는 사람에게 어떻게 보이는가"를 확인할 때도 씁니다.
 
 ```bash
 INITIAL2D_NO_RTP=1 INITIAL2D_SCENE=title ./build/Initial2D
@@ -765,10 +914,14 @@ INITIAL2D_NO_RTP=1 INITIAL2D_SCENE=title ./build/Initial2D
 
 ## 인수 테스트
 
-데모 전체가 로드맵의 인수 테스트입니다. `tests/engine/scenes/rpgdemo_scene.lua`가 실제 씬 파일을 그대로 얹고, 입력 재생기로 키를 눌러 **타이틀 → 부두 도착 → 생선 장수 → 창고 → 여관에서 방 잡기 → 등대지기 → 배 → 에필로그 → 타이틀**을 한 번에 통과시킨 뒤 좌표와 대사를 검사합니다 (`tests/run_all.sh`에 포함). 본 것에 따라 대사와 에필로그가 갈리는 것도 여기서 확인합니다.
+데모 전체가 로드맵의 인수 테스트입니다. `tests/engine/scenes/rpgdemo_scene.lua`가 실제 씬 파일을 그대로 얹고, 입력 재생기로 키를 눌러 심부름 사슬 전체를 한 번에 통과시킨 뒤 좌표와 대사와 소지품을 검사합니다 (`tests/run_all.sh`에 포함).
+
+> 타이틀 → 부두 도착 → 생선 장수 → 잠긴 창고 → 여관(열쇠를 받지만 은화가 없어 방을 못 잡는다) → 창고를 연다(등유) → 등대지기(등유를 주고 은화 두 닢) → 등대지기(하늘 끝) → 여관(은화로 방을 잡는다) → 배 → 에필로그 → 타이틀
+
+가진 것에 따라 문이 열리고 대사와 에필로그가 갈리는 것을 여기서 확인합니다. 배회하는 아이는 위치가 틱 수에 따라 흔들려 경로가 불안정해지므로 시나리오에 넣지 않고, 아이가 주는 물건은 단위 테스트가 확인합니다.
 
 ```bash
-# 시나리오 도중의 화면을 눈으로 확인 (title, town)
+# 시나리오 도중의 화면을 눈으로 확인 (title, town, bag)
 INITIAL2D_DEMO_STOP=town INITIAL2D_NO_RTP=1 \
   INITIAL2D_SCREENSHOT=/tmp/demo_%04ld.bmp INITIAL2D_SCREENSHOT_FRAME=20 \
   INITIAL2D_EXIT_AFTER=30 ./build/Initial2D
@@ -919,7 +1072,7 @@ python3 tools/hmr_push.py          # 다른 터미널에서 push
 ```
 
 push가 도착하면 게임이 Lua VM을 재시작하고 `main.lua`부터 다시 로드합니다
-(**풀 리스타트** — 점수 등 게임 진행 상태는 초기화됩니다).
+(**풀 리스타트**이며 점수 등 게임 진행 상태는 초기화됩니다).
 동작 로그는 `adb logcat -s SDL/APP`에서 `HotReload:` 태그로 확인할 수 있습니다.
 프로토콜과 설계 상세는 `docs/porting/android-hmr-plan.md`를 참조하십시오.
 
@@ -995,7 +1148,7 @@ python3 tools/rtp_import.py
 # 일부 카테고리만, 파일명의 공백을 언더스코어로, WAV도 OGG로
 python3 tools/rtp_import.py --only CharSet,ChipSet --normalize-names --ogg
 
-# MIDI를 OGG로 미리 렌더링 (fluidsynth 필요 — 엔진에는 MIDI 재생기를 넣지 않습니다)
+# MIDI를 OGG로 미리 렌더링 (fluidsynth 필요. 엔진에는 MIDI 재생기를 넣지 않습니다)
 python3 tools/rtp_import.py --soundfont ~/soundfonts/GeneralUser.sf2
 
 # 변환 결과 검증 (규격 크기, 투명 픽셀, 원본 대조, gitignore)
@@ -1036,7 +1189,7 @@ actor.setPosition(100, 200)
 전체 검수는 스크립트 하나로 실행합니다. C++ 단위 테스트, Lua 단위 테스트, 픽셀 검증, 골든 스크린샷 비교, 브리지 서버 테스트, RTP 변환 검증이 순서대로 수행됩니다.
 
 ```bash
-# 빌드부터 전체 테스트까지 한 번에 실행 (기본은 헤드리스 — 창을 띄우지 않습니다. CI와 동일)
+# 빌드부터 전체 테스트까지 한 번에 실행 (기본은 헤드리스라 창을 띄우지 않습니다. CI와 동일)
 tests/run_all.sh
 
 # 실제 창을 띄워 실행하고 싶을 때

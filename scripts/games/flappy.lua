@@ -1,8 +1,8 @@
--- 미니 게임: Flappy Bird 스타일
+-- 엔진 데모: Flappy Bird 스타일
 --
 -- 조작: 마우스 클릭/터치 또는 스페이스 바로 날갯짓
 -- 상태: ready(대기) → play(플레이) → dead(게임 오버) → ready
--- 게임 오버 화면에서 화면 상단(1/3)을 누르면 메뉴로 돌아간다.
+-- 게임 오버 화면에서 화면 상단(1/3)을 누르면 게임을 끝낸다.
 --
 -- 물리는 elapsed(ms)를 초로 정규화한 px/초 단위라 프레임레이트에 독립적이다.
 
@@ -210,9 +210,9 @@ function FlappyScene.update(elapsed)
 	local dtMs = math.min(elapsed, 50)  -- 스파이크 방어
 	local dt = dtMs / 1000.0
 
-	-- ESC (Android 뒤로가기): 어느 상태에서든 미니 게임 목록으로
+	-- ESC (Android 뒤로가기): 어느 상태에서든 게임 종료 (단독 진입점이다)
 	if Input.IsKeyDown(VK_ESCAPE) then
-		SwitchScene("menu")
+		GameExit()
 		return
 	end
 
@@ -252,7 +252,7 @@ function FlappyScene.update(elapsed)
 			if birdY + BIRD_H > GROUND_Y then birdY = GROUND_Y - BIRD_H end
 		end
 		if deadTime > 0.6 and (not AUTOPLAY) and Input.IsMouseDown(0) and Input.GetMouseY() < H / 3 then
-			SwitchScene("menu") -- 화면 상단 터치: 미니 게임 목록으로
+			GameExit() -- 화면 상단 터치: 종료
 		elseif (deadTime > 0.6 and flapPressed()) or (AUTOPLAY and deadTime > 1.5) then
 			state = "ready"
 			resetGame()
@@ -308,7 +308,7 @@ function FlappyScene.render()
 			DrawText(W / 2 - 130, H / 2 - 140, "점수 " .. score .. "  최고 " .. best)
 			if deadTime > 0.6 then
 				DrawText(W / 2 - 170, H / 2 - 100, "클릭하면 다시 시작")
-				DrawText(W / 2 - 210, H / 2 - 60, "화면 상단을 누르면 메뉴로")
+				DrawText(W / 2 - 210, H / 2 - 60, "화면 상단을 누르면 종료")
 			end
 		end
 	end

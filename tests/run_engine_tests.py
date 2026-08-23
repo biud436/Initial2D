@@ -305,6 +305,8 @@ def test_tilemap_scene():
 # 플레이스홀더 CharSet(tools/generate_charset.py)의 색. 맵 팔레트와 겹치지 않는
 # 색을 골라 두었기 때문에 색 카운트만으로 캐릭터를 특정할 수 있다.
 HAIR_PURPLE = (168, 96, 200)   # 3번 캐릭터 머리
+HAIR_BROWN = (96, 56, 32)      # 데모 주인공(0번 캐릭터) 머리
+HOUSE_WALL = (214, 188, 150)   # 집 벽 (village16.png의 벽 타일)
 SHIRT_WHITE = (236, 236, 240)  # 3번 캐릭터 옷
 SHIRT_RED = (206, 62, 62)      # 0번 캐릭터 옷
 
@@ -574,12 +576,17 @@ DEMO_SHIRT = SHIRT_RED           # 플레이어(0번 캐릭터)의 빨간 옷
 
 
 def test_rpgdemo_scene():
-    """9단계 인수 테스트: 기획서대로의 데모를 처음부터 끝까지 (docs/design/port-town.md).
+    """인수 테스트: 기획서대로의 데모를 처음부터 끝까지 (docs/design/port-town.md).
 
     가짜 씬이 아니라 게임이 실제로 여는 파일(scripts/games/rpgdemo/*.lua,
     scripts/maps/port_town.lua, inn.lua)을 얹고 입력 재생기로 키를 눌러
-    타이틀 → 부두 → 생선 장수 → 창고 → 여관 → 등대지기 → 배 → 에필로그를
-    한 번에 통과시킨다. 대사와 좌표가 stdout에 남고 여기서 검사한다.
+    10단계의 심부름 사슬을 한 줄로 통과시킨다 (docs/plans/11-game-systems.md).
+
+      타이틀 → 부두 → 생선 장수 → 잠긴 창고 → 여관(열쇠를 받지만 은화가 없어
+      방을 못 잡는다) → 창고를 연다(등유) → 등대지기(등유를 주고 은화 두 닢)
+      → 등대지기(하늘 끝) → 여관(은화로 방을 잡는다) → 배 → 에필로그
+
+    대사와 좌표와 소지품이 stdout에 남고 여기서 검사한다.
 
     RTP는 기계마다 있고 없고가 달라 INITIAL2D_NO_RTP=1로 저장소 자산만 쓰게
     고정한다 (골든도 그래야 커밋할 수 있다 — RTP는 재배포 금지).
@@ -622,29 +629,54 @@ def test_rpgdemo_scene():
     has("fishLine:오늘 물건은 아침에 다 나갔어요.", "생선 장수의 첫 대사")
     has("fishChoice:true", "생선 장수가 선택지를 띄운다")
     has("warehouseStory:저 창고요? 주인이 남쪽으로 떠난 지 삼 년째예요.", "창고의 사연")
-    has("warehouseLine:삼 년째 잠긴 문이다.", "사연을 들은 뒤 창고 문의 설명이 달라진다")
+    has("keyHint:열쇠는 여관 주인이 맡아 뒀어요.", "다음에 갈 곳을 대사가 말한다")
+    has("warehouseLocked:삼 년째 잠긴 문이다.", "사연을 들은 뒤 창고 문의 설명이 달라진다")
 
-    # [D] 여관: 문을 밟아 들어가고, 방을 잡고, 다시 나온다
+    # 소지품 창 (10단계): 아직 아무것도 없다
+    has("menuOpened:true", "취소키로 소지품 창이 열린다")
+    has("bagEmpty:[]", "처음에는 가진 것이 없다")
+    has("menuClosed:true", "같은 키로 닫힌다")
+
+    # [D] 여관: 열쇠를 받지만, 은화가 없어 방을 못 잡는다
     has("innAt:10,12", "여관 문으로 들어서면 1층 입구")
     has("innLocation:항구 여관", "실내에서도 장소 이름")
     has("hostLine:어서 오세요.", "여관 주인의 첫 대사")
+    has("hostKeyLine:창고 얘기를 들으셨군요.", "창고 사연을 듣고 오면 열쇠를 내준다")
+    has("hostKeyGot:창고 열쇠를 받았다.", "열쇠를 받는다 (giveItem)")
     has("hostChoice:true", "방을 잡을지 묻는 선택지")
-    has("bookedLine:그럼 짐을 올려 두세요.", "묵기로 하면 방을 내준다")
+    has("noSilverLine:...두 닢이 모자라시네요.", "은화가 없으면 방을 잡을 수 없다")
+    has("bookedAfterRefuse:false", "거절당하면 booked 깃발이 서지 않는다")
+    has("bagKey:창고 열쇠", "소지품 창에 열쇠가 보인다")
     has("backAt:13,30", "아래 문으로 나오면 여관 문 앞")
 
-    # [E] 언덕: 등대지기와, 그 뒤에 달라지는 북쪽 문
-    has("keeperLine:...배를 기다리나.", "등대지기의 첫 마디")
+    # [E] 열쇠로 창고를 연다
+    has("warehouseOpen:열쇠가 맞는다.", "열쇠를 가지고 있으면 창고가 열린다")
+    has("oilGot:선반에 등유 한 통이 남아 있다.", "창고 안에서 등유를 얻는다")
+    has("bagOil:창고 열쇠,등유 한 통", "소지품이 순서대로 쌓인다")
+
+    # [F] 언덕: 등유를 건네고 은화 두 닢을 받는다
+    has("keeperOilLine:...그건 창고 것이군.", "등유를 들고 가면 노인이 먼저 알아본다")
+    has("silverGot:은화 두 닢을 받았다.", "사례로 은화 두 닢")
+    has("lampReady:true", "오늘 밤 등대에 불이 켜진다")
+    has("bagSilver:창고 열쇠,은화x2", "등유는 나가고 은화가 둘 들어왔다 (takeItem/giveItem)")
+    has("keeperLine:...배를 기다리나.", "등유를 넘긴 뒤에는 원래의 대화로 돌아온다")
     has("altarLine:제단이 있었네.", "하늘 끝을 물으면 제단 이야기가 나온다")
     has("gateLine:숲으로 가는 길은 막혀 있다. 바람이",
         "그 이야기를 들은 뒤에는 북쪽 문의 설명도 달라진다")
 
-    # [F] 배: 마지막 선택과 에필로그, 그리고 타이틀 복귀
-    has("shipLine:저녁 배가 밧줄을 풀 준비를 하고 있다. 등대에는",
-        "등대 이야기를 들었으면 배 앞의 글도 달라진다")
+    # [G] 여관: 이번에는 은화로 방을 잡는다
+    has("bookedLine:그럼 짐을 올려 두세요.", "은화 두 닢이 있으면 방을 내준다")
+    has("booked:true", "방을 잡았다")
+    has("bagPaid:창고 열쇠", "방값으로 은화가 나갔다 (소지품에 열쇠만 남는다)")
+
+    # [H] 배: 마지막 선택과 에필로그, 그리고 타이틀 복귀
+    has("shipLine:저녁 배가 밧줄을 풀 준비를 하고 있다. 언덕의 등대에는",
+        "등대에 기름을 채웠으면 배 앞의 글도 달라진다")
     has("shipChoice:true", "떠날지 묻는 선택지")
     has("farewellLine:밧줄 푸네.", "떠나기로 하면 선장이 배웅한다")
-    has("epilogue:배가 항구를 떠날 때, 등 뒤에서 등대에 불이 켜졌다.",
-        "본 것에 따라 에필로그 한 줄이 달라진다")
+    has("epilogue1:배는 저녁 물때에 항구를 떠났다.", "에필로그 첫 줄")
+    has("epilogue2:등 뒤에서 등대에 불이 켜졌다.", "등대에 불을 켰으면 한 줄이 붙는다")
+    has("epilogue3:여관의 방 하나가 하룻밤 비어 있었다.", "방을 잡았으면 또 한 줄이 붙는다")
     has("finalScene:title", "에필로그 뒤에는 타이틀로 돌아온다")
     has("demoDone:true", "시나리오 끝까지 통과")
     check("걷다가 막힌 곳이 없다", "timeout" not in log,
@@ -679,6 +711,166 @@ def test_rpgdemo_scene():
         hero = count_color_in(img, scale, 187, 357, 197, 370, DEMO_SHIRT, 30)
         check("플레이어가 부두 위에 서 있다", hero > 5, f"px={hero}")
         check_golden("rpgdemo_town", img)
+
+    # 소지품 창이 열린 화면 (10단계). 창 두 칸과 커서, 개수와 설명이 한 장에 있다.
+    shot_env = {"INITIAL2D_NO_RTP": "1", "INITIAL2D_DEMO_STOP": "bag"}
+    _, r_bag, s_bag = run_scene("rpgdemo_scene.lua", [20], 30, shot_env)
+    check("소지품 창 덤프", 20 in s_bag, f"rc={r_bag.returncode}")
+    if 20 in s_bag:
+        img = s_bag[20]
+        scale = img.width / 384.0
+        frame = count_color_in(img, scale, 8, 170, 376, 280, SKIN_FRAME_LIGHT, 30)
+        check("소지품 창의 테두리", frame > 40, f"px={frame}")
+        check_golden("rpgdemo_bag", img)
+
+    # 여관 벽 앞에 선 캐릭터 (2026-08-20 사용자 보고의 회귀 테스트).
+    # 캐릭터 프레임(24x32)은 타일(16x16)보다 커서 머리가 윗 칸으로 올라간다.
+    # 장식 레이어를 캐릭터 **위**에 그리면 그 칸의 집 벽이 머리를 통째로 덮는다.
+    # 맵 정의의 groundLayers가 그 경계를 정하며(port_town은 2), 여기서 머리색
+    # 픽셀 수로 확인한다 — 되돌아가면 이 수가 0에 가까워진다.
+    shot_env = {"INITIAL2D_NO_RTP": "1", "INITIAL2D_DEMO_STOP": "wall"}
+    _, r_wall, s_wall = run_scene("rpgdemo_scene.lua", [20], 30, shot_env)
+    check("여관 문 앞 화면 덤프", 20 in s_wall, f"rc={r_wall.returncode}")
+    if 20 in s_wall:
+        img = s_wall[20]
+        scale = img.width / 384.0
+        wall = count_color_in(img, scale, 170, 196, 215, 214, HOUSE_WALL, 24)
+        check("캐릭터가 집 벽 앞에 서 있다", wall > 200, f"px={wall}")
+        # 허용 오차를 좁게 잡는다. 문 타일의 갈색(108,74,50)이 머리색과 가까워서
+        # 기본 오차(24)로는 "가려진 머리"까지 머리로 세어 버린다 — 이 테스트를
+        # 처음 넣었을 때 실제로 통과해 버렸다.
+        hair = count_color_in(img, scale, 184, 201, 199, 213, HAIR_BROWN, 8)
+        check("집 벽이 캐릭터의 머리를 덮지 않는다", hair > 40, f"머리색 px={hair}")
+
+
+# 알데바란 자산의 색 (tools/generate_aldebaran_assets.py)
+ALD_COAT = (196, 164, 110)     # 카르토의 외투
+ALD_MOSS = (64, 84, 60)        # 진흙 땅 윗면의 이끼
+ALD_STAR = (232, 96, 66)       # 원경의 붉은 별
+
+
+def test_aldebaran_scene():
+    """알데바란 인수 시나리오 (docs/plans/aldebaran-3-content.md 7절).
+
+    타이틀 → 도입 컷씬 → (일부러 두 번 떨어져) 게임 오버와 다시 하기 → 대쉬와
+    턱과 다리 → 전투와 성장 → 체크포인트 부활 → 짐도둑 → 배낭 → 에필로그 →
+    결과 창 → 타이틀. 골든은 타이틀과 스테이지 첫 화면 두 장.
+    """
+    print("\n[9] aldebaran_scene — 알데바란 인수 시나리오 (타이틀부터 에필로그까지)")
+    work = make_workdir("aldebaran_scene.lua")
+    env = dict(os.environ)
+    env["INITIAL2D_EXIT_AFTER"] = "90"
+    env["INITIAL2D_NO_RTP"] = "1"     # 골든과 같은 그림으로 (RTP는 기계마다 다르다)
+    result = subprocess.run([GAME], cwd=work, env=env,
+                            capture_output=True, text=True, timeout=600)
+    log = result.stdout + result.stderr
+
+    check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode}")
+    check("Lua 오류 없음", "PANIC" not in log and "attempt to" not in log, log[-300:])
+
+    def has(needle, name):
+        check(name, needle in log, f"'{needle}' 없음 | {log[-400:]}")
+
+    # [A] 타이틀
+    has("titleScene:aldebaran_title", "타이틀 씬으로 시작")
+    has("titleMenuOpen:true", "커서 메뉴가 열린다")
+    has("titleItems:3 index:1", "항목 3개, 커서는 첫 항목")
+    has("titleHelpOpen:true", "조작 방법을 고르면 설명 창이 뜬다")
+    has("titleHelpClosed:true", "설명을 끝까지 넘기면 닫힌다")
+    has("sceneAfterStart:aldebaran", "시작을 고르면 스테이지로")
+
+    # [B] 도입 컷씬 (기획서 4.2절)
+    has("aldebaranMonsters:8", "몬스터 여덟이 배치된다 (거미 넷, 늑대 셋, 짐도둑)")
+    has("introActive:true", "도입 컷씬이 조작을 잠근다")
+    has("introWindow:true", "나레이션 창이 실제로 떠 있다")
+    has("introDone:true", "나레이션을 넘기면 조작이 풀린다")
+    # isBusy()는 마지막 쪽을 넘긴 즉시 거짓이 되고 창은 그 뒤의 update()가 닫는다.
+    # 컷씬이 끝났다고 갱신을 멈추면 창이 열린 채 남는다 (2026-08-23 사용자 보고).
+    has("introWindowClosed:true", "넘긴 나레이션 창이 화면에서 사라진다")
+
+    # [C] 게임 오버와 다시 하기 (기획서 4.5절)
+    has("firstDeathLives:1", "낙하 한 번에 목숨 하나")
+    has("gameOverChoice:true", "목숨을 다 잃으면 게임 오버 창")
+    has("gameOvers:1", "게임 오버 한 번")
+    has("retryLives:2", "다시 하기는 목숨 2로")
+    has("retryAtStart:true", "다시 하기는 스테이지 처음부터")
+
+    # [D] 이동과 전투
+    has("aldebaranDash:true", "더블탭 대쉬가 걷기보다 빠르다")
+    has("aldebaranClimb:320", "바위 턱 셋을 올라 절벽 어깨(윗면 20)에 선다")
+    has("aldebaranFirstKill:exp=5,gold=10", "첫 전갈거미를 콤보로 잡고 보상을 받는다")
+    has("aldebaranSign:낡은 다리다.", "표지 글이 화면에 뜬다")
+    has("aldebaranBridge:true", "다리 구멍 둘을 뛰어넘었다")
+    has("aldebaranCheckpoint:true", "이정표가 체크포인트가 된다")
+    has("aldebaranPaused:true", "일시 정지가 열린다 (게임 시간 정지)")
+    has("aldebaranResumed:true", "계속 하기로 닫힌다")
+    has("aldebaranRespawnX:1056", "낭떠러지에 떨어지면 체크포인트에서 다시 선다")
+    has("aldebaranRespawnLives:1", "목숨이 하나 줄었다")
+    has("aldebaranRespawnHp:true", "부활은 HP 전량으로")
+    has("aldebaranHurt:", "몬스터에게 맞아 HP가 줄었다")
+    has("aldebaranHurtInvuln:true", "맞은 직후에는 무적 시간이 선다")
+    has("aldebaranBerserk:true", "버서커가 켜진다")
+    has("aldebaranBerserkMp:true", "버서커가 MP 10을 쓴다")
+    has("aldebaranLevelUp:", "경험치로 레벨이 오른다")
+    has("aldebaranLevelHeal:true", "레벨이 오르면 전량 회복")
+    has("aldebaranEnd:384", "늑대 숲의 턱을 넘어 공터 지면까지 내려온다")
+
+    # [E] 짐도둑과 에필로그 (기획서 4.3절과 4.4절)
+    has("aldebaranStone:true", "짐도둑이 돌을 던진다")
+    has("aldebaranBossDown:true", "짐도둑을 쓰러뜨리면 배낭이 떨어진다")
+    has("aldebaranEpilogue:epilogue", "배낭을 주우면 에필로그")
+    has("aldebaranFalls:3", "낙하는 일부러 떨어진 세 번뿐")
+    has("aldebaranResult:true", "에필로그 뒤에 결과 창")
+    has("finalScene:aldebaran_title", "결과 창을 닫으면 타이틀로")
+    has("aldebaranAcceptDone:true", "시나리오 끝까지 통과")
+
+    # 터치 조작의 끝-끝 검증: 가상 패드로 걷고, 버튼으로 뛰고 베고, 정지 버튼과
+    # 항목 누름으로 일시 정지를 여닫는다 (재생기의 마우스 = SDL의 첫 손가락)
+    _, r_pad, s_pad = run_scene("aldebaran_scene.lua", [10], 15,
+                                {"INITIAL2D_ALDEBARAN_STOP": "touch",
+                                 "INITIAL2D_SKIP_INTRO": "1",
+                                 "INITIAL2D_NO_RTP": "1",
+                                 "INITIAL2D_VPAD": "1"})
+    log_pad = r_pad.stdout + r_pad.stderr
+    check("터치 실행 정상 종료", r_pad.returncode == 0, f"rc={r_pad.returncode}")
+    for needle, name in [("touchWalk:true", "터치: 가상 패드로 걷는다"),
+                         ("touchJump:true", "터치: 점프 버튼"),
+                         ("touchAttack:true", "터치: 공격 버튼"),
+                         ("touchPause:true", "터치: 정지 버튼"),
+                         ("touchResume:true", "터치: 항목을 눌러 계속 하기")]:
+        check(name, needle in log_pad, log_pad[-400:])
+    check("터치 UI 화면 덤프", 10 in s_pad)
+
+    # 골든 1: 스테이지 첫 화면 (컷씬을 생략하고 시간을 얼려 고정한다)
+    _, r2, shots = run_scene("aldebaran_scene.lua", [20], 30,
+                             {"INITIAL2D_ALDEBARAN_STOP": "start",
+                              "INITIAL2D_SKIP_INTRO": "1",
+                              "INITIAL2D_NO_RTP": "1"})
+    check("스테이지 첫 화면 덤프", 20 in shots, f"rc={r2.returncode}")
+    if 20 in shots:
+        img = shots[20]
+        scale = img.width / 384.0
+        coat = count_color_in(img, scale, 44, 360, 70, 380, ALD_COAT, 30)
+        check("카르토의 외투 픽셀", coat > 8, f"px={coat}")
+        moss = count_color_in(img, scale, 96, 384, 200, 389, ALD_MOSS, 24)
+        check("진흙 땅의 이끼 윗면", moss > 80, f"px={moss}")
+        star = count_color_in(img, scale, 288, 52, 312, 76, ALD_STAR, 40)
+        check("원경의 붉은 별", star > 4, f"px={star}")
+        check_golden("aldebaran_forest", img)
+
+    # 골든 2: 타이틀 (배경에 글자가 구워져 있고 메뉴 창이 왼쪽 아래에 뜬다)
+    _, r3, s_title = run_scene("aldebaran_scene.lua", [20], 30,
+                               {"INITIAL2D_ALDEBARAN_STOP": "title",
+                                "INITIAL2D_NO_RTP": "1"})
+    check("타이틀 화면 덤프", 20 in s_title, f"rc={r3.returncode}")
+    if 20 in s_title:
+        img = s_title[20]
+        scale = img.width / 768.0
+        star = count_color_in(img, scale, 570, 100, 630, 160, ALD_STAR, 40)
+        check("타이틀의 붉은 별", star > 10, f"px={star}")
+        frame = count_color_in(img, scale, 84, 600, 380, 790, SKIN_FRAME_LIGHT, 30)
+        check("타이틀 메뉴 창의 테두리", frame > 40, f"px={frame}")
+        check_golden("aldebaran_title", img)
 
 
 def test_resolution():
@@ -780,6 +972,7 @@ def main():
     test_rpg_event_scene()
     test_rpg_dialogue_scene()
     test_rpgdemo_scene()
+    test_aldebaran_scene()
     test_resolution()
     test_rtp_charset()
 

@@ -215,12 +215,60 @@ function M.run(t)
 	t.check(#badScript == 1 and badScript[1]:find("없는이름") ~= nil,
 		"등록되지 않은 스크립트 이름: " .. table.concat(badScript, ""))
 
-	-- ---- [10] 커맨드 집합은 못 박아 둔다 (v1 15종) --------------------------
+	-- ---- [9.5] 아이템 커맨드와 아이템 조건 (10단계) -------------------------
+	local Inventory = require("scripts/rpg/inventory")
+
+	local itemCtx = fakeCtx()
+	Commands.compile({
+		{ code = "giveItem", item = "silver", count = 2 },
+		{ code = "giveItem", item = "key" },
+	})(nil, itemCtx)
+	t.check_eq(Inventory.count(itemCtx.state, "silver"), 2, "giveItem이 개수만큼 준다")
+	t.check_eq(Inventory.count(itemCtx.state, "key"), 1, "count가 없으면 하나")
+
+	Commands.compile({ { code = "takeItem", item = "silver", count = 2 } })(nil, itemCtx)
+	t.check_eq(Inventory.count(itemCtx.state, "silver"), 0, "takeItem이 뺀다")
+
+	-- 모자라면 아무 일도 일어나지 않는다 (반쯤 빼고 실패하는 경우가 없다)
+	Commands.compile({ { code = "takeItem", item = "key", count = 5 } })(nil, itemCtx)
+	t.check_eq(Inventory.count(itemCtx.state, "key"), 1, "모자라면 그대로 둔다")
+
+	-- 조건: 가졌는가와 개수 비교
+	local bag = {}
+	Inventory.give(bag, "key")
+	Inventory.give(bag, "silver", 2)
+	t.check(Commands.test({ item = "key" }, bag), "하나라도 가졌으면 참")
+	t.check(not Commands.test({ item = "없는것" }, bag), "없으면 거짓")
+	t.check(Commands.test({ item = "silver", op = ">=", value = 2 }, bag), "개수 비교 (>=)")
+	t.check(not Commands.test({ item = "silver", op = ">=", value = 3 }, bag), "모자라면 거짓")
+	t.check(Commands.test({ item = "없는것", op = "==", value = 0 }, bag),
+		"없는 물건의 개수는 0")
+
+	-- if 분기 안에서 그대로 쓰인다 (새 제어 구조가 아니다)
+	local branchCtx = fakeCtx()
+	branchCtx.state = bag
+	Commands.compile({
+		{ code = "if", cond = { item = "key" },
+		  thenDo = { { code = "message", text = "열쇠가 맞는다" } },
+		  elseDo = { { code = "message", text = "잠겨 있다" } } },
+	})(nil, branchCtx)
+	t.check_eq(branchCtx.call(1)[2], "열쇠가 맞는다", "아이템 조건이 if에서 돈다")
+
+	-- 검증: item 인자가 없으면 맵을 열 때 잡힌다
+	local okItem, itemErrors = Commands.validate({ { code = "giveItem" } })
+	t.check(not okItem and #itemErrors == 1 and itemErrors[1]:find("item") ~= nil,
+		"giveItem에 item이 없으면 검증에서 걸린다: " .. table.concat(itemErrors, ""))
+
+	-- ---- [10] 커맨드 집합은 못 박아 둔다 ------------------------------------
+	-- 9단계에서 15종으로 시작했고, 10단계에서 아이템 둘이 늘어 17종이다
+	-- (docs/plans/11-game-systems.md 4.2). 여기 숫자를 고치지 않고는 커맨드가
+	-- 늘지 않는다 — "그것 없이는 적을 수 없는 이벤트"가 나올 때만 더한다.
 	local codes = Commands.codes()
-	t.check_eq(#codes, 15, "v1 커맨드는 15종: " .. table.concat(codes, ","))
-	local expected = "choice,comment,if,message,moveRoute,playBgm,playSe,scene,"
-		.. "script,setFlag,setVar,showLocation,transfer,turn,wait"
-	t.check_eq(table.concat(codes, ","), expected, "목록이 문서(10-demo-v2.md 3.2)와 같다")
+	t.check_eq(#codes, 17, "커맨드는 17종: " .. table.concat(codes, ","))
+	local expected = "choice,comment,giveItem,if,message,moveRoute,playBgm,playSe,scene,"
+		.. "script,setFlag,setVar,showLocation,takeItem,transfer,turn,wait"
+	t.check_eq(table.concat(codes, ","), expected,
+		"목록이 문서(10-demo-v2.md 3.2 + 11-game-systems.md 4.2)와 같다")
 
 	-- ---- [11] event.lua 가 커맨드를 받아들인다 ------------------------------
 	local Event = require("scripts/rpg/event")

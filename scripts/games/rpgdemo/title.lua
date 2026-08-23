@@ -6,7 +6,7 @@
 -- 쓰고, 맵 씬에서는 배율 1, 16픽셀 폰트로 쓴다.
 --
 --   방향키 위아래: 항목 이동      Z / Enter / Space: 결정
---   터치: 항목을 직접 누른다      ESC / 뒤로가기: 미니 게임 목록으로
+--   터치: 항목을 직접 누른다      ESC / 뒤로가기: 게임 종료
 --
 -- 배경은 tools/generate_title.py 로 다시 만든다.
 
@@ -145,7 +145,7 @@ function RpgDemoTitleScene.update(elapsed)
 		choice:update(nil)
 		help:update({}, false)
 		if leaveTimer >= LEAVE_DELAY then
-			SwitchScene(leaving == START and "rpg" or "menu")
+			if leaving == START then SwitchScene("rpg") else GameExit() end
 		end
 		return
 	end
@@ -178,7 +178,7 @@ function RpgDemoTitleScene.update(elapsed)
 	end
 
 	if Input.IsKeyDown(VK_ESCAPE) then
-		SwitchScene("menu")
+		GameExit()
 	end
 end
 

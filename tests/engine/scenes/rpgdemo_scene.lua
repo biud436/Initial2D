@@ -5,8 +5,14 @@
 -- 그대로 얹고, 입력 재생기(tests/lua/input_replay.lua)로 사람이 하듯 키를 눌러
 -- 기획서(docs/design/port-town.md)의 흐름을 한 번에 통과시킨다.
 --
---   타이틀 → 시작 → 부두 도착 → 생선 장수 → 창고 → 여관(방을 잡는다)
---   → 등대지기(하늘 끝) → 배 → 에필로그 → 타이틀
+--   타이틀 → 시작 → 부두 도착 → 생선 장수 → 잠긴 창고 → 여관(열쇠를 받고,
+--   은화가 없어 방을 못 잡는다) → 창고를 연다(등유) → 소지품 창 →
+--   등대지기(등유를 주고 은화 두 닢) → 등대지기(하늘 끝) → 여관(방을 잡는다)
+--   → 배 → 에필로그 → 타이틀
+--
+-- 10단계의 심부름 사슬(docs/plans/11-game-systems.md)을 한 줄로 지나간다.
+-- 배회하는 아이는 시나리오에 넣지 않는다 — 위치가 틱 수에 따라 흔들려 경로가
+-- 불안정해진다. 아이가 주는 조개 목걸이는 단위 테스트가 대신 확인한다.
 --
 -- 프레임 진행은 여기서 직접 돌린다 (엔진의 Update를 기다리지 않는다). 화면
 -- 렌더 프레임과 게임 tick은 헤드리스에서 비율이 다르므로, tick을 손으로 돌려야
@@ -14,6 +20,7 @@
 --
 -- INITIAL2D_DEMO_STOP 으로 중간에서 멈춰 그 화면을 골든으로 남긴다.
 --   title   타이틀 메뉴가 열린 채로      town  마을에 막 들어선 채로
+--   bag     소지품 창이 열린 채로         wall   여관 벽 앞에 선 채로
 --   (없음)  시나리오 전체를 끝까지
 
 local Replay = require("scripts/luatests/input_replay")
@@ -117,6 +124,29 @@ local function next(frames)
 	tick(frames or 90)
 end
 
+--- 소지품 창을 열고 닫는다 (10단계). 한가할 때만 열린다.
+local function openMenu(label)
+	replay:tap("X")
+	local ok = tickUntil(label, function() return status().menu end, 60)
+	tick(8)                     -- 창이 다 열릴 때까지
+	return ok
+end
+
+local function closeMenu(label)
+	replay:tap("X")
+	tickUntil(label, function() return not status().menu end, 60)
+	tick(8)
+end
+
+--- 소지품 창에 보이는 이름들 (개수가 둘 이상이면 뒤에 붙인다)
+local function menuNames()
+	local out = {}
+	for _, item in ipairs(status().menuLines or {}) do
+		out[#out + 1] = item.name .. (item.count > 1 and ("x" .. item.count) or "")
+	end
+	return table.concat(out, ",")
+end
+
 function Initialize()
 	AUTOPLAY = false           -- 입력은 시나리오가 준다
 	FontReady = PreparaFont("./resources/fonts/hangul.fnt")
@@ -202,6 +232,8 @@ function Initialize()
 	replay:tap("Z"); tick(6)      -- 1번 "창고가 잠겨 있던데요"
 	tick(120)
 	print("warehouseStory:" .. dialogueText())
+	next(120)
+	print("keyHint:" .. dialogueText())      -- 다음에 갈 곳을 대사가 말한다
 	next(20)
 	tickUntil("fishEnd", function() return not status().busy end, 120)
 
@@ -213,12 +245,27 @@ function Initialize()
 	-- 창고 문(19,29)은 막힌 칸이라 붙들어도 걸어가지 않는다
 	print("facingWarehouse:" .. tostring(face("UP", "up")))
 	talk("warehouseTalk")
-	print("warehouseLine:" .. dialogueText())
+	print("warehouseLocked:" .. dialogueText())
 	next(20)
 	tickUntil("warehouseEnd", function() return not status().busy end, 120)
 
-	-- ---- [D] 여관: 방을 잡는다 ---------------------------------------------
+	-- 아직 아무것도 없다
+	print("menuOpened:" .. tostring(openMenu("emptyMenu")))
+	print("bagEmpty:[" .. menuNames() .. "]")
+	closeMenu("emptyMenuClose")
+	print("menuClosed:" .. tostring(not status().menu))
+
+	-- ---- [D] 여관: 열쇠를 받고, 은화가 없어 방을 못 잡는다 -----------------
 	walk("LEFT", tx, 13, "walkToInnDoor")
+
+	if STOP == "wall" then
+		-- 여관 문(13,29) 바로 아래에 선 채로 멈춘다. 캐릭터 프레임(24x32)이
+		-- 타일(16x16)보다 커서 머리가 윗 칸으로 올라가므로, 장식 레이어를
+		-- 캐릭터 위에 그리면 벽이 머리를 덮는다 (2026-08-20 사용자 보고).
+		frozen = true
+		return
+	end
+
 	replay:press("UP")
 	tickUntil("enterInn", function() return status().map == "inn" end, 300)
 	replay:release("UP")
@@ -233,14 +280,28 @@ function Initialize()
 	talk("hostTalk")
 	print("hostLine:" .. dialogueText())
 	next(120)
+	print("hostKeyLine:" .. dialogueText())      -- 창고 얘기를 들었으니 열쇠를 준다
+	next(60)
+	print("hostKeyGot:" .. dialogueText())
+	next(120)
+	print("hostKeyHint:" .. dialogueText())
+	next(120)
 	print("hostPrice:" .. dialogueText())
 	next(6)
 	print("hostChoice:" .. tostring(status().talking))
-	replay:tap("Z"); tick(6)      -- 1번 "묵는다"
+	replay:tap("Z"); tick(6)      -- 1번 "묵는다" — 그런데 은화가 없다
 	tick(120)
-	print("bookedLine:" .. dialogueText())
+	print("noSilverLine:" .. dialogueText())
+	next(120)
+	print("noSilverHint:" .. dialogueText())
 	next(20)
 	tickUntil("hostEnd", function() return not status().busy end, 120)
+	print("bookedAfterRefuse:" .. tostring(status().flags.booked == true))
+
+	-- 열쇠가 소지품에 들어왔는가
+	openMenu("keyMenu")
+	print("bagKey:" .. menuNames())
+	closeMenu("keyMenuClose")
 
 	-- 아래 문으로 마을로 돌아간다
 	walk("DOWN", ty, 12, "walkToInnExit")
@@ -250,11 +311,51 @@ function Initialize()
 	tickUntil("townFade", function() return not status().fading end, 60)
 	print("backAt:" .. tostring(tx()) .. "," .. tostring(ty()))
 
-	-- ---- [E] 언덕: 등대지기 ------------------------------------------------
-	walk("RIGHT", tx, 16, "walkToRoad")
+	-- ---- [E] 창고를 연다 ---------------------------------------------------
+	walk("RIGHT", tx, 19, "walkBackToWarehouse")
+	walk("UP", ty, 30, "walkUpToWarehouse2")
+	print("facingWarehouse2:" .. tostring(face("UP", "up")))
+	talk("openWarehouse")
+	print("warehouseOpen:" .. dialogueText())
+	next(120)
+	print("oilGot:" .. dialogueText())
+	next(120)
+	print("oilHint:" .. dialogueText())
+	next(20)
+	tickUntil("warehouseEnd2", function() return not status().busy end, 120)
+
+	openMenu("oilMenu")
+	print("bagOil:" .. menuNames())
+
+	if STOP == "bag" then
+		frozen = true             -- 소지품 창이 열린 채로 골든을 찍는다
+		return
+	end
+
+	closeMenu("oilMenuClose")
+
+	-- ---- [F] 언덕: 등유를 건네고 은화를 받는다 -----------------------------
+	walk("LEFT", tx, 16, "walkToRoad")
 	walk("UP", ty, 13, "walkToHill")
 	walk("RIGHT", tx, 17, "walkToKeeper")
 	print("facingKeeper:" .. tostring(status().dir == "right"))
+	talk("keeperOil")
+	print("keeperOilLine:" .. dialogueText())
+	next(120)
+	print("keeperThanks:" .. dialogueText())
+	next(120)
+	print("silverGot:" .. dialogueText())
+	next(120)
+	print("silverHint:" .. dialogueText())
+	next(20)
+	tickUntil("keeperOilEnd", function() return not status().busy end, 120)
+	print("lampReady:" .. tostring(status().flags.lampReady == true))
+
+	openMenu("silverMenu")
+	print("bagSilver:" .. menuNames())
+	closeMenu("silverMenuClose")
+
+	-- 등유를 넘긴 뒤에 다시 말을 걸면 원래의 선택지가 나온다
 	talk("keeperTalk")
 	print("keeperLine:" .. dialogueText())
 	next(120)
@@ -264,6 +365,8 @@ function Initialize()
 	replay:tap("Z"); tick(6)      -- 1번 "하늘 끝에 가 보셨습니까"
 	tick(120)
 	print("altarLine:" .. dialogueText())
+	next(120)
+	print("altarLine2:" .. dialogueText())
 	next(20)
 	tickUntil("keeperEnd", function() return not status().busy end, 120)
 
@@ -276,7 +379,39 @@ function Initialize()
 	next(20)
 	tickUntil("gateEnd", function() return not status().busy end, 120)
 
-	-- ---- [F] 배: 떠난다 ----------------------------------------------------
+	-- ---- [G] 여관: 이번에는 은화로 방을 잡는다 -----------------------------
+	walk("DOWN", ty, 30, "walkDownToInn")
+	walk("LEFT", tx, 13, "walkToInnDoor2")
+	replay:press("UP")
+	tickUntil("enterInn2", function() return status().map == "inn" end, 300)
+	replay:release("UP")
+	tickUntil("innFade2", function() return not status().fading end, 60)
+	tickUntil("innAuto2", function() return not status().busy end, 120)
+
+	walk("UP", ty, 4, "walkToCounter2")
+	talk("hostTalk2")
+	print("hostPrice2:" .. dialogueText())
+	next(6)
+	replay:tap("Z"); tick(6)      -- 1번 "묵는다"
+	tick(120)
+	print("bookedLine:" .. dialogueText())
+	next(20)
+	tickUntil("hostEnd2", function() return not status().busy end, 120)
+	print("booked:" .. tostring(status().flags.booked == true))
+
+	-- 은화는 값으로 나갔다 (takeItem)
+	openMenu("paidMenu")
+	print("bagPaid:" .. menuNames())
+	closeMenu("paidMenuClose")
+
+	walk("DOWN", ty, 12, "walkToInnExit2")
+	replay:press("DOWN")
+	tickUntil("backToTown2", function() return status().map == "port_town" end, 300)
+	replay:release("DOWN")
+	tickUntil("townFade2", function() return not status().fading end, 60)
+
+	-- ---- [H] 배: 떠난다 ----------------------------------------------------
+	walk("RIGHT", tx, 16, "walkToRoad2")
 	walk("DOWN", ty, 43, "walkToPier")
 	walk("RIGHT", tx, 17, "walkToPierEdge")
 	walk("DOWN", ty, 44, "walkToShip")
@@ -290,7 +425,11 @@ function Initialize()
 	tick(120)
 	print("farewellLine:" .. dialogueText())
 	next(120)
-	print("epilogue:" .. dialogueText())
+	print("epilogue1:" .. dialogueText())
+	next(120)
+	print("epilogue2:" .. dialogueText())
+	next(120)
+	print("epilogue3:" .. dialogueText())
 	next(20)
 
 	-- 에필로그가 끝나면 페이드와 함께 타이틀로 돌아간다
