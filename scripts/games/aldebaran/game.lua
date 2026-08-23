@@ -618,7 +618,7 @@ function AldebaranScene.update(elapsed)
 		fpsAvg = fpsAvg * 0.95 + (1000.0 / elapsed) * 0.05
 	end
 	if map == nil then
-		if Input.IsKeyDown(VK_ESCAPE) then SwitchScene("menu") end
+		if Input.IsKeyDown(VK_ESCAPE) then SwitchScene("aldebaran_title") end
 		return
 	end
 

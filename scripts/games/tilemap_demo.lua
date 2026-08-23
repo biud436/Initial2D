@@ -4,7 +4,7 @@
 --   방향키 또는 화면 왼쪽 아래 가상 D-패드(터치 플랫폼): 카메라 이동
 --   마우스/터치 위치: 그 아래 타일의 gid와 통행 가능 여부 표시
 --   왼쪽 클릭/탭: 통행 가능한 잔디에 꽃 심기 (Tilemap.SetTileId 시연)
---   ESC 또는 Android 뒤로가기: 메뉴로
+--   ESC 또는 Android 뒤로가기: 종료
 -- 레이어를 1층(ground)과 2층(deco)으로 나눠 그리고 그 사이에 새를 끼워
 -- 그린다 — 5단계에서 캐릭터를 층 사이에 그릴 때와 같은 방식이다.
 
@@ -70,7 +70,7 @@ function TilemapDemoScene.update(elapsed)
 	end
 
 	if map == nil then
-		if Input.IsKeyDown(VK_ESCAPE) then SwitchScene("menu") end
+		if Input.IsKeyDown(VK_ESCAPE) then GameExit() end
 		return
 	end
 
@@ -111,7 +111,7 @@ function TilemapDemoScene.update(elapsed)
 	bird.update(elapsed)
 
 	if Input.IsKeyDown(VK_ESCAPE) then
-		SwitchScene("menu")
+		GameExit()
 	end
 end
 
@@ -139,9 +139,9 @@ function TilemapDemoScene.render()
 		DrawText(16, 16, string.format("FPS %d  카메라 %d,%d", math.floor(fpsAvg + 0.5), cx, cy))
 		DrawText(16, 56, string.format("타일 %d,%d  gid %d  통행 %s", tx, ty, gid, passable and "가능" or "불가"))
 		if pad ~= nil then
-			DrawText(W / 2 - 200, H - 56, "패드 스크롤, 탭 꽃심기, 뒤로가기 메뉴")
+			DrawText(W / 2 - 200, H - 56, "패드 스크롤, 탭 꽃심기, 뒤로가기 종료")
 		else
-			DrawText(16, H - 56, "방향키 스크롤, 클릭 꽃심기, ESC 메뉴")
+			DrawText(16, H - 56, "방향키 스크롤, 클릭 꽃심기, ESC 종료")
 		end
 	end
 

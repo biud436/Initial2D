@@ -4,7 +4,7 @@
 -- 대화창 부품(창, 선택지, 메시지)을 그대로 재사용한다.
 --
 --   방향키 위아래: 항목 이동      Z / Enter / Space: 결정
---   터치: 항목을 직접 누른다      ESC / 뒤로가기: 미니 게임 목록으로
+--   터치: 항목을 직접 누른다      ESC / 뒤로가기: 게임 종료
 --
 -- 배경은 tools/generate_aldebaran_assets.py 로 다시 만든다 (글자가 구워져 있다).
 
@@ -142,7 +142,11 @@ function AldebaranTitleScene.update(elapsed)
 		choice:update(nil)
 		help:update({}, false)
 		if leaveTimer >= LEAVE_DELAY then
-			SwitchScene(leaving == START and "aldebaran" or "menu")
+			if leaving == START then
+				SwitchScene("aldebaran")
+			else
+				GameExit()          -- "나가기"
+			end
 		end
 		return
 	end
@@ -173,8 +177,9 @@ function AldebaranTitleScene.update(elapsed)
 		end
 	end
 
+	-- 타이틀이 최상위 씬이다. ESC(안드로이드 뒤로가기)는 게임을 끝낸다.
 	if Input.IsKeyDown(VK_ESCAPE) then
-		SwitchScene("menu")
+		GameExit()
 	end
 end
 

@@ -22,7 +22,7 @@
   resources/aldebaran/hud.png        HUD 막대와 아이콘
   resources/audio/aldebaran_*.wav    효과음
 
-아랫줄(왼쪽 보기)은 오른쪽 보기를 미러링해 굽는다 — 엔진에 좌우 반전이 없다.
+아랫줄(왼쪽 보기)은 오른쪽 보기를 미러링해 굽는다 (엔진에 좌우 반전이 없다).
 
 Usage: python3 tools/generate_aldebaran_assets.py
 Requires: Pillow
@@ -757,7 +757,7 @@ def make_title():
     img.alpha_composite(g)
     d.text((387, 253), "알데바란", font=big, fill=(40, 16, 20, 220), anchor="mm")
     d.text((384, 250), "알데바란", font=big, fill=(244, 234, 222, 255), anchor="mm")
-    d.text((384, 340), "검은 안개의 숲 — Initial2D 데모", font=small,
+    d.text((384, 340), "1-1 검은 안개의 숲", font=small,
            fill=(190, 178, 196, 255), anchor="mm")
     save(img.convert("RGB"), TITLES, "aldebaran_title.png")
 
