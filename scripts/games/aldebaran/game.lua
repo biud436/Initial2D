@@ -843,9 +843,10 @@ function AldebaranScene.render()
 
 	drawHud()
 
-	-- 표지 글 (상단 가운데)
+	-- 표지 글 (상단 가운데). HUD가 왼쪽 위 y 46까지 쓰므로 그 아래에 둔다 —
+	-- 44에 두었더니 레벨 표시와 겹쳤다.
 	if signText ~= nil and FontReady then
-		drawCenteredText(44, signText)
+		drawCenteredText(58, signText)
 	end
 
 	if DEBUG_HUD and FontReady then

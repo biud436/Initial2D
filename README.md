@@ -873,6 +873,10 @@ INITIAL2D_DEMO_STOP=town INITIAL2D_NO_RTP=1 \
 
 보물 사냥꾼 카르토가 금단의 숲 알데바란에서 가면 원숭이에게 배낭과 지도를 빼앗기고, 검은 안개의 숲을 헤쳐 그것을 되찾는 한 판(3~5분)입니다. 원안은 저자의 기획서 「스피카」(Spica_v0.9)이며, 데모 분량으로 정돈한 기획서가 [docs/design/aldebaran.md](./docs/design/aldebaran.md)에 있습니다. 미니 게임 목록에서 **알데바란**을 고르면 타이틀이 뜹니다.
 
+| 검은 안개의 숲, 늑대 인간과의 전투 | 공터의 짐도둑과 돌팔매 |
+| :---: | :---: |
+| ![알데바란 전투](./docs/img/aldebaran_fight.png) | ![알데바란 짐도둑](./docs/img/aldebaran_boss.png) |
+
 ```bash
 # 타이틀부터 바로 열기
 INITIAL2D_SCENE=aldebaran_title ./build/Initial2D
