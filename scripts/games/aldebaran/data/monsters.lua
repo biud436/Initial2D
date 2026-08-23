@@ -420,6 +420,86 @@ M.species.shard = {
 	},
 }
 
+-- ---- 보스: 아포피스 (원안 표 16, 19, 20) ------------------------------------
+--
+-- 파괴의 방의 수호자이자 무덤의 기후를 좌우하는 자 (표 19). 원안은 그를
+-- "직접 나서지 않고 부하를 통솔한다"고 적었으므로(표 20) 마지막 방에서만 만난다.
+--
+-- 보스 규칙 (메타 프롬프트 P7): 3페이즈, 패턴 사이클이 명시적, 펀치 윈도우가
+-- 있고, 즉사가 없고, 두 번째 시도에서 더 잘하게 될 것.
+-- 페이즈 표는 M.BOSS_PHASES에 있다 — 코드가 아니라 표다.
+
+M.species.apophis = {
+	name = "아포피스",
+	hp = 260, atk = 20, def = 7, exp = 60, gold = 120,
+	walkSpeed = 34, chaseSpeed = 66,
+	alertRange = 260, attackRange = 30,
+	windup = 0.7, active = 0.22, recover = 1.2,   -- 후딜 1.2초가 1페이즈의 펀치 윈도우
+	halfW = 16, bodyH = 44,
+	special = "charge",
+	chargeSpeed = 190, chargeTime = 0.8, chargeAtk = 22, chargeRepeat = true,
+	phases = { 1.0, 0.66, 0.33 },                 -- 남은 체력 비율의 경계
+	phaseGuard = 1.0,                             -- 페이즈가 바뀔 때의 무적 (초)
+	sheet = "./resources/aldebaran/apophis.png",
+	cols = 5, rows = 2, frameW = 64, frameH = 64,
+	anchorX = 31, anchorY = 60,
+	frames = { walk = { 0, 1 }, charge = 2, attack = 3, hurt = 4 },
+
+	spec = {
+		source = { table = 19, section = "4.2.2.4" },
+		index = 8,
+		name = "아포피스",
+		element = "dark",
+		attackType = "charge",
+		traits = "이집트 문화의 파괴의 신. 원안 표 16이 황제의 무덤의 주 서식 세력으로 "
+			.. "아크나톤과 함께 적어 두었다.",
+		habitat = "황제의 무덤. 파괴의 방의 수호자이며 방을 떠날 수 없다 (표 20).",
+		preference = "직접 나서지 않고 부하를 통솔한다 (표 20). 태양의 방에서만 싸운다.",
+		strength = "무덤의 기후를 좌우한다 — 눈, 우박, 비, 폭풍우, 홍수 (표 19).",
+		weakness = { text = "패턴이 정해져 있다. 후딜이 길고, 페이즈마다 짧아진다." },
+		attackPatterns = {
+			normal = "몸을 낮췄다 휘두른다.",
+			skill = "우박을 부른다. 떨어질 자리에 그림자가 먼저 뜬다.",
+			ultimate = "수위를 올리고 영혼 둘을 부른다 (2페이즈).",
+		},
+		behaviorStages = {
+			"단계 1 (100~66%) : 우박 세 줄 → 돌진 → 긴 후딜",
+			"단계 2 (66~33%) : 수위 상승 → 영혼 둘 소환 → 우박 다섯 줄 → 후딜",
+			"단계 3 (33~0%) : 사이클이 빨라지고 돌진이 둘로 늘어난다 → 짧은 후딜",
+		},
+		reward = { exp = 60, gold = 120, item = nil },
+		stats = { moveSpeed = "normal", maxHp = 260, atk = 20, def = 7 },
+		notes = {
+			"원안에 몬스터 규격서가 없다. 표 16(주 서식 세력)과 표 19(기후를 좌우한다)와 "
+				.. "표 20(부하를 통솔한다)에서 만든 종이다.",
+			"즉사기가 없다. 페이즈 전환의 무적 1초가 '언제 때리는가'를 눈에 보이게 한다.",
+		},
+	},
+}
+
+-- 페이즈 표. game.lua가 이 표를 읽어 사이클을 돌린다.
+--   at        이 비율 아래로 내려가면 이 페이즈다
+--   cycle     패턴 순서. 하나씩 돌아간다
+--   recover   그 페이즈의 후딜 (펀치 윈도우)
+--   hail      우박 줄 수, summon 소환 수
+M.BOSS_PHASES = {
+	{ at = 1.00, cycle = { "hail", "charge" }, recover = 1.2,
+	  hail = 3, summon = 0, chargeCount = 1 },
+	{ at = 0.66, cycle = { "flood", "summon", "hail" }, recover = 0.9,
+	  hail = 5, summon = 2, chargeCount = 1 },
+	{ at = 0.33, cycle = { "hail", "charge", "charge" }, recover = 0.6,
+	  hail = 5, summon = 0, chargeCount = 2 },
+}
+
+--- 남은 체력 비율의 페이즈 번호 (1에서 3)
+function M.phaseFor(ratio)
+	local n = 1
+	for i, ph in ipairs(M.BOSS_PHASES) do
+		if ratio <= ph.at then n = i end
+	end
+	return n
+end
+
 -- ---- 스키마 검사 ------------------------------------------------------------
 -- 그릇이 그릇 노릇을 하려면 모양이 지켜져야 한다. P5에서 종이 열로 늘어날 때
 -- 칸 하나를 빠뜨리는 것을 여기서 잡는다.

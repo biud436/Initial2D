@@ -26,6 +26,27 @@ P.HALF_W = 6                -- 몸통 절반 폭
 P.BODY_H = 20               -- 몸통 높이
 P.RUN_GRACE = 0.18          -- 달리기 기억: 손을 뗀 직후의 점프가 앞으로 나아가는 유예
 
+-- 환경 (A7). 스테이지의 기후가 물리를 바꾼다 (docs/plans/aldebaran-7-tomb.md 4절).
+-- self.env가 없거나 값이 1이면 **지금까지와 완전히 같게 돈다** — 1-1은 이 길로 간다.
+--   friction   1 미만이면 지면에서 곧바로 서지 못하고 미끄러진다 (눈)
+--   moveMult   걷기와 대쉬의 속도 배율 (물에 잠기면 느려진다)
+--   jumpMult   점프 초속의 배율 (물에 잠기면 낮게 뛴다)
+P.GROUND_ACCEL = 900        -- 미끄러운 바닥에서 목표 속도에 다가가는 가속도
+
+--- 목표로 rate만큼 다가간다 (넘어가지 않는다)
+local function approach(v, target, rate)
+	if v < target then return math.min(target, v + rate) end
+	if v > target then return math.max(target, v - rate) end
+	return v
+end
+
+--- 이 프레임의 환경 (없으면 기본값)
+local function envOf(self)
+	local e = self.env
+	if e == nil then return 1, 1, 1 end
+	return e.friction or 1, e.moveMult or 1, e.jumpMult or 1
+end
+
 -- 3단 콤보 (기획서 5.1절): 베기 1단 → 2단 → 십자 베기
 P.ATTACK_WIND = 0.08        -- 선딜레이
 P.ATTACK_ACTIVE = 0.10      -- 판정이 살아 있는 구간
@@ -194,17 +215,26 @@ local function updateMovement(self, input, dt)
 	-- "달리다 손을 떼고 점프"가 앞으로 나아가는 점프가 되는 조건이다.
 	self.dashTimer = math.max(0, self.dashTimer - dt)
 	self.runTimer = math.max(0, self.runTimer - dt)
+	local friction, moveMult, jumpMult = envOf(self)
+	local prevVx = self.vx
 	if self.dashTimer > 0 then
-		self.vx = self.dashDir * P.DASH_SPEED
+		self.vx = self.dashDir * P.DASH_SPEED * moveMult
 		self.facing = self.dashDir
 	elseif input.left and not input.right then
-		self.vx = -P.WALK_SPEED
+		self.vx = -P.WALK_SPEED * moveMult
 		self.facing = -1
 	elseif input.right and not input.left then
-		self.vx = P.WALK_SPEED
+		self.vx = P.WALK_SPEED * moveMult
 		self.facing = 1
 	elseif self.onGround then
 		self.vx = 0
+	end
+
+	-- 미끄러운 바닥(눈): 목표 속도로 곧바로 갈아타지 않고 다가간다. 멈추는 것도
+	-- 돌아서는 것도 시간이 걸린다. friction이 1이면 위의 결과를 그대로 쓴다 —
+	-- 그래야 1-1의 물리가 한 픽셀도 달라지지 않는다.
+	if friction < 1 and self.onGround then
+		self.vx = approach(prevVx, self.vx, P.GROUND_ACCEL * friction * dt)
 	end
 	if self.vx ~= 0 then
 		self.runVx = self.vx
@@ -214,7 +244,7 @@ local function updateMovement(self, input, dt)
 	-- 점프와 2단 점프
 	if input.jumpEdge then
 		if self.onGround then
-			self.vy = P.JUMP_V
+			self.vy = P.JUMP_V * jumpMult
 			self.onGround = false
 			self.airJumps = 1
 			self.jumped = true
@@ -223,7 +253,7 @@ local function updateMovement(self, input, dt)
 				self.facing = self.vx < 0 and -1 or 1
 			end
 		elseif self.airJumps > 0 then
-			self.vy = P.AIR_JUMP_V
+			self.vy = P.AIR_JUMP_V * jumpMult
 			self.airJumps = self.airJumps - 1
 			self.jumped = true
 		end

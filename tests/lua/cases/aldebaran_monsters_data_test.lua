@@ -22,7 +22,7 @@ function M.run(t)
 	do
 		local problems = Monsters.validate()
 		t.check_eq(#problems, 0, "스키마 문제 없음: " .. table.concat(problems, " / "))
-		t.check_eq(count(Monsters.species), 7, "종은 일곱이다 (숲 넷, 무덤 셋)")
+		t.check_eq(count(Monsters.species), 8, "종은 여덟이다 (숲 넷, 무덤 셋, 보스 아포피스)")
 	end
 
 	-- [B] 검사기가 진짜로 잡는가 (통과만 보면 검사기가 죽어도 모른다)
@@ -103,6 +103,9 @@ function M.run(t)
 
 		-- 1-1의 적은 셋 다 부등식을 깬다 (21, 18, 16프레임). 알고 두는 것이다.
 		local known = { spider = 0.35, wolf = 0.3, blackwolf = 0.26, monkey = 0.4 }
+		-- 아포피스는 A7에서 설계했으므로 부등식을 지킨다
+		t.check(Monsters.species.apophis.windup >= MIN_WINDUP - 1e-9,
+			"아포피스의 선딜이 32프레임 이상")
 		for key, want in pairs(known) do
 			t.check_eq(Monsters.species[key].windup, want,
 				"1-1 " .. key .. "의 선딜은 아직 " .. tostring(want) .. "초다 (P3에서 다시 본다)")
@@ -167,6 +170,36 @@ function M.run(t)
 			t.check(not types[at], key .. "의 공격 방식이 다른 둘과 겹치지 않는다")
 			types[at] = true
 		end
+	end
+
+	-- [E3] 보스 아포피스: 3페이즈, 즉사기 없음, 펀치 윈도우가 줄어든다
+	do
+		local boss = Monsters.species.apophis
+		t.check_eq(#boss.phases, 3, "페이즈는 셋이다")
+		t.check_eq(#Monsters.BOSS_PHASES, 3, "페이즈 표도 셋이다")
+		t.check(boss.phaseGuard > 0, "페이즈 전환에 무적이 있다 (언제 때리는지 보이게)")
+
+		-- 후딜은 페이즈마다 짧아진다. 그래야 두 번째 시도에서 더 잘하게 된다
+		local prev = nil
+		for i, ph in ipairs(Monsters.BOSS_PHASES) do
+			t.check(ph.recover > 0, i .. "페이즈에 펀치 윈도우가 있다")
+			if prev then
+				t.check(ph.recover < prev, i .. "페이즈의 후딜이 앞보다 짧다")
+			end
+			t.check(#ph.cycle > 0, i .. "페이즈의 패턴 사이클이 비어 있지 않다")
+			prev = ph.recover
+		end
+
+		-- 즉사가 없다: 한 방이 레벨 1의 최대 HP(60)보다 작아야 한다
+		t.check(boss.atk < 60, "평타로 즉사하지 않는다")
+		t.check(boss.chargeAtk < 60, "돌진으로도 즉사하지 않는다")
+
+		t.check_eq(Monsters.phaseFor(1.0), 1, "가득 차 있으면 1페이즈")
+		t.check_eq(Monsters.phaseFor(0.7), 1, "0.7은 아직 1페이즈")
+		t.check_eq(Monsters.phaseFor(0.66), 2, "0.66에서 2페이즈")
+		t.check_eq(Monsters.phaseFor(0.4), 2, "0.4는 2페이즈")
+		t.check_eq(Monsters.phaseFor(0.33), 3, "0.33에서 3페이즈")
+		t.check_eq(Monsters.phaseFor(0.0), 3, "바닥은 3페이즈")
 	end
 
 	-- [F] 원안에 규격서가 없는 종은 그 사실이 남아 있다

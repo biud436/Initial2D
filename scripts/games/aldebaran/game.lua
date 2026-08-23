@@ -35,6 +35,7 @@ local Player = require("scripts/games/aldebaran/player")
 local Monster = require("scripts/games/aldebaran/monster")
 local Combat = require("scripts/games/aldebaran/combat")
 local Stages = require("scripts/games/aldebaran/stages/init")
+local Climate = require("scripts/games/aldebaran/climate")
 local Hud = require("scripts/games/aldebaran/hud")
 local Text = require("scripts/rpg/text")
 
@@ -62,6 +63,9 @@ local KARTO_PATH = "./resources/aldebaran/karto.png"
 local AURA_PATH = "./resources/aldebaran/aura.png"
 local STONE_PATH = "./resources/aldebaran/stone.png"
 local BAG_PATH = "./resources/aldebaran/bag.png"
+local CLIMATE_PATH = "./resources/aldebaran/climate.png"
+local BEAM_PATH = "./resources/aldebaran/beam.png"
+local WATER_PATH = "./resources/aldebaran/water.png"
 local FADE_PATH = "./resources/ui/fade.png"
 local UI_FONT = "./resources/fonts/hangul16.fnt"
 local BASE_FONT = "./resources/fonts/hangul.fnt"
@@ -109,6 +113,7 @@ local foundOrder = {}          -- 발견한 순서 (결과 창이 보여 준다)
 local bolts = {}               -- 날린 검기 { x, y, vx }
 local learnedText, learnedTimer = nil, 0
 local karto, aura, fadeImg, stoneImg, bagImg, thiefImg = nil, nil, nil, nil, nil, nil
+local climateImg = {}          -- 기후 조각 (크기마다 하나. hud.lua와 같은 사정)
 local player = nil
 local camX = 0
 local pad, buttons = nil, nil
@@ -121,6 +126,9 @@ local monsters = {}            -- { model = Monster, img = Image, boss = bool }
 local stones = {}              -- 짐도둑의 돌팔매 { x, y, vx, vy }
 local bag = nil                -- 떨어진 배낭 { x, y }
 local bossClear = nil          -- 보스를 쓰러뜨린 뒤 끝나기까지 남은 초
+local startAt = nil            -- 검수용 시작 x (INITIAL2D_ALDEBARAN_AT)
+local climates = {}            -- 구간 이름 → 기후 상태 (A7)
+local climate = nil            -- 지금 구간의 기후
 local stats = nil
 local exp, gold, lives = 0, 0, 2
 local level = 1
@@ -233,7 +241,7 @@ end
 --- 스테이지를 처음부터 (첫 진입, 그리고 다시 하기)
 local function resetStage()
 	rng = Rng.new(Stage.SEED)
-	player = Player.new(Stage.START.x, Stage.START.y)
+	player = Player.new(startAt or Stage.START.x, Stage.START.y)
 	exp, gold = 0, 0
 	lives = Stage.LIVES
 	applyLevel(1)
@@ -340,15 +348,20 @@ local function resolvePlayerAttack()
 			local bx0, by0, bx1, by1 = Monster.body(m)
 			if overlap(ax0, ay0, ax1, ay1, bx0, by0, bx1, by1) then
 				player.attackHit[m] = true
-				local atk = stats.atk * Player.attackMult(player)
-				if skills.edge then atk = atk + Combat.SKILLS.edge.atkBonus end
-				if berserkActive() then atk = atk * Combat.BERSERK.atkMult end
-				local r = Combat.resolve(atk, m.def.def, rng, stats.luck)
-				if r.dmg > 0 then
-					playSe("hit")
-					if Monster.hurt(m, r.dmg, player.facing) then
-						gainReward(m.def)
-						if e.boss then bossDown(m) end
+				-- 별들의 방: 빛 안의 영혼만 실체가 된다. 그늘에서는 칼이
+				-- 그냥 지나간다 (원안 표 16의 '빛의 축제'를 규칙으로 삼았다).
+				local solid = not m.def.flies or Climate.lit(climate, m.x)
+				if solid then
+					local atk = stats.atk * Player.attackMult(player)
+					if skills.edge then atk = atk + Combat.SKILLS.edge.atkBonus end
+					if berserkActive() then atk = atk * Combat.BERSERK.atkMult end
+					local r = Combat.resolve(atk, m.def.def, rng, stats.luck)
+					if r.dmg > 0 then
+						playSe("hit")
+						if Monster.hurt(m, r.dmg, player.facing) then
+							gainReward(m.def)
+							if e.boss then bossDown(m) end
+						end
 					end
 				end
 			end
@@ -492,6 +505,16 @@ function AldebaranScene.init()
 	DEBUG_HUD = env("INITIAL2D_DEBUG") ~= nil
 	if FontReady then PreparaFont(UI_FONT) end
 
+	-- 검수용: 어느 스테이지를 열지 밖에서 지정한다 (INITIAL2D_ALDEBARAN_STAGE=tomb)
+	local want = env("INITIAL2D_ALDEBARAN_STAGE")
+	if want ~= nil then
+		local ok, why = AldebaranScene.setStage(want)
+		if not ok then print("알데바란: " .. tostring(why)) end
+	end
+	-- 검수용: 시작 x를 옮긴다 (INITIAL2D_ALDEBARAN_AT=2200). 방마다의 기후를
+	-- 눈으로 확인하려면 그 방까지 걸어가지 않고 바로 서 볼 수 있어야 한다.
+	startAt = tonumber(env("INITIAL2D_ALDEBARAN_AT") or "")
+
 	map, mapError = Tilemap.Load(Stage.map)
 	if map ~= nil then
 		mapW, mapH, tileW, tileH, layerCount = Tilemap.GetSize(map)
@@ -515,6 +538,14 @@ function AldebaranScene.init()
 		and Image(Stage.bright, 0, 0, W, H, 1, "AldBright:" .. Stage.id) or nil
 	hallucination = 0
 
+	-- 구간마다 기후 하나 (원안 표 19: 아포피스가 방마다 기후를 좌우한다).
+	-- 표가 없는 스테이지는 전부 nil이고, 그러면 아무 규칙도 걸리지 않는다.
+	climates = {}
+	for _, sec in ipairs(Stage.SECTIONS) do
+		climates[sec.name] = Climate.new(Stage.CLIMATE and Stage.CLIMATE[sec.name])
+	end
+	climate = nil
+
 	karto = Image(KARTO_PATH, 0, 0, 48, 48, 24, "AldebaranKarto")
 	karto.setSheetGrid(12, 2)
 	karto.setLoop(false)
@@ -525,6 +556,10 @@ function AldebaranScene.init()
 
 	stoneImg = Image(STONE_PATH, 0, 0, 8, 8, 1, "AldebaranStone")
 	bagImg = Image(BAG_PATH, 0, 0, 16, 16, 1, "AldebaranBag")
+
+	-- 기후 조각. 엔진의 스프라이트는 만들 때의 크기를 소스 사각형으로 쓰므로
+	-- 크기마다 하나씩 둔다 (hud.lua와 같은 사정).
+	climateImg = {}
 
 	-- 도입 컷씬의 짐도둑 (몬스터와 같은 시트, 다른 스프라이트).
 	-- 컷씬이 없는 스테이지에서는 만들지 않는다.
@@ -796,9 +831,44 @@ function AldebaranScene.update(elapsed)
 		playSe("swing")
 	end
 
+	-- ---- 기후 (원안 표 19) --------------------------------------------------
+	-- 지금 선 방의 기후를 흘리고, 그 결과를 플레이어의 환경으로 씌운다.
+	do
+		local here = Stage.sectionAt(player.x)
+		climate = climates[here]
+		if climate ~= nil then
+			-- 발밑 지면과 천장을 찾아 우박이 떨어질 구간을 정한다
+			local floorY = player.y
+			local ceilY = 0
+			for ty = math.floor(player.y / 16), mapH - 1 do
+				if probe(player.x, ty * 16 + 1) then floorY = ty * 16 break end
+			end
+			for ty = math.floor(player.y / 16) - 1, 0, -1 do
+				if probe(player.x, ty * 16 + 8) then ceilY = ty * 16 + 16 break end
+			end
+			Climate.update(climate, dt, { x = player.x, floorY = floorY,
+				ceilY = ceilY, rng = rng })
+		end
+		player.env = Climate.env(climate, player.y)
+	end
+
 	Player.update(player, input, dt, probe)
 	if player.jumped then playSe("jump") end
 	if player.swung then playSe("swing") end
+
+	-- 우박에 맞았는가 (예고를 지나 실제로 떨어지는 것만 아프다)
+	if climate ~= nil and player.invulnTimer <= 0 then
+		local px0, py0 = player.x - Player.HALF_W, player.y - Player.BODY_H
+		local px1, py1 = player.x + Player.HALF_W, player.y
+		for i, hz in ipairs(Climate.hazards(climate)) do
+			if overlap(px0, py0, px1, py1, hz.x0, hz.y0, hz.x1, hz.y1) then
+				Climate.consume(climate, i)
+				damagePlayer(hz.damage, hz.x0, nil)
+				break
+			end
+		end
+		if gameOver ~= nil then return end
+	end
 
 	if player.y > worldH + 60 then
 		falls = falls + 1
@@ -873,6 +943,71 @@ function AldebaranScene.update(elapsed)
 end
 
 -- ---- 그리기 ----------------------------------------------------------------
+
+-- ---- 기후 그리기 (원안 표 19) ----------------------------------------------
+-- 조각들 (tools/generate_aldebaran_tomb.py). 엔진의 setScale은 균등 배율뿐이라
+-- (scripts/image.lua) 늘여 쓸 수 없다 — 빛기둥과 물은 쓸 크기 그대로 구워 뒀다.
+local CLIP = {
+	hail = { CLIMATE_PATH, 0, 0, 8, 8 },
+	warn = { CLIMATE_PATH, 8, 0, 16, 8 },
+	flake = { CLIMATE_PATH, 56, 0, 8, 8 },
+	beam = { BEAM_PATH, 0, 0, 88, 448 },
+	water = { WATER_PATH, 0, 0, 384, 128 },
+}
+
+local function climatePiece(name, x, y, opacity)
+	local c = CLIP[name]
+	if climateImg[name] == nil then
+		local img = Image(c[1], 0, 0, c[4], c[5], 1, "AldClimate:" .. name)
+		img.setLoop(false)
+		climateImg[name] = img
+	end
+	local img = climateImg[name]
+	img.setRect(c[2], c[3], c[4], c[5])
+	img.setPosition(math.floor(x), math.floor(y))
+	img.setOpacity(opacity or 255)
+	img.update(0)
+	img.draw()
+end
+
+local function drawClimate(cx)
+	if climate == nil then return end
+
+	if climate.kind == "light" then
+		-- 빛기둥 셋. 켜져 있는 동안만 영혼이 실체가 된다
+		if Climate.lightOn(climate) then
+			for _, px in ipairs(climate.def.pillars or {}) do
+				climatePiece("beam", px - 44 - cx, 0, 80)
+			end
+		end
+
+	elseif climate.kind == "hail" then
+		for _, dp in ipairs(climate.drops) do
+			if dp.warn > 0 then
+				-- 예고: 떨어질 자리의 그림자. 남을수록 옅고, 임박하면 진하다
+				local a = 1 - dp.warn / (climate.def.warn or 0.5)
+				climatePiece("warn", dp.x - 8 - cx, dp.floorY - 6,
+					math.floor(70 + 150 * a))
+			elseif dp.y ~= nil then
+				climatePiece("hail", dp.x - 4 - cx, dp.y - 4)
+			end
+		end
+
+	elseif climate.kind == "flood" then
+		local wy = climate.waterY
+		if wy ~= nil and wy < H then
+			climatePiece("water", 0, wy, 150)
+		end
+
+	elseif climate.kind == "snow" then
+		-- 눈: 규칙은 마찰이고 이것은 그 표시다. 좌표 해시라 흔들리지 않는다
+		for i = 0, 23 do
+			local fx = (i * 79 + math.floor(cx * 0.5)) % (W + 32) - 16
+			local fy = ((i * 137 + math.floor(climate.t * 40)) % (H + 32)) - 16
+			climatePiece("flake", fx, fy, 150)
+		end
+	end
+end
 
 local function drawMonsters(cx)
 	for _, e in ipairs(monsters) do
@@ -999,6 +1134,7 @@ function AldebaranScene.render()
 
 	Tilemap.Draw(map, 1, layerCount, cx, 0)
 
+	drawClimate(cx)
 	drawMonsters(cx)
 
 	-- 떨어진 배낭
