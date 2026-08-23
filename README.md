@@ -82,7 +82,8 @@ INITIAL2D_SCENE=aldebaran INITIAL2D_SKIP_INTRO=1 INITIAL2D_DEBUG=1 ./build/Initi
 | `scripts/games/aldebaran/player.lua` | 이동 물리와 콤보 (엔진에 닿지 않는 순수 모듈) |
 | `scripts/games/aldebaran/monster.lua` | 몬스터 상태 기계 (순찰, 추적, 공격, 돌격, 투척) |
 | `scripts/games/aldebaran/combat.lua` | 데미지, 명중 굴림, 레벨 표, 버서커 (순수 함수) |
-| `scripts/games/aldebaran/stage.lua` | 스테이지 데이터: 구간, 종별 능력치, 배치 좌표, 흔적과 이야기 글 |
+| `scripts/games/aldebaran/stage.lua` | 스테이지 데이터: 구간, 배치 좌표, 흔적과 이야기 글 |
+| `scripts/games/aldebaran/data/monsters.lua` | 몬스터 규격서: 종별 능력치와 원안 규격서 칸(`spec`), 공격 방식 4종, 이동 속도 5단계 |
 | `scripts/games/aldebaran/hud.lua` | HP/MP/EXP 막대와 목숨, 골드 |
 
 그림과 맵과 효과음은 전부 코드로 만들어 커밋했습니다. 도트는 단색 스케치 위에 디더링 명암을 얹고 테두리를 두르는 순서로 그립니다.
@@ -103,6 +104,25 @@ INITIAL2D_SCENE=aldebaran INITIAL2D_SKIP_INTRO=1 INITIAL2D_NO_RTP=1 \
   INITIAL2D_SCREENSHOT=/tmp/aldebaran_%04ld.bmp INITIAL2D_SCREENSHOT_FRAME=20 \
   INITIAL2D_EXIT_AFTER=30 ./build/Initial2D
 ```
+
+## 원안 기획서 채굴 (tools/spica_extract.py)
+
+알데바란의 원안은 저자의 워드 기획서 `docs/design/Spica_v0.9.docx`입니다. 저자 자산이라 저장소에 넣지 않으므로(`docs/design/.gitignore`), 그 안의 표와 문단과 이미지 목록을 **다시 돌릴 수 있는 마크다운**으로 굳혀 두었습니다. 원안을 1차 사료로 인용하기 위한 도구이며 파이썬 표준 라이브러리만 씁니다.
+
+```bash
+python3 tools/spica_extract.py            # 마크다운 셋을 docs/design/spica-source/ 에
+python3 tools/spica_extract.py --media    # 이미지 17장도 꺼낸다 (커밋 금지, gitignore가 막는다)
+python3 tools/spica_extract.py --check    # 세기만 하고 쓰지 않는다
+```
+
+| 산출물 | 무엇 |
+| :--- | :--- |
+| `docs/design/spica-source/tables.md` | 표 58개 전부. 찾아보기와 절 번호가 붙습니다 |
+| `docs/design/spica-source/text.md` | 문단 전부. 표와 그림은 자리만 표시합니다 |
+| `docs/design/spica-source/media.md` | 이미지 17장의 목록과 절. 바이너리는 저자 자산이라 커밋하지 않고, **세계 지도 `image6.png` 한 장만 예외로 반입했습니다** (P6 지도 화면의 원화) |
+| `docs/design/spica-unused.md` | **미채택 데이터 목록.** 원안의 무엇이 게임에 들어갔고 무엇이 남았는지, 남은 것은 어느 단계에서 쓸지 |
+
+산출물은 결정적입니다. 같은 docx면 같은 바이트가 나오므로 두 번 돌려도 `git diff`가 비어 있습니다. 워드의 `.emf` 그림 넷은 안에 비트맵 한 장을 감싸고만 있어서, 그 DIB를 꺼내 `sips`로 PNG를 만듭니다 (libreoffice가 있으면 그쪽을 먼저 씁니다).
 
 # 개발 히스토리
 
@@ -166,6 +186,7 @@ macOS 포팅을 기반으로 Android까지 확장하였습니다. 역시 AI와�
 - 이벤트를 데이터 커맨드로 적어 맵 에디터가 만들 수 있게 (엔진 쪽 완료, 2026-08). 맵 포맷 v2가 이벤트를 실어 나릅니다 ([계획](./docs/plans/10-demo-v2.md))
 - 아이템과 소지품, 그리고 마을 사람들을 잇는 심부름 (완료, 2026-08). 걷고 읽는 것 말고 할 일이 생겼습니다 ([계획](./docs/plans/11-game-systems.md))
 - 세 번째 장르: 횡스크롤 액션 「알데바란」 (완료, 2026-08). 저자의 기획서 「스피카」를 데모로 만들었고, 엔진 코드는 손대지 않았습니다 ([기획서](./docs/design/aldebaran.md))
+- 알데바란을 데모에서 실제 2D 액션 게임으로 (계획 수립, 2026-08). 원안 기획서의 지도와 몬스터 규격서를 마저 꺼내 쓰고, 다른 게임을 분석하고, 난이도와 마법을 다시 설계하는 장기 계획입니다 ([메타 프롬프트](./docs/prompts/aldebaran-game-meta-prompt.md))
 - 다음 로드맵: 에디터의 이벤트 편집기, 저장과 로드, 오토타일, 씬 스택 ([로드맵 v2](./docs/plans/roadmap-v2.md))
 
 # 스크립트 예제
