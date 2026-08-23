@@ -750,17 +750,19 @@ ALD_STAR = (232, 96, 66)       # 원경의 붉은 별
 
 
 def test_aldebaran_scene():
-    """알데바란 데모: 횡스크롤 코어 (docs/plans/aldebaran-1-core.md 8절).
+    """알데바란 인수 시나리오 (docs/plans/aldebaran-3-content.md 7절).
 
-    진짜 씬과 맵을 입력 재생기로 몰아 스테이지 왼쪽 절반(입구 → 대쉬 → 바위 턱
-    셋 → 낡은 다리 → 이정표 구간)을 주파한다. 골든은 입력 없이 서 있는 첫 화면.
+    타이틀 → 도입 컷씬 → (일부러 두 번 떨어져) 게임 오버와 다시 하기 → 대쉬와
+    턱과 다리 → 전투와 성장 → 체크포인트 부활 → 짐도둑 → 배낭 → 에필로그 →
+    결과 창 → 타이틀. 골든은 타이틀과 스테이지 첫 화면 두 장.
     """
-    print("\n[9] aldebaran_scene — 알데바란 (이동, 대쉬, 2단 점프, 다리)")
+    print("\n[9] aldebaran_scene — 알데바란 인수 시나리오 (타이틀부터 에필로그까지)")
     work = make_workdir("aldebaran_scene.lua")
     env = dict(os.environ)
     env["INITIAL2D_EXIT_AFTER"] = "90"
+    env["INITIAL2D_NO_RTP"] = "1"     # 골든과 같은 그림으로 (RTP는 기계마다 다르다)
     result = subprocess.run([GAME], cwd=work, env=env,
-                            capture_output=True, text=True, timeout=300)
+                            capture_output=True, text=True, timeout=600)
     log = result.stdout + result.stderr
 
     check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode}")
@@ -769,12 +771,31 @@ def test_aldebaran_scene():
     def has(needle, name):
         check(name, needle in log, f"'{needle}' 없음 | {log[-400:]}")
 
-    has("aldebaranView:384x448", "렌더 배율 2의 논리 해상도")
-    has("aldebaranStart:56,384", "숲 입구에서 시작")
-    has("aldebaranMonsters:7", "몬스터 일곱이 배치된다 (거미 넷, 늑대 셋)")
+    # [A] 타이틀
+    has("titleScene:aldebaran_title", "타이틀 씬으로 시작")
+    has("titleMenuOpen:true", "커서 메뉴가 열린다")
+    has("titleItems:3 index:1", "항목 3개, 커서는 첫 항목")
+    has("titleHelpOpen:true", "조작 방법을 고르면 설명 창이 뜬다")
+    has("titleHelpClosed:true", "설명을 끝까지 넘기면 닫힌다")
+    has("sceneAfterStart:aldebaran", "시작을 고르면 스테이지로")
+
+    # [B] 도입 컷씬 (기획서 4.2절)
+    has("aldebaranMonsters:8", "몬스터 여덟이 배치된다 (거미 넷, 늑대 셋, 짐도둑)")
+    has("introActive:true", "도입 컷씬이 조작을 잠근다")
+    has("introDone:true", "나레이션을 넘기면 조작이 풀린다")
+
+    # [C] 게임 오버와 다시 하기 (기획서 4.5절)
+    has("firstDeathLives:1", "낙하 한 번에 목숨 하나")
+    has("gameOverChoice:true", "목숨을 다 잃으면 게임 오버 창")
+    has("gameOvers:1", "게임 오버 한 번")
+    has("retryLives:2", "다시 하기는 목숨 2로")
+    has("retryAtStart:true", "다시 하기는 스테이지 처음부터")
+
+    # [D] 이동과 전투
     has("aldebaranDash:true", "더블탭 대쉬가 걷기보다 빠르다")
     has("aldebaranClimb:320", "바위 턱 셋을 올라 절벽 어깨(윗면 20)에 선다")
     has("aldebaranFirstKill:exp=5,gold=10", "첫 전갈거미를 콤보로 잡고 보상을 받는다")
+    has("aldebaranSign:낡은 다리다.", "표지 글이 화면에 뜬다")
     has("aldebaranBridge:true", "다리 구멍 둘을 뛰어넘었다")
     has("aldebaranCheckpoint:true", "이정표가 체크포인트가 된다")
     has("aldebaranPaused:true", "일시 정지가 열린다 (게임 시간 정지)")
@@ -789,20 +810,39 @@ def test_aldebaran_scene():
     has("aldebaranLevelUp:", "경험치로 레벨이 오른다")
     has("aldebaranLevelHeal:true", "레벨이 오르면 전량 회복")
     has("aldebaranEnd:384", "늑대 숲의 턱을 넘어 공터 지면까지 내려온다")
-    has("aldebaranFalls:1", "낙하는 일부러 떨어진 한 번뿐")
-    has("aldebaranDone:true", "스테이지 오른쪽 끝 도착")
 
-    # 터치 UI 스모크: 가상 패드와 점프 버튼을 그린 채로도 첫 화면이 뜬다
+    # [E] 짐도둑과 에필로그 (기획서 4.3절과 4.4절)
+    has("aldebaranStone:true", "짐도둑이 돌을 던진다")
+    has("aldebaranBossDown:true", "짐도둑을 쓰러뜨리면 배낭이 떨어진다")
+    has("aldebaranEpilogue:epilogue", "배낭을 주우면 에필로그")
+    has("aldebaranFalls:3", "낙하는 일부러 떨어진 세 번뿐")
+    has("aldebaranResult:true", "에필로그 뒤에 결과 창")
+    has("finalScene:aldebaran_title", "결과 창을 닫으면 타이틀로")
+    has("aldebaranAcceptDone:true", "시나리오 끝까지 통과")
+
+    # 터치 조작의 끝-끝 검증: 가상 패드로 걷고, 버튼으로 뛰고 베고, 정지 버튼과
+    # 항목 누름으로 일시 정지를 여닫는다 (재생기의 마우스 = SDL의 첫 손가락)
     _, r_pad, s_pad = run_scene("aldebaran_scene.lua", [10], 15,
-                                {"INITIAL2D_ALDEBARAN_STOP": "start",
+                                {"INITIAL2D_ALDEBARAN_STOP": "touch",
+                                 "INITIAL2D_SKIP_INTRO": "1",
+                                 "INITIAL2D_NO_RTP": "1",
                                  "INITIAL2D_VPAD": "1"})
-    check("터치 UI 표시 실행 정상 종료", r_pad.returncode == 0, f"rc={r_pad.returncode}")
+    log_pad = r_pad.stdout + r_pad.stderr
+    check("터치 실행 정상 종료", r_pad.returncode == 0, f"rc={r_pad.returncode}")
+    for needle, name in [("touchWalk:true", "터치: 가상 패드로 걷는다"),
+                         ("touchJump:true", "터치: 점프 버튼"),
+                         ("touchAttack:true", "터치: 공격 버튼"),
+                         ("touchPause:true", "터치: 정지 버튼"),
+                         ("touchResume:true", "터치: 항목을 눌러 계속 하기")]:
+        check(name, needle in log_pad, log_pad[-400:])
     check("터치 UI 화면 덤프", 10 in s_pad)
 
-    # 골든: 입력 없이 서 있는 첫 화면 (시간을 얼려 상태를 고정한다)
+    # 골든 1: 스테이지 첫 화면 (컷씬을 생략하고 시간을 얼려 고정한다)
     _, r2, shots = run_scene("aldebaran_scene.lua", [20], 30,
-                             {"INITIAL2D_ALDEBARAN_STOP": "start"})
-    check("첫 화면 덤프", 20 in shots, f"rc={r2.returncode}")
+                             {"INITIAL2D_ALDEBARAN_STOP": "start",
+                              "INITIAL2D_SKIP_INTRO": "1",
+                              "INITIAL2D_NO_RTP": "1"})
+    check("스테이지 첫 화면 덤프", 20 in shots, f"rc={r2.returncode}")
     if 20 in shots:
         img = shots[20]
         scale = img.width / 384.0
@@ -813,6 +853,20 @@ def test_aldebaran_scene():
         star = count_color_in(img, scale, 288, 52, 312, 76, ALD_STAR, 40)
         check("원경의 붉은 별", star > 4, f"px={star}")
         check_golden("aldebaran_forest", img)
+
+    # 골든 2: 타이틀 (배경에 글자가 구워져 있고 메뉴 창이 왼쪽 아래에 뜬다)
+    _, r3, s_title = run_scene("aldebaran_scene.lua", [20], 30,
+                               {"INITIAL2D_ALDEBARAN_STOP": "title",
+                                "INITIAL2D_NO_RTP": "1"})
+    check("타이틀 화면 덤프", 20 in s_title, f"rc={r3.returncode}")
+    if 20 in s_title:
+        img = s_title[20]
+        scale = img.width / 768.0
+        star = count_color_in(img, scale, 570, 100, 630, 160, ALD_STAR, 40)
+        check("타이틀의 붉은 별", star > 10, f"px={star}")
+        frame = count_color_in(img, scale, 84, 600, 380, 790, SKIN_FRAME_LIGHT, 30)
+        check("타이틀 메뉴 창의 테두리", frame > 40, f"px={frame}")
+        check_golden("aldebaran_title", img)
 
 
 def test_resolution():

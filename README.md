@@ -84,6 +84,7 @@ macOS 포팅을 기반으로 Android까지 확장하였습니다. 역시 AI와�
 - 위 요소를 모두 사용하는 데모 게임 — 완료 (2026-08). 기획서를 먼저 쓰고 그대로 만든 「떠나기 전에」 ([기획서](./docs/design/port-town.md))
 - 이벤트를 데이터 커맨드로 적어 맵 에디터가 만들 수 있게 — 엔진 쪽 완료 (2026-08). 맵 포맷 v2가 이벤트를 실어 나릅니다 ([계획](./docs/plans/10-demo-v2.md))
 - 아이템과 소지품, 그리고 마을 사람들을 잇는 심부름 — 완료 (2026-08). 걷고 읽는 것 말고 할 일이 생겼습니다 ([계획](./docs/plans/11-game-systems.md))
+- 세 번째 장르: 횡스크롤 액션 「알데바란」 — 완료 (2026-08). 저자의 기획서 「스피카」를 데모로 만들었습니다. C++ 무수정 ([기획서](./docs/design/aldebaran.md))
 - 다음 로드맵: 에디터의 이벤트 편집기, 저장과 로드, 오토타일, 씬 스택 ([로드맵 v2](./docs/plans/roadmap-v2.md))
 
 # 스크립트 예제
@@ -863,6 +864,60 @@ INITIAL2D_NO_RTP=1 INITIAL2D_SCENE=title ./build/Initial2D
 # 시나리오 도중의 화면을 눈으로 확인 (title, town, bag)
 INITIAL2D_DEMO_STOP=town INITIAL2D_NO_RTP=1 \
   INITIAL2D_SCREENSHOT=/tmp/demo_%04ld.bmp INITIAL2D_SCREENSHOT_FRAME=20 \
+  INITIAL2D_EXIT_AFTER=30 ./build/Initial2D
+```
+
+# 데모 게임: 알데바란 (횡스크롤 액션)
+
+세 번째 장르입니다. 플래피 버드(원버튼 아케이드), 떠나기 전에(RPG)에 이어, 같은 엔진 위에서 **횡스크롤 액션**이 돌아갑니다. C++은 한 줄도 바뀌지 않았고, 물리도 충돌도 전투도 전부 `scripts/games/aldebaran/`의 Lua입니다.
+
+보물 사냥꾼 카르토가 금단의 숲 알데바란에서 가면 원숭이에게 배낭과 지도를 빼앗기고, 검은 안개의 숲을 헤쳐 그것을 되찾는 한 판(3~5분)입니다. 원안은 저자의 기획서 「스피카」(Spica_v0.9)이며, 데모 분량으로 정돈한 기획서가 [docs/design/aldebaran.md](./docs/design/aldebaran.md)에 있습니다. 미니 게임 목록에서 **알데바란**을 고르면 타이틀이 뜹니다.
+
+```bash
+# 타이틀부터 바로 열기
+INITIAL2D_SCENE=aldebaran_title ./build/Initial2D
+
+# 스테이지 바로 열기 (도입 컷씬 생략, 좌표 표시)
+INITIAL2D_SCENE=aldebaran INITIAL2D_SKIP_INTRO=1 INITIAL2D_DEBUG=1 ./build/Initial2D
+```
+
+| 조작 | PC | 모바일 |
+| :--- | :--- | :--- |
+| 이동 | ← → (같은 방향 빠르게 두 번 = 대쉬) | 왼쪽 아래 가상 패드 |
+| 점프 | Z 또는 Space (공중에서 한 번 더 = 2단 점프) | **점프** 버튼 |
+| 공격 | X 연타 (3단 베기 콤보) | **공격** 버튼 |
+| 버서커 | C (MP 10, 4초 동안 공격 1.5배, 받는 데미지 절반) | **폭주** 버튼 |
+| 일시 정지 | ESC 또는 P | 오른쪽 위 정지 버튼 |
+
+터치는 단일 터치라 패드와 버튼을 동시에 누를 수 없습니다. 그래서 공중에서는 관성이 유지되고, 패드에서 손을 뗀 직후(0.18초)의 점프는 직전 달리기 속도를 잇습니다 — "달리다 손을 떼고 점프"가 키보드의 "달리며 점프"와 같은 궤적이 됩니다.
+
+몬스터는 셋입니다. 밀림 전갈거미(근접형 — 움츠림이 공격 신호, 독침)와 늑대 인간(돌격형 — 발견 시 1회 돌진, 비전투 회복), 그리고 스테이지 끝의 가면 원숭이 짐도둑(투척형 — 다가가면 달아나고 멀면 돌팔매)입니다. 상태는 순찰 → 추적 → 공격으로 흐르고, 종별 차이는 코드가 아니라 표(`stage.lua`)입니다. 접촉 데미지는 없습니다 — 선딜레이가 보이는 공격만 아픕니다.
+
+| 파일 | 역할 |
+| :--- | :--- |
+| `scripts/games/aldebaran/title.lua`, `game.lua` | 타이틀과 스테이지 씬 (컷씬, HUD, 일시 정지, 에필로그) |
+| `scripts/games/aldebaran/player.lua` | 이동 물리와 콤보 — 엔진에 닿지 않는 순수 모듈 |
+| `scripts/games/aldebaran/monster.lua` | 몬스터 상태 기계 (순찰, 추적, 공격, 돌격, 투척) |
+| `scripts/games/aldebaran/combat.lua` | 데미지, 명중 굴림, 레벨 표, 버서커 — 순수 함수 |
+| `scripts/games/aldebaran/stage.lua` | 스테이지 데이터: 종별 능력치, 배치 좌표, 이야기 글 |
+| `scripts/games/aldebaran/hud.lua` | HP/MP/EXP 막대와 목숨, 골드 |
+
+그림과 맵과 효과음은 전부 코드로 만들어 커밋했습니다. 도트는 단색 스케치 위에 디더링 명암을 얹고 테두리를 두르는 순서로 그립니다.
+
+```bash
+# 시트(카르토, 몬스터 셋), 타일셋, 원경, 타이틀, HUD, 효과음 8종
+python3 tools/generate_aldebaran_assets.py
+
+# 스테이지 1-1 검은 안개의 숲 (128x28) — 지형과 배치는 전부 손으로 정한 좌표
+python3 tools/generate_aldebaran_maps.py
+```
+
+인수 테스트(`tests/engine/scenes/aldebaran_scene.lua`)가 타이틀 → 도입 컷씬 → 게임 오버와 다시 하기 → 대쉬와 턱과 다리 → 전투와 성장 → 체크포인트 부활 → 짐도둑 → 배낭 → 에필로그 → 타이틀을 입력 재생기로 매번 다시 통과합니다. 전투 굴림이 시드 난수라 시나리오는 항상 같은 결과를 냅니다.
+
+```bash
+# 첫 화면을 헤드리스로 찍어 눈으로 확인
+INITIAL2D_SCENE=aldebaran INITIAL2D_SKIP_INTRO=1 INITIAL2D_NO_RTP=1 \
+  INITIAL2D_SCREENSHOT=/tmp/aldebaran_%04ld.bmp INITIAL2D_SCREENSHOT_FRAME=20 \
   INITIAL2D_EXIT_AFTER=30 ./build/Initial2D
 ```
 

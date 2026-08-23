@@ -68,9 +68,10 @@ function MenuScene.init()
 
 	-- 미니 게임 목록 (여기에 버튼을 추가하면 메뉴에 나타난다)
 	buttons = {
-		makeButton("플래피 버드", "flappy", H / 2 - 130),
-		makeButton("타일맵 데모", "tilemap", H / 2 - 10),
-		makeButton("떠나기 전에", "title", H / 2 + 110),
+		makeButton("플래피 버드", "flappy", H / 2 - 170),
+		makeButton("타일맵 데모", "tilemap", H / 2 - 58),
+		makeButton("떠나기 전에", "title", H / 2 + 54),
+		makeButton("알데바란", "aldebaran_title", H / 2 + 166),
 	}
 end
 

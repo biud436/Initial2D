@@ -1,21 +1,26 @@
--- 알데바란 — 스테이지 씬 (docs/plans/aldebaran-1-core.md 7절, aldebaran-2-combat.md)
+-- 알데바란 — 스테이지 씬 (docs/plans/aldebaran-1-core.md 7절, -2-combat.md, -3-content.md)
 --
 -- 횡스크롤 액션. 기획서는 docs/design/aldebaran.md.
 --   ← → : 이동 (같은 방향 빠르게 두 번 = 대쉬)
---   Z 또는 스페이스: 점프 (공중에서 한 번 더 = 2단 점프)
+--   Z 또는 스페이스: 점프 (공중에서 한 번 더 = 2단 점프), 대화 넘기기
 --   X: 공격 (연타로 3단 콤보)         C: 버서커 (MP 10, 4초)
 --   ESC 또는 P (Android 뒤로가기): 일시 정지 — 계속 하기 / 다시 하기 / 끝내기
---   터치: 좌하단 가상 패드, 우하단 점프와 공격과 스킬 버튼, 우상단 정지 버튼
+--   터치: 좌하단 가상 패드, 우하단 점프와 공격과 폭주 버튼, 우상단 정지 버튼
+--
+-- 흐름 (기획서 4절): 도입 컷씬(짐도둑이 배낭을 지고 달아난다) → 숲 주파와 전투 →
+-- 공터의 짐도둑을 쓰러뜨리고 배낭을 주우면 에필로그와 결과 창 → 타이틀로.
+-- 목숨을 다 잃으면 게임 오버 — 다시 하기 / 타이틀로.
 --
 -- 16px 타일을 768x896 화면에 1:1로 그리면 너무 작아 렌더 배율 2를 켠다
 -- (논리 384x448). 씬을 나갈 때 되돌린다 — rpgdemo와 같은 규칙.
 --
--- 몬스터 배치와 종별 표는 stage.lua, 수식은 combat.lua, 상태 기계는 monster.lua.
--- 타이틀과 도둑 컷씬과 보스는 3단계에서 이 씬에 얹는다.
+-- 몬스터 배치와 종별 표와 이야기 글은 stage.lua, 수식은 combat.lua,
+-- 상태 기계는 monster.lua.
 --
 -- 환경 변수
---   INITIAL2D_DEBUG    좌표와 FPS와 판정 상자 표시
---   INITIAL2D_VPAD     데스크톱에서도 터치 UI 표시
+--   INITIAL2D_DEBUG        좌표와 FPS 표시
+--   INITIAL2D_VPAD         데스크톱에서도 터치 UI 표시
+--   INITIAL2D_SKIP_INTRO   도입 컷씬 생략 (검증용)
 
 local Image = require("scripts/image")
 local VirtualPad = require("scripts/ui/vpad")
@@ -25,6 +30,7 @@ local Bgm = require("scripts/bgm")
 local Rng = require("scripts/rpg/rng")
 local Window = require("scripts/rpg/window")
 local Choice = require("scripts/rpg/choice")
+local Dialogue = require("scripts/rpg/message")
 local Player = require("scripts/games/aldebaran/player")
 local Monster = require("scripts/games/aldebaran/monster")
 local Combat = require("scripts/games/aldebaran/combat")
@@ -37,6 +43,8 @@ local MAP_PATH = "./resources/maps/aldebaran_forest.json"
 local BG_PATH = "./resources/aldebaran/forest_bg.png"
 local KARTO_PATH = "./resources/aldebaran/karto.png"
 local AURA_PATH = "./resources/aldebaran/aura.png"
+local STONE_PATH = "./resources/aldebaran/stone.png"
+local BAG_PATH = "./resources/aldebaran/bag.png"
 local FADE_PATH = "./resources/ui/fade.png"
 local UI_FONT = "./resources/fonts/hangul16.fnt"
 local BASE_FONT = "./resources/fonts/hangul.fnt"
@@ -52,13 +60,19 @@ local SE = {
 	level = "./resources/audio/aldebaran_level.wav",
 	berserk = "./resources/audio/aldebaran_berserk.wav",
 	pick = "./resources/audio/aldebaran_pick.wav",
+	throw = "./resources/audio/aldebaran_throw.wav",
 	cursor = "./resources/audio/ui_cursor.wav",
 	decision = "./resources/audio/ui_decision.wav",
+	text = "./resources/audio/ui_text.wav",
 }
 
 local SCALE = 2
 local PARALLAX = 0.4
 local PAD_DEVICE_SIZE = 160
+local SIGN_SECONDS = 4.0
+local STONE_SPEED = 140
+local STONE_TOSS = -170
+local STONE_GRAVITY = 720
 
 local VK_ESCAPE, VK_LEFT, VK_RIGHT, VK_UP, VK_DOWN = 27, 37, 39, 38, 40
 local VK_SPACE, VK_RETURN, VK_Z, VK_X, VK_C, VK_P = 32, 13, 90, 88, 67, 80
@@ -67,7 +81,7 @@ local W, H = 384, 448
 local map, mapError = nil, nil
 local mapW, mapH, tileW, tileH, layerCount = 0, 0, 16, 16, 0
 local worldW, worldH = 0, 0
-local bg1, bg2, karto, aura, fadeImg = nil, nil, nil, nil, nil
+local bg1, bg2, karto, aura, fadeImg, stoneImg, bagImg, thiefImg = nil, nil, nil, nil, nil, nil, nil, nil
 local player = nil
 local camX = 0
 local pad, buttons = nil, nil
@@ -76,19 +90,28 @@ local fpsAvg = 0
 local DEBUG_HUD = false
 
 local rng = nil
-local monsters = {}            -- { model = Monster, img = Image }
-local stats = nil              -- hp, mp, atk, def, luck (레벨 반영)
+local monsters = {}            -- { model = Monster, img = Image, boss = bool }
+local stones = {}              -- 짐도둑의 돌팔매 { x, y, vx, vy }
+local bag = nil                -- 떨어진 배낭 { x, y }
+local stats = nil
 local exp, gold, lives = 0, 0, 2
 local level = 1
 local berserkTimer = 0
-local checkpoint = nil         -- { x, y } (이정표를 지나면 선다)
+local checkpoint = nil
 local checkpointHit = false
-local falls = 0                -- 낭떠러지 낙하 횟수 (검증용)
+local falls = 0
 local deaths = 0
 local hud = nil
-local skin, pauseChoice = nil, nil
+local skin, pauseChoice, dialogue = nil, nil, nil
 local paused = false
-local gameOvers = 0            -- 스테이지 재시작 횟수 (검증용, 3단계에서 창으로)
+local gameOvers = 0
+
+local intro = nil              -- { phase = "thief" | "text", timer } 도입 컷씬
+local ending = nil             -- { phase = "epilogue" | "result" } 에필로그와 결과
+local gameOver = nil           -- { phase = "text" | "choice" }
+local stageTime = 0
+local signSeen = {}
+local signText, signTimer = nil, 0
 
 local function env(name)
 	return (os.getenv ~= nil) and os.getenv(name) or nil
@@ -99,7 +122,6 @@ local function playSe(name)
 end
 
 -- ---- 충돌 조회 -------------------------------------------------------------
--- 픽셀 좌표가 막혀 있는가. 좌우 밖은 벽, 맵 아래는 낭떠러지(뚫려 있다).
 
 local function probe(px, py)
 	if px < 0 or px >= worldW then return true end
@@ -131,7 +153,6 @@ local function pollInput()
 		local l, r = pad.isPressed("left"), pad.isPressed("right")
 		input.left = input.left or l
 		input.right = input.right or r
-		-- 패드에는 엣지가 없어 직전 프레임과 비교해 만든다 (더블탭 대쉬용)
 		input.leftEdge = input.leftEdge or (l and not padWasLeft)
 		input.rightEdge = input.rightEdge or (r and not padWasRight)
 		padWasLeft, padWasRight = l, r
@@ -146,6 +167,13 @@ local function pollInput()
 	return input
 end
 
+--- 대화창(나레이션)이 보는 결정키. 화면 탭도 결정으로 친다.
+local function pollConfirm()
+	local confirm = Input.IsKeyDown(VK_Z) or Input.IsKeyDown(VK_RETURN)
+		or Input.IsKeyDown(VK_SPACE) or Input.IsMouseDown(0)
+	return { confirm = confirm }
+end
+
 -- ---- 스테이지 세우기 --------------------------------------------------------
 
 local function spawnMonsters()
@@ -153,14 +181,14 @@ local function spawnMonsters()
 		if e.img ~= nil then e.img.dispose() end
 	end
 	monsters = {}
-	for i, s in ipairs(Stage.spawns) do
+	for _, s in ipairs(Stage.spawns) do
 		local def = Stage.species[s.species]
 		local model = Monster.new(def, s)
 		local img = Image(def.sheet, 0, 0, def.frameW, def.frameH,
 			def.cols * def.rows, "Aldebaran:" .. s.species)
 		img.setSheetGrid(def.cols, def.rows)
 		img.setLoop(false)
-		monsters[#monsters + 1] = { model = model, img = img }
+		monsters[#monsters + 1] = { model = model, img = img, boss = s.boss }
 	end
 end
 
@@ -183,6 +211,13 @@ local function resetStage()
 	checkpoint = nil
 	checkpointHit = false
 	spawnMonsters()
+	stones = {}
+	bag = nil
+	ending = nil
+	gameOver = nil
+	stageTime = 0
+	signSeen = {}
+	signText, signTimer = nil, 0
 	camX = 0
 end
 
@@ -192,14 +227,16 @@ local function loseLife()
 	lives = lives - 1
 	if lives <= 0 then
 		gameOvers = gameOvers + 1
-		resetStage()             -- 3단계에서 게임 오버 창으로 바뀐다
+		gameOver = { phase = "text" }
+		dialogue:showMessage(Stage.GAMEOVER)
 		return
 	end
 	local at = checkpoint or Stage.START
 	player = Player.new(at.x, at.y)
-	player.invulnTimer = 1.5     -- 부활 직후의 짧은 무적
+	player.invulnTimer = 1.5
 	stats.hp = stats.maxHp
 	berserkTimer = 0
+	stones = {}
 end
 
 -- ---- 전투 -------------------------------------------------------------------
@@ -214,12 +251,11 @@ local function gainReward(def)
 	playSe("kill")
 	local newLevel = Combat.levelFor(exp)
 	if newLevel > level then
-		applyLevel(newLevel)     -- 전량 회복 포함
+		applyLevel(newLevel)
 		playSe("level")
 	end
 end
 
---- 플레이어의 베기가 몬스터를 때린다
 local function resolvePlayerAttack()
 	if not Player.attackActive(player) then return end
 	local ax0, ay0, ax1, ay1 = Player.attackBox(player)
@@ -236,6 +272,10 @@ local function resolvePlayerAttack()
 					playSe("hit")
 					if Monster.hurt(m, r.dmg, player.facing) then
 						gainReward(m.def)
+						if e.boss then
+							-- 짐도둑이 쓰러지면 배낭이 떨어진다 (기획서 4.3절)
+							bag = { x = m.x, y = m.y }
+						end
 					end
 				end
 			end
@@ -243,7 +283,24 @@ local function resolvePlayerAttack()
 	end
 end
 
---- 몬스터의 공격(내리찍기, 돌격)이 플레이어를 때린다
+--- 플레이어가 데미지를 받는다 (내리찍기, 돌격, 돌팔매 공통)
+local function damagePlayer(base, fromX, sting)
+	local r = Combat.resolve(base, stats.def, rng, 0)
+	if r.kind == "miss" then return false end
+	local dmg = r.dmg
+	if sting ~= nil and rng:chance(sting.chance) then
+		dmg = dmg + sting.bonus
+	end
+	if berserkActive() then
+		dmg = math.floor(dmg * Combat.BERSERK.takenMult)
+	end
+	if not Player.applyHit(player, fromX) then return false end
+	stats.hp = math.max(0, stats.hp - dmg)
+	playSe("hurt")
+	if stats.hp <= 0 then loseLife() end
+	return true
+end
+
 local function resolveMonsterAttacks()
 	if player.invulnTimer > 0 then return end
 	local px0, py0 = player.x - Player.HALF_W, player.y - Player.BODY_H
@@ -255,47 +312,67 @@ local function resolveMonsterAttacks()
 			if bx0 ~= nil and overlap(px0, py0, px1, py1, bx0, by0, bx1, by1) then
 				local charging = (m.state == "charge")
 				local base = charging and (m.def.chargeAtk or m.def.atk) or m.def.atk
-				local r = Combat.resolve(base, stats.def, rng, 0)
-				if r.kind ~= "miss" then
-					local dmg = r.dmg
-					-- 전갈거미의 독침: 명중의 20%로 데미지 +8 (기획서 6절)
-					if m.def.special == "sting" and rng:chance(m.def.stingChance) then
-						dmg = dmg + m.def.stingBonus
-					end
-					if berserkActive() then
-						dmg = math.floor(dmg * Combat.BERSERK.takenMult)
-					end
-					if Player.applyHit(player, m.x) then
-						stats.hp = stats.hp - dmg
-						playSe("hurt")
-						m.strikeHit = true
-						if charging then
-							m.chargeUsed = true
-							m.timer = 0          -- 명중한 돌격은 거기서 끝난다
-						end
-						if stats.hp <= 0 then
-							loseLife()
-							return
-						end
-					end
-				else
-					m.strikeHit = true           -- 회피당한 공격도 한 번뿐이다
+				local sting = nil
+				if m.def.special == "sting" then
+					sting = { chance = m.def.stingChance, bonus = m.def.stingBonus }
 				end
+				m.strikeHit = true               -- 회피당해도 그 공격은 끝났다
+				if damagePlayer(base, m.x, sting) and charging then
+					m.chargeUsed = true
+					m.timer = 0
+				end
+				if gameOver ~= nil then return end
 			end
 		end
 	end
 end
 
+-- ---- 돌팔매 (짐도둑의 투사체) ------------------------------------------------
+
+local function updateStones(dt)
+	-- 짐도둑의 strike가 돌을 만든다 (monster.lua는 thrown 깃발만 세운다)
+	for _, e in ipairs(monsters) do
+		local m = e.model
+		if m.def.special == "throw" and m.state == "strike" and not m.thrown then
+			m.thrown = true
+			stones[#stones + 1] = {
+				x = m.x + m.dir * 12, y = m.y - 24,
+				vx = m.dir * STONE_SPEED, vy = STONE_TOSS,
+			}
+			playSe("throw")
+		end
+	end
+
+	local px0, py0 = player.x - Player.HALF_W, player.y - Player.BODY_H
+	local px1, py1 = player.x + Player.HALF_W, player.y
+	for i = #stones, 1, -1 do
+		local s = stones[i]
+		s.vy = s.vy + STONE_GRAVITY * dt
+		s.x = s.x + s.vx * dt
+		s.y = s.y + s.vy * dt
+		local gone = false
+		if probe(s.x, s.y) or s.y > worldH + 40 then
+			gone = true
+		elseif player.invulnTimer <= 0
+				and overlap(s.x - 4, s.y - 4, s.x + 4, s.y + 4, px0, py0, px1, py1) then
+			damagePlayer(Stage.species.monkey.atk, s.x, nil)
+			gone = true
+		end
+		if gone then table.remove(stones, i) end
+		if gameOver ~= nil then return end
+	end
+end
+
 -- ---- 씬 --------------------------------------------------------------------
 
---- 씬 바깥(검증)에서 상태를 들여다보는 창구
 function AldebaranScene.status()
 	local ms = {}
 	for _, e in ipairs(monsters) do
 		local m = e.model
 		if not m.dead then
 			ms[#ms + 1] = { species = m.def.name, x = math.floor(m.x),
-				y = math.floor(m.y), hp = m.hp, state = m.state }
+				y = math.floor(m.y), hp = m.hp, state = m.state,
+				boss = e.boss or false }
 		end
 	end
 	return {
@@ -303,6 +380,7 @@ function AldebaranScene.status()
 		y = player ~= nil and player.y or nil,
 		onGround = player ~= nil and player.onGround or false,
 		invuln = player ~= nil and player.invulnTimer > 0 or false,
+		attacking = player ~= nil and player.attackTimer > 0 or false,
 		hp = stats ~= nil and stats.hp or nil,
 		mp = stats ~= nil and stats.mp or nil,
 		maxHp = stats ~= nil and stats.maxHp or nil,
@@ -313,6 +391,13 @@ function AldebaranScene.status()
 		falls = falls, deaths = deaths, gameOvers = gameOvers,
 		camX = camX,
 		monsters = ms,
+		stones = #stones,
+		intro = intro ~= nil,
+		bag = bag ~= nil,
+		ending = ending ~= nil and ending.phase or nil,
+		gameOver = gameOver ~= nil and gameOver.phase or nil,
+		sign = signText,
+		time = stageTime,
 	}
 end
 
@@ -339,6 +424,16 @@ function AldebaranScene.init()
 	aura.setSheetGrid(2, 1)
 	aura.setLoop(false)
 
+	stoneImg = Image(STONE_PATH, 0, 0, 8, 8, 1, "AldebaranStone")
+	bagImg = Image(BAG_PATH, 0, 0, 16, 16, 1, "AldebaranBag")
+
+	-- 도입 컷씬의 짐도둑 (몬스터와 같은 시트, 다른 스프라이트)
+	local mk = Stage.species.monkey
+	thiefImg = Image(mk.sheet, 0, 0, mk.frameW, mk.frameH,
+		mk.cols * mk.rows, "Aldebaran:monkey")
+	thiefImg.setSheetGrid(mk.cols, mk.rows)
+	thiefImg.setLoop(false)
+
 	fadeImg = Image(FADE_PATH, 0, 0, 16, 16, 1, "AldebaranFade")
 	fadeImg.setScale(math.max(W, H) / 16)
 
@@ -347,18 +442,31 @@ function AldebaranScene.init()
 	paused = false
 	padWasLeft, padWasRight = false, false
 
-	-- 일시 정지 창 (대화창 부품을 그대로 쓴다 — 공용품이다)
+	-- 창 부품 (일시 정지, 게임 오버, 나레이션 — 전부 공용품이다)
 	skin = Window.newSkin{ path = Assets.windowskin(), scale = 1 }
+	local se = {
+		cursor = function() playSe("cursor") end,
+		decision = function() playSe("decision") end,
+		text = function() playSe("text") end,
+	}
 	pauseChoice = Choice.new{
 		skin = skin, measure = GetTextWidth, drawText = DrawText,
-		lineHeight = 22, maxVisible = 3, minWidth = 140,
-		se = {
-			cursor = function() playSe("cursor") end,
-			decision = function() playSe("decision") end,
-		},
+		lineHeight = 22, maxVisible = 3, minWidth = 140, se = se,
+	}
+	dialogue = Dialogue.new{
+		skin = skin, measure = GetTextWidth, drawText = DrawText,
+		screenW = W, screenH = H, lines = 3, lineHeight = 20,
+		speed = 3, se = se,
 	}
 
 	resetStage()
+
+	-- 도입 컷씬 (기획서 4.2절): 짐도둑이 배낭을 지고 달아난다 → 나레이션
+	if env("INITIAL2D_SKIP_INTRO") == nil then
+		intro = { phase = "thief", timer = 0, x = Stage.START.x + 40 }
+	else
+		intro = nil
+	end
 
 	if VirtualPad.shouldShow() then
 		local size = PAD_DEVICE_SIZE / SCALE
@@ -379,6 +487,7 @@ end
 -- ---- 일시 정지 (기획서 8.3절) ----------------------------------------------
 
 local PAUSE_ITEMS = { "계속 하기", "다시 하기", "끝내기" }
+local GAMEOVER_ITEMS = { "다시 하기", "타이틀로" }
 
 local function openPause()
 	paused = true
@@ -388,7 +497,7 @@ local function openPause()
 	})
 end
 
-local function updatePause()
+local function pollMenuInput()
 	local input = {
 		confirm = Input.IsKeyDown(VK_Z) or Input.IsKeyDown(VK_RETURN)
 			or Input.IsKeyDown(VK_SPACE),
@@ -397,7 +506,6 @@ local function updatePause()
 		cancel = Input.IsKeyDown(VK_X) or Input.IsKeyDown(VK_ESCAPE)
 			or Input.IsKeyDown(VK_P),
 	}
-	-- 터치: 항목을 직접 누른다
 	if Input.IsMouseDown(0) then
 		local index = pauseChoice:indexAt(Input.GetMouseX(), Input.GetMouseY())
 		if index ~= nil then
@@ -405,6 +513,11 @@ local function updatePause()
 			input.confirm = true
 		end
 	end
+	return input
+end
+
+local function updatePause()
+	local input = pollMenuInput()
 	if buttons ~= nil then
 		buttons.update()
 		if buttons.pressed("pause") then input.cancel = true end
@@ -415,12 +528,84 @@ local function updatePause()
 		local picked = pauseChoice:result()
 		paused = false
 		if picked == 2 then
-			resetStage()             -- 다시 하기
+			resetStage()
 		elseif picked == 3 then
-			SwitchScene("menu")      -- 끝내기 (3단계에서 타이틀로 바뀐다)
+			SwitchScene("aldebaran_title")
 		end
 	end
 end
+
+-- ---- 컷씬과 끝 --------------------------------------------------------------
+
+local function updateIntro(dt)
+	if intro.phase == "thief" then
+		intro.timer = intro.timer + dt
+		intro.x = intro.x + 150 * dt        -- 화면 밖으로 달아난다
+		if intro.timer >= 1.6 then
+			intro.phase = "text"
+			dialogue:showMessage(Stage.INTRO)
+		end
+	else
+		dialogue:update(pollConfirm(), false)
+		if not dialogue:isBusy() then
+			intro = nil                      -- 조작이 풀린다
+		end
+	end
+end
+
+local function startEnding()
+	playSe("pick")
+	bag = nil
+	ending = { phase = "epilogue", page = 1 }
+	Bgm.stop()
+	dialogue:showMessage(Stage.EPILOGUE[1])
+end
+
+local function updateEnding()
+	if ending.phase == "epilogue" then
+		dialogue:update(pollConfirm(), false)
+		if not dialogue:isBusy() then
+			ending.page = ending.page + 1
+			if Stage.EPILOGUE[ending.page] ~= nil then
+				dialogue:showMessage(Stage.EPILOGUE[ending.page])
+			else
+				ending.phase = "result"
+				ending.wait = 0
+				playSe("decision")
+			end
+		end
+	else
+		-- 결과 창 (기획서 4.4절): 결정키로 닫으면 타이틀로
+		ending.wait = ending.wait + 1
+		if ending.wait > 10 and pollConfirm().confirm then
+			SwitchScene("aldebaran_title")
+		end
+	end
+end
+
+local function updateGameOver()
+	if gameOver.phase == "text" then
+		dialogue:update(pollConfirm(), false)
+		if not dialogue:isBusy() then
+			gameOver.phase = "choice"
+			pauseChoice:show(GAMEOVER_ITEMS, {
+				x = math.floor(W / 2 - 70), y = math.floor(H / 2 - 20), index = 1,
+			})
+		end
+	else
+		pauseChoice:update(pollMenuInput())
+		if not pauseChoice:isActive() then
+			local picked = pauseChoice:result()
+			if picked == 2 then
+				SwitchScene("aldebaran_title")
+			else
+				resetStage()                 -- 취소를 포함해 기본은 다시 하기
+			end
+		end
+	end
+end
+
+-- ---- 갱신 -------------------------------------------------------------------
 
 function AldebaranScene.update(elapsed)
 	if elapsed > 0 then
@@ -431,12 +616,26 @@ function AldebaranScene.update(elapsed)
 		return
 	end
 
+	local dt = math.min(elapsed, 50) / 1000.0
+
 	if paused then
 		updatePause()
-		return                       -- 게임 시간이 멈춘다
+		return
+	end
+	if gameOver ~= nil then
+		updateGameOver()
+		return
+	end
+	if ending ~= nil then
+		updateEnding()
+		return
+	end
+	if intro ~= nil then
+		updateIntro(dt)
+		return
 	end
 
-	local dt = math.min(elapsed, 50) / 1000.0
+	stageTime = stageTime + dt
 	local input = pollInput()
 
 	if input.pauseEdge then
@@ -456,17 +655,27 @@ function AldebaranScene.update(elapsed)
 	if player.jumped then playSe("jump") end
 	if player.swung then playSe("swing") end
 
-	-- 낭떠러지: 목숨 하나를 잃고 체크포인트에서 다시 선다
 	if player.y > worldH + 60 then
 		falls = falls + 1
 		loseLife()
+		if gameOver ~= nil then return end
 	end
 
-	-- 체크포인트 (이정표)
 	if not checkpointHit and player.x >= Stage.CHECKPOINT_X then
 		checkpointHit = true
 		checkpoint = { x = Stage.CHECKPOINT_X, y = Stage.CHECKPOINT_Y }
 		playSe("pick")
+	end
+
+	-- 표지 글 (기획서 4.3절): 닿으면 화면 위에 잠깐 뜬다
+	signTimer = math.max(0, signTimer - dt)
+	if signTimer <= 0 then signText = nil end
+	for i, sign in ipairs(Stage.SIGNS) do
+		if not signSeen[i] and player.x >= sign.x0 and player.x <= sign.x1 then
+			signSeen[i] = true
+			signText = sign.text
+			signTimer = SIGN_SECONDS
+		end
 	end
 
 	for _, e in ipairs(monsters) do
@@ -477,8 +686,17 @@ function AldebaranScene.update(elapsed)
 
 	resolvePlayerAttack()
 	resolveMonsterAttacks()
+	if gameOver ~= nil then return end
+	updateStones(dt)
+	if gameOver ~= nil then return end
 
-	-- 카메라: 가로만 따라간다 (세로는 맵과 화면이 같다)
+	-- 배낭 줍기 → 에필로그 (기획서 4.4절)
+	if bag ~= nil and math.abs(player.x - bag.x) < 14
+			and math.abs(player.y - bag.y) < 24 then
+		startEnding()
+		return
+	end
+
 	camX = math.max(0, math.min(player.x - W / 2, worldW - W))
 
 	bg1.update(0)
@@ -524,6 +742,25 @@ local function drawHud()
 	end
 end
 
+local function drawCenteredText(y, text)
+	local w = (GetTextWidth ~= nil) and GetTextWidth(text) or (#text * 8)
+	DrawText(math.floor((W - w) / 2), y, text)
+end
+
+--- 결과 창 (기획서 4.4절)
+local function drawResult()
+	local bw, bh = 200, 110
+	local bx = math.floor((W - bw) / 2)
+	local by = math.floor((H - bh) / 2)
+	skin:drawPieces(Window.slices(bw, bh), bx, by)
+	if FontReady then
+		drawCenteredText(by + 12, "— 1-1 검은 안개의 숲 끝 —")
+		DrawText(bx + 20, by + 38, "레벨 " .. level .. "   경험치 " .. exp)
+		DrawText(bx + 20, by + 58, "골드 " .. gold)
+		DrawText(bx + 20, by + 78, string.format("걸린 시간 %d초", math.floor(stageTime)))
+	end
+end
+
 function AldebaranScene.render()
 	if map == nil then
 		if FontReady then
@@ -535,7 +772,6 @@ function AldebaranScene.render()
 
 	local cx = math.floor(camX)
 
-	-- 원경 (시차 스크롤, 두 장 이어붙임)
 	local bx = -math.floor(camX * PARALLAX) % W
 	bg1.setPosition(bx - W, 0)
 	bg2.setPosition(bx, 0)
@@ -546,7 +782,32 @@ function AldebaranScene.render()
 
 	drawMonsters(cx)
 
-	-- 버서커의 붉은 기운은 카르토 뒤에
+	-- 떨어진 배낭
+	if bag ~= nil then
+		bagImg.setPosition(math.floor(bag.x) - 8 - cx, math.floor(bag.y) - 16)
+		bagImg.update(0)
+		bagImg.draw()
+	end
+
+	-- 돌팔매
+	for _, s in ipairs(stones) do
+		stoneImg.setPosition(math.floor(s.x) - 4 - cx, math.floor(s.y) - 4)
+		stoneImg.update(0)
+		stoneImg.draw()
+	end
+
+	-- 도입 컷씬의 짐도둑
+	if intro ~= nil and intro.phase == "thief" then
+		local mk = Stage.species.monkey
+		local f = math.floor(intro.timer * 8) % 2
+		thiefImg.setFrames(f, f)
+		thiefImg.setCurrentFrame(f)
+		thiefImg.setPosition(math.floor(intro.x) - mk.anchorX - cx,
+			Stage.START.y - mk.anchorY)
+		thiefImg.update(0)
+		thiefImg.draw()
+	end
+
 	if berserkActive() then
 		local af = math.floor(player.animTime * 8) % 2
 		aura.setFrames(af, af)
@@ -560,7 +821,6 @@ function AldebaranScene.render()
 	karto.setFrames(f, f)
 	karto.setCurrentFrame(f)
 	karto.setPosition(math.floor(player.x) - 24 - cx, math.floor(player.y) - 46)
-	-- 무적 시간에는 깜박인다
 	if player.invulnTimer > 0 and math.floor(player.invulnTimer * 10) % 2 == 0 then
 		karto.setOpacity(110)
 	else
@@ -569,6 +829,11 @@ function AldebaranScene.render()
 	karto.draw()
 
 	drawHud()
+
+	-- 표지 글 (상단 가운데)
+	if signText ~= nil and FontReady then
+		drawCenteredText(44, signText)
+	end
 
 	if DEBUG_HUD and FontReady then
 		DrawText(4, 40, string.format("FPS %d  x %d y %d  %s", math.floor(fpsAvg + 0.5),
@@ -579,7 +844,25 @@ function AldebaranScene.render()
 	if pad ~= nil then pad.draw() end
 	if buttons ~= nil then buttons.draw() end
 
-	-- 일시 정지: 화면을 어둡게 깔고 창을 띄운다
+	-- 나레이션 (도입, 에필로그, 게임 오버의 글)
+	if gameOver ~= nil then
+		fadeImg.setPosition(0, 0)
+		fadeImg.setOpacity(170)
+		fadeImg.update(0)
+		fadeImg.draw()
+		if FontReady and gameOver.phase == "choice" then
+			drawCenteredText(math.floor(H / 2 - 56), "게임 오버")
+		end
+	end
+	dialogue:draw()
+	if gameOver ~= nil and gameOver.phase == "choice" then
+		pauseChoice:draw()
+	end
+
+	if ending ~= nil and ending.phase == "result" then
+		drawResult()
+	end
+
 	if paused then
 		fadeImg.setPosition(0, 0)
 		fadeImg.setOpacity(150)
@@ -601,15 +884,18 @@ function AldebaranScene.destroy()
 		if e.img ~= nil then e.img.dispose() end
 	end
 	monsters = {}
-	if bg1 ~= nil then bg1.dispose() end
-	if bg2 ~= nil then bg2.dispose() end
-	if karto ~= nil then karto.dispose() end
-	if aura ~= nil then aura.dispose() end
-	if fadeImg ~= nil then fadeImg.dispose() end
-	bg1, bg2, karto, aura, fadeImg = nil, nil, nil, nil, nil
+	for _, img in ipairs({ bg1, bg2, karto, aura, fadeImg, stoneImg, bagImg, thiefImg }) do
+		if img ~= nil then img.dispose() end
+	end
+	bg1, bg2, karto, aura, fadeImg, stoneImg, bagImg, thiefImg =
+		nil, nil, nil, nil, nil, nil, nil, nil
 	if hud ~= nil then
 		hud.dispose()
 		hud = nil
+	end
+	if dialogue ~= nil then
+		dialogue:dispose()
+		dialogue = nil
 	end
 	if pauseChoice ~= nil then
 		pauseChoice:dispose()

@@ -156,7 +156,24 @@ function M.update(m, dt, probe, px, py)
 		end
 
 	elseif m.state == "chase" then
-		if dist > m.def.alertRange * 1.5 then
+		-- 투척형(짐도둑): 가까우면 달아나고, 거리가 벌어지면 돌을 던진다.
+		-- 구간 끝에 몰리면 더 물러나지 않는다 (기획서 6절).
+		if m.def.special == "throw" then
+			local away = dx > 0 and -1 or 1
+			local cornered = (away > 0 and m.x >= m.maxX - 4)
+				or (away < 0 and m.x <= m.minX + 4)
+			if dist < m.def.fleeRange and not cornered then
+				m.dir = away
+				m.vx = away * m.def.chaseSpeed
+			elseif dist <= m.def.attackRange and m.onGround then
+				m.state = "windup"
+				m.timer = m.def.windup
+				m.dir = dx > 0 and 1 or -1
+			else
+				m.dir = dx > 0 and 1 or -1
+				m.vx = m.dir * m.def.walkSpeed
+			end
+		elseif dist > m.def.alertRange * 1.5 then
 			m.state = "patrol"
 			m.dir = dx > 0 and 1 or -1
 		elseif dist <= m.def.attackRange and m.onGround then
@@ -174,6 +191,7 @@ function M.update(m, dt, probe, px, py)
 			m.state = "strike"
 			m.timer = m.def.active
 			m.strikeHit = false
+			m.thrown = false             -- 투척형: 씬이 이 판을 보고 돌을 만든다
 		end
 
 	elseif m.state == "strike" then
@@ -204,6 +222,10 @@ function M.update(m, dt, probe, px, py)
 		if m.x <= m.minX then m.dir = 1 end
 		if m.x >= m.maxX then m.dir = -1 end
 	end
+	if m.def.special == "throw" then
+		-- 투척형은 어느 상태에서든 제 구간(공터)을 벗어나지 않는다
+		m.x = math.max(m.minX, math.min(m.maxX, m.x))
+	end
 	m.vy = math.min(m.vy + M.GRAVITY * dt, M.MAX_FALL)
 	moveY(m, m.vy * dt, probe)
 end
@@ -216,7 +238,9 @@ function M.body(m)
 end
 
 --- 공격 판정 상자. strike(또는 돌격 중)일 때만 있다.
+-- 투척형은 몸이 아니라 돌(씬의 투사체)이 아프므로 상자가 없다.
 function M.attackBox(m)
+	if m.def.special == "throw" then return nil end
 	if m.state == "strike" then
 		local reach = m.def.attackRange + 6
 		if m.dir > 0 then
