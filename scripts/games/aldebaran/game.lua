@@ -5,7 +5,9 @@
 --   Z 또는 스페이스: 점프 (공중에서 한 번 더 = 2단 점프), 대화 넘기기
 --   X: 공격 (연타로 3단 콤보)         C: 버서커 (MP 10, 4초)
 --   ESC 또는 P (Android 뒤로가기): 일시 정지 — 계속 하기 / 다시 하기 / 끝내기
---   터치: 좌하단 가상 패드, 우하단 점프와 공격과 폭주 버튼, 우상단 정지 버튼
+--   터치: 좌하단 조이스틱(잡고 끌기), 우하단 점프와 공격과 폭주와 검기 버튼,
+--         우상단 정지 버튼. 멀티터치라 달리면서 누를 수 있고, 배치와 크기는
+--         화면 크기에 비례한다 (T1, scripts/ui/layout.lua)
 --
 -- 흐름 (기획서 4절): 도입 컷씬(짐도둑이 배낭을 지고 달아난다) → 숲 주파와 전투 →
 -- 공터의 짐도둑을 쓰러뜨리고 배낭을 주우면 에필로그와 결과 창 → 타이틀로.
@@ -25,6 +27,7 @@
 local Image = require("scripts/image")
 local VirtualPad = require("scripts/ui/vpad")
 local Buttons = require("scripts/ui/buttons")
+local Layout = require("scripts/ui/layout")
 local Assets = require("scripts/rpg/assets")
 local Bgm = require("scripts/bgm")
 local Rng = require("scripts/rpg/rng")
@@ -100,7 +103,6 @@ local SCALE = 2
 -- 원경 두 겹: 먼 숲은 느리게, 가까운 숲은 그보다 빠르게 흐른다 (깊이).
 local PARALLAX_FAR = 0.25
 local PARALLAX_NEAR = 0.5
-local PAD_DEVICE_SIZE = 160
 local SIGN_SECONDS = 4.0
 local STONE_SPEED = 140
 local STONE_TOSS = -170
@@ -127,6 +129,7 @@ local climateImg = {}          -- 기후 조각 (크기마다 하나. hud.lua와
 local player = nil
 local camX = 0
 local pad, buttons = nil, nil
+local controls = nil           -- Layout.controls 결과 (status()가 검수용으로 노출)
 local padWasLeft, padWasRight = false, false
 local fpsAvg = 0
 local DEBUG_HUD = false
@@ -534,6 +537,22 @@ end
 
 -- ---- 씬 --------------------------------------------------------------------
 
+--- 터치 컨트롤의 중심 좌표 표 (status()용). { pad = {cx, cy, size}, [id] = {cx, cy, size} }
+local function controlCenters()
+	if controls == nil then return nil end
+	local out = {
+		pad = {
+			cx = controls.pad.x + controls.pad.size / 2,
+			cy = controls.pad.y + controls.pad.size / 2,
+			size = controls.pad.size,
+		},
+	}
+	for _, b in ipairs(controls.buttons) do
+		out[b.id] = { cx = b.x + b.size / 2, cy = b.y + b.size / 2, size = b.size }
+	end
+	return out
+end
+
 function AldebaranScene.status()
 	local ms = {}
 	for _, e in ipairs(monsters) do
@@ -580,6 +599,9 @@ function AldebaranScene.status()
 		skills = skills,
 		bolts = #bolts,
 		hallucination = hallucination > 0,
+		-- 터치 컨트롤 배치 (T1). 인수 시나리오가 좌표를 하드코딩하지 않고
+		-- 계산된 중심을 누르게 한다. 터치 UI가 없으면 nil.
+		touchControls = controlCenters(),
 	}
 end
 
@@ -705,17 +727,21 @@ function AldebaranScene.init()
 	end
 
 	if VirtualPad.shouldShow() then
-		local size = PAD_DEVICE_SIZE / SCALE
-		pad = VirtualPad.new{ x = 12, y = H - size - 12, size = size }
-		buttons = Buttons.new{
-			items = {
-				{ id = "attack", label = "공격", x = W - 60, y = H - 64, size = 52 },
-				{ id = "jump", label = "점프", x = W - 116, y = H - 52, size = 44 },
-				{ id = "skill", label = "폭주", x = W - 56, y = H - 122, size = 40 },
-				{ id = "bolt", label = "검기", x = W - 108, y = H - 112, size = 36 },
-				{ id = "pause", label = "II", x = W - 34, y = 8, size = 26 },
+		-- 화면 크기 비례 배치 (T1). 점프가 모서리(엄지가 쉬는 자리), 공격이 그 안쪽,
+		-- 폭주와 검기는 그 윗줄, 정지는 우상단.
+		controls = Layout.controls(W, H, {
+			main = {
+				{ id = "jump", label = "점프" },
+				{ id = "attack", label = "공격" },
 			},
-		}
+			sub = {
+				{ id = "skill", label = "폭주" },
+				{ id = "bolt", label = "검기" },
+			},
+			sys = { { id = "pause", label = "II" } },
+		})
+		pad = VirtualPad.new(controls.pad)
+		buttons = Buttons.new{ items = controls.buttons }
 	end
 
 	local slot = Stage.bgmSlot
@@ -1417,6 +1443,7 @@ function AldebaranScene.destroy()
 		buttons.dispose()
 		buttons = nil
 	end
+	controls = nil
 	if FontReady then PreparaFont(BASE_FONT) end
 	SetRenderScale(1)
 end

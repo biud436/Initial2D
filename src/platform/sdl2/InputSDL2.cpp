@@ -105,6 +105,95 @@ void Input::latchKeyDown(int vKey)
 	}
 }
 
+// ---- 멀티터치 (T1: docs/plans/t1-touch-input.md) ----------------------------
+// 이벤트 스레드는 없다. SDL_PollEvent와 update()가 같은 루프에서 돌므로 잠금 불필요.
+
+void Input::touchDown(long long id, float x, float y)
+{
+	// 이미 아는 손가락이면 갱신 (같은 id의 DOWN 중복 방어)
+	for (int i = 0; i < m_nTouchCount; ++i) {
+		if (m_touches[i].id == id) {
+			m_touches[i].cur = PRESSED;
+			m_touches[i].latch = 1;
+			m_touches[i].x = x;
+			m_touches[i].y = y;
+			return;
+		}
+	}
+	if (m_nTouchCount >= MAX_TOUCHES) {
+		return;
+	}
+	Touch& t = m_touches[m_nTouchCount++];
+	t.id = id;
+	t.x = x;
+	t.y = y;
+	t.cur = PRESSED;
+	t.old = RELEASED;
+	t.latch = 1;
+	t.map = KB_NONE;
+}
+
+void Input::touchMotion(long long id, float x, float y)
+{
+	for (int i = 0; i < m_nTouchCount; ++i) {
+		if (m_touches[i].id == id) {
+			m_touches[i].x = x;
+			m_touches[i].y = y;
+			return;
+		}
+	}
+}
+
+void Input::touchUp(long long id)
+{
+	// 항목은 지우지 않는다. update()가 UP을 한 틱 보고한 뒤 지운다 —
+	// 폴링 사이에 눌렸다 떼어진 탭도 DOWN 한 틱, UP 한 틱으로 관측된다.
+	for (int i = 0; i < m_nTouchCount; ++i) {
+		if (m_touches[i].id == id) {
+			m_touches[i].cur = RELEASED;
+			return;
+		}
+	}
+}
+
+void Input::updateTouches()
+{
+	int w = 0;
+	for (int i = 0; i < m_nTouchCount; ++i) {
+		Touch t = m_touches[i];
+		const BYTE cur = (t.cur == PRESSED || t.latch) ? PRESSED : RELEASED;
+		t.latch = 0;
+
+		if (t.old == RELEASED && cur == PRESSED)
+			t.map = KB_DOWN;
+		else if (t.old == PRESSED && cur == PRESSED)
+			t.map = KB_PRESS;
+		else if (t.old == PRESSED && cur == RELEASED)
+			t.map = KB_UP;
+		else
+			t.map = KB_NONE;   // UP을 이미 보고한 손가락 — 목록에서 뺀다
+
+		t.old = cur;
+		if (t.map != KB_NONE) {
+			m_touches[w++] = t;
+		}
+	}
+	m_nTouchCount = w;
+}
+
+int Input::getTouchCount() const
+{
+	return m_nTouchCount;
+}
+
+const Input::Touch* Input::getTouch(int index) const
+{
+	if (index < 0 || index >= m_nTouchCount) {
+		return nullptr;
+	}
+	return &m_touches[index];
+}
+
 void Input::latchMouseDown(int index)
 {
 	if (index >= 0 && index < 8) {

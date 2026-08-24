@@ -62,6 +62,67 @@ function M.run(t)
     else
         t.check_eq(VirtualPad.shouldShow(), true, "터치 플랫폼: 표시")
     end
+
+    -- ---- 조이스틱 소유권 (T1) -------------------------------------------------
+    -- update(pointers)로 포인터 목록을 직접 넣어 검증한다.
+    -- 패드: (10, 20) 크기 80 → 중심 (50, 60), 반경 38.4, 데드존 8
+
+    local pad = VirtualPad.new{ x = 10, y = 20, size = 80 }
+    local function pt(id, x, y, phase)
+        return { id = id, x = x, y = y,
+            down = phase == "down", held = phase ~= "up", up = phase == "up" }
+    end
+
+    -- 잡기: 패드 안에서 눌린 포인터
+    pad.update({ pt(1, 70, 60, "down") })
+    t.check_eq(pad.pressed(), "right", "잡기: 안에서 눌리면 방향")
+
+    -- 조이스틱: 잡힌 동안 원 밖으로 끌어도 유지된다
+    pad.update({ pt(1, 300, 60, "press") })
+    t.check_eq(pad.pressed(), "right", "끌기: 반경 밖에서도 방향 유지")
+    pad.update({ pt(1, 50, -100, "press") })
+    t.check_eq(pad.pressed(), "up", "끌기: 방향은 계속 따라간다")
+
+    -- 두 번째 손가락은 소유권을 뺏지 못한다
+    pad.update({ pt(1, 70, 60, "press"), pt(2, 30, 60, "down") })
+    t.check_eq(pad.pressed(), "right", "소유권: 두 번째 손가락 무시")
+
+    -- 놓기: up이면 풀린다
+    pad.update({ pt(1, 70, 60, "up") })
+    t.check_eq(pad.pressed(), nil, "놓기: up이면 nil")
+
+    -- 놓은 뒤에는 다른 포인터가 잡을 수 있다
+    pad.update({ pt(2, 30, 60, "down") })
+    t.check_eq(pad.pressed(), "left", "다시 잡기: 새 포인터")
+    pad.update({})
+    t.check_eq(pad.pressed(), nil, "포인터가 사라지면 풀린다")
+
+    -- 밖에서 눌린 포인터는 잡히지 않는다 (밖에서 눌러 안으로 끌어도 무시)
+    pad.update({ pt(3, 200, 60, "down") })
+    t.check_eq(pad.pressed(), nil, "밖에서 누르면 무시")
+    pad.update({ pt(3, 70, 60, "press") })
+    t.check_eq(pad.pressed(), nil, "밖에서 눌러 안으로 끌어도 무시")
+    pad.dispose()
+
+    -- 마우스 폴백: 터치 API가 없는 표면(가짜 Input)에서는 마우스가 포인터가 된다
+    local fake = { mx = 70, my = 60 }
+    local fakeDown, fakePress, fakeUp = true, false, false
+    fake.IsMouseDown = function(btn) return btn == 0 and fakeDown end
+    fake.IsMousePress = function(btn) return btn == 0 and fakePress end
+    fake.IsMouseUp = function(btn) return btn == 0 and fakeUp end
+    fake.GetMouseX = function() return fake.mx end
+    fake.GetMouseY = function() return fake.my end
+    local mpad = VirtualPad.new{ x = 10, y = 20, size = 80, input = fake }
+    mpad.update()
+    t.check_eq(mpad.pressed(), "right", "마우스 폴백: down에 잡는다")
+    fakeDown, fakePress = false, true
+    fake.mx = 30
+    mpad.update()
+    t.check_eq(mpad.pressed(), "left", "마우스 폴백: 누른 채 이동")
+    fakePress, fakeUp = false, true
+    mpad.update()
+    t.check_eq(mpad.pressed(), nil, "마우스 폴백: 떼면 풀린다")
+    mpad.dispose()
 end
 
 return M

@@ -1,9 +1,10 @@
--- 가상 D-패드 (터치 조작) — 범용 UI 모듈
+-- 가상 패드 (터치 조작) — 범용 UI 모듈
 --
 -- 키보드가 없는 플랫폼(Android 등)에서 방향 입력을 화면 위 패드로 받는다.
--- 엔진의 마우스 API(Input.GetMouseX/Y, IsMousePress)를 그대로 쓴다: SDL이 첫 손가락
--- 터치를 마우스로 매핑하므로 단일 터치 D-패드는 별도 터치 API 없이 동작한다.
--- (동시 다중 터치가 필요해지면 그때 Input에 터치 API를 더한다)
+-- 포인터는 touch.lua가 합쳐 준다: 엔진에 멀티터치 API가 있으면 손가락들을,
+-- 없으면(테스트의 가짜 Input) 마우스를 쓴다. 조이스틱처럼 동작한다 (T1):
+-- 패드 안에서 눌린 포인터를 잡고, 잡힌 동안에는 손가락이 원 밖으로
+-- 미끄러져도 방향을 유지한다. 놓아야 풀린다.
 --
 -- 사용:
 --   local VirtualPad = require("scripts/ui/vpad")
@@ -20,6 +21,7 @@
 -- 스프라이트 시트 resources/ui/dpad.png: 가로 5프레임 (기본, 위, 오른쪽, 아래, 왼쪽)
 
 local Image = require("scripts/image")
+local Touch = require("scripts/ui/touch")
 
 local VirtualPad = {}
 
@@ -61,6 +63,7 @@ function VirtualPad.new(opts)
 	opts = opts or {}
 	local self = {}
 	local size = opts.size or 160
+	local input = opts.input or _G.Input
 	self.x = opts.x or 24
 	self.y = opts.y or (WindowHeight() - size - 24)
 	self.size = size
@@ -68,6 +71,7 @@ function VirtualPad.new(opts)
 	local radius = size * 0.48
 	local deadzone = size * 0.10
 	local current = nil
+	local ownerId = nil            -- 패드를 잡은 포인터 (놓을 때까지 유지)
 	local img = Image("./resources/ui/dpad.png", self.x, self.y,
 		FRAME_SIZE, FRAME_SIZE, 5, "UIDpad")
 	img.setSheetGrid(5, 1)
@@ -94,9 +98,39 @@ function VirtualPad.new(opts)
 		return VirtualPad.direction(px - cx, py - cy, radius, deadzone)
 	end
 
-	function self.update()
-		if Input.IsMousePress(0) then
-			current = self.hitTest(Input.GetMouseX(), Input.GetMouseY())
+	-- 매 프레임. pointers를 넘기면 그것을 쓰고(단위 테스트), 없으면 input에서 만든다.
+	function self.update(pointers)
+		pointers = pointers or Touch.pointers(input)
+
+		-- 잡고 있던 포인터를 따라간다. 사라졌거나 떨어졌으면 놓는다.
+		local owner = nil
+		if ownerId ~= nil then
+			for _, p in ipairs(pointers) do
+				if p.id == ownerId then
+					owner = p
+					break
+				end
+			end
+			if owner == nil or not owner.held then
+				ownerId, owner = nil, nil
+			end
+		end
+
+		-- 새로 잡기: 이번 틱에 패드 안에서 눌린 포인터
+		if owner == nil then
+			for _, p in ipairs(pointers) do
+				if p.down and self.contains(p.x, p.y) then
+					ownerId, owner = p.id, p
+					break
+				end
+			end
+		end
+
+		if owner ~= nil then
+			-- 잡힌 동안은 반경 제한 없이 방향만 본다 (조이스틱: 밖으로 끌어도 유지)
+			local cx, cy = center()
+			current = VirtualPad.direction(owner.x - cx, owner.y - cy,
+				math.huge, deadzone)
 		else
 			current = nil
 		end

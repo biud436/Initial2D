@@ -60,7 +60,7 @@ INITIAL2D_SCENE=aldebaran INITIAL2D_ALDEBARAN_STAGE=tomb \
 
 폭주와 검기 방출은 처음에는 쓸 수 없고, 숲에서 흔적을 찾아야 얻습니다.
 
-터치는 단일 터치라 패드와 버튼을 동시에 누를 수 없습니다. 그래서 공중에서는 관성이 유지되고, 패드에서 손을 뗀 뒤 0.18초 안의 점프는 직전 달리기 속도를 잇습니다. 키보드로 "달리며 점프"한 것과 같은 궤적이 나오게 하려는 것입니다.
+터치는 멀티터치입니다. 왼손으로 패드를 잡아 달리면서 오른손으로 점프와 공격을 동시에 누를 수 있습니다. 패드는 조이스틱처럼 동작해서, 한 번 잡으면 손가락이 원 밖으로 미끄러져도 방향이 끊기지 않습니다. 컨트롤의 크기와 위치는 화면 크기에 비례해 계산되므로 어떤 해상도의 기기에서도 같은 손맛이 나옵니다 (`scripts/ui/layout.lua`). 한 손가락으로만 조작할 때를 위한 배려도 남아 있습니다. 공중에서는 관성이 유지되고, 패드에서 손을 뗀 뒤 0.18초 안의 점프는 직전 달리기 속도를 잇습니다.
 
 ## 스테이지 1-1 검은 안개의 숲
 
@@ -592,27 +592,49 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 	GetPlatform()
 ```
 
-# 가상 패드 (터치 조작)
+# 터치 조작 (가상 패드, 동작 버튼, 멀티터치)
 
-키보드가 없는 플랫폼에서 방향 입력을 화면 위 D-패드로 받는 공용 Lua 모듈입니다 (`scripts/ui/vpad.lua`). 엔진의 마우스 API를 그대로 쓰므로 별도 터치 API 없이 동작하며, Android와 iOS에서는 자동으로 표시하고 데스크톱에서는 `INITIAL2D_VPAD=1` 환경 변수로 띄워 확인할 수 있습니다. 타일맵 데모가 사용 예제입니다. Android 뒤로가기 버튼은 ESC(키 코드 27)로 전달됩니다.
+키보드가 없는 플랫폼을 위한 공용 Lua 모듈 세 개입니다. Android와 iOS에서는 자동으로 표시하고, 데스크톱에서는 `INITIAL2D_VPAD=1` 환경 변수로 띄워 확인할 수 있습니다. Android 뒤로가기 버튼은 ESC(키 코드 27)로 전달됩니다.
+
+| 모듈 | 역할 |
+| :--- | :--- |
+| `scripts/ui/vpad.lua` | 가상 패드. 조이스틱처럼 동작합니다. 패드 안에서 눌린 손가락을 잡고, 잡힌 동안에는 원 밖으로 끌어도 방향이 유지됩니다 |
+| `scripts/ui/buttons.lua` | 동작 버튼. 손가락마다 따로 판정하므로 두 버튼을 동시에 누를 수 있고, 판정 반경은 표시 반경의 1.25배입니다 (작은 버튼도 누르기 쉽게) |
+| `scripts/ui/layout.lua` | 화면 크기에서 패드와 버튼의 위치와 크기를 계산하는 순수 함수. 크기는 화면 높이에 비례하고 위치는 모서리 앵커입니다 |
+| `scripts/ui/touch.lua` | 터치와 마우스를 포인터 목록 하나로 합칩니다. 멀티터치 API가 없는 환경에서는 마우스만 남아 단일 터치처럼 동작합니다 |
 
 ```lua
 	local VirtualPad = require("scripts/ui/vpad")
+	local Buttons = require("scripts/ui/buttons")
+	local Layout = require("scripts/ui/layout")
 
 	if VirtualPad.shouldShow() then
-		pad = VirtualPad.new{ x = 24, y = WindowHeight() - 184, size = 160 }
+		-- 화면 크기 비례 배치: 좌하단 패드, 우하단 주 버튼과 보조 버튼, 우상단 시스템 버튼
+		local c = Layout.controls(WindowWidth(), WindowHeight(), {
+			main = { { id = "jump", label = "점프" }, { id = "attack", label = "공격" } },
+			sub  = { { id = "skill", label = "폭주" } },
+			sys  = { { id = "pause", label = "II" } },
+		})
+		pad = VirtualPad.new(c.pad)
+		buttons = Buttons.new{ items = c.buttons }
 	end
 
 	-- 매 프레임 (Input 갱신 뒤)
 	pad.update()
 	if pad.isPressed("left") then --[[ 왼쪽 ]] end   -- "up", "down", "left", "right"
+	buttons.update()
+	if buttons.pressed("jump") then --[[ 점프 ]] end  -- 이번 프레임의 엣지
 
-	-- 게임 쪽 탭 처리에서 패드 위 터치를 제외할 때
-	if not pad.contains(Input.GetMouseX(), Input.GetMouseY()) then --[[ 탭 처리 ]] end
+	-- 게임 쪽 탭 처리에서 패드와 버튼 위 터치를 제외할 때
+	if not pad.contains(mx, my) and not buttons.contains(mx, my) then --[[ 탭 처리 ]] end
 
 	pad.draw()      -- HUD 위에 마지막으로 그립니다
+	buttons.draw()
 	pad.dispose()
+	buttons.dispose()
 ```
+
+멀티터치는 엔진의 터치 API 위에서 동작합니다. `Input.GetTouchCount()`가 이번 틱에 보이는 손가락 수를 주고, `Input.GetTouch(i)`가 `id, x, y, phase`를 돌려줍니다 (phase는 `"down"`, `"press"`, `"up"`, 좌표는 마우스와 같은 논리 좌표). 손을 뗀 손가락은 `"up"`으로 한 틱 보인 뒤 사라지고, 폴링 사이의 짧은 탭도 잃지 않습니다. Windows GDI 경로에서는 터치 수가 항상 0입니다.
 
 패드 이미지(`resources/ui/dpad.png`)와 버튼 이미지는 `python3 tools/generate_ui_assets.py`로 다시 만들 수 있습니다.
 

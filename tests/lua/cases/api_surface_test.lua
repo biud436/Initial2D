@@ -16,7 +16,8 @@ local GLOBALS = {
 local MODULES = {
     Input = { "IsKeyDown", "IsKeyUp", "IsKeyPress", "IsAnyKeyDown",
               "GetMouseX", "GetMouseY", "IsMouseDown", "IsMouseUp",
-              "IsMousePress", "IsAnyMouseDown", "GetMouseZ", "SetMouseZ" },
+              "IsMousePress", "IsAnyMouseDown", "GetMouseZ", "SetMouseZ",
+              "GetTouchCount", "GetTouch" },
     Audio = { "PlayMusic", "PlaySound", "SetVolume", "GetVolume",
               "PauseMusic", "StopMusic", "ResumeMusic", "IsPlayingMusic",
               "FadeOutMusic", "SetMusicPosition", "ReleaseMusic" },
@@ -57,6 +58,10 @@ function M.run(t)
     SetRenderScale(1)
     t.check(WindowWidth() == baseW and WindowHeight() == baseH,
         "배율을 1로 되돌리면 원래 해상도")
+
+    -- 값 계약: 멀티터치 (T1). 헤드리스에는 손가락이 없다.
+    t.check_eq(Input.GetTouchCount(), 0, "헤드리스: 터치 없음")
+    t.check_eq(Input.GetTouch(1), nil, "범위 밖 GetTouch는 nil")
 end
 
 return M
