@@ -1151,6 +1151,14 @@ gradle wrapper --gradle-version 8.6   # 최초 1회
 요구 사항: JDK 17, Android SDK (API 34), NDK r27 이상, CMake 3.22 이상.
 에셋은 최초 실행 시 APK assets에서 내부 저장소로 추출된 뒤 사용됩니다. `prepare_assets.sh`는 `resources/RTP.zip`(런타임 미사용, 재배포 불가)과 닷파일을 APK에서 제외합니다.
 
+릴리즈 빌드는 서명이 필요합니다. 키스토어를 만들고 `android/keystore.properties`에 접속 정보를 적으면 `assembleRelease`가 서명까지 합니다 (두 파일 모두 gitignore 대상, 커밋 금지). 릴리즈 빌드에서는 개발용 핫 리로드 서버가 열리지 않습니다. 자세한 절차는 `android/README.md`를 참조하십시오.
+
+```bash
+cd android
+./gradlew :app:assembleRelease
+# 결과: app/build/outputs/apk/release/app-release.apk
+```
+
 무선 디버깅으로 연결한 기기에 설치하고 실행하는 예입니다.
 
 ```bash

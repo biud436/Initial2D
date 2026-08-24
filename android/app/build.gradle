@@ -1,5 +1,13 @@
 apply plugin: 'com.android.application'
 
+// 릴리즈 서명: android/keystore.properties 에서 읽는다 (키스토어와 함께 gitignore).
+// 파일이 없으면 릴리즈는 서명 없이 빌드된다 (설치 불가 — 문서 참조).
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+
 android {
     namespace 'com.biud436.initial2d'
     compileSdk 34
@@ -46,9 +54,23 @@ android {
         }
     }
 
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

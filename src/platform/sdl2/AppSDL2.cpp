@@ -231,8 +231,9 @@ int App::Run(int nCmdShow)
 
 	Initialize();
 
-	// 핫 리로드 서버 — Android는 상시(디버그 개발용), 데스크톱은 환경변수 옵트인
-#ifdef __ANDROID__
+	// 핫 리로드 서버 — Android 디버그 빌드는 상시(개발용), 데스크톱은 환경변수
+	// 옵트인. 릴리즈 빌드(NDEBUG)에는 개발 서버를 열지 않는다.
+#if defined(__ANDROID__) && !defined(NDEBUG)
 	const bool hmrEnabled = true;
 #else
 	const bool hmrEnabled = SDL_getenv("INITIAL2D_HMR") != nullptr;

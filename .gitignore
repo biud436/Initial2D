@@ -365,6 +365,8 @@ android/build/
 android/app/build/
 android/app/.cxx/
 android/local.properties
+android/release.keystore
+android/keystore.properties
 android/gradle/
 android/gradlew
 android/gradlew.bat
