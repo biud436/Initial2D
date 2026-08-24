@@ -865,11 +865,13 @@ def test_aldebaran_scene():
                                  "INITIAL2D_VPAD": "1"})
     log_pad = r_pad.stdout + r_pad.stderr
     check("터치 실행 정상 종료", r_pad.returncode == 0, f"rc={r_pad.returncode}")
-    for needle, name in [("touchWalk:true", "터치: 가상 패드로 걷는다"),
+    for needle, name in [("touchControls:true", "터치: 배치가 status로 노출된다"),
+                         ("touchWalk:true", "터치: 가상 패드로 걷는다"),
                          ("touchJump:true", "터치: 점프 버튼"),
                          ("touchAttack:true", "터치: 공격 버튼"),
                          ("touchPause:true", "터치: 정지 버튼"),
-                         ("touchResume:true", "터치: 항목을 눌러 계속 하기")]:
+                         ("touchResume:true", "터치: 항목을 눌러 계속 하기"),
+                         ("touchSimul:true", "터치: 패드로 달리면서 점프 (멀티터치)")]:
         check(name, needle in log_pad, log_pad[-400:])
     check("터치 UI 화면 덤프", 10 in s_pad)
 

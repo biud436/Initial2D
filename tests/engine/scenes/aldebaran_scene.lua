@@ -131,6 +131,10 @@ end
 -- ---- 터치 조작의 끝-끝 검증 (stop=touch) ------------------------------------
 
 local function runTouch()
+	-- 좌표를 하드코딩하지 않는다. 배치는 화면 크기에서 계산되므로(T1,
+	-- scripts/ui/layout.lua) status()가 노출하는 계산된 중심을 누른다.
+	local c = st().touchControls
+	print("touchControls:" .. tostring(c ~= nil))
 	local function press(x, y)
 		r:schedule({ mouse = { x = x, y = y } }, 1)
 		r:schedule({ click = 0 }, 2)
@@ -138,7 +142,7 @@ local function runTouch()
 	end
 
 	-- 공격을 먼저 본다. 걷다 보면 첫 거미가 붙어 피격 경직에 걸리기 때문이다.
-	press(350, 410)
+	press(c.attack.cx, c.attack.cy)
 	local swung = false
 	for _ = 1, 12 do
 		tick(1)
@@ -147,25 +151,43 @@ local function runTouch()
 	print("touchAttack:" .. tostring(swung))
 	tick(24)
 
+	-- 패드 중심에서 오른쪽으로 치우친 자리를 눌러 걷는다
 	local x0 = st().x
-	r:schedule({ mouse = { x = 82, y = 396 } }, 1)
+	r:schedule({ mouse = { x = c.pad.cx + c.pad.size * 0.3, y = c.pad.cy } }, 1)
 	r:schedule({ click = 0 }, 2)
 	tick(30)
 	print("touchWalk:" .. tostring(st().x > x0 + 10))
 	r:schedule({ unclick = 0 }, 1)
 	tick(6)
 
-	press(290, 418)
+	press(c.jump.cx, c.jump.cy)
 	tick(6)
 	print("touchJump:" .. tostring(not st().onGround))
 	tick(60)
 
-	press(363, 21)
+	press(c.pause.cx, c.pause.cy)
 	tick(8)
 	print("touchPause:" .. tostring(st().paused))
 	press(160, 208)
 	tick(8)
 	print("touchResume:" .. tostring(not st().paused))
+
+	-- 동시 입력 (T1): 손가락 1로 패드를 잡아 왼쪽으로 달리는 채로
+	-- 손가락 2로 점프 버튼을 누른다. 단일 터치(마우스)로는 불가능하던 것.
+	r:schedule({ touchdown = { id = 1,
+		x = c.pad.cx - c.pad.size * 0.3, y = c.pad.cy } }, 1)
+	tick(10)
+	local sx = st().x
+	r:schedule({ touchdown = { id = 2, x = c.jump.cx, y = c.jump.cy } }, 1)
+	r:schedule({ touchup = { id = 2 } }, 3)
+	tick(6)
+	local airborne = not st().onGround
+	local x1 = st().x
+	tick(14)
+	local x2 = st().x
+	print("touchSimul:" .. tostring(airborne and x1 < sx and x2 < x1))
+	r:schedule({ touchup = { id = 1 } }, 1)
+	tick(6)
 end
 
 -- ---- 시나리오 ----------------------------------------------------------------

@@ -17,6 +17,8 @@ LuaObjectToken luaj_Input[LUA_INPUT_MEMBERS] = {
 	{ "IsAnyMouseDown",  Lua_IsAnyMouseDown },
 	{ "GetMouseZ",  Lua_GetMouseZ },
 	{ "SetMouseZ",  Lua_SetMouseZ },
+	{ "GetTouchCount",  Lua_GetTouchCount },
+	{ "GetTouch",  Lua_GetTouch },
 };
 
 LUA_METHOD(CreateInputObject)
@@ -251,4 +253,58 @@ LUA_METHOD(SetMouseZ)
 	App::GetInstance().GetInput().setMouseZ(value);
 
 	return 0;
+}
+
+/**
+* Input.GetTouchCount();
+* 이번 틱에 보이는 손가락 수 (UP으로 보고되는 마지막 틱 포함).
+* Windows GDI 경로에는 터치가 없으므로 항상 0이다.
+*/
+LUA_METHOD(GetTouchCount)
+{
+#ifndef RS_WINDOWS
+	lua_pushinteger(pL, App::GetInstance().GetInput().getTouchCount());
+#else
+	lua_pushinteger(pL, 0);
+#endif
+	return 1;
+}
+
+/**
+* Input.GetTouch(i);  -- 1부터 GetTouchCount()까지
+* id, x, y, phase 네 값을 돌려준다. phase는 "down", "press", "up".
+* 범위 밖이면 nil 하나.
+*/
+LUA_METHOD(GetTouch)
+{
+#ifndef RS_WINDOWS
+	int n = lua_gettop(pL);
+	if (n < 1)
+	{
+		lua_pushnil(pL);
+		return 1;
+	}
+
+	int index = static_cast<int>(luaL_checkinteger(pL, 1));
+	const Input::Touch* t = App::GetInstance().GetInput().getTouch(index - 1);
+	if (t == nullptr)
+	{
+		lua_pushnil(pL);
+		return 1;
+	}
+
+	lua_pushinteger(pL, static_cast<lua_Integer>(t->id));
+	lua_pushnumber(pL, t->x);
+	lua_pushnumber(pL, t->y);
+	switch (t->map)
+	{
+	case Input::KB_DOWN: lua_pushstring(pL, "down"); break;
+	case Input::KB_UP: lua_pushstring(pL, "up"); break;
+	default: lua_pushstring(pL, "press"); break;
+	}
+	return 4;
+#else
+	lua_pushnil(pL);
+	return 1;
+#endif
 }

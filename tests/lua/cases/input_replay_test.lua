@@ -93,6 +93,39 @@ function M.run(t)
     t.check(_G.Input == r.api, "install: 전역 Input 교체")
     r:restore()
     t.check(_G.Input == original, "restore: 전역 Input 복구")
+
+    -- 멀티터치 재생 (T1): down → press → up 한 틱 → 사라짐
+    local tr = replay.new({})
+    t.check_eq(tr.api.GetTouchCount(), 0, "터치: 처음엔 없다")
+    tr:schedule({ touchdown = { id = 1, x = 80, y = 360 } }, 1)
+    tr:tick()
+    t.check_eq(tr.api.GetTouchCount(), 1, "터치: 손가락 하나")
+    local id, x, y, phase = tr.api.GetTouch(1)
+    t.check(id == 1 and x == 80 and y == 360 and phase == "down",
+        "터치: 첫 틱은 down", tostring(phase))
+    tr:tick()
+    local _, _, _, p2 = tr.api.GetTouch(1)
+    t.check_eq(p2, "press", "터치: 다음 틱은 press")
+
+    -- 두 번째 손가락과 끌기
+    tr:schedule({ touchdown = { id = 2, x = 300, y = 400 } }, 1)
+    tr:schedule({ touchmove = { id = 1, x = 120, y = 360 } }, 1)
+    tr:tick()
+    t.check_eq(tr.api.GetTouchCount(), 2, "터치: 두 손가락")
+    local i1, x1 = tr.api.GetTouch(1)
+    local i2, _, _, ph2 = tr.api.GetTouch(2)
+    t.check(i1 == 1 and x1 == 120, "터치: 끌기가 좌표를 옮긴다", tostring(x1))
+    t.check(i2 == 2 and ph2 == "down", "터치: 새 손가락은 down")
+
+    -- 뗌: up으로 한 틱 보이고 사라진다
+    tr:schedule({ touchup = { id = 1 } }, 1)
+    tr:tick()
+    local u1, _, _, up1 = tr.api.GetTouch(1)
+    t.check(u1 == 1 and up1 == "up", "터치: 뗀 틱은 up", tostring(up1))
+    tr:tick()
+    t.check_eq(tr.api.GetTouchCount(), 1, "터치: up 다음 틱에 사라진다")
+    local only = tr.api.GetTouch(1)
+    t.check_eq(only, 2, "터치: 남은 것은 손가락 2")
 end
 
 return M

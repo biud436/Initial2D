@@ -15,8 +15,13 @@
 --     { at = 21, click = 0 },                -- 마우스 버튼 0 누름
 --     { at = 23, unclick = 0 },
 --     { at = 30, wheel = -1 },
+--     { at = 40, touchdown = { id = 1, x = 80, y = 360 } },  -- 손가락 1 누름
+--     { at = 45, touchmove = { id = 1, x = 120, y = 360 } }, -- 끌기
+--     { at = 50, touchup = { id = 1 } },     -- 뗌 (그 틱에 phase "up"으로 보인다)
 --   }
 -- 키는 이름("SPACE") 또는 VK 정수(32) 둘 다 허용한다.
+-- 터치는 엔진의 멀티터치 API(GetTouchCount/GetTouch)와 같은 의미로 재생된다:
+-- 누른 첫 틱은 "down", 이후 "press", 뗀 틱은 "up"으로 한 틱 보인 뒤 사라진다.
 --
 -- 사용법 (씬의 Update 첫 줄에서 tick을 호출한다):
 --   local replay = require("scripts/luatests/input_replay")
@@ -53,6 +58,7 @@ function M.new(scenario)
     self.frame = 0
     self.keyDown, self.keyPrev = {}, {}
     self.btnDown, self.btnPrev = {}, {}
+    self.touchNow, self.touchPrev = {}, {}   -- id → { x, y }
     self.mx, self.my, self.wheelValue = 0, 0, 0
     self.saved = nil
 
@@ -90,6 +96,29 @@ function M.new(scenario)
     function api.GetMouseZ() return self.wheelValue end
     function api.SetMouseZ(v) self.wheelValue = v end
 
+    -- 멀티터치 (T1). 엔진과 같은 의미: 이번 틱의 손가락 목록에 뗀 손가락이
+    -- "up"으로 한 틱 남는다. 순서는 id 정렬로 고정한다 (결정성).
+    local function touchList()
+        local list = {}
+        for id, p in pairs(self.touchNow) do
+            list[#list + 1] = { id = id, x = p.x, y = p.y,
+                phase = self.touchPrev[id] ~= nil and "press" or "down" }
+        end
+        for id, p in pairs(self.touchPrev) do
+            if self.touchNow[id] == nil then
+                list[#list + 1] = { id = id, x = p.x, y = p.y, phase = "up" }
+            end
+        end
+        table.sort(list, function(a, b) return a.id < b.id end)
+        return list
+    end
+    function api.GetTouchCount() return #touchList() end
+    function api.GetTouch(i)
+        local t = touchList()[i]
+        if t == nil then return nil end
+        return t.id, t.x, t.y, t.phase
+    end
+
     return self
 end
 
@@ -99,6 +128,8 @@ function Replay:tick()
     for k, v in pairs(self.keyDown) do self.keyPrev[k] = v end
     for k, v in pairs(self.btnPrev) do self.btnPrev[k] = nil end
     for k, v in pairs(self.btnDown) do self.btnPrev[k] = v end
+    for k in pairs(self.touchPrev) do self.touchPrev[k] = nil end
+    for id, p in pairs(self.touchNow) do self.touchPrev[id] = { x = p.x, y = p.y } end
 
     self.frame = self.frame + 1
     local list = self.events[self.frame]
@@ -110,6 +141,13 @@ function Replay:tick()
             if ev.unclick then self.btnDown[ev.unclick] = nil end
             if ev.mouse then self.mx, self.my = ev.mouse.x, ev.mouse.y end
             if ev.wheel then self.wheelValue = ev.wheel end
+            if ev.touchdown then
+                self.touchNow[ev.touchdown.id] = { x = ev.touchdown.x, y = ev.touchdown.y }
+            end
+            if ev.touchmove and self.touchNow[ev.touchmove.id] ~= nil then
+                self.touchNow[ev.touchmove.id] = { x = ev.touchmove.x, y = ev.touchmove.y }
+            end
+            if ev.touchup then self.touchNow[ev.touchup.id] = nil end
         end
     end
 end

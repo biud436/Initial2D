@@ -18,5 +18,7 @@ LUA_METHOD(IsMousePress);
 LUA_METHOD(IsAnyMouseDown);
 LUA_METHOD(GetMouseZ);
 LUA_METHOD(SetMouseZ);
+LUA_METHOD(GetTouchCount);
+LUA_METHOD(GetTouch);
 
 #endif

@@ -44,6 +44,8 @@ void Input::initialize(HWND hWnd)
 #ifndef RS_WINDOWS
 	memset(m_mbEventLatch, 0, sizeof(m_mbEventLatch));
 	memset(m_kbEventLatch, 0, sizeof(m_kbEventLatch));
+	memset(m_touches, 0, sizeof(m_touches));
+	m_nTouchCount = 0;
 #endif
 
 	m_mouse.setX(0.0f);
@@ -56,6 +58,9 @@ void Input::update()
 {
 	updateKeyboard();
 	updateMouse();
+#ifndef RS_WINDOWS
+	updateTouches();
+#endif
 }
 
 

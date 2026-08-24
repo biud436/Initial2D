@@ -147,6 +147,32 @@ protected:
 public:
 	void latchMouseDown(int index);
 	void latchKeyDown(int vKey);
+
+	// 멀티터치 (T1). 손가락마다 마우스와 같은 4-상태 기계와 이벤트 래치를 둔다.
+	// 좌표는 논리 좌표다 (AppSDL2가 SDL_RenderWindowToLogical로 바꿔 넘긴다).
+	// UP으로 보고된 손가락은 다음 틱에 목록에서 사라진다.
+	struct Touch
+	{
+		long long id;   // SDL_FingerID — 같은 손가락은 눌린 동안 id가 유지된다
+		float x;
+		float y;
+		BYTE cur;       // 이벤트 기준 지금 눌림 (PRESSED/RELEASED)
+		BYTE old;       // 지난 틱에 관측한 상태
+		BYTE latch;     // 폴링 사이의 짧은 탭 보존
+		BYTE map;       // 이번 틱의 KEY_STATE (KB_DOWN/KB_PRESS/KB_UP)
+	};
+	static const int MAX_TOUCHES = 10;
+
+	void touchDown(long long id, float x, float y);
+	void touchMotion(long long id, float x, float y);
+	void touchUp(long long id);
+	int getTouchCount() const;
+	const Touch* getTouch(int index) const;
+
+protected:
+	void updateTouches();
+	Touch m_touches[MAX_TOUCHES];
+	int m_nTouchCount = 0;
 #endif
 
 private:

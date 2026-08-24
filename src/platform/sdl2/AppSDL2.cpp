@@ -434,6 +434,34 @@ void App::HandleEvent(const SDL_Event& event)
 			}
 		}
 		break;
+	case SDL_FINGERDOWN:
+	case SDL_FINGERMOTION:
+	case SDL_FINGERUP:
+		// 멀티터치 (T1). 화면을 직접 만지는 기기만 받는다 — macOS 트랙패드는
+		// INDIRECT라 여기서 걸러진다 (마우스 커서와 무관한 유령 포인터 방지).
+		if (m_pInput != nullptr
+			&& SDL_GetTouchDeviceType(event.tfinger.touchId) == SDL_TOUCH_DEVICE_DIRECT) {
+			int w = 0, h = 0;
+			SDL_GetWindowSize(m_context.window, &w, &h);
+			// 정규화 좌표(0..1) → 창 픽셀 → 논리 좌표 (마우스와 같은 좌표계)
+			float lx = event.tfinger.x * static_cast<float>(w);
+			float ly = event.tfinger.y * static_cast<float>(h);
+			if (m_context.renderer != nullptr) {
+				SDL_RenderWindowToLogical(m_context.renderer,
+					static_cast<int>(lx), static_cast<int>(ly), &lx, &ly);
+			}
+			const long long id = static_cast<long long>(event.tfinger.fingerId);
+			if (event.type == SDL_FINGERDOWN) {
+				m_pInput->touchDown(id, lx, ly);
+			}
+			else if (event.type == SDL_FINGERMOTION) {
+				m_pInput->touchMotion(id, lx, ly);
+			}
+			else {
+				m_pInput->touchUp(id);
+			}
+		}
+		break;
 	case SDL_WINDOWEVENT:
 		if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
 			m_bFocus = true;
