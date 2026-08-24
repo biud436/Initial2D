@@ -442,6 +442,30 @@ function Initialize()
 		return
 	end
 
+	-- 회귀 (T1 후속, 2026-08-24 실기 검수): 논리 폭이 384보다 넓은 화면(모바일)에서
+	-- 홍수 물이 왼쪽 384px에만 그려졌다. 넓은 창으로 태양의 방을 열어 수면이
+	-- 화면 폭 전체에 있는지 픽셀로 본다 (판정은 run_engine_tests.py).
+	-- 결정성을 위해 수위를 고정하고 배치를 비운다 — 그리기 경로는 실물 그대로다.
+	if stopMode == "flood" then
+		local Stages = require("scripts/games/aldebaran/stages/init")
+		local stage = Stages.get("tomb")
+		stage.CLIMATE.sun = { kind = "flood", period = 9.0, low = 356, high = 356,
+			moveMult = 0.55, jumpMult = 0.72 }
+		stage.spawns = {}
+		currentName = "aldebaran"
+		current = AldebaranScene
+		AldebaranScene.setStage("tomb")
+		r = replay.new({})
+		r:install()
+		current.init()
+		tick(30)
+		local s = st()
+		print("floodY:" .. tostring(s.waterY))
+		print("floodStage:" .. tostring(s.stage) .. " x:" .. tostring(math.floor(s.x)))
+		r:restore()
+		return
+	end
+
 	if stopMode == "title" then
 		currentName = "aldebaran_title"
 		current = AldebaranTitleScene

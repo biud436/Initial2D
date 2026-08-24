@@ -1101,6 +1101,8 @@ local CLIP = {
 	flake = { CLIMATE_PATH, 56, 0, 8, 8 },
 	beam = { BEAM_PATH, 0, 0, 88, 448 },
 	water = { WATER_PATH, 0, 0, 384, 128 },
+	-- 물결 없는 몸통만 (수면 아래를 이어 채울 때. 물결이 반복되면 줄무늬가 진다)
+	waterbody = { WATER_PATH, 0, 64, 384, 64 },
 }
 
 local function climatePiece(name, x, y, opacity)
@@ -1150,7 +1152,18 @@ local function drawClimate(cx)
 	elseif climate.kind == "flood" then
 		local wy = climate.waterY
 		if wy ~= nil and wy < H then
-			climatePiece("water", 0, wy, 150)
+			-- 조각은 384 폭이라 화면 폭만큼 옆으로 잇는다. 모바일은 논리 폭이
+			-- 384보다 넓어, 한 장만 그리면 물이 화면 왼쪽에만 보였다
+			-- (2026-08-24 실기 검수). 수면 아래가 조각(128)보다 깊으면
+			-- 몸통 조각으로 마저 채운다.
+			for tx = 0, W - 1, 384 do
+				climatePiece("water", tx, wy, 150)
+			end
+			for ty = wy + 128, H - 1, 64 do
+				for tx = 0, W - 1, 384 do
+					climatePiece("waterbody", tx, ty, 150)
+				end
+			end
 		end
 
 	elseif climate.kind == "snow" then

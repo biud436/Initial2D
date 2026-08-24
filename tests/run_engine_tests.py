@@ -875,6 +875,42 @@ def test_aldebaran_scene():
         check(name, needle in log_pad, log_pad[-400:])
     check("터치 UI 화면 덤프", 10 in s_pad)
 
+    # 회귀 (T1 후속, 2026-08-24 실기 검수): 논리 폭이 384보다 넓은 화면(모바일)에서
+    # 홍수 물이 왼쪽 384px에만 그려졌다. 1920x896 창(논리 960x448)으로 태양의 방을
+    # 열어, 수면의 물결 띠가 화면 폭 전체(오른쪽 절반 포함)에 있는지 본다.
+    _, r_fd, s_fd = run_scene("aldebaran_scene.lua", [30], 40,
+                              {"INITIAL2D_ALDEBARAN_STOP": "flood",
+                               "INITIAL2D_ALDEBARAN_AT": "4300",
+                               "INITIAL2D_SKIP_INTRO": "1",
+                               "INITIAL2D_NO_RTP": "1",
+                               "INITIAL2D_WINDOW": "1920x896"})
+    log_fd = r_fd.stdout + r_fd.stderr
+    check("홍수 넓은 화면 실행", r_fd.returncode == 0 and 30 in s_fd,
+          f"rc={r_fd.returncode}")
+    m_fd = re.search(r"floodY:([0-9.]+)", log_fd)
+    check("홍수 수위 노출", m_fd is not None, log_fd[-300:])
+    if m_fd is not None and 30 in s_fd:
+        img_fd = s_fd[30]
+        fd_scale = img_fd.width / 960.0
+        wy = float(m_fd.group(1))
+
+        def crest(px):
+            r, g, b = px[:3]
+            # 물(불투명도 150)을 얹은 픽셀은 배경에 따라 둘 중 하나가 된다:
+            # 어두운 배경 위에서는 청록 우세(g와 b가 r보다 뚜렷이 크다),
+            # 밝은 모래벽 위에서는 밝은 청록(g와 b가 밝고 g가 r 이상).
+            return (g > r + 25 and b > r + 25) or (g >= 130 and b >= 130 and g >= r)
+
+        covered, cols = 0, 0
+        y0, y1 = int(wy * fd_scale), int((wy + 8) * fd_scale)
+        for x in range(8, 952, 8):
+            cols += 1
+            sx = int(x * fd_scale)
+            if any(crest(img_fd.getpixel((sx, y))) for y in range(y0, y1 + 1)):
+                covered += 1
+        check("홍수 물이 화면 폭 전체를 덮는다", covered >= cols * 0.9,
+              f"{covered}/{cols} (wy={wy})")
+
     # 골든 1: 스테이지 첫 화면 (컷씬을 생략하고 시간을 얼려 고정한다)
     _, r2, shots = run_scene("aldebaran_scene.lua", [20], 30,
                              {"INITIAL2D_ALDEBARAN_STOP": "start",
