@@ -313,8 +313,13 @@ describe('bridge server', () => {
     await fs.writeFile(path.join(root, 'scripts', 'games', 'flappy.lua'), 'return { edited = true }\n'); // 엔진의 되쓰기와 동일 내용
     const rewrite = await waitFor((m) => m.type === 'change' && m.path === 'scripts/games/flappy.lua');
     assert.equal(rewrite.origin, 'bridge');
+    // origin까지 조건에 넣는다. macOS fs.watch는 한 쓰기에 이벤트를 여러 번 낼 수
+    // 있어, 앞선 PUT(v2)의 늦은 중복 이벤트(내용이 일치해 bridge — 올바른 분류다)가
+    // 느린 러너에서 여기까지 밀려와 경로만 보는 대기에 먼저 걸렸다 (CI에서 간헐 실패).
+    // 분류가 정말 잘못되면 external이 영영 오지 않아 타임아웃으로 실패한다.
     await fs.writeFile(path.join(root, 'scripts', 'main.lua'), 'print("v3 from vim")\n');
-    const foreign = await waitFor((m) => m.type === 'change' && m.path === 'scripts/main.lua');
+    const foreign = await waitFor((m) =>
+      m.type === 'change' && m.path === 'scripts/main.lua' && m.origin === 'external');
     assert.equal(foreign.origin, 'external');
 
     ws.close();
