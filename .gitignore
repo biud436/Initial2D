@@ -370,3 +370,6 @@ android/keystore.properties
 android/gradle/
 android/gradlew
 android/gradlew.bat
+
+# GPT 이미지 원본 (장당 약 1MB). 커밋 여부는 저자 결정 (docs/prompts/aldebaran-art-meta-prompt.md)
+resources/aldebaran/src/gpt/
