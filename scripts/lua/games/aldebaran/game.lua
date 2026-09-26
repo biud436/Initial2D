@@ -271,6 +271,8 @@ local function resetStage()
 			Player.BODY_H)
 		if x ~= startAt then
 			print(string.format("알데바란: 시작 x %g → %g (구덩이 위라 가까운 땅으로)", startAt, x))
+		else
+			print(string.format("알데바란: 시작 x %g (y %g)", x, y))
 		end
 		player = Player.new(x, y)
 	else
