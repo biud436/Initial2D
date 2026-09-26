@@ -1,25 +1,18 @@
-# specs.rb : RPG Maker 2003 리소스 규격 (엔진이 아니라 스크립트가 아는 지식).
-# scripts/lua/rpg/specs.lua 의 Ruby 판.
+# specs.rb : RPG Maker 2003 리소스 규격 (docs/plans/04-resources.md)
 #
-# 엔진(C++)은 PNG와 OGG만 안다. "CharSet 한 장에 캐릭터 8명이 들어 있고 한 명은
-# 3프레임 x 4방향"이라는 지식은 전부 여기에 있다 (docs/plans/04-resources.md).
-# R2K3는 여러 리소스 팩 중 하나일 뿐이라, 다른 팩을 붙일 때는 같은 모양의 표를
-# 하나 더 만들면 된다.
+# CharSet, FaceSet, ChipSet, System 시트의 배치 규격 표와, 그 표에서 프레임 위치를
+# 계산하는 순수 함수를 둔다. 다른 리소스 팩은 같은 형태의 표를 하나 더 만들면 된다.
+# 엔진 없이 단위 테스트한다 (tests/ruby/cases/rpg_specs_test.rb).
 #
-# 값의 출처: resources/RTP.zip(2023년 재배포판)을 직접 열어 실측했다 (2026-08-16).
-# 방향 행 순서는 Actor1.png를 확대해 눈으로 확인했다. 0행은 뒤통수(위), 1행은
-# 오른쪽 옆모습, 2행은 정면(아래), 3행은 왼쪽 옆모습.
+# 값은 resources/RTP.zip(2023년 재배포판)을 열어 실측했다 (2026-08-16). CharSet의 방향
+# 행은 0행 뒷모습(위), 1행 오른쪽 옆모습, 2행 정면(아래), 3행 왼쪽 옆모습이다.
 #
-# 데이터와, 그 데이터에서 곧바로 유도되는 순수 함수만 둔다. 엔진 전역(Sprite,
-# Tilemap 등)을 부르지 않으므로 헤드리스 단위 테스트로 검증된다
-# (tests/ruby/cases/rpg_specs_test.rb).
-#
-# Lua 와 다른 점: 방향은 문자열이 아니라 Symbol(:up, :right, :down, :left)이고,
-# 여러 값을 돌려주던 함수는 배열 [x, y, w, h] 를 돌려준다. assert 는 ArgumentError.
+# 방향은 Symbol(:up, :right, :down, :left)이고, 사각형은 배열 [x, y, w, h]로 돌려준다.
+# 잘못된 인자는 ArgumentError를 낸다.
 
 module Rpg
   module Specs
-    # 원본 게임의 화면 크기. 데모는 이 논리 해상도에 정수배 확대로 띄운다.
+    # 원본 게임의 화면 크기. 데모는 이 논리 해상도를 정수배로 확대해 표시한다.
     LOGICAL_SIZE = { width: 320, height: 240 }
 
     # CharSet: 288x256 한 장에 8명 (4열 2행), 한 명은 72x128 (3프레임 x 4방향)
@@ -34,7 +27,7 @@ module Rpg
       dir_rows: { up: 0, right: 1, down: 2, left: 3 },
       # 걷기 애니메이션의 열 순서. 가운데(1)가 서 있는 자세라 1로 돌아온다.
       walk_pattern: [0, 1, 2, 1],
-      # 시트 전체를 24x32 격자로 보면 12열 8행. Sprite#set_sheet_grid 에 그대로 넣는다
+      # 시트 전체를 24x32 격자로 보면 12열 8행. Sprite#set_sheet_grid에 그대로 넣는다
       grid_cols: 12, grid_rows: 8,
     }
 
@@ -44,15 +37,14 @@ module Rpg
       size: 48, cols: 4, rows: 4, per_sheet: 16,
     }
 
-    # ChipSet: 480x256, 16x16 타일 30열 16행. 왼쪽 영역은 오토타일이라
-    # 그대로 쓸 수 없다 (오토타일은 맵 포맷 v2의 과제).
+    # ChipSet: 480x256, 16x16 타일 30열 16행. 왼쪽 영역은 오토타일이라 그대로 쓸 수 없다.
     CHIPSET = {
       sheet_w: 480, sheet_h: 256,
       tile: 16, columns: 30, rows: 16,
     }
 
-    # System(대화창 스킨): 160x80. 7단계에서 실물을 확대해 확정했다 (2026-08-18,
-    # resources/rtp/System/System.png의 알파 채널을 픽셀 단위로 떠서 확인).
+    # System(대화창 스킨): 160x80. 배치는 resources/rtp/System/System.png의 알파 채널을
+    # 픽셀 단위로 확인했다 (2026-08-18).
     #
     #   (0,0)   32x32  창 바탕 (불투명, 세로 그라데이션)
     #   (32,0)  32x32  창 테두리. 8픽셀 나인 슬라이스로 잘라 쓴다. 가운데 16x16은
@@ -108,7 +100,7 @@ module Rpg
     def self.charset_frame_index(char_index, dir, pattern)
       c = CHARSET
       x, y = charset_frame_rect(char_index, dir, pattern)
-      # 정수 나눗셈(Lua 의 //)이라야 정수가 나온다. current_frame= 에 그대로 넘긴다.
+      # 내림해 정수로 만든다. current_frame=에 그대로 넘긴다.
       (y.to_f / c[:frame_h]).floor * c[:grid_cols] + (x.to_f / c[:frame_w]).floor
     end
 

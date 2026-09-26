@@ -1,23 +1,20 @@
-# touch.rb : 터치와 마우스를 포인터 목록 하나로 합친다 (범용 UI 모듈, T1).
-# scripts/lua/ui/touch.lua 의 Ruby 판.
+# touch.rb : 터치와 마우스를 포인터 목록 하나로 합친다 (범용 UI 모듈. docs/plans/t1-touch-input.md)
 #
-# 엔진에 멀티터치 API(Input.touch_count/touch)가 있으면 손가락들을,
-# 마우스(눌려 있거나 이번 틱에 떨어진 경우)를 포인터로 만들어 한 목록에 담는다.
-# 터치 API가 없는 표면(옛 빌드, 테스트의 가짜 Input)에서는 자연히 마우스만 남아
-# 기존 단일 터치 동작과 같다.
+# 엔진에 멀티터치 API(Input.touch_count/touch)가 있으면 각 손가락을, 그리고
+# 마우스(눌려 있거나 이번 틱에 떼어진 경우)를 포인터로 만들어 한 목록에 담는다.
+# 터치 API가 없는 Input(테스트의 가짜 Input)에서는 마우스만 남는다.
 #
-# SDL은 첫 손가락을 마우스로도 흉내내므로 같은 손가락이 터치와 마우스로 두 번
-# 보일 수 있다. 방향과 버튼 판정은 합집합이라 중복은 무해하고, 포인터를 잡는
-# (소유권) 쪽은 id로 잡으므로 중복이 상태를 흔들지 않는다.
+# SDL은 첫 손가락을 마우스 이벤트로도 보내므로 같은 손가락이 두 번 나타날 수 있다.
+# 판정은 합집합이고 캡처는 id로 구분하므로 중복은 결과에 영향을 주지 않는다.
 #
-# 포인터: { id:, x:, y:, down:, held:, up: }  (마우스의 id 는 :mouse)
+# 포인터: { id:, x:, y:, down:, held:, up: }  (마우스의 id는 :mouse)
 #   down: 이번 틱에 눌리기 시작    held: 눌려 있음 (down인 틱 포함)
-#   up:   이번 틱에 떨어짐 (이 틱을 끝으로 목록에서 사라진다)
+#   up:   이번 틱에 떼어짐 (이 틱을 끝으로 목록에서 사라진다)
 
 module Ui
   module Touch
-    # input(엔진 Input과 같은 표면)에서 이번 틱의 포인터 목록을 만든다.
-    # touch(i) 는 0 부터이고 [id, x, y, :down | :press | :up] 또는 nil 을 돌려준다.
+    # input(엔진 Input과 같은 메서드를 가진 객체)에서 이번 틱의 포인터 목록을 만든다.
+    # touch(i)의 i는 0부터이고 [id, x, y, :down | :press | :up] 또는 nil을 돌려준다.
     def self.pointers(input)
       list = []
 

@@ -1,12 +1,11 @@
-# 알데바란, 타이틀 씬 (docs/plans/aldebaran-3-content.md 2절). scripts/lua/games/aldebaran/title.lua 의 Ruby 판.
+# 알데바란, 타이틀 씬 (docs/plans/aldebaran-3-content.md 2절).
 #
-# 배경 그림 한 장과 커서 메뉴 하나. 「떠나기 전에」의 타이틀과 같은 구조로,
-# 대화창 부품(창, 선택지, 메시지)을 그대로 재사용한다.
+# 배경 그림 한 장과 커서 메뉴 하나. 대화창 부품(창, 선택지, 메시지)을 재사용한다.
 #
 #   방향키 위아래: 항목 이동      Z / Enter / Space: 결정
 #   터치: 항목을 직접 누른다      ESC / 뒤로가기: 게임 종료
 #
-# 배경은 tools/generate_aldebaran_assets.py 로 다시 만든다 (글자가 구워져 있다).
+# 배경은 tools/generate_aldebaran_assets.py로 다시 만든다 (제목 글자가 이미지에 포함되어 있다).
 
 require "scripts/ruby/image"
 require "scripts/ruby/rpg/window"
@@ -21,20 +20,20 @@ module AldebaranTitleScene
   SE_CURSOR = "./resources/audio/ui_cursor.wav"
   SE_DECISION = "./resources/audio/ui_decision.wav"
   SE_TEXT = "./resources/audio/ui_text.wav"
-  TITLE_BGM_SLOT = "./resources/audio/aldebaran_title.ogg" # 없으면 bless 로
+  TITLE_BGM_SLOT = "./resources/audio/aldebaran_title.ogg" # 없으면 bless로
   TITLE_BGM_FALLBACK = "./resources/audio/bless.ogg"
   TITLE_BGM_VOLUME = 72
 
   SKIN_SCALE = 3
   LINE_HEIGHT = 48
   MENU_WIDTH = 280
-  # 메뉴는 왼쪽 아래. 가운데에 놓으면 숲과 별을 가린다.
+  # 메뉴는 왼쪽 아래에 둔다. 가운데에 두면 배경의 숲과 별을 가린다.
   MENU_X = 84
   MENU_Y = 600
   AUTOPLAY_START_FRAME = 60
 
   ITEMS = ["시작", "조작 방법", "나가기"]
-  # 선택지 번호는 0 부터다 (Lua 는 1 부터)
+  # 선택지 번호 (0부터)
   START = 0
   HELP = 1
   LEAVE = 2
@@ -56,7 +55,7 @@ module AldebaranTitleScene
       @choice.show(ITEMS, { x: MENU_X, y: MENU_Y, index: index })
     end
 
-    # 씬 바깥(검증)에서 상태를 들여다보는 창구
+    # 씬 바깥(검증 시나리오)에서 상태를 읽는 접근자
     def status
       {
         items: ITEMS.size,
@@ -142,7 +141,7 @@ module AldebaranTitleScene
         @help.update({}, false)
         if @leave_timer >= LEAVE_DELAY
           if @leaving == START
-            # 새 회차다. 첫 스테이지부터, 들고 온 것 없이 시작한다.
+            # 새 회차다. 첫 스테이지부터, 이어받는 상태 없이 시작한다.
             if Object.const_defined?(:AldebaranScene)
               AldebaranScene.clear_carry
               AldebaranScene.set_stage("forest")

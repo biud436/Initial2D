@@ -1,8 +1,7 @@
-# rng.rb : 시드를 주입하는 결정적 난수 (docs/plans/09-testing.md 4절). scripts/lua/rpg/rng.lua 의 Ruby 판.
+# rng.rb : 시드를 주입하는 결정적 난수 (docs/plans/09-testing.md 4절)
 #
-# 게임 로직에서 rand 를 직접 쓰지 않는 이유는 하나다. 전역 난수는 누가 언제 몇 번
-# 뽑았는지에 따라 수열이 달라져서, 시나리오 재생이 같은 결과를 내지 못한다. 이
-# 클래스는 인스턴스마다 자기 상태를 들고 있으므로 시드만 같으면 항상 같은 수열이 나온다.
+# 인스턴스마다 자기 상태를 가지므로 시드가 같으면 항상 같은 수열이 나온다. 시나리오
+# 재생이 같은 결과를 내도록 게임 로직은 전역 rand 대신 이 클래스를 쓴다.
 #
 # 사용:
 #   r = Rpg::Rng.new(1234)
@@ -11,8 +10,8 @@
 #   r.pick(list)     # 목록에서 하나
 #   r.chance(0.25)   # 25% 확률로 true
 #
-# 알고리즘은 32비트 선형 합동 생성기(glibc 계수)다. Lua 판과 같은 수열을 낸다.
-# 낮은 비트의 주기가 짧으므로 정수 범위는 나머지가 아니라 상위 비트(float)로 만든다.
+# 알고리즘은 32비트 선형 합동 생성기(glibc 계수)다. 낮은 비트의 주기가 짧으므로 정수
+# 범위는 나머지가 아니라 상위 비트(float)로 만든다.
 
 module Rpg
   class Rng
@@ -22,7 +21,7 @@ module Rpg
 
     attr_reader :state, :count
 
-    # 새 난수 생성기. seed 를 생략하면 0 (완전히 고정된 수열)
+    # 새 난수 생성기. seed를 생략하면 0 (완전히 고정된 수열)
     def initialize(seed = 0)
       reseed(seed)
     end
@@ -30,7 +29,7 @@ module Rpg
     def reseed(seed)
       raise ArgumentError, "rng: 시드는 숫자여야 한다" unless seed.is_a?(Numeric)
       @state = seed.floor % MOD
-      @count = 0 # 뽑은 횟수 (테스트에서 소비량을 볼 때 쓴다)
+      @count = 0 # 뽑은 횟수 (테스트에서 소비량을 확인할 때 쓴다)
       self
     end
 
@@ -61,7 +60,7 @@ module Rpg
       list[int(0, list.size - 1)]
     end
 
-    # p 확률로 true (p 는 0..1)
+    # p 확률로 true (p는 0..1)
     def chance(p)
       float < p
     end

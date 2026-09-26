@@ -1,16 +1,14 @@
-# layout.rb : 터치 컨트롤의 화면 크기 비례 배치 (범용 UI 모듈, T1, 순수 함수).
-# scripts/lua/ui/layout.lua 의 Ruby 판.
+# layout.rb : 터치 컨트롤의 화면 크기 비례 배치 (범용 UI 모듈, 순수 함수. docs/plans/t1-touch-input.md)
 #
-# 기준은 화면 높이 H다. Android에서는 논리 높이가 고정(기준 높이/배율)이고
-# 가로만 기기 비율대로 늘어나므로, H 비례 크기는 곧 "화면에 비례하는 물리
-# 크기"다. DPI 조회 없이도 폰과 태블릿에서 손가락 크기가 화면과 함께 커진다.
+# 기준은 화면 높이 H다. Android에서는 논리 높이가 고정이고 가로만 기기 비율대로
+# 늘어나므로, H에 비례하는 크기는 DPI 조회 없이도 화면에 비례하는 물리 크기가 된다.
 #
 # 배치 규칙 (횡스크롤 기본형):
 #   좌하단: 가상 패드 (높이의 30%)
 #   우하단: 주 버튼 줄(높이의 15%, 모서리부터 안쪽으로)과 그 위 보조 버튼
 #           줄(높이의 11%, 주 버튼과 세로 중심 정렬)
 #   우상단: 시스템 버튼 (높이의 10%)
-# 화면이 좁아 패드와 버튼 무리가 겹칠 상황이면 전체를 같은 비율로 줄인다.
+# 화면이 좁아 패드와 버튼 묶음이 겹칠 상황이면 전체를 같은 비율로 줄인다.
 #
 # 사용:
 #   require "scripts/ruby/ui/layout"
@@ -24,7 +22,7 @@
 
 module Ui
   module Layout
-    # Lua 의 local round (math.floor(v + 0.5)). 내부용이다.
+    # 반올림 (floor(v + 0.5)). 내부용이다.
     def self.round(v)
       (v + 0.5).floor
     end
@@ -42,7 +40,7 @@ module Ui
       }
     end
 
-    # 컨트롤 배치. defs 의 :main, :sub, :sys 는 { id:, label: } 목록이다 (머리 주석 참조).
+    # 컨트롤 배치. defs의 :main, :sub, :sys는 { id:, label: } 목록이다 (파일 상단 주석 참조).
     # 반환: { pad: { x:, y:, size: }, buttons: [{ id:, label:, x:, y:, size: }, ...], metrics: }
     def self.controls(w, h, defs = nil)
       defs ||= {}
@@ -51,7 +49,7 @@ module Ui
       sys = defs[:sys] || []
       m = metrics(w, h)
 
-      # 좁은 화면 방어: 패드와 주 버튼 줄이 한 줄에 다 안 들어가면 전체 축소
+      # 좁은 화면 대응: 패드와 주 버튼 줄이 한 줄에 다 들어가지 않으면 전체 축소
       main_w = main.size * m[:btn_main] + [0, main.size - 1].max * m[:gap]
       need = 2 * m[:margin] + m[:pad] + 2 * m[:gap] + main_w
       if need > w
@@ -81,7 +79,7 @@ module Ui
       end
 
       # 보조 버튼 줄: main[i]와 세로 중심 정렬, 남으면 이어서 왼쪽으로
-      # (i 는 Lua 와 같이 1 부터 센다)
+      # (i는 1부터 센다)
       sub_y = main_y - m[:gap] - m[:btn_sub]
       sub.each_with_index do |item, idx|
         i = idx + 1

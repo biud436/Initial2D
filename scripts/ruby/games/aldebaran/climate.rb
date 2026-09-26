@@ -1,15 +1,12 @@
-# 알데바란, 기후 (docs/plans/aldebaran-7-tomb.md 4절). scripts/lua/games/aldebaran/climate.lua 의 Ruby 판.
+# 알데바란, 기후 (docs/plans/aldebaran-7-tomb.md 4절).
 #
 # 원안 4.2.2.4절 표 19: **황제의 무덤의 온도와 습도는 파괴의 신 아포피스의 힘에
 # 의해 좌우된다. 어떤 방에는 눈이 오고 어떤 복도에는 우박 또는 비가 내리고
 # 폭풍우가 몰아치고, 홍수가 발생한다.**
 #
-# 그것을 연출이 아니라 **조작을 바꾸는 규칙**으로 만든 것이 이 모듈이다. 방이
-# 다르다는 것이 눈이 아니라 손에 남아야 한다.
-#
-# 엔진에 닿지 않는 순수 모듈이다. 씬은 상태를 만들어 흘리고, 그 결과를 읽어
-# 플레이어의 환경과 우박의 판정에 쓴다. 수치는 전부 스테이지의 표에 있다
-# (stages/tomb.rb 의 Tomb::CLIMATE).
+# 방의 기후를 **조작을 바꾸는 규칙**으로 구현한다. 엔진을 호출하지 않는 순수
+# 모듈이며, 씬이 상태를 만들어 매 프레임 갱신하고 플레이어의 환경과 우박의
+# 판정에 쓴다. 수치는 스테이지의 표(stages/tomb.rb의 Tomb::CLIMATE)에 있다.
 #
 #   require "scripts/ruby/games/aldebaran/climate"
 #   c = Aldebaran::Climate.create(stage.climate[:moon])
@@ -17,34 +14,31 @@
 #   player.env = Aldebaran::Climate.env(c)
 #
 # 종류 넷:
-#   snow   지면 마찰이 준다. 멈추려면 미리 놓아야 한다
-#   light  빛기둥이 켜지고 꺼진다. 그늘의 영혼은 실체가 아니라 베이지 않는다
-#   hail   천장에서 우박이 떨어진다. 떨어질 자리에 그림자가 먼저 뜬다
-#   flood  수위가 오르내린다. 잠기면 느려지고 낮게 뛴다
+#   snow   지면 마찰이 줄어든다. 멈추려면 미리 방향키를 떼어야 한다
+#   light  빛기둥이 켜지고 꺼진다. 그늘에 있는 영혼은 실체가 없어 공격이 통하지 않는다
+#   hail   천장에서 우박이 떨어진다. 떨어질 자리에 그림자가 먼저 표시된다
+#   flood  수위가 오르내린다. 물에 잠기면 이동이 느려지고 점프가 낮아진다
 #
-# Lua 의 Climate.new(def) 는 nil 을 돌려줄 수 있어 클래스 new 로 옮길 수 없다.
-# 그래서 모듈 함수 create(spec) 로 두고, 나머지 함수는 nil 상태를 그대로 받는다
-# (docs/plans/s2-ruby-aldebaran.md 3.1절). 표를 가리키던 def 는 spec 이다.
+# 기후가 없는 방은 상태가 nil이다. 생성은 create(spec)로 하고, 모든 함수는 nil
+# 상태를 받으면 기후가 없는 방으로 처리한다.
 
 module Aldebaran
   module Climate
-    # 기후가 없는 방의 환경. 모두가 같은 표를 돌려받으므로 얼려 둔다.
+    # 기후가 없는 방의 환경. 모든 호출이 같은 Hash를 돌려받으므로 freeze해 둔다.
     DEFAULT_ENV = { friction: 1, move_mult: 1, jump_mult: 1 }.freeze
 
-    # LITERAL: 엔진의 mruby 4.0.0 은 소수 리터럴 몇 개(0.3, 0.35, 0.6, 0.7, 0.95)를
-    # 마지막 비트 하나 어긋나게 읽는다 (이 VM 에서 0.35 == 35.0 / 100 이 거짓이다).
-    # 나눗셈은 IEEE 가 정확히 반올림하므로 Lua 의 strtod 와 같은 값이 나온다. 그래서
-    # 이 파일의 0.35 와 0.6 은 나눗셈으로 적는다. 다른 소수(0.5, 0.15, 0.85, ...)는
-    # 같은 VM 에서 Lua 와 같은 값으로 읽히는 것을 확인했다.
+    # LITERAL: 엔진의 mruby 4.0.0은 소수 리터럴 0.3, 0.35, 0.6, 0.7, 0.95를 마지막 비트가
+    # 어긋난 값으로 읽는다. 나눗셈(35.0 / 100)은 정확한 값을 내므로 이 파일의 0.35와 0.6은
+    # 나눗셈으로 적는다. Lua 구현과 같은 값이어야 골든 스크린샷이 같다.
 
-    # 기후 하나의 상태 (Lua 의 s 표). 필드 이름은 Lua 와 짝이다.
+    # 기후 하나의 상태.
     #   kind       :snow, :light, :hail, :flood
-    #   spec       스테이지의 기후 표 (Lua 의 s.def)
+    #   spec       스테이지의 기후 표
     #   t          흐른 시간 (초)
-    #   drops      우박 알들 (hail 일 때만. 아니면 nil)
+    #   drops      우박 알 목록 (hail일 때만. 아니면 nil)
     #   next_drop  다음 알까지 남은 시간 (hail)
     #   water_y    지금 수면의 y (flood)
-    #   surge      보스가 밀어 올린 남은 시간 (flood, 없으면 nil)
+    #   surge      보스가 수위를 올려 둔 남은 시간 (flood, 없으면 nil)
     class State
       attr_accessor :kind, :spec, :t, :drops, :next_drop, :water_y, :surge
 
@@ -58,8 +52,7 @@ module Aldebaran
         @surge = nil
         if spec[:kind] == :hail
           @drops = []
-          # 첫 알은 당겨 떨군다. 방에 들어서고 1.6초를 아무 일도 없이 걷게 하면
-          # 그 방의 규칙을 배우기 전에 적을 먼저 만난다.
+          # 첫 알은 간격보다 일찍 떨어뜨린다 (방의 규칙을 적보다 먼저 보여 주기 위해서다).
           @next_drop = spec[:first] || 6.0 / 10     # 0.6 (위의 LITERAL 주석)
         elsif spec[:kind] == :flood
           @water_y = spec[:low]
@@ -67,14 +60,14 @@ module Aldebaran
       end
     end
 
-    # 기후 상태를 만든다. spec 이 nil 이면 기후가 없는 방이다 (nil 을 돌려준다).
+    # 기후 상태를 만든다. spec이 nil이면 기후가 없는 방이므로 nil을 돌려준다.
     def self.create(spec)
       return nil if spec.nil?
       State.new(spec)
     end
 
-    # 우박 한 알을 떨군다. 먼저 그림자만 뜨고, 예고 시간이 지나야 떨어진다.
-    # (Lua 에서는 local 함수다. 밖에서 부를 때는 nil 을 거르는 drop 을 쓴다.)
+    # 우박 한 알을 추가한다. 예고 시간(warn) 동안 그림자만 표시되고, 그 뒤에 떨어진다.
+    # 내부용이다. 밖에서는 nil 상태를 거르는 drop을 쓴다.
     def self.add_drop(s, x, floor_y)
       s.drops.push({
         x: x, y: nil, vy: 0,
@@ -83,19 +76,19 @@ module Aldebaran
       })
     end
 
-    # 밖에서 우박 한 알을 떨군다 (보스의 패턴이 쓴다. 기후가 hail 일 필요는 없다).
+    # 우박 한 알을 떨어뜨린다 (보스 패턴용). hail이 아닌 방에서는 아무것도 하지 않는다.
     def self.drop(s, x, floor_y)
       return if s.nil? || s.drops.nil?
       add_drop(s, x, floor_y)
     end
 
-    # 수위를 잠시 최고로 밀어 올린다 (보스의 2페이즈 패턴)
+    # 수위를 잠시 최고 높이로 올린다 (보스의 2페이즈 패턴)
     def self.surge(s, seconds)
       return if s.nil? || s.kind != :flood
       s.surge = [s.surge || 0, seconds].max
     end
 
-    # 한 프레임. ctx 는 { x: 플레이어 x, floor_y: 발밑 지면 y, ceil_y: 천장 y, rng: 시드 난수 }
+    # 한 프레임 갱신. ctx는 { x: 플레이어 x, floor_y: 발밑 지면 y, ceil_y: 천장 y, rng: 시드 난수 }
     def self.update(s, dt, ctx)
       return if s.nil?
       s.t = s.t + dt
@@ -106,8 +99,7 @@ module Aldebaran
           s.next_drop = s.spec[:interval] || 1.6
           n = s.spec[:count] || 1
           (1..n).each do |i|
-            # 플레이어 언저리에 떨군다. 정확히 머리 위만 노리면 피할 수
-            # 없고, 아무 데나 떨구면 볼 이유가 없다.
+            # 플레이어 주변 spread 픽셀 안에 떨어뜨린다 (머리 위만 노리면 피할 수 없다).
             spread = 96
             r = ctx[:rng].nil? ? (i - 1).to_f / n : ctx[:rng].float
             add_drop(s, ctx[:x] + (r * 2 - 1) * spread, ctx[:floor_y])
@@ -130,14 +122,13 @@ module Aldebaran
         end
 
       elsif s.kind == :flood
-        # 보스가 밀어 올린 동안은 최고 수위로 고정된다
+        # 보스가 수위를 올려 둔 동안은 최고 수위로 고정된다
         if (s.surge || 0) > 0
           s.surge = s.surge - dt
           s.water_y = s.spec[:high]
           return
         end
-        # 수위는 사인이 아니라 사다리꼴로 움직인다. 오르내리는 동안이 아니라
-        # **멈춰 있는 동안**에 판단할 시간이 있어야 하기 때문이다.
+        # 수위는 사다리꼴로 움직인다 (멈춰 있는 구간이 있어야 플레이어가 판단할 시간이 생긴다).
         p = s.spec[:period] || 9
         phase = (s.t % p).to_f / p
         lo = s.spec[:low]
@@ -154,7 +145,7 @@ module Aldebaran
       end
     end
 
-    # 플레이어에게 씌울 환경. y 를 주면 물에 잠겼는지까지 본다.
+    # 플레이어에게 적용할 환경. y를 주면 물에 잠겼는지까지 판정한다.
     def self.env(s, y = nil)
       return DEFAULT_ENV if s.nil?
       if s.kind == :snow
@@ -169,13 +160,12 @@ module Aldebaran
       DEFAULT_ENV
     end
 
-    # 이 x 가 빛 안인가 (빛기둥 기후에서만 뜻이 있다).
-    # 빛기둥이 아닌 기후에서는 늘 참이다 ("빛이 없으면 다 벨 수 있다").
+    # 이 x가 빛 안에 있는가. 빛기둥 기후가 아니면 항상 true다.
     def self.lit(s, x)
       return true if s.nil? || s.kind != :light
       period = s.spec[:period] || 4
       if (s.t % period) >= (s.spec[:lit] || 2.2)
-        return false                     # 지금은 다 꺼져 있다
+        return false                     # 지금은 모든 빛기둥이 꺼져 있다
       end
       (s.spec[:pillars] || []).each do |px|
         return true if (x - px).abs <= (s.spec[:half_w] || 44)
@@ -195,8 +185,7 @@ module Aldebaran
       s.water_y
     end
 
-    # 떨어지고 있는 우박의 상자들. 씬이 플레이어와 겹치는지 본다.
-    # 예고(그림자)만 뜬 것은 아직 아프지 않다.
+    # 떨어지는 중인 우박의 충돌 상자 목록. 예고(그림자) 단계의 우박은 들어가지 않는다.
     def self.hazards(s)
       return [] if s.nil? || s.kind != :hail
       out = []
@@ -210,8 +199,7 @@ module Aldebaran
       out
     end
 
-    # 우박이 맞았다. 같은 알이 두 번 아프지 않게 지운다.
-    # index 는 hazards 가 돌려준 배열의 0 기준 번호다 (Lua 는 1 기준).
+    # hazards가 돌려준 배열의 index번째(0부터) 우박을 지운다 (맞은 알이 두 번 피해를 주지 않게).
     def self.consume(s, index)
       return if s.nil? || s.kind != :hail
       n = -1

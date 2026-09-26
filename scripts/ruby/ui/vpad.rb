@@ -1,10 +1,9 @@
-# vpad.rb : 가상 패드 (터치 조작, 범용 UI 모듈). scripts/lua/ui/vpad.lua 의 Ruby 판.
+# vpad.rb : 가상 패드 (터치 조작, 범용 UI 모듈).
 #
 # 키보드가 없는 플랫폼(Android 등)에서 방향 입력을 화면 위 패드로 받는다.
-# 포인터는 touch.rb 가 합쳐 준다: 엔진에 멀티터치 API가 있으면 손가락들을,
-# 없으면(테스트의 가짜 Input) 마우스를 쓴다. 조이스틱처럼 동작한다 (T1):
-# 패드 안에서 눌린 포인터를 잡고, 잡힌 동안에는 손가락이 원 밖으로
-# 미끄러져도 방향을 유지한다. 놓아야 풀린다.
+# 포인터는 touch.rb에서 받는다. 조이스틱처럼 동작한다: 패드 안에서 눌린 포인터를
+# 캡처하고, 캡처된 동안에는 손가락이 원 밖으로 벗어나도 방향을 유지한다.
+# 손가락을 떼어야 캡처가 해제된다.
 #
 # 사용:
 #   require "scripts/ruby/ui/vpad"
@@ -16,7 +15,7 @@
 #   pad.dispose
 #
 # size는 표시 크기다. 시트 원본(160px)과 달라도 되며, 논리 해상도가 작은
-# 화면(렌더 배율 사용)에서는 배율로 나눈 값을 넘기면 손가락 크기가 유지된다.
+# 화면(렌더 배율 사용)에서는 배율로 나눈 값을 넘기면 화면상의 물리 크기가 유지된다.
 #
 # 스프라이트 시트 resources/ui/dpad.png: 가로 5프레임 (기본, 위, 오른쪽, 아래, 왼쪽)
 
@@ -28,8 +27,7 @@ module Ui
     FRAME_OF = { up: 1, right: 2, down: 3, left: 4 }
 
     # 시트의 한 프레임 크기 (tools/generate_ui_assets.py의 make_dpad와 같은 값).
-    # 엔진의 Sprite는 스프라이트 크기를 그대로 소스 프레임 크기로 쓰므로, 원하는
-    # 표시 크기를 그냥 넘기면 프레임의 일부만 잘려 그려진다. 스프라이트는 원본
+    # 엔진의 Sprite는 스프라이트 크기를 소스 프레임 크기로 쓰므로, 스프라이트는 원본
     # 크기로 만들고 표시 크기는 스케일로 맞춘다.
     FRAME_SIZE = 160
 
@@ -59,8 +57,8 @@ module Ui
     attr_reader :size, :image, :scale
 
     # opts: { x:, y:, size:, opacity:, input:, image_factory: } (전부 생략 가능).
-    # Layout.controls 의 pad Hash 를 그대로 넘겨도 되고 키워드로 줘도 된다.
-    # image_factory 는 Lua 판에 없는 주입구다 (기본 Image::FACTORY, 테스트가 가짜를 넣을 때).
+    # Layout.controls의 pad Hash를 그대로 넘겨도 되고 키워드로 줘도 된다.
+    # image_factory는 Image 생성 Proc의 주입 인자다 (기본 Image::FACTORY, 테스트가 가짜를 주입한다).
     def initialize(opts = nil, **kw)
       opts = (opts || {}).merge(kw)
       size = opts[:size] || 160
@@ -72,7 +70,7 @@ module Ui
       @radius = size * 0.48
       @deadzone = size * 0.10
       @current = nil
-      @owner_id = nil # 패드를 잡은 포인터 (놓을 때까지 유지)
+      @owner_id = nil # 패드를 캡처한 포인터의 id (손가락을 뗄 때까지 유지)
       factory = opts[:image_factory] || Image::FACTORY
       img = factory.call("./resources/ui/dpad.png", @x, @y,
                          FRAME_SIZE, FRAME_SIZE, 5, "UIDpad")
@@ -81,7 +79,7 @@ module Ui
       img.set_frames(0, 0)
       img.current_frame = 0
       img.opacity = opts[:opacity] || 220
-      img.scale = size.to_f / FRAME_SIZE # 위치는 좌상단 기준이라 스케일이 배치를 흔들지 않는다
+      img.scale = size.to_f / FRAME_SIZE # 위치는 좌상단 기준이라 스케일이 배치에 영향을 주지 않는다
       @image = img
       @scale = size.to_f / FRAME_SIZE
     end
@@ -107,7 +105,7 @@ module Ui
     def update(pointers = nil)
       pointers = Ui::Touch.pointers(@input) if pointers.nil?
 
-      # 잡고 있던 포인터를 따라간다. 사라졌거나 떨어졌으면 놓는다.
+      # 캡처한 포인터를 추적한다. 사라졌거나 떼어졌으면 캡처를 해제한다.
       owner = nil
       unless @owner_id.nil?
         owner = pointers.find { |p| p[:id] == @owner_id }
@@ -117,7 +115,7 @@ module Ui
         end
       end
 
-      # 새로 잡기: 이번 틱에 패드 안에서 눌린 포인터
+      # 새로 캡처: 이번 틱에 패드 안에서 눌린 포인터
       if owner.nil?
         pointers.each do |p|
           if p[:down] && contains?(p[:x], p[:y])
@@ -129,7 +127,7 @@ module Ui
       end
 
       if owner
-        # 잡힌 동안은 반경 제한 없이 방향만 본다 (조이스틱: 밖으로 끌어도 유지)
+        # 캡처된 동안은 반경 제한 없이 방향만 판정한다 (조이스틱: 밖으로 끌어도 유지)
         cx, cy = center
         @current = VirtualPad.direction(owner[:x] - cx, owner[:y] - cy,
                                         Float::INFINITY, @deadzone)
@@ -140,12 +138,12 @@ module Ui
       @image.update(0)
     end
 
-    # Lua 의 isPressed(dir). dir 은 :up, :down, :left, :right
+    # dir 방향이 눌려 있는가. dir은 :up, :down, :left, :right
     def pressed?(dir)
       @current == dir
     end
 
-    # 지금 방향 (:up, :down, :left, :right 또는 nil). Lua 의 pressed()
+    # 지금 방향 (:up, :down, :left, :right 또는 nil)
     def pressed
       @current
     end
@@ -160,7 +158,7 @@ module Ui
       @image.draw
     end
 
-    # Lua 의 img.dispose() 는 텍스처까지 놓는다. Ruby 에서는 release 가 그 일을 한다.
+    # 패드 스프라이트와 텍스처를 함께 해제한다 (Sprite#release, image.rb).
     def dispose
       @image.release
     end
