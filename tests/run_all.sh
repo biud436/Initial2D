@@ -18,20 +18,24 @@ if [ -z "${SDL_VIDEODRIVER+x}" ]; then
   export SDL_VIDEODRIVER=dummy
 fi
 
-echo "== [1/5] 빌드 =="
+echo "== [1/6] 빌드 =="
 cmake -B build -S . > /dev/null
 cmake --build build
 
 echo ""
-echo "== [2/5] C++ 단위 테스트 =="
+echo "== [2/6] C++ 단위 테스트 =="
 ./build/engine_unit_tests
 
 echo ""
-echo "== [3/5] 엔진 씬 테스트 (Lua 단위 + 픽셀 검증 + 골든) =="
+echo "== [3/6] 도구 self-test =="
+python3 tools/import_gpt_art.py selftest
+
+echo ""
+echo "== [4/6] 엔진 씬 테스트 (Lua 단위 + 픽셀 검증 + 골든) =="
 python3 tests/run_engine_tests.py "$@"
 
 echo ""
-echo "== [4/5] 에디터 브리지 서버 (Node) =="
+echo "== [5/6] 에디터 브리지 서버 (Node) =="
 # 브리지(tools/bridge)는 Node 20 이상이 필요하다. Node가 없는 환경에서는 건너뛰되
 # 눈에 띄게 알린다 (CI의 macOS 러너에는 Node가 있으므로 거기서는 항상 실행된다).
 if command -v node >/dev/null 2>&1; then
@@ -41,7 +45,7 @@ else
 fi
 
 echo ""
-echo "== [5/5] RTP 변환 결과 검증 =="
+echo "== [6/6] RTP 변환 결과 검증 =="
 # 변환 결과(resources/rtp/)는 정품 보유자의 로컬 자산이라 커밋되지 않는다.
 # 없으면 verify_rtp.py 가 스스로 SKIP을 알리고 통과시킨다 (gitignore 검사만 항상 돈다).
 python3 tests/verify_rtp.py

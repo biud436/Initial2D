@@ -20,12 +20,16 @@ Usage:
 Requires: Pillow, numpy
 """
 import argparse
+import glob
 import os
+import shutil
 import sys
+import tempfile
+import time
 from collections import Counter
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(REPO, "resources", "aldebaran", "src", "gpt")
@@ -35,6 +39,20 @@ KEY_BG = (0, 255, 0)
 KEY_DIV = (255, 0, 255)
 INK = "#18121A"
 RIM = "#96AADC"
+BG_W, BG_H = 384, 448
+BG_NAMES = [
+    "far_entrance", "near_entrance", "far_road", "near_road", "far_gorge", "near_gorge",
+    "far_den", "near_den", "far_altar", "near_altar", "forest_bright",
+    "far_chest", "near_chest", "far_moon", "near_moon", "far_stars", "near_stars",
+    "far_ruin", "near_ruin", "far_sun", "near_sun",
+]
+FOREST_STAR = {
+    "far_entrance": (300, 64, 4),
+    "far_road": (300, 64, 4),
+    "far_gorge": (300, 64, 4),
+    "far_den": (300, 64, 4),
+    "far_altar": (300, 80, 8),
+}
 
 
 def hexes(s):
@@ -363,6 +381,206 @@ def redraw_edges(rgba):
     return np.array(im)
 
 
+# ---- 2.6 배경 크기와 이음매 -------------------------------------------------
+
+def is_near_bg(name):
+    return os.path.basename(name).startswith("near_")
+
+
+def bg_name_from_path(path):
+    return os.path.splitext(os.path.basename(path))[0]
+
+
+def green_residue(rgb, alpha):
+    r = rgb[..., 0].astype(np.int16)
+    g = rgb[..., 1].astype(np.int16)
+    b = rgb[..., 2].astype(np.int16)
+    return int((((alpha > 0) & (g > r + 40) & (g > b + 40))).sum())
+
+
+def clean_green_for_near(rgb, alpha):
+    """초록 키와 초록 안티에일리어싱 잔여를 투명하게 만든다."""
+    r = rgb[..., 0].astype(np.int16)
+    g = rgb[..., 1].astype(np.int16)
+    b = rgb[..., 2].astype(np.int16)
+    key = near(rgb, KEY_BG, 80) & (g > 120)
+    spill = (g > r + 40) & (g > b + 40)
+    alpha = np.where(key | spill, 0, alpha).astype(np.uint8)
+    rgb = rgb.copy()
+    rgb[alpha == 0] = 0
+    return rgb, alpha
+
+
+def load_bg_source(path, transparent):
+    im = Image.open(path).convert("RGBA")
+    a = np.array(im)
+    rgb, alpha = a[..., :3].copy(), a[..., 3].copy()
+    if transparent:
+        return clean_green_for_near(rgb, alpha)
+    return rgb, np.full(alpha.shape, 255, dtype=np.uint8)
+
+
+def resize_box_width(rgb, alpha, target_w, transparent):
+    h, w = alpha.shape
+    target_h = max(1, int(round(h * (target_w / w))))
+    if transparent:
+        af = alpha.astype(np.float32) / 255.0
+        prem = rgb.astype(np.float32) * af[..., None]
+        im_c = Image.fromarray(np.clip(prem, 0, 255).astype(np.uint8)).resize((target_w, target_h), Image.BOX)
+        im_a = Image.fromarray(alpha).resize((target_w, target_h), Image.BOX)
+        aa = np.array(im_a).astype(np.float32) / 255.0
+        cc = np.array(im_c).astype(np.float32)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            cc = np.where(aa[..., None] > 0.02, cc / np.maximum(aa[..., None], 1e-3), 0)
+        out_a = np.where(aa >= 0.5, 255, 0).astype(np.uint8)
+        out = np.clip(cc, 0, 255).astype(np.uint8)
+        out[out_a == 0] = 0
+        return out, out_a
+    out = np.array(Image.fromarray(rgb).resize((target_w, target_h), Image.BOX))
+    return out, np.full((target_h, target_w), 255, dtype=np.uint8)
+
+
+def resize_nearest_width(rgb, alpha, target_w):
+    h, w = alpha.shape
+    target_h = max(1, int(round(h * (target_w / w))))
+    rgba = np.dstack([rgb, alpha])
+    out = np.array(Image.fromarray(rgba).resize((target_w, target_h), Image.NEAREST))
+    return out[..., :3], out[..., 3]
+
+
+def fit_bg_size(rgb, alpha, crop_y, transparent):
+    h, w = alpha.shape
+    if w != BG_W:
+        rgb, alpha = resize_nearest_width(rgb, alpha, BG_W)
+        h, w = alpha.shape
+    if h >= BG_H:
+        y0 = max(0, min(crop_y, h - BG_H))
+        return rgb[y0:y0 + BG_H].copy(), alpha[y0:y0 + BG_H].copy()
+    out_rgb = np.zeros((BG_H, BG_W, 3), dtype=np.uint8)
+    out_a = np.zeros((BG_H, BG_W), dtype=np.uint8)
+    out_rgb[:h] = rgb
+    out_a[:h] = alpha
+    if transparent:
+        return out_rgb, out_a
+    out_rgb[h:] = rgb[-1:]
+    out_a[h:] = 255
+    return out_rgb, out_a
+
+
+def build_bg_pixels(rgb, alpha, name, crop_y=0, method="grid"):
+    transparent = is_near_bg(name)
+    used = method
+    pitch = None
+    if method == "grid":
+        g_rgb, g_a, pitch = downsample(rgb, alpha)
+        if g_a.shape[1] < 300 or g_a.shape[1] > 600:
+            print(f"  grid 실패: 복원 폭 {g_a.shape[1]}이라 box로 대체")
+            used = "box"
+        else:
+            if g_a.shape[1] > BG_W:
+                ratio = g_a.shape[1] / BG_W
+                factor = int(round(ratio))
+                if factor >= 2 and abs(ratio - factor) <= 0.12:
+                    g_rgb, g_a = shrink_majority(g_rgb, g_a, factor)
+                else:
+                    g_rgb, g_a = resize_box_width(g_rgb, g_a, BG_W, transparent)
+            elif g_a.shape[1] < BG_W:
+                g_rgb, g_a = resize_nearest_width(g_rgb, g_a, BG_W)
+            rgb, alpha = g_rgb, g_a
+    if used == "box":
+        rgb, alpha = resize_box_width(rgb, alpha, BG_W, transparent)
+    rgb, alpha = fit_bg_size(rgb, alpha, crop_y, transparent)
+    if transparent:
+        rgb, alpha = clean_green_for_near(rgb, alpha)
+    return rgb, alpha, used, pitch
+
+
+def seam_score(rgb, alpha=None):
+    a = rgb[:, 0].astype(np.int16)
+    b = rgb[:, -1].astype(np.int16)
+    diff = np.abs(a - b).mean()
+    if alpha is not None:
+        diff += np.abs(alpha[:, 0].astype(np.int16) - alpha[:, -1].astype(np.int16)).mean() / 3.0
+    return float(diff)
+
+
+def roll_column(rgb, alpha, transparent):
+    if transparent:
+        return int(alpha.sum(axis=0).argmin())
+    q = rgb.astype(np.int16)
+    diff = np.abs(q - np.roll(q, 1, axis=1)).mean(axis=(0, 2))
+    return int(diff.argmin())
+
+
+def wrap_crossfade(rgb, alpha, width, transparent):
+    width = max(0, min(width, rgb.shape[1] // 2))
+    if width == 0:
+        return rgb, alpha
+    out_rgb = rgb.astype(np.float32).copy()
+    out_a = alpha.astype(np.float32).copy()
+    src_rgb = out_rgb.copy()
+    src_a = out_a.copy()
+    denom = max(1, width - 1)
+    for i in range(width):
+        t = i / denom
+        li, ri = i, rgb.shape[1] - 1 - i
+        mixed_rgb = (src_rgb[:, li] + src_rgb[:, ri]) * 0.5
+        mixed_a = (src_a[:, li] + src_a[:, ri]) * 0.5
+        out_rgb[:, li] = mixed_rgb * (1.0 - t) + src_rgb[:, li] * t
+        out_rgb[:, ri] = mixed_rgb * (1.0 - t) + src_rgb[:, ri] * t
+        if transparent:
+            out_a[:, li] = mixed_a * (1.0 - t) + src_a[:, li] * t
+            out_a[:, ri] = mixed_a * (1.0 - t) + src_a[:, ri] * t
+    if not transparent:
+        out_a[:] = 255
+    return np.clip(out_rgb, 0, 255).astype(np.uint8), np.clip(out_a, 0, 255).astype(np.uint8)
+
+
+def paint_required_star(rgb, name):
+    if name not in FOREST_STAR:
+        return rgb
+    img = Image.fromarray(np.ascontiguousarray(rgb)).convert("RGB")
+    x, y, r = FOREST_STAR[name]
+    G.aldebaran_star(ImageDraw.Draw(img), x, y, r, BG_W, BG_H)
+    return np.array(img)
+
+
+def process_bg(path, name, crop_y=0, method="grid", seam=24):
+    transparent = is_near_bg(name)
+    rgb, alpha = load_bg_source(path, transparent)
+    rgb, alpha, used, pitch = build_bg_pixels(rgb, alpha, name, crop_y, method)
+    cut = roll_column(rgb, alpha, transparent)
+    rgb = np.roll(rgb, -cut, axis=1)
+    alpha = np.roll(alpha, -cut, axis=1)
+    before = seam_score(rgb, alpha if transparent else None)
+    rgb, alpha = wrap_crossfade(rgb, alpha, seam, transparent)
+    if transparent:
+        rgb, alpha = clean_green_for_near(rgb, alpha)
+    else:
+        rgb = paint_required_star(rgb, name)
+        alpha[:] = 255
+    after = seam_score(rgb, alpha if transparent else None)
+    return rgb, alpha, dict(method=used, pitch=pitch, cut=cut, seam_before=before, seam_after=after)
+
+
+def save_bg_preview(rgb, alpha, path):
+    if alpha is None:
+        img = Image.fromarray(rgb, "RGB")
+    else:
+        img = Image.fromarray(np.dstack([rgb, alpha]), "RGBA")
+    preview = Image.new(img.mode, (BG_W * 2, BG_H))
+    preview.paste(img, (0, 0), img if img.mode == "RGBA" else None)
+    preview.paste(img, (BG_W, 0), img if img.mode == "RGBA" else None)
+    preview.resize((preview.width * 2, preview.height * 2), Image.NEAREST).save(path)
+
+
+def write_bg_output(rgb, alpha, transparent, path):
+    if transparent:
+        Image.fromarray(np.dstack([rgb, alpha]), "RGBA").save(path)
+    else:
+        Image.fromarray(rgb, "RGB").save(path)
+
+
 # ---- 3, 4. 캔버스와 팔레트 ------------------------------------------------
 
 def quantize(rgb, alpha, palette):
@@ -515,6 +733,194 @@ def cmd_derive(args):
     print(f"만듦: {os.path.relpath(dst, REPO)} (눈 픽셀 {int(eye.sum())}개 유지)")
 
 
+def build_bg_one(name, src_dir=SRC, out_dir=OUT, crop_y=0, method="grid", seam=24, preview=None, out_path=None):
+    path = os.path.join(src_dir, name + ".png")
+    if not os.path.exists(path):
+        print(f"없음: {name}")
+        return None
+    transparent = is_near_bg(name)
+    rgb, alpha, info = process_bg(path, name, crop_y=crop_y, method=method, seam=seam)
+    dst = out_path or os.path.join(out_dir, name + ".png")
+    write_bg_output(rgb, alpha, transparent, dst)
+    mode = "RGBA" if transparent else "RGB"
+    print(f"만듦: {os.path.relpath(dst, REPO)} ({BG_W}x{BG_H}, {mode}, method {info['method']}, "
+          f"cut {info['cut']}, 이음매 점수 {info['seam_after']:.2f})")
+    if preview:
+        save_bg_preview(rgb, alpha if transparent else None, preview)
+        print(f"미리보기: {preview}")
+    return rgb, alpha, info
+
+
+def cmd_build_bg(args):
+    if args.name == "all":
+        if args.out:
+            raise SystemExit("all에는 --out을 쓸 수 없습니다")
+        for name in BG_NAMES:
+            build_bg_one(name, crop_y=args.crop_y, method=args.method, seam=args.seam)
+        return
+    if args.name not in BG_NAMES:
+        raise SystemExit(f"알 수 없는 배경: {args.name}")
+    build_bg_one(args.name, crop_y=args.crop_y, method=args.method, seam=args.seam,
+                 preview=args.preview, out_path=args.out)
+
+
+def cmd_inspect_bg(args):
+    name = bg_name_from_path(args.path)
+    transparent = is_near_bg(name)
+    rgb, alpha = load_bg_source(args.path, transparent)
+    pitch = estimate_pitch(rgb, alpha, [], hint=None)
+    ratio = 1.0 - float((alpha > 0).mean())
+    residue = green_residue(rgb, alpha)
+    out_rgb, out_a, info = process_bg(args.path, name, crop_y=0, method="grid", seam=24)
+    preview = args.preview or os.path.join("/tmp", name + "_bg_preview.png")
+    save_bg_preview(out_rgb, out_a if transparent else None, preview)
+    print(f"{os.path.basename(args.path)}: {rgb.shape[1]}x{rgb.shape[0]}, 블록 {pitch}px, "
+          f"투명 {ratio * 100:.1f}%, 초록 잔여 {residue}개")
+    print(f"  384x448 이음매 점수: {info['seam_after']:.2f} (method {info['method']}, cut {info['cut']})")
+    print(f"  미리보기: {preview}")
+
+
+def pull_files(names, downloads, src_dir=SRC, force=False):
+    files = sorted(glob.glob(os.path.join(downloads, "ChatGPT Image *.png")), key=lambda p: (os.path.getmtime(p), p))
+    count = min(len(files), len(names))
+    if count < len(names):
+        print(f"파일 {len(files)}개만 있어 {count}개만 옮깁니다")
+    for name in names[:count]:
+        dst = os.path.join(src_dir, name + ".png")
+        if os.path.exists(dst) and not force:
+            raise SystemExit(f"대상이 이미 있습니다: {dst} (--force 필요)")
+    os.makedirs(src_dir, exist_ok=True)
+    moved = []
+    for src, name in zip(files[:count], names[:count]):
+        dst = os.path.join(src_dir, name + ".png")
+        if os.path.exists(dst) and force:
+            os.remove(dst)
+        shutil.move(src, dst)
+        moved.append((src, dst))
+        print(f"옮김: {os.path.basename(src)} -> {os.path.relpath(dst, REPO)}")
+    return moved
+
+
+def cmd_pull(args):
+    pull_files(args.names, os.path.expanduser(args.downloads), force=args.force)
+
+
+def assert_true(ok, msg):
+    if not ok:
+        raise AssertionError(msg)
+
+
+def make_synthetic_far(path, size=(1024, 1536), block=8):
+    w, h = size
+    img = Image.new("RGB", size)
+    d = ImageDraw.Draw(img)
+    for y in range(0, h, block):
+        t = y / h
+        c = (int(14 + 40 * t), int(12 + 30 * t), int(24 + 52 * t))
+        d.rectangle([0, y, w - 1, min(h - 1, y + block - 1)], fill=c)
+    for x, tw in ((90, 42), (360, 58), (740, 50)):
+        d.rectangle([x, 560, x + tw, h], fill=(18, 16, 28))
+        d.line([x + tw // 2, 760, x - 80, 610], fill=(18, 16, 28), width=18)
+        d.line([x + tw // 2, 700, x + 120, 560], fill=(18, 16, 28), width=14)
+    d.rectangle([0, 0, 80, h - 1], fill=(82, 26, 34))
+    d.rectangle([w - 80, 0, w - 1, h - 1], fill=(12, 60, 88))
+    img.save(path)
+
+
+def make_synthetic_near(path, size=(1024, 1536)):
+    img = Image.new("RGB", size, KEY_BG)
+    d = ImageDraw.Draw(img)
+    for x0, x1 in ((260, 350), (930, 1040)):
+        d.rectangle([x0, 0, x1, size[1] - 1], fill=(24, 20, 28))
+        d.rectangle([x0 - 12, 0, x0 - 1, size[1] - 1], fill=(26, 180, 28))
+        d.rectangle([x1 + 1, 0, x1 + 12, size[1] - 1], fill=(28, 170, 26))
+    img.save(path)
+
+
+def selftest_far(tmp):
+    src = os.path.join(tmp, "src")
+    out = os.path.join(tmp, "out")
+    os.makedirs(src)
+    os.makedirs(out)
+    path = os.path.join(src, "far_entrance.png")
+    make_synthetic_far(path)
+    raw_rgb, raw_a = load_bg_source(path, False)
+    base_rgb, base_a = resize_box_width(raw_rgb, raw_a, BG_W, False)
+    base_rgb, base_a = fit_bg_size(base_rgb, base_a, 0, False)
+    before = seam_score(base_rgb)
+    rgb, alpha, info = build_bg_one("far_entrance", src, out, method="box", seam=24)
+    after = seam_score(rgb)
+    star = rgb[52:77, 288:313].astype(np.int16)
+    near_star = (np.abs(star - np.array((232, 96, 66))).max(axis=-1) <= 40).sum()
+    im = Image.open(os.path.join(out, "far_entrance.png"))
+    assert_true(im.size == (BG_W, BG_H) and im.mode == "RGB", "far 출력 형식이 틀립니다")
+    assert_true(after <= before * 0.5, f"far 이음매 개선 부족: {before:.2f} -> {after:.2f}")
+    assert_true(near_star >= 5, f"알데바란 별 픽셀이 부족합니다: {near_star}")
+    return before, after, info
+
+
+def selftest_near(tmp):
+    src = os.path.join(tmp, "near_src")
+    out = os.path.join(tmp, "near_out")
+    os.makedirs(src)
+    os.makedirs(out)
+    path = os.path.join(src, "near_entrance.png")
+    make_synthetic_near(path)
+    rgb, alpha, info = build_bg_one("near_entrance", src, out, method="box", seam=24)
+    im = Image.open(os.path.join(out, "near_entrance.png"))
+    assert_true(im.size == (BG_W, BG_H) and im.mode == "RGBA", "near 출력 형식이 틀립니다")
+    assert_true((alpha == 0).mean() >= 0.60, "near 투명 비율이 60% 미만입니다")
+    assert_true(green_residue(rgb, alpha) == 0, "near 초록 잔여가 남았습니다")
+    assert_true(np.abs(alpha[:, 0].astype(np.int16) - alpha[:, -1].astype(np.int16)).mean() < 3,
+                "near 이음매 알파가 이어지지 않습니다")
+    return info
+
+
+def selftest_square(tmp):
+    src = os.path.join(tmp, "square_src")
+    out = os.path.join(tmp, "square_out")
+    os.makedirs(src)
+    os.makedirs(out)
+    path = os.path.join(src, "forest_bright.png")
+    make_synthetic_far(path, size=(1024, 1024))
+    rgb, alpha, _ = build_bg_one("forest_bright", src, out, method="box", seam=24)
+    assert_true(alpha[-1].min() == 255, "forest_bright 아래 채움 알파가 틀립니다")
+    assert_true(np.abs(rgb[-1].astype(np.int16) - rgb[-2].astype(np.int16)).max() == 0,
+                "forest_bright 아래 채움이 마지막 줄 색이 아닙니다")
+
+
+def selftest_pull(tmp):
+    downloads = os.path.join(tmp, "downloads")
+    dst = os.path.join(tmp, "pulled")
+    os.makedirs(downloads)
+    os.makedirs(dst)
+    for i in range(3):
+        p = os.path.join(downloads, f"ChatGPT Image {i}.png")
+        Image.new("RGB", (8, 8), (i, i, i)).save(p)
+        ts = time.time() - 30 + i
+        os.utime(p, (ts, ts))
+    moved = pull_files(["far_road", "near_road"], downloads, src_dir=dst)
+    assert_true([os.path.basename(d) for _, d in moved] == ["far_road.png", "near_road.png"], "pull 이름 순서가 틀립니다")
+    try:
+        pull_files(["far_road"], downloads, src_dir=dst)
+    except SystemExit:
+        return
+    raise AssertionError("pull이 기존 대상 파일을 거부하지 않았습니다")
+
+
+def cmd_selftest(args):
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            far_before, far_after, _ = selftest_far(tmp)
+            selftest_near(tmp)
+            selftest_square(tmp)
+            selftest_pull(tmp)
+        print(f"selftest 통과: far 이음매 {far_before:.2f} -> {far_after:.2f}, near 초록 잔여 0, pull 순서 확인")
+    except Exception as e:
+        print(f"selftest 실패: {e}", file=sys.stderr)
+        raise SystemExit(1)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -536,6 +942,25 @@ def main():
     c = sub.add_parser("derive-blackwolf", help="wolf.png에서 blackwolf.png를 파생한다")
     c.add_argument("--out")
     c.set_defaults(fn=cmd_derive)
+    d = sub.add_parser("build-bg", help="GPT 배경 원본을 384x448 게임 배경으로 굽는다")
+    d.add_argument("name", choices=sorted(BG_NAMES + ["all"]))
+    d.add_argument("--crop-y", type=int, default=0, help="세로 자르기 시작 줄 (기본: 0)")
+    d.add_argument("--method", choices=("grid", "box"), default="grid")
+    d.add_argument("--seam", type=int, default=24, help="좌우 이음매를 섞는 폭")
+    d.add_argument("--preview", help="가로 두 장을 붙인 2배 미리보기 경로")
+    d.add_argument("--out", help="출력 경로 (단일 이름에서만)")
+    d.set_defaults(fn=cmd_build_bg)
+    e = sub.add_parser("inspect-bg", help="배경 원본 하나를 분석하고 반복 미리보기를 만든다")
+    e.add_argument("path")
+    e.add_argument("--preview", help="미리보기 경로 (기본: /tmp/<이름>_bg_preview.png)")
+    e.set_defaults(fn=cmd_inspect_bg)
+    f = sub.add_parser("pull", help="Downloads의 ChatGPT Image PNG를 GPT 원본 위치로 옮긴다")
+    f.add_argument("names", nargs="+")
+    f.add_argument("--downloads", default="~/Downloads")
+    f.add_argument("--force", action="store_true")
+    f.set_defaults(fn=cmd_pull)
+    g = sub.add_parser("selftest", help="배경 처리와 pull 명령을 외부 파일 없이 검증한다")
+    g.set_defaults(fn=cmd_selftest)
     args = ap.parse_args()
     args.fn(args)
 
