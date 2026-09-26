@@ -17,13 +17,17 @@
   184~251  파괴의 방 — 우박. 머리 위를 본다
   252~319  태양의 방 — 홍수. 수위가 오르내린다. 아포피스
 
-몬스터 배치는 scripts/games/aldebaran/stages/tomb.lua 에 있다.
+시작 지점, 체크포인트, 몬스터, 흔적, 구간, 빛기둥은 맵 파일의 objects에 있다 (에디터로
+고친다, 스키마는 resources/schema/map-objects.json). 이 생성기는 타일, collision,
+tilesets만 새로 쓰고 기존 파일의 objects는 그대로 둔다 (tools/mapfile.py의 write_map).
+손으로 칠한 타일은 덮인다. 방의 경계(ROOMS)를 바꾸면 맵의 section 띠도 함께 옮긴다.
 
 Usage: python3 tools/generate_aldebaran_tomb_map.py
 """
 
-import json
 import os
+
+from mapfile import write_map
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(REPO, "resources", "maps", "aldebaran_tomb.json")
@@ -51,7 +55,7 @@ def variant(seq, x, y):
 
 
 # ---- 방과 복도 -------------------------------------------------------------
-# (x0, x1, 이름). 씬의 구간(stages/tomb.lua의 SECTIONS)과 경계가 같아야 한다.
+# (x0, x1, 이름). 맵의 section 띠(스테이지의 SECTIONS)와 경계가 같아야 한다.
 ROOMS = [
     (0, 55, "chest"),
     (56, 119, "moon"),
@@ -269,7 +273,7 @@ def main():
             g(x, floor, EDGE_R)
 
     data = {
-        "version": 1, "name": "aldebaran_tomb", "id": 101,
+        "name": "aldebaran_tomb", "id": 101,
         "width": W, "height": H,
         "tileWidth": 16, "tileHeight": 16,
         "layers": [
@@ -280,11 +284,9 @@ def main():
         "tilesets": [{"image": "resources/aldebaran/tomb16.png",
                       "columns": 8, "firstGid": 1}],
     }
-    os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    with open(OUT, "w") as f:
-        json.dump(data, f, separators=(",", ":"))
+    merged = write_map(OUT, data)
     print("만듦:", os.path.relpath(OUT, REPO),
-          f"{W}x{H}, 충돌 {sum(collision)}칸")
+          f"{W}x{H}, 충돌 {sum(collision)}칸, 오브젝트 {len(merged.get('objects') or [])}개 유지")
 
 
 if __name__ == "__main__":

@@ -32,6 +32,10 @@ python3 tools/import_gpt_art.py selftest
 # 에디터 자동완성용 API 스텁이 명세(resources/api/initial2d-api.json)와 같은가 (R2).
 # 명세만 고치고 스텁을 다시 만들지 않았으면 여기서 멈춘다. 바인딩과의 대조는 [4/6] 의 단위 테스트가 한다
 python3 tools/gen_api_stubs.py --check
+# 맵 파일 쓰기(tools/mapfile.py)가 에디터의 serializeMap과 같은 텍스트를 만드는가, 그리고
+# 배치를 objects에 담은 알데바란 맵이 그 형식인가 (M1). 형식이 어긋나면 format으로 고친다
+python3 tools/mapfile.py selftest
+python3 tools/mapfile.py check resources/maps/aldebaran_forest.json resources/maps/aldebaran_tomb.json
 
 echo ""
 echo "== [4/6] 엔진 씬 테스트 (Lua 단위 + 픽셀 검증 + 골든) =="

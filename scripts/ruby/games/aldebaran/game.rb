@@ -38,6 +38,7 @@ require "scripts/ruby/games/aldebaran/player"
 require "scripts/ruby/games/aldebaran/monster"
 require "scripts/ruby/games/aldebaran/combat"
 require "scripts/ruby/games/aldebaran/stages/init"
+require "scripts/ruby/games/aldebaran/stages/placement"
 require "scripts/ruby/games/aldebaran/climate"
 require "scripts/ruby/games/aldebaran/data/monsters"
 require "scripts/ruby/games/aldebaran/hud"
@@ -235,7 +236,12 @@ module AldebaranScene
     # 스테이지를 처음 상태로 되돌린다 (첫 진입과 다시 하기)
     def reset_stage
       @rng = Rpg::Rng.new(stage.seed)
-      @player = Player.new(@start_at || stage.start[:x], stage.start[:y])
+      if @start_at
+        # 옮긴 시작 x의 지면이 시작 지점보다 높으면 땅속에서 시작하지 않게 지면 위로 올린다
+        @player = Player.new(@start_at, Aldebaran::Stages::Placement.stand_y(@start_at, stage.start[:y], @probe, @tile_h))
+      else
+        @player = Player.new(stage.start[:x], stage.start[:y])
+      end
       # 앞 스테이지에서 이어 온 경험치와 골드 (첫 스테이지면 0). 다시 하기에서도 유지된다.
       @exp = @carried_exp
       @gold = @carried_gold
@@ -597,7 +603,8 @@ module AldebaranScene
       @ending = nil
       @game_over = nil
 
-      # 검수용: 어느 스테이지를 시작할지 환경 변수로 지정한다 (INITIAL2D_ALDEBARAN_STAGE=tomb)
+      # 검수용: 어느 스테이지를 시작할지 환경 변수로 지정한다 (INITIAL2D_ALDEBARAN_STAGE=tomb).
+      # 맵 이름(aldebaran_tomb)이나 맵 파일 경로도 된다. 에디터의 실행 버튼이 그렇게 연다
       carry = @carry
       @carried_exp = carry ? carry[:exp] : 0
       @carried_gold = carry ? carry[:gold] : 0

@@ -22,13 +22,27 @@ local modules = {
 
 local cache = {}
 
---- 스테이지 하나. 모르는 id면 nil과 이유를 돌려준다.
+--- 스테이지 id가 아닌 이름(맵 이름, 맵 파일 경로)이 가리키는 스테이지의 id
+local function idFor(name)
+	local Placement = require("scripts/lua/games/aldebaran/stages/placement")
+	for _, key in ipairs(M.order) do
+		if Placement.refersTo(M.get(key).map, name) then return key end
+	end
+	return nil
+end
+
+--- 스테이지 하나. id 대신 맵 이름(aldebaran_forest)이나 맵 파일 경로도 받는다.
+-- 모르는 이름이면 nil과 이유를 돌려준다.
 function M.get(id)
 	if id == nil then return nil, "스테이지 id가 없다" end
 	if cache[id] ~= nil then return cache[id] end
 	local path = modules[id]
 	if path == nil then
-		return nil, "모르는 스테이지 '" .. tostring(id) .. "'"
+		local key = idFor(id)
+		if key == nil then
+			return nil, "모르는 스테이지 '" .. tostring(id) .. "'"
+		end
+		return M.get(key)
 	end
 	local stage = require(path)
 	cache[id] = stage

@@ -20,13 +20,25 @@ module Aldebaran
 
     @cache = {}
 
-    # id의 스테이지 모듈을 돌려준다. 결과는 [모듈, nil]이고, 모르는 id면 [nil, 이유]다.
+    # 스테이지 id가 아닌 이름(맵 이름, 맵 파일 경로)이 가리키는 스테이지의 id
+    def self.id_for(name)
+      require "scripts/ruby/games/aldebaran/stages/placement"
+      ORDER.each do |key|
+        return key if Placement.refers_to?(get(key)[0].map, name)
+      end
+      nil
+    end
+
+    # id의 스테이지 모듈을 돌려준다. id 대신 맵 이름(aldebaran_forest)이나 맵 파일 경로도 받는다.
+    # 결과는 [모듈, nil]이고, 모르는 이름이면 [nil, 이유]다.
     def self.get(id)
       return [nil, "스테이지 id가 없다"] if id.nil?
       return [@cache[id], nil] unless @cache[id].nil?
       entry = MODULES[id]
       if entry.nil?
-        return [nil, "모르는 스테이지 '" + id.to_s + "'"]
+        key = id_for(id)
+        return [nil, "모르는 스테이지 '" + id.to_s + "'"] if key.nil?
+        return get(key)
       end
       require entry[0]
       stage = Stages.const_get(entry[1])
