@@ -88,6 +88,7 @@ add_library(main SHARED
   # 게임 로직 (플랫폼 중립 — Win32 부분은 RS_WINDOWS 가드로 제외됨)
   ${REPO_ROOT}/src/App.cpp
   ${REPO_ROOT}/src/main.cpp
+  ${REPO_ROOT}/src/ScriptRuntime.cpp
   ${REPO_ROOT}/src/GameObject.cpp
   ${REPO_ROOT}/src/MenuState.cpp
   ${REPO_ROOT}/src/MapState.cpp

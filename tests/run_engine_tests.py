@@ -36,6 +36,19 @@ GOLDEN_DIFF_RATIO = 0.02
 PASSES = []
 FAILS = []
 
+# 이 빌드가 실행할 수 있는 스크립트 언어 (S1). `Initial2D --features` 가 "lua" 또는
+# "lua mruby" 를 찍는다. mruby 가 없는 빌드에서는 mruby 테스트를 눈에 띄게 건너뛴다
+# (CI 는 brew install mruby 로 항상 켠다).
+def engine_features():
+    try:
+        out = subprocess.run([GAME, "--features"], capture_output=True, text=True, timeout=30)
+        return set(out.stdout.split())
+    except (OSError, subprocess.SubprocessError):
+        return set()
+
+
+HAS_MRUBY = False
+
 
 def check(name, cond, detail=""):
     if cond:
@@ -67,8 +80,12 @@ def make_workdir(scene):
     luatests = os.path.join(scripts, "luatests")
     os.makedirs(luatests, exist_ok=True)
     shutil.copy(os.path.join(REPO, "tests", "lua", "input_replay.lua"), luatests)
+    # .rb 씬은 scripts/ruby/main.rb 로 들어간다 (Ruby 스크립트는 scripts/ruby/ 에 산다).
+    # main.lua 는 stage_scripts 가 지웠으므로 엔진이 스스로 mruby 를 고른다 (ScriptRuntime 의
+    # 3번 규칙). .lua 씬이면 저자의 scripts/ruby/main.rb 가 함께 복사되어 있어도 main.lua 가 이긴다.
+    entry = os.path.join("ruby", "main.rb") if scene.endswith(".rb") else "main.lua"
     shutil.copy(os.path.join(REPO, "tests", "engine", "scenes", scene),
-                os.path.join(scripts, "main.lua"))
+                os.path.join(scripts, entry))
     return work
 
 
@@ -140,14 +157,15 @@ TILE1 = (216, 145, 37)   # tile1.png 단색
 RED = (255, 0, 0)
 
 
-def test_assert_scene():
-    print("\n[1] assert_scene — 렌더링·애니메이션·텍스트·프리미티브·오디오")
+def run_assert_scene(scene, dump_name):
+    """assert 씬의 검증 본체. Lua 씬과 mruby 씬이 같은 그림을 그리므로 같은 검사와
+    같은 골든(assert_scene_f35)을 쓴다 — 두 바인딩이 같은 엔진 호출로 이어진다는 증거."""
     frames = [12, 35, 60]
-    work, result, shots = run_scene("assert_scene.lua", frames, 70)
+    work, result, shots = run_scene(scene, frames, 70)
 
     log = result.stdout + result.stderr
     check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode}")
-    check("Lua 오류 없음", "PANIC" not in log and "error" not in log.lower().replace("iccp", ""),
+    check("스크립트 오류 없음", "PANIC" not in log and "error" not in log.lower().replace("iccp", ""),
           log[-200:])
     # 엔진의 커스텀 print는 인자를 구분자 없이 이어서 출력한다
     check("폰트 로드 성공", "fontReady:true" in log, log[:200])
@@ -192,7 +210,94 @@ def test_assert_scene():
     check("draw_set_color + draw_point", near(dot, RED, 12), str(dot))
 
     check_golden("assert_scene_f35", img)
-    shutil.copy(os.path.join(work, "shot_0035.bmp"), "/tmp/initial2d_assert_scene.bmp")
+    shutil.copy(os.path.join(work, "shot_0035.bmp"), f"/tmp/initial2d_{dump_name}.bmp")
+
+
+def test_assert_scene():
+    print("\n[1] assert_scene — 렌더링·애니메이션·텍스트·프리미티브·오디오")
+    run_assert_scene("assert_scene.lua", "assert_scene")
+
+
+def test_mruby_assert_scene():
+    """같은 씬을 mruby 로 (S1). 골든까지 Lua 씬과 같은 것을 쓴다."""
+    print("\n[1m] mruby_assert_scene — 같은 검증 씬을 mruby 로, 같은 골든에 견준다")
+    if not HAS_MRUBY:
+        print("  SKIP: 이 빌드에는 mruby 가 없습니다 (brew install mruby 후 cmake 다시 실행)")
+        return
+    run_assert_scene("mruby_assert_scene.rb", "mruby_assert_scene")
+
+
+def test_mruby_units():
+    """tests/ruby/ 의 mruby 단위 테스트를 엔진 바이너리로 실행한다 (S1)."""
+    print("\n[0m] mruby_unit_tests — mruby 단위 테스트 (엔진 VM에서 실행)")
+    if not HAS_MRUBY:
+        print("  SKIP: 이 빌드에는 mruby 가 없습니다 (brew install mruby 후 cmake 다시 실행)")
+        return
+    work = tempfile.mkdtemp(prefix="initial2d-mrbtest-")
+    os.symlink(os.path.join(REPO, "resources"), os.path.join(work, "resources"))
+    shutil.copytree(os.path.join(REPO, "tests", "fixtures"),
+                    os.path.join(work, "fixtures"))
+    scripts = stage_scripts(work)
+    rbtests = os.path.join(scripts, "ruby", "rbtests")
+    shutil.copytree(os.path.join(REPO, "tests", "ruby"), rbtests)
+    shutil.move(os.path.join(rbtests, "run_tests.rb"),
+                os.path.join(scripts, "ruby", "main.rb"))
+
+    env = dict(os.environ)
+    env["INITIAL2D_SCRIPT"] = "mruby"   # 명시 선택 경로. 자동 감지는 .rb 씬 테스트가 본다
+    env["INITIAL2D_EXIT_AFTER"] = "10"  # System.exit 미동작 시의 안전망
+
+    result = subprocess.run([GAME], cwd=work, env=env,
+                            capture_output=True, text=True, timeout=60)
+    log = result.stdout + result.stderr
+    for line in log.splitlines():
+        if line.startswith(("  PASS", "  FAIL", "[")):
+            print("   " + line)
+
+    check("mruby 테스트 프로세스 정상 종료", result.returncode == 0,
+          f"rc={result.returncode} | {log[-300:]}")
+    m = re.search(r"MRUBY_TESTS_RESULT: (\d+) PASS / (\d+) FAIL", log)
+    check("mruby 테스트 결과 요약 존재", m is not None, log[-300:])
+    if m:
+        check("mruby 테스트 전부 통과",
+              int(m.group(2)) == 0 and int(m.group(1)) > 0,
+              f"{m.group(1)} PASS / {m.group(2)} FAIL")
+
+
+def test_mruby_flappy_scene():
+    """mruby 로 쓴 플래피 (scripts/ruby/games/flappy.rb) 가 자동 시연으로 실제로 돈다 (S1).
+
+    씬이 스스로 틱을 세어 끝내므로 헤드리스의 프레임 속도와 무관하다. 검증은
+    stdout 의 상태 전이(ready -> play)와 점수, 그리고 화면이 비어 있지 않은가.
+    """
+    print("\n[1f] mruby_flappy_scene — mruby 로 쓴 플래피가 자동 시연으로 돈다")
+    if not HAS_MRUBY:
+        print("  SKIP: 이 빌드에는 mruby 가 없습니다 (brew install mruby 후 cmake 다시 실행)")
+        return
+    # 헤드리스는 초당 1000프레임 가까이 돌아 EXIT_AFTER 는 안전망으로만 (씬이 420틱에 끝낸다)
+    work, result, shots = run_scene("mruby_flappy_scene.rb", [150], 60000,
+                                    {"INITIAL2D_AUTOPLAY": "1"})
+    log = result.stdout + result.stderr
+    check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode} | {log[-300:]}")
+    check("스크립트 오류 없음", "error" not in log.lower().replace("iccp", ""), log[-300:])
+    check("대기에서 시작한다", "flappy:state:ready" in log, log[-300:])
+    check("자동 시연이 플레이로 들어간다", "flappy:state:play" in log, log[-300:])
+    m = re.search(r"flappyFinal state=(\w+) score=(\d+) best=(\d+) ticks=(\d+)", log)
+    check("최종 요약 존재 (씬이 스스로 끝냈다)", m is not None, log[-300:])
+    if m:
+        check("파이프를 하나 이상 지난다 (best >= 1)", int(m.group(3)) >= 1, m.group(0))
+    # 씨앗 1의 판: 5점을 내고 파이프에 부딪혀 죽은 뒤 대기로 돌아온다 — 상태 기계가 한 바퀴 돈다
+    check("부딪히면 게임 오버", "flappy:state:dead" in log, log[-300:])
+    check("게임 오버 뒤 자동으로 다시 대기", log.count("flappy:state:ready") >= 2, log[-300:])
+    check("프레임 덤프 생성", 150 in shots)
+    if 150 in shots:
+        img = shots[150]
+        scale = img.width / 768.0
+        ground = count_color_in(img, scale, 0, 896 - 64, 768, 896, WHITE, 12, invert=True)
+        check("지면이 그려져 있다 (아래 띠가 비어 있지 않다)", ground > 500, f"px={ground}")
+        sky = count_color_in(img, scale, 0, 0, 768, 200, WHITE, 12, invert=True)
+        check("배경이 그려져 있다", sky > 500, f"px={sky}")
+        shutil.copy(os.path.join(work, "shot_0150.bmp"), "/tmp/initial2d_mruby_flappy.bmp")
 
 
 def test_lua_units():
@@ -1051,8 +1156,14 @@ def main():
         print(f"실행 파일이 없습니다: {GAME} — 먼저 cmake --build build 를 실행하세요")
         sys.exit(2)
 
+    global HAS_MRUBY
+    HAS_MRUBY = "mruby" in engine_features()
+
     test_lua_units()
+    test_mruby_units()
     test_assert_scene()
+    test_mruby_assert_scene()
+    test_mruby_flappy_scene()
     test_tilemap_scene()
     test_rpg_walk_scene()
     test_rpg_event_scene()

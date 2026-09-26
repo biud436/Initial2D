@@ -19,7 +19,7 @@
 #include "Input.h"
 #include "ScancodeMap.h"
 #include "TextureManager.h"
-#include "lua_prot.h"
+#include "ScriptRuntime.h"
 
 #include <SDL.h>
 #include <SDL_image.h>
@@ -98,7 +98,7 @@ void App::LoadDisplaySettings()
 
 namespace {
 
-	// 수신된 Lua 번들을 cwd에 기록하고 Lua VM을 재시작한다.
+	// 수신된 스크립트 번들(Lua 또는 mruby)을 cwd에 기록하고 스크립트 VM을 재시작한다.
 	// (docs/porting/android-hmr-plan.md — 이슈 #16)
 	void ApplyHotReload(const std::vector<Initial2D::Platform::HotReloadFile>& bundle)
 	{
@@ -122,8 +122,8 @@ namespace {
 		}
 
 		try {
-			Lua_Destory();
-			Lua_Init();
+			Script_Destroy();
+			Script_Init();
 			SDL_Log("HotReload: reloaded with %d files", static_cast<int>(bundle.size()));
 		}
 		catch (...) {

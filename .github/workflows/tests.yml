@@ -16,7 +16,7 @@ jobs:
 
       - name: 의존성 설치
         run: |
-          brew install sdl2 sdl2_image sdl2_mixer
+          brew install sdl2 sdl2_image sdl2_mixer mruby
           python3 -m pip install --break-system-packages pillow
 
       - name: 플레이스홀더 리소스 생성 (gitignore된 최상위 PNG)
