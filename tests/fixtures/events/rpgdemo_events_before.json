@@ -1,0 +1,1182 @@
+{
+  "about": "항구 마을과 여관의 이벤트를 맵 파일로 옮기기 전에 게임이 합친 목록 (docs/plans/m2-rpg-events.md 6절). 자산은 표식(@charset:npc, @face:npc)으로 적었다",
+  "maps": {
+    "port_town": [
+      {
+        "commands": [
+          {
+            "code": "message",
+            "text": "누군가의 짐이다. 남쪽으로 간다는 표가 붙어 있다."
+          }
+        ],
+        "id": "crates",
+        "trigger": "action",
+        "x": 14,
+        "y": 40
+      },
+      {
+        "commands": [
+          {
+            "code": "showLocation",
+            "seconds": 2.5,
+            "text": "항구 마을"
+          },
+          {
+            "code": "if",
+            "cond": {
+              "flag": "arrived"
+            },
+            "elseDo": [
+              {
+                "code": "setFlag",
+                "key": "arrived"
+              },
+              {
+                "code": "message",
+                "face": {
+                  "file": "@face:npc",
+                  "index": 6
+                },
+                "name": "선장",
+                "text": "짐은 다 내렸네. 저녁 물때에 배가 다시 뜨니, 그때까지는 자네 시간이야."
+              },
+              {
+                "code": "message",
+                "face": {
+                  "file": "@face:npc",
+                  "index": 6
+                },
+                "name": "선장",
+                "text": "급할 것 없으면 마을을 좀 둘러보게. 여긴 떠나는 사람을 붙잡지 않는 대신, 남는 사람도 서운하게 하지 않거든."
+              }
+            ]
+          }
+        ],
+        "id": "arrival",
+        "trigger": "auto",
+        "x": 16,
+        "y": 43
+      },
+      {
+        "charset": {
+          "file": "@charset:npc",
+          "index": 6
+        },
+        "commands": [
+          {
+            "code": "if",
+            "cond": {
+              "flag": "heardAltar"
+            },
+            "elseDo": [
+              {
+                "code": "message",
+                "face": {
+                  "file": "@face:npc",
+                  "index": 6
+                },
+                "name": "선장",
+                "text": "남쪽 항로는 사막을 낀 길이라 물을 넉넉히 실어야 하네. 신기루를 오래 보면 사람이 이상해진다고들 하지만, 나야 뭐 스무 번은 지나다녔지."
+              }
+            ],
+            "thenDo": [
+              {
+                "code": "message",
+                "face": {
+                  "file": "@face:npc",
+                  "index": 6
+                },
+                "name": "선장",
+                "text": "노인이 하늘 끝 이야기를 하던가? ...그 양반은 젊을 때 그쪽 배를 탔었네. 돌아온 사람은 그 양반 하나였고."
+              }
+            ]
+          }
+        ],
+        "dir": "up",
+        "id": "captain",
+        "trigger": "action",
+        "x": 16,
+        "y": 44
+      },
+      {
+        "commands": [
+          {
+            "code": "if",
+            "cond": {
+              "flag": "lampReady"
+            },
+            "elseDo": [
+              {
+                "code": "message",
+                "text": "저녁 배가 밧줄을 풀 준비를 하고 있다."
+              },
+              {
+                "branches": [
+                  [
+                    {
+                      "code": "message",
+                      "face": {
+                        "file": "@face:npc",
+                        "index": 14
+                      },
+                      "name": "선장",
+                      "text": "밧줄 푸네. 뭍에 두고 가는 게 없나 보시게."
+                    },
+                    {
+                      "code": "message",
+                      "text": "배는 저녁 물때에 항구를 떠났다."
+                    },
+                    {
+                      "code": "if",
+                      "cond": {
+                        "flag": "lampReady"
+                      },
+                      "thenDo": [
+                        {
+                          "code": "message",
+                          "text": "등 뒤에서 등대에 불이 켜졌다. 노인이 오늘 밤 몫의 기름을 다 붓는 모양이었다."
+                        }
+                      ]
+                    },
+                    {
+                      "code": "if",
+                      "cond": {
+                        "flag": "booked"
+                      },
+                      "thenDo": [
+                        {
+                          "code": "message",
+                          "text": "여관의 방 하나가 하룻밤 비어 있었다."
+                        }
+                      ]
+                    },
+                    {
+                      "code": "if",
+                      "cond": {
+                        "item": "shell"
+                      },
+                      "thenDo": [
+                        {
+                          "code": "message",
+                          "text": "주머니 속에서 조개 목걸이가 달그락거렸다. 숲의 노래를 들었다는 아이는, 아직 그 마을에 있다."
+                        }
+                      ]
+                    },
+                    {
+                      "code": "scene",
+                      "fade": true,
+                      "name": "title"
+                    }
+                  ],
+                  [
+                    {
+                      "code": "message",
+                      "face": {
+                        "file": "@face:npc",
+                        "index": 6
+                      },
+                      "name": "선장",
+                      "text": "그러시게. 해가 지기 전에는 오시게."
+                    }
+                  ]
+                ],
+                "cancel": 2,
+                "code": "choice",
+                "options": [
+                  "지금 떠난다",
+                  "조금 더 둘러본다"
+                ]
+              }
+            ],
+            "thenDo": [
+              {
+                "code": "message",
+                "text": "저녁 배가 밧줄을 풀 준비를 하고 있다. 언덕의 등대에는 기름이 채워져 있다."
+              },
+              {
+                "branches": [
+                  [
+                    {
+                      "code": "message",
+                      "face": {
+                        "file": "@face:npc",
+                        "index": 14
+                      },
+                      "name": "선장",
+                      "text": "밧줄 푸네. 뭍에 두고 가는 게 없나 보시게."
+                    },
+                    {
+                      "code": "message",
+                      "text": "배는 저녁 물때에 항구를 떠났다."
+                    },
+                    {
+                      "code": "if",
+                      "cond": {
+                        "flag": "lampReady"
+                      },
+                      "thenDo": [
+                        {
+                          "code": "message",
+                          "text": "등 뒤에서 등대에 불이 켜졌다. 노인이 오늘 밤 몫의 기름을 다 붓는 모양이었다."
+                        }
+                      ]
+                    },
+                    {
+                      "code": "if",
+                      "cond": {
+                        "flag": "booked"
+                      },
+                      "thenDo": [
+                        {
+                          "code": "message",
+                          "text": "여관의 방 하나가 하룻밤 비어 있었다."
+                        }
+                      ]
+                    },
+                    {
+                      "code": "if",
+                      "cond": {
+                        "item": "shell"
+                      },
+                      "thenDo": [
+                        {
+                          "code": "message",
+                          "text": "주머니 속에서 조개 목걸이가 달그락거렸다. 숲의 노래를 들었다는 아이는, 아직 그 마을에 있다."
+                        }
+                      ]
+                    },
+                    {
+                      "code": "scene",
+                      "fade": true,
+                      "name": "title"
+                    }
+                  ],
+                  [
+                    {
+                      "code": "message",
+                      "face": {
+                        "file": "@face:npc",
+                        "index": 6
+                      },
+                      "name": "선장",
+                      "text": "해가 아직 남았네. 천천히 보고 오시게."
+                    }
+                  ]
+                ],
+                "cancel": 2,
+                "code": "choice",
+                "options": [
+                  "지금 떠난다",
+                  "불이 켜지는 것을 보고 간다"
+                ]
+              }
+            ]
+          }
+        ],
+        "id": "ship",
+        "trigger": "action",
+        "x": 18,
+        "y": 44
+      },
+      {
+        "commands": [
+          {
+            "code": "message",
+            "text": "굵은 밧줄이 말뚝에 단단히 매여 있다."
+          }
+        ],
+        "id": "bollard",
+        "trigger": "action",
+        "x": 17,
+        "y": 42
+      },
+      {
+        "commands": [
+          {
+            "code": "message",
+            "text": "마을 게시판이다.\n하나. 저녁 배는 물때에 맞춰 뜬다. 늦으면 기다리지 않는다."
+          },
+          {
+            "code": "message",
+            "text": "둘. 북쪽 숲에는 들어가지 말 것. 아이들은 특히."
+          },
+          {
+            "code": "message",
+            "text": "셋. 창고 물건은 주인이 돌아올 때까지 손대지 말 것. 열쇠는 여관에 맡겨 두었다."
+          }
+        ],
+        "id": "notice",
+        "trigger": "action",
+        "x": 13,
+        "y": 37
+      },
+      {
+        "commands": [
+          {
+            "code": "message",
+            "text": "물이 차다. 두레박은 비어 있다."
+          }
+        ],
+        "id": "well",
+        "trigger": "action",
+        "x": 18,
+        "y": 36
+      },
+      {
+        "commands": [
+          {
+            "code": "message",
+            "text": "볕이 드는 자리다. 앉아 쉴 수 있을 것 같다."
+          }
+        ],
+        "id": "bench",
+        "trigger": "action",
+        "x": 19,
+        "y": 34
+      },
+      {
+        "charset": {
+          "file": "@charset:npc",
+          "index": 4
+        },
+        "commands": [
+          {
+            "code": "message",
+            "face": {
+              "file": "@face:npc",
+              "index": 4
+            },
+            "name": "생선 장수",
+            "text": "오늘 물건은 아침에 다 나갔어요. 배가 들어오는 날은 늘 이렇죠."
+          },
+          {
+            "branches": [
+              [
+                {
+                  "code": "setFlag",
+                  "key": "heardWarehouse"
+                },
+                {
+                  "code": "message",
+                  "face": {
+                    "file": "@face:npc",
+                    "index": 4
+                  },
+                  "name": "생선 장수",
+                  "text": "저 창고요? 주인이 남쪽으로 떠난 지 삼 년째예요. 계약은 아직 살아 있어서 아무도 손을 못 대고요. 돌아오겠다고는 했다는데."
+                },
+                {
+                  "code": "message",
+                  "face": {
+                    "file": "@face:npc",
+                    "index": 4
+                  },
+                  "name": "생선 장수",
+                  "text": "열쇠는 여관 주인이 맡아 뒀어요. 안에 등유가 남아 있을 텐데, 등대 노인이 늘 아쉬워하시죠."
+                }
+              ],
+              [
+                {
+                  "code": "message",
+                  "face": {
+                    "file": "@face:npc",
+                    "index": 4
+                  },
+                  "name": "생선 장수",
+                  "text": "언덕에 등대가 있어요. 등대지기 노인이 계신데, 말은 별로 없어도 물어보면 대답은 해 주세요."
+                }
+              ]
+            ],
+            "code": "choice",
+            "options": [
+              "창고가 잠겨 있던데요",
+              "마을에 볼 것이 있나요"
+            ]
+          }
+        ],
+        "dir": "left",
+        "id": "fishmonger",
+        "trigger": "action",
+        "x": 13,
+        "y": 35
+      },
+      {
+        "commands": [
+          {
+            "code": "playSe",
+            "file": "./resources/audio/door.wav",
+            "id": "door"
+          },
+          {
+            "code": "transfer",
+            "dir": "up",
+            "map": "inn",
+            "x": 10,
+            "y": 12
+          }
+        ],
+        "id": "inn_door",
+        "trigger": "touch",
+        "x": 13,
+        "y": 29
+      },
+      {
+        "commands": [
+          {
+            "code": "message",
+            "text": "항구 여관. 오늘도 방이 남아 있다."
+          }
+        ],
+        "id": "inn_sign",
+        "trigger": "action",
+        "x": 14,
+        "y": 29
+      },
+      {
+        "commands": [
+          {
+            "code": "if",
+            "cond": {
+              "flag": "openedWarehouse"
+            },
+            "elseDo": [
+              {
+                "code": "if",
+                "cond": {
+                  "item": "warehouse_key"
+                },
+                "elseDo": [
+                  {
+                    "code": "if",
+                    "cond": {
+                      "flag": "heardWarehouse"
+                    },
+                    "elseDo": [
+                      {
+                        "code": "message",
+                        "text": "창고 문은 잠겨 있다. 사람 손을 탄 지 오래다."
+                      }
+                    ],
+                    "thenDo": [
+                      {
+                        "code": "message",
+                        "text": "삼 년째 잠긴 문이다. 자물쇠에는 녹이 슬지 않았다. 여관 주인이 열쇠를 맡아 두었다고 했다."
+                      }
+                    ]
+                  }
+                ],
+                "thenDo": [
+                  {
+                    "code": "playSe",
+                    "file": "./resources/audio/door.wav",
+                    "id": "door"
+                  },
+                  {
+                    "code": "message",
+                    "text": "열쇠가 맞는다. 삼 년 만에 열린 문 안에서 마른 밧줄 냄새가 났다."
+                  },
+                  {
+                    "code": "setFlag",
+                    "key": "openedWarehouse"
+                  },
+                  {
+                    "code": "giveItem",
+                    "item": "lamp_oil"
+                  },
+                  {
+                    "code": "playSe",
+                    "file": "./resources/audio/ui_decision.wav",
+                    "id": "item"
+                  },
+                  {
+                    "code": "message",
+                    "text": "선반에 등유 한 통이 남아 있다. 등유 한 통을 얻었다."
+                  },
+                  {
+                    "code": "message",
+                    "text": "등대 노인에게 가져다 주면 오늘 밤은 불을 켜겠다."
+                  }
+                ]
+              }
+            ],
+            "thenDo": [
+              {
+                "code": "message",
+                "text": "다시 잠가 두었다. 안에 남은 것은 밧줄과 빈 궤짝뿐이었다."
+              }
+            ]
+          }
+        ],
+        "id": "warehouse",
+        "trigger": "action",
+        "x": 19,
+        "y": 29
+      },
+      {
+        "commands": [
+          {
+            "code": "message",
+            "text": "빨래가 바닷바람에 흔들린다. 소금기가 밴다."
+          }
+        ],
+        "id": "laundry",
+        "trigger": "action",
+        "x": 12,
+        "y": 21
+      },
+      {
+        "charset": {
+          "file": "@charset:npc",
+          "index": 3
+        },
+        "commands": [
+          {
+            "code": "if",
+            "cond": {
+              "item": "shell"
+            },
+            "elseDo": [
+              {
+                "code": "if",
+                "cond": {
+                  "flag": "heardAltar"
+                },
+                "elseDo": [
+                  {
+                    "code": "message",
+                    "face": {
+                      "file": "@face:npc",
+                      "index": 3
+                    },
+                    "name": "아이",
+                    "text": "북쪽 문은 어른들이 막아 놨어요. 숲에서 노래가 들린다고요."
+                  },
+                  {
+                    "code": "message",
+                    "face": {
+                      "file": "@face:npc",
+                      "index": 3
+                    },
+                    "name": "아이",
+                    "text": "근데 저는 들었어요. 생일 노래 같은 거였는데, 아무도 안 믿어요."
+                  },
+                  {
+                    "code": "message",
+                    "face": {
+                      "file": "@face:npc",
+                      "index": 3
+                    },
+                    "name": "아이",
+                    "text": "등대 할아버지한테 물어봐 주세요. 그 할아버지는 뭐든 아니까."
+                  }
+                ],
+                "thenDo": [
+                  {
+                    "code": "message",
+                    "face": {
+                      "file": "@face:npc",
+                      "index": 11
+                    },
+                    "name": "아이",
+                    "text": "등대 할아버지도 노래 얘기를 했죠? 할아버지는 저를 안 놀려요."
+                  },
+                  {
+                    "code": "giveItem",
+                    "item": "shell"
+                  },
+                  {
+                    "code": "playSe",
+                    "file": "./resources/audio/ui_decision.wav",
+                    "id": "item"
+                  },
+                  {
+                    "code": "message",
+                    "text": "조개 목걸이를 받았다."
+                  },
+                  {
+                    "code": "message",
+                    "face": {
+                      "file": "@face:npc",
+                      "index": 11
+                    },
+                    "name": "아이",
+                    "text": "이거 드릴게요. 숲에서 주운 거예요. 배 타고 가다가 이거 보면, 여기 생각나실 거예요."
+                  }
+                ]
+              }
+            ],
+            "thenDo": [
+              {
+                "code": "message",
+                "face": {
+                  "file": "@face:npc",
+                  "index": 11
+                },
+                "name": "아이",
+                "text": "그거 잃어버리면 안 돼요. 숲에서 주운 거니까."
+              }
+            ]
+          }
+        ],
+        "dir": "down",
+        "id": "kid",
+        "trigger": "action",
+        "wander": {
+          "area": {
+            "h": 6,
+            "w": 6,
+            "x": 13,
+            "y": 19
+          },
+          "maxWait": 140,
+          "minWait": 40
+        },
+        "x": 14,
+        "y": 20
+      },
+      {
+        "commands": [
+          {
+            "code": "if",
+            "cond": {
+              "flag": "lampReady"
+            },
+            "elseDo": [
+              {
+                "code": "message",
+                "text": "등대 문은 잠겨 있다. 열쇠는 등대지기가 갖고 있다."
+              }
+            ],
+            "thenDo": [
+              {
+                "code": "message",
+                "text": "등대 문이 조금 열려 있다. 안에서 기름 붓는 소리가 난다."
+              }
+            ]
+          }
+        ],
+        "id": "lighthouse_door",
+        "trigger": "action",
+        "x": 17,
+        "y": 12
+      },
+      {
+        "charset": {
+          "file": "@charset:npc",
+          "index": 5
+        },
+        "commands": [
+          {
+            "code": "if",
+            "cond": {
+              "item": "lamp_oil"
+            },
+            "elseDo": [
+              {
+                "code": "message",
+                "face": {
+                  "file": "@face:npc",
+                  "index": 5
+                },
+                "name": "등대지기",
+                "text": "...배를 기다리나."
+              },
+              {
+                "code": "message",
+                "face": {
+                  "file": "@face:npc",
+                  "index": 5
+                },
+                "name": "등대지기",
+                "text": "저 불은 사람을 부르는 게 아니라, 돌아오는 길을 잊지 말라고 켜 두는 걸세."
+              },
+              {
+                "branches": [
+                  [
+                    {
+                      "code": "setFlag",
+                      "key": "heardAltar"
+                    },
+                    {
+                      "code": "message",
+                      "face": {
+                        "file": "@face:npc",
+                        "index": 5
+                      },
+                      "name": "등대지기",
+                      "text": "제단이 있었네. 소리가 오래 남는 곳이었지. 그 뒤로는 배를 타지 않았네."
+                    },
+                    {
+                      "code": "message",
+                      "face": {
+                        "file": "@face:npc",
+                        "index": 5
+                      },
+                      "name": "등대지기",
+                      "text": "숲에서 노래를 들었다는 아이가 있다지. 그 아이한테 거짓말쟁이라 하지 말게."
+                    }
+                  ],
+                  [
+                    {
+                      "code": "message",
+                      "face": {
+                        "file": "@face:npc",
+                        "index": 5
+                      },
+                      "name": "등대지기",
+                      "text": "불을 켜는 일에는 오래고 짧고가 없네. 오늘 켜면 오늘의 일이지."
+                    },
+                    {
+                      "code": "if",
+                      "cond": {
+                        "flag": "lampReady"
+                      },
+                      "elseDo": [
+                        {
+                          "code": "message",
+                          "face": {
+                            "file": "@face:npc",
+                            "index": 5
+                          },
+                          "name": "등대지기",
+                          "text": "다만 기름이 얼마 없네. 창고에 한 통 남아 있을 텐데, 그 문이 삼 년째 잠겨 있어서."
+                        }
+                      ]
+                    }
+                  ]
+                ],
+                "code": "choice",
+                "options": [
+                  "하늘 끝에 가 보셨습니까",
+                  "등대를 지키신 지 오래되셨나요"
+                ]
+              }
+            ],
+            "thenDo": [
+              {
+                "code": "message",
+                "face": {
+                  "file": "@face:npc",
+                  "index": 5
+                },
+                "name": "등대지기",
+                "text": "...그건 창고 것이군. 여관에서 열쇠를 받았나."
+              },
+              {
+                "code": "takeItem",
+                "item": "lamp_oil"
+              },
+              {
+                "code": "setFlag",
+                "key": "lampReady"
+              },
+              {
+                "code": "message",
+                "face": {
+                  "file": "@face:npc",
+                  "index": 5
+                },
+                "name": "등대지기",
+                "text": "고맙네. 오늘 밤은 아끼지 않고 켜겠네. 자네 배가 항구를 나갈 때까지는 밝을 걸세."
+              },
+              {
+                "code": "giveItem",
+                "count": 2,
+                "item": "silver"
+              },
+              {
+                "code": "playSe",
+                "file": "./resources/audio/ui_decision.wav",
+                "id": "item"
+              },
+              {
+                "code": "message",
+                "text": "은화 두 닢을 받았다."
+              },
+              {
+                "code": "message",
+                "face": {
+                  "file": "@face:npc",
+                  "index": 5
+                },
+                "name": "등대지기",
+                "text": "받아 두게. 여관 하루치일세. 쓸 일이 없으면 그냥 가지고 가고."
+              }
+            ]
+          }
+        ],
+        "dir": "left",
+        "id": "keeper",
+        "trigger": "action",
+        "x": 18,
+        "y": 13
+      },
+      {
+        "commands": [
+          {
+            "code": "if",
+            "cond": {
+              "flag": "heardAltar"
+            },
+            "elseDo": [
+              {
+                "code": "message",
+                "text": "숲으로 가는 길은 널빤지로 막혀 있다."
+              }
+            ],
+            "thenDo": [
+              {
+                "code": "message",
+                "text": "숲으로 가는 길은 막혀 있다. 바람이 나뭇가지를 훑고 지나간다. 노래처럼 들리기도 한다."
+              }
+            ]
+          }
+        ],
+        "id": "north_gate",
+        "trigger": "action",
+        "x": 16,
+        "y": 6
+      }
+    ],
+    "inn": [
+      {
+        "commands": [
+          {
+            "code": "showLocation",
+            "seconds": 2.5,
+            "text": "항구 여관"
+          }
+        ],
+        "id": "arrival",
+        "trigger": "auto",
+        "x": 10,
+        "y": 12
+      },
+      {
+        "charset": {
+          "file": "@charset:npc",
+          "index": 1
+        },
+        "commands": [
+          {
+            "code": "if",
+            "cond": {
+              "flag": "booked"
+            },
+            "elseDo": [
+              {
+                "code": "if",
+                "cond": {
+                  "flag": "greeted"
+                },
+                "elseDo": [
+                  {
+                    "code": "setFlag",
+                    "key": "greeted"
+                  },
+                  {
+                    "code": "message",
+                    "face": {
+                      "file": "@face:npc",
+                      "index": 1
+                    },
+                    "name": "여관 주인",
+                    "text": "어서 오세요. 저녁 배를 기다리는 분이시군요. 얼굴에 그렇게 쓰여 있어요."
+                  }
+                ]
+              },
+              {
+                "code": "if",
+                "cond": {
+                  "flag": "heardWarehouse"
+                },
+                "thenDo": [
+                  {
+                    "code": "if",
+                    "cond": {
+                      "flag": "gaveKey"
+                    },
+                    "elseDo": [
+                      {
+                        "code": "setFlag",
+                        "key": "gaveKey"
+                      },
+                      {
+                        "code": "message",
+                        "face": {
+                          "file": "@face:npc",
+                          "index": 1
+                        },
+                        "name": "여관 주인",
+                        "text": "창고 얘기를 들으셨군요. 그 열쇠라면 여기 있어요. 주인이 떠나면서 맡기고 갔거든요."
+                      },
+                      {
+                        "code": "giveItem",
+                        "item": "warehouse_key"
+                      },
+                      {
+                        "code": "playSe",
+                        "file": "./resources/audio/ui_decision.wav",
+                        "id": "item"
+                      },
+                      {
+                        "code": "message",
+                        "text": "창고 열쇠를 받았다."
+                      },
+                      {
+                        "code": "message",
+                        "face": {
+                          "file": "@face:npc",
+                          "index": 1
+                        },
+                        "name": "여관 주인",
+                        "text": "등유가 남아 있을 거예요. 등대 노인께 가져다 드리세요. 주인도 그걸 아까워할 사람은 아니었어요."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "code": "message",
+                "face": {
+                  "file": "@face:npc",
+                  "index": 1
+                },
+                "name": "여관 주인",
+                "text": "방을 잡으실 건가요? 하루치는 은화 두 닢이에요."
+              },
+              {
+                "branches": [
+                  [
+                    {
+                      "code": "if",
+                      "cond": {
+                        "item": "silver",
+                        "op": ">=",
+                        "value": 2
+                      },
+                      "elseDo": [
+                        {
+                          "code": "message",
+                          "face": {
+                            "file": "@face:npc",
+                            "index": 1
+                          },
+                          "name": "여관 주인",
+                          "text": "...두 닢이 모자라시네요. 괜찮아요, 이 마을에서 돈 없다고 쫓겨난 사람은 없어요."
+                        },
+                        {
+                          "code": "message",
+                          "face": {
+                            "file": "@face:npc",
+                            "index": 1
+                          },
+                          "name": "여관 주인",
+                          "text": "일거리라면 언덕에 하나 있을 거예요. 노인이 늘 손이 모자라시거든요."
+                        }
+                      ],
+                      "thenDo": [
+                        {
+                          "code": "takeItem",
+                          "count": 2,
+                          "item": "silver"
+                        },
+                        {
+                          "code": "setFlag",
+                          "key": "booked"
+                        },
+                        {
+                          "code": "message",
+                          "face": {
+                            "file": "@face:npc",
+                            "index": 9
+                          },
+                          "name": "여관 주인",
+                          "text": "그럼 짐을 올려 두세요. 저녁 배는 놓치셔도 아침 배가 또 옵니다."
+                        }
+                      ]
+                    }
+                  ],
+                  [
+                    {
+                      "code": "message",
+                      "face": {
+                        "file": "@face:npc",
+                        "index": 1
+                      },
+                      "name": "여관 주인",
+                      "text": "그러실 것 같았어요. 다들 처음엔 그렇게 말하죠."
+                    }
+                  ],
+                  [
+                    {
+                      "code": "message",
+                      "face": {
+                        "file": "@face:npc",
+                        "index": 9
+                      },
+                      "name": "여관 주인",
+                      "text": "천천히 보세요. 난로 옆이 제일 따뜻합니다."
+                    }
+                  ]
+                ],
+                "cancel": 3,
+                "code": "choice",
+                "options": [
+                  "묵는다",
+                  "배를 탄다",
+                  "그냥 둘러본다"
+                ]
+              }
+            ],
+            "thenDo": [
+              {
+                "code": "message",
+                "face": {
+                  "file": "@face:npc",
+                  "index": 9
+                },
+                "name": "여관 주인",
+                "text": "방은 그대로 두었어요. 저녁 배를 타시더라도 짐은 챙겨 가세요."
+              },
+              {
+                "code": "if",
+                "cond": {
+                  "flag": "heardWarehouse"
+                },
+                "thenDo": [
+                  {
+                    "code": "if",
+                    "cond": {
+                      "flag": "gaveKey"
+                    },
+                    "elseDo": [
+                      {
+                        "code": "setFlag",
+                        "key": "gaveKey"
+                      },
+                      {
+                        "code": "message",
+                        "face": {
+                          "file": "@face:npc",
+                          "index": 1
+                        },
+                        "name": "여관 주인",
+                        "text": "창고 얘기를 들으셨군요. 그 열쇠라면 여기 있어요. 주인이 떠나면서 맡기고 갔거든요."
+                      },
+                      {
+                        "code": "giveItem",
+                        "item": "warehouse_key"
+                      },
+                      {
+                        "code": "playSe",
+                        "file": "./resources/audio/ui_decision.wav",
+                        "id": "item"
+                      },
+                      {
+                        "code": "message",
+                        "text": "창고 열쇠를 받았다."
+                      },
+                      {
+                        "code": "message",
+                        "face": {
+                          "file": "@face:npc",
+                          "index": 1
+                        },
+                        "name": "여관 주인",
+                        "text": "등유가 남아 있을 거예요. 등대 노인께 가져다 드리세요. 주인도 그걸 아까워할 사람은 아니었어요."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "dir": "down",
+        "id": "innkeeper",
+        "trigger": "action",
+        "x": 10,
+        "y": 3
+      },
+      {
+        "commands": [
+          {
+            "code": "message",
+            "text": "여관 방명록이다. 여러 사람의 필체가 섞여 있다."
+          },
+          {
+            "code": "message",
+            "text": "\"숲에는 들어가지 말 것. 길이 하나뿐인 줄 알았는데 나올 때는 세 갈래였다.\""
+          },
+          {
+            "code": "message",
+            "text": "\"사막 항로, 물 두 통으로는 모자람.\"\n마지막 장에는 이름 대신 날짜만 적혀 있다."
+          }
+        ],
+        "id": "guestbook",
+        "trigger": "action",
+        "x": 14,
+        "y": 3
+      },
+      {
+        "commands": [
+          {
+            "code": "message",
+            "text": "난로가 낮게 타고 있다. 바닷바람이 가시는 자리다."
+          }
+        ],
+        "id": "hearth",
+        "trigger": "action",
+        "x": 2,
+        "y": 3
+      },
+      {
+        "commands": [
+          {
+            "code": "if",
+            "cond": {
+              "flag": "booked"
+            },
+            "elseDo": [
+              {
+                "code": "message",
+                "text": "위층으로 오르는 계단이다. 아직 방을 잡지 않았다."
+              }
+            ],
+            "thenDo": [
+              {
+                "code": "message",
+                "text": "잡아 둔 방은 위층이다. 아직 올라가 볼 일은 없다."
+              }
+            ]
+          }
+        ],
+        "id": "stairs",
+        "trigger": "action",
+        "x": 17,
+        "y": 4
+      },
+      {
+        "commands": [
+          {
+            "code": "playSe",
+            "file": "./resources/audio/door.wav",
+            "id": "door"
+          },
+          {
+            "code": "transfer",
+            "dir": "down",
+            "map": "port_town",
+            "x": 13,
+            "y": 30
+          }
+        ],
+        "id": "exit",
+        "trigger": "touch",
+        "x": 10,
+        "y": 13
+      }
+    ]
+  }
+}
