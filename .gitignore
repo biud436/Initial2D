@@ -373,3 +373,6 @@ android/gradlew.bat
 
 # GPT 이미지 원본 (장당 약 1MB). 커밋 여부는 저자 결정 (docs/prompts/aldebaran-art-meta-prompt.md)
 resources/aldebaran/src/gpt/
+
+# InitialEditor 가 프로젝트 폴더에 두는 편집 상태 (레이아웃 등). 게임 데이터가 아니다
+.initial-editor/
