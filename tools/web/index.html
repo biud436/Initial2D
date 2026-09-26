@@ -88,9 +88,14 @@ button.addEventListener("click", async () => {
 			env,
 			print: (line) => log(line, false),
 			printErr: (line) => log(line, true),
+			onExit: (code) => {
+				status.textContent = code === 0 ? "게임이 끝났습니다" : "오류로 멈췄습니다 (콘솔의 빨간 줄)";
+			},
 		});
 		window.__initial2d = handle;
-		status.textContent = `실행 중 (${handle.features()}). canvas 를 누르면 키보드가 게임으로 갑니다`;
+		if (handle.module._initial2d_running()) {
+			status.textContent = `실행 중 (${handle.features()}). canvas 를 누르면 키보드가 게임으로 갑니다`;
+		}
 		canvas.focus();
 	} catch (e) {
 		status.textContent = "실패: " + (e && e.message ? e.message : e);

@@ -23,6 +23,15 @@ if(MSVC)
   add_compile_options(/source-charset:utf-8)
 endif()
 
+# Emscripten 예외 방식 (R3, docs/plans/r3-emscripten.md): 모든 타깃을 wasm 네이티브 예외로
+# 컴파일하고 링크한다. vendored Lua 는 C++ 로 컴파일되어 오류를 throw 로 던지고 pcall 이 catch 한다.
+# 타깃마다 방식이 다르면 Lua 오류가 pcall 을 지나쳐 모듈 밖으로 빠진다. add_compile_options 는
+# 그 뒤에 만든 타깃에만 붙으므로 어느 add_library 보다 먼저 둔다.
+if(EMSCRIPTEN)
+  add_compile_options(-fwasm-exceptions)
+  add_link_options(-fwasm-exceptions)
+endif()
+
 # ---------------------------------------------------------------------------
 # Vendored 서드파티
 # ---------------------------------------------------------------------------
@@ -96,10 +105,9 @@ if(EMSCRIPTEN)
     -sUSE_SDL_IMAGE=2 "-sSDL2_IMAGE_FORMATS=png,jpg"
     -sUSE_SDL_MIXER=2 "-sSDL2_MIXER_FORMATS=ogg,wav"
     -sUSE_OGG=1 -sUSE_VORBIS=1)
-  # 예외: vendored Lua 는 C++ 로 컴파일되어 오류를 throw 로 던지고 pcall 이 catch 한다.
-  # Emscripten 기본은 catch 를 끈 상태라 첫 Lua 오류에서 abort 하므로 wasm 네이티브 예외를 켠다.
-  add_compile_options(${INITIAL2D_EM_PORTS} -fwasm-exceptions)
-  add_link_options(${INITIAL2D_EM_PORTS} -fwasm-exceptions)
+  # 예외 방식(-fwasm-exceptions)은 파일 맨 위에서 모든 타깃에 준다.
+  add_compile_options(${INITIAL2D_EM_PORTS})
+  add_link_options(${INITIAL2D_EM_PORTS})
   # 아래 코드가 쓰는 이름을 그대로 채운다. 라이브러리 경로는 비워 둔다 (포트가 링크한다).
   add_library(SDL2::SDL2 INTERFACE IMPORTED)
   set(SDL2_FOUND ON)
@@ -239,6 +247,7 @@ if(INITIAL2D_SDL2_GAME)
     #   FORCE_FILESYSTEM:        게임이 game.json, scripts/, resources/ 를 fopen 으로 읽는다 (MEMFS)
     #   ALLOW_MEMORY_GROWTH:     디코딩된 PNG 와 OGG 가 wasm 메모리에 산다
     #   ASYNCIFY 는 쓰지 않는다: 루프가 emscripten_set_main_loop 이라 블로킹 호출이 없다
+    #   getExceptionMessage:     모듈 밖으로 나온 C++ 예외의 메시지를 로더의 errorText() 가 읽는다
     set_target_properties(Initial2D PROPERTIES OUTPUT_NAME Initial2D SUFFIX ".js")
     target_link_options(Initial2D PRIVATE
       -sALLOW_MEMORY_GROWTH=1
@@ -248,8 +257,8 @@ if(INITIAL2D_SDL2_GAME)
       -sEXPORT_ES6=1
       -sEXPORT_NAME=createInitial2D
       -sENVIRONMENT=web
-      "-sEXPORTED_RUNTIME_METHODS=FS,ccall,cwrap,callMain,ENV,UTF8ToString,stringToNewUTF8"
-      "-sEXPORTED_FUNCTIONS=_main,_initial2d_reload,_initial2d_quit,_initial2d_features,_malloc,_free"
+      "-sEXPORTED_RUNTIME_METHODS=FS,ccall,cwrap,callMain,ENV,UTF8ToString,stringToNewUTF8,getExceptionMessage,decrementExceptionRefcount"
+      "-sEXPORTED_FUNCTIONS=_main,_initial2d_reload,_initial2d_quit,_initial2d_features,_initial2d_frame_count,_initial2d_running,_malloc,_free"
       -sFORCE_FILESYSTEM=1
       -sEXIT_RUNTIME=0
       -sINVOKE_RUN=0
