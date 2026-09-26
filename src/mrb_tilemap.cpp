@@ -159,19 +159,19 @@ void MRuby_DefineTilemap(mrb_state* mrb)
 	struct RClass* cls = mrb_define_class(mrb, "Tilemap", mrb->object_class);
 	MRB_SET_INSTANCE_TT(cls, MRB_TT_DATA);
 
-	mrb_define_method(mrb, cls, "initialize", tilemap_initialize, MRB_ARGS_REQ(1));
-	mrb_define_method(mrb, cls, "draw", tilemap_draw, MRB_ARGS_ARG(2, 2));
-	mrb_define_method(mrb, cls, "width", tilemap_width, MRB_ARGS_NONE());
-	mrb_define_method(mrb, cls, "height", tilemap_height, MRB_ARGS_NONE());
-	mrb_define_method(mrb, cls, "tile_width", tilemap_tile_width, MRB_ARGS_NONE());
-	mrb_define_method(mrb, cls, "tile_height", tilemap_tile_height, MRB_ARGS_NONE());
-	mrb_define_method(mrb, cls, "layer_count", tilemap_layer_count, MRB_ARGS_NONE());
-	mrb_define_method(mrb, cls, "size", tilemap_size, MRB_ARGS_NONE());
-	mrb_define_method(mrb, cls, "tile_id", tilemap_tile_id, MRB_ARGS_REQ(3));
-	mrb_define_method(mrb, cls, "set_tile_id", tilemap_set_tile_id, MRB_ARGS_REQ(4));
-	mrb_define_method(mrb, cls, "passable?", tilemap_passable, MRB_ARGS_REQ(2));
-	mrb_define_method(mrb, cls, "dispose", tilemap_dispose, MRB_ARGS_NONE());
-	mrb_define_method(mrb, cls, "disposed?", tilemap_disposed, MRB_ARGS_NONE());
+	mrb_define_method(mrb, cls, "initialize", MRUBY_GUARD(tilemap_initialize), MRB_ARGS_REQ(1));
+	mrb_define_method(mrb, cls, "draw", MRUBY_GUARD(tilemap_draw), MRB_ARGS_ARG(2, 2));
+	mrb_define_method(mrb, cls, "width", MRUBY_GUARD(tilemap_width), MRB_ARGS_NONE());
+	mrb_define_method(mrb, cls, "height", MRUBY_GUARD(tilemap_height), MRB_ARGS_NONE());
+	mrb_define_method(mrb, cls, "tile_width", MRUBY_GUARD(tilemap_tile_width), MRB_ARGS_NONE());
+	mrb_define_method(mrb, cls, "tile_height", MRUBY_GUARD(tilemap_tile_height), MRB_ARGS_NONE());
+	mrb_define_method(mrb, cls, "layer_count", MRUBY_GUARD(tilemap_layer_count), MRB_ARGS_NONE());
+	mrb_define_method(mrb, cls, "size", MRUBY_GUARD(tilemap_size), MRB_ARGS_NONE());
+	mrb_define_method(mrb, cls, "tile_id", MRUBY_GUARD(tilemap_tile_id), MRB_ARGS_REQ(3));
+	mrb_define_method(mrb, cls, "set_tile_id", MRUBY_GUARD(tilemap_set_tile_id), MRB_ARGS_REQ(4));
+	mrb_define_method(mrb, cls, "passable?", MRUBY_GUARD(tilemap_passable), MRB_ARGS_REQ(2));
+	mrb_define_method(mrb, cls, "dispose", MRUBY_GUARD(tilemap_dispose), MRB_ARGS_NONE());
+	mrb_define_method(mrb, cls, "disposed?", MRUBY_GUARD(tilemap_disposed), MRB_ARGS_NONE());
 }
 
 #endif // INITIAL2D_HAS_MRUBY

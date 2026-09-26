@@ -159,17 +159,17 @@ void MRuby_DefineFontEx(mrb_state* mrb)
 	struct RClass* cls = mrb_define_class(mrb, "FontEx", mrb->object_class);
 	MRB_SET_INSTANCE_TT(cls, MRB_TT_DATA);
 
-	mrb_define_method(mrb, cls, "initialize", font_initialize, MRB_ARGS_REQ(4));
-	mrb_define_method(mrb, cls, "update", font_update, MRB_ARGS_REQ(1));
-	mrb_define_method(mrb, cls, "draw", font_draw, MRB_ARGS_NONE());
-	mrb_define_method(mrb, cls, "text=", font_set_text, MRB_ARGS_REQ(1));
-	mrb_define_method(mrb, cls, "set_position", font_set_position, MRB_ARGS_REQ(2));
-	mrb_define_method(mrb, cls, "set_text_color", font_set_text_color, MRB_ARGS_REQ(3));
-	mrb_define_method(mrb, cls, "opacity=", font_set_opacity, MRB_ARGS_REQ(1));
-	mrb_define_method(mrb, cls, "angle=", font_set_angle, MRB_ARGS_REQ(1));
-	mrb_define_method(mrb, cls, "text_width", font_text_width, MRB_ARGS_REQ(1));
-	mrb_define_method(mrb, cls, "dispose", font_dispose, MRB_ARGS_NONE());
-	mrb_define_method(mrb, cls, "disposed?", font_disposed, MRB_ARGS_NONE());
+	mrb_define_method(mrb, cls, "initialize", MRUBY_GUARD(font_initialize), MRB_ARGS_REQ(4));
+	mrb_define_method(mrb, cls, "update", MRUBY_GUARD(font_update), MRB_ARGS_REQ(1));
+	mrb_define_method(mrb, cls, "draw", MRUBY_GUARD(font_draw), MRB_ARGS_NONE());
+	mrb_define_method(mrb, cls, "text=", MRUBY_GUARD(font_set_text), MRB_ARGS_REQ(1));
+	mrb_define_method(mrb, cls, "set_position", MRUBY_GUARD(font_set_position), MRB_ARGS_REQ(2));
+	mrb_define_method(mrb, cls, "set_text_color", MRUBY_GUARD(font_set_text_color), MRB_ARGS_REQ(3));
+	mrb_define_method(mrb, cls, "opacity=", MRUBY_GUARD(font_set_opacity), MRB_ARGS_REQ(1));
+	mrb_define_method(mrb, cls, "angle=", MRUBY_GUARD(font_set_angle), MRB_ARGS_REQ(1));
+	mrb_define_method(mrb, cls, "text_width", MRUBY_GUARD(font_text_width), MRB_ARGS_REQ(1));
+	mrb_define_method(mrb, cls, "dispose", MRUBY_GUARD(font_dispose), MRB_ARGS_NONE());
+	mrb_define_method(mrb, cls, "disposed?", MRUBY_GUARD(font_disposed), MRB_ARGS_NONE());
 }
 
 #endif // INITIAL2D_HAS_MRUBY

@@ -10,6 +10,7 @@
 #endif
 
 #include "App.h"
+#include "ExceptionText.h"
 #include "platform/Env.h"
 
 #include <cstdio>
@@ -283,10 +284,22 @@ bool Script_Restart()
 		~RestartScope() { s_restarting = false; }
 	} scope;
 
-	Script_Destroy();
-	// 내린 VM 의 실패(이전 오류, destroy 훅의 오류)는 새 VM 의 성패와 상관없다
-	s_failed = false;
-	Script_Init();
+	try
+	{
+		Script_Destroy();
+		// 내린 VM 의 실패(이전 오류, destroy 훅의 오류)는 새 VM 의 성패와 상관없다
+		s_failed = false;
+		Script_Init();
+	}
+	catch (...)
+	{
+		// 바인딩 밖의 엔진 코드가 던진 C++ 예외. VM 의 상태를 믿을 수 없으므로 닫지 않고 버린다.
+		// 스크립트 오류와 같이 스크립트만 멈추고(Update, Render, Destroy 를 건너뛴다) 다음 재시작을 기다린다.
+		std::fprintf(stderr, "script restart failed: %s\n", Initial2D::CurrentExceptionText().c_str());
+		std::fflush(stderr);
+		s_initialized = false;
+		s_failed = true;
+	}
 	return !s_failed;
 }
 

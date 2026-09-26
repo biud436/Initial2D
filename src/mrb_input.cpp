@@ -191,26 +191,26 @@ namespace
 void MRuby_DefineInput(mrb_state* mrb)
 {
 	struct RClass* input = mrb_define_module(mrb, "Input");
-	mrb_define_module_function(mrb, input, "key_down?", input_key_down, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, input, "key_up?", input_key_up, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, input, "key_press?", input_key_press, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, input, "any_key_down?", input_any_key_down, MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, input, "key_down?", MRUBY_GUARD(input_key_down), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, input, "key_up?", MRUBY_GUARD(input_key_up), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, input, "key_press?", MRUBY_GUARD(input_key_press), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, input, "any_key_down?", MRUBY_GUARD(input_any_key_down), MRB_ARGS_NONE());
 	// RGSS 식 별명. 눌린 순간 / 눌린 채 / 뗀 순간
-	mrb_define_module_function(mrb, input, "trigger?", input_key_down, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, input, "press?", input_key_press, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, input, "release?", input_key_up, MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, input, "trigger?", MRUBY_GUARD(input_key_down), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, input, "press?", MRUBY_GUARD(input_key_press), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, input, "release?", MRUBY_GUARD(input_key_up), MRB_ARGS_REQ(1));
 
-	mrb_define_module_function(mrb, input, "mouse_x", input_mouse_x, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, input, "mouse_y", input_mouse_y, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, input, "mouse_down?", input_mouse_down, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, input, "mouse_up?", input_mouse_up, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, input, "mouse_press?", input_mouse_press, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, input, "any_mouse_down?", input_any_mouse_down, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, input, "mouse_z", input_mouse_z, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, input, "mouse_z=", input_set_mouse_z, MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, input, "mouse_x", MRUBY_GUARD(input_mouse_x), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, input, "mouse_y", MRUBY_GUARD(input_mouse_y), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, input, "mouse_down?", MRUBY_GUARD(input_mouse_down), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, input, "mouse_up?", MRUBY_GUARD(input_mouse_up), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, input, "mouse_press?", MRUBY_GUARD(input_mouse_press), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, input, "any_mouse_down?", MRUBY_GUARD(input_any_mouse_down), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, input, "mouse_z", MRUBY_GUARD(input_mouse_z), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, input, "mouse_z=", MRUBY_GUARD(input_set_mouse_z), MRB_ARGS_REQ(1));
 
-	mrb_define_module_function(mrb, input, "touch_count", input_touch_count, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, input, "touch", input_touch, MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, input, "touch_count", MRUBY_GUARD(input_touch_count), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, input, "touch", MRUBY_GUARD(input_touch), MRB_ARGS_REQ(1));
 }
 
 #endif // INITIAL2D_HAS_MRUBY

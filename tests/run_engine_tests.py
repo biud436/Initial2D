@@ -365,6 +365,33 @@ HMR_CASES = {
         "def destroy; puts \"hmr:fixed:destroy\"; end\n",
         r"mruby: uncaught exception in scripts/ruby/main\.rb",
     ),
+    # 고장 난 파일의 init 이 C++ 예외를 던지는 바인딩을 부른다 (타입이 틀린 맵의 Tilemap.new).
+    # 바인딩 경계에서 Ruby 예외가 되어 스크립트 오류와 같게 끝나야 한다.
+    "mruby_cpp": (
+        os.path.join("scripts", "ruby", "main.rb"),
+        "def init; puts \"hmr:good:init\"; end\n"
+        "def update(elapsed); end\n"
+        "def render; end\n"
+        "def destroy; puts \"hmr:good:destroy\"; end\n",
+        "def init; Tilemap.new(\"maps/bad.json\"); puts \"hmr:broken:after\"; end\n"
+        "def update(elapsed); puts \"hmr:broken:update\"; end\n"
+        "def render; end\n"
+        "def destroy; puts \"hmr:broken:destroy\"; end\n",
+        "$n = 0\n"
+        "def init; puts \"hmr:fixed:init\"; end\n"
+        "def update(elapsed)\n"
+        "  $n += 1\n"
+        "  if $n == 10 then puts \"hmr:fixed:tick\"; System.exit; end\n"
+        "end\n"
+        "def render; end\n"
+        "def destroy; puts \"hmr:fixed:destroy\"; end\n",
+        r"scripts/ruby/main\.rb:1:in initialize: Json::LogicError: Value is not convertible to Int\. \(RuntimeError\)",
+    ),
+}
+
+# 언어 말고 더 까는 파일 (경로 -> 내용)
+HMR_EXTRA_FILES = {
+    "mruby_cpp": {os.path.join("maps", "bad.json"): "{\"version\": \"x\", \"width\": 1}\n"},
 }
 
 
@@ -378,6 +405,10 @@ def run_hot_reload_error(lang):
     os.makedirs(os.path.join(work, os.path.dirname(entry)))
     with open(os.path.join(work, entry), "w", encoding="utf-8") as fp:
         fp.write(good)
+    for rel, text in HMR_EXTRA_FILES.get(lang, {}).items():
+        os.makedirs(os.path.join(work, os.path.dirname(rel)), exist_ok=True)
+        with open(os.path.join(work, rel), "w", encoding="utf-8") as fp:
+            fp.write(text)
     sources = {}
     for name, text in (("broken", broken), ("fixed", fixed)):
         sources[name] = os.path.join(work, f"push_{name}")
@@ -422,6 +453,8 @@ def run_hot_reload_error(lang):
         check(f"[{lang}] 이전 VM 의 destroy 훅이 불린다", "hmr:good:destroy" in lines, " / ".join(lines[-5:]))
         time.sleep(0.5)
         check(f"[{lang}] 고장 난 파일 뒤에도 게임은 돈다", proc.poll() is None, f"rc={proc.poll()}")
+        check(f"[{lang}] 고장 난 파일 뒤에는 스크립트가 멈춘다 (update 없음)",
+              not any(l.startswith("hmr:broken:") for l in lines), " / ".join(lines[-5:]))
 
         push("127.0.0.1", HMR_PORT, [(entry.replace(os.sep, "/"), sources["fixed"])])
         check(f"[{lang}] 고친 파일: 리로드 성공 줄", wait_for(r"HotReload: reloaded with 1 files"), " / ".join(lines[-5:]))
@@ -450,8 +483,93 @@ def test_hot_reload_error():
     run_hot_reload_error("lua")
     if HAS_MRUBY:
         run_hot_reload_error("mruby")
+        run_hot_reload_error("mruby_cpp")
     else:
         print("  SKIP (mruby): 이 빌드에는 mruby 가 없습니다")
+
+
+MRUBY_DEFINE_RE = re.compile(r"mrb_define_(?:method|module_function|class_method|singleton_method)\s*\(([^;]*)\)\s*;")
+
+
+def test_mruby_binding_guard():
+    """mruby 바인딩을 등록하는 mrb_define_* 가 전부 MRUBY_GUARD(함수) 를 넘기는가 (src/mrb_*.cpp).
+    MRUBY_GUARD 가 C++ 예외를 Ruby 예외로 바꾼다. 빠진 바인딩이 C++ 예외를 던지면 VM 의 C 프레임을
+    지나가며 네이티브는 abort 하고, 브라우저는 반쯤 풀린 VM 을 계속 쓴다 (mrb_prot.h)."""
+    print("\n[0g] mruby_binding_guard: 모든 mruby 바인딩이 C++ 예외를 Ruby 예외로 바꾸는 래퍼를 거친다")
+    src = os.path.join(REPO, "src")
+    total = 0
+    unguarded = []
+    for name in sorted(os.listdir(src)):
+        if not (name.startswith("mrb_") and name.endswith(".cpp")):
+            continue
+        with open(os.path.join(src, name), encoding="utf-8") as fp:
+            text = fp.read()
+        for m in MRUBY_DEFINE_RE.finditer(text):
+            total += 1
+            if "MRUBY_GUARD(" not in m.group(1):
+                line = text.count("\n", 0, m.start()) + 1
+                unguarded.append(f"{name}:{line}")
+    check("mrb_define_* 호출을 찾았다", total > 50, f"{total}개")
+    check("전부 MRUBY_GUARD 를 거친다", not unguarded, ", ".join(unguarded[:10]))
+
+
+MRUBY_CPP_EXCEPTION_SCENE = """\
+$n = 0
+def init
+  begin
+    Tilemap.new("maps/bad.json")
+    puts "cpp:not raised"
+  rescue => e
+    puts "cpp:rescued #{e.class}: #{e.message}"
+  end
+  puts "cpp:load #{Tilemap.load("maps/bad.json").inspect}"
+end
+def update(elapsed)
+  $n += 1
+  Tilemap.new("maps/bad.json") if $n == 3
+end
+def render; end
+def destroy; puts "cpp:destroy"; end
+"""
+
+
+def test_mruby_cpp_exception():
+    """바인딩 안에서 난 C++ 예외(타입이 틀린 맵의 Json::LogicError)가 바인딩 경계에서 Ruby 의 RuntimeError 가 된다.
+    rescue 로 잡히고 Tilemap.load 는 nil 이다. 잡지 않으면 스크립트 오류와 같은 줄 묶음과 종료 코드 1 이다
+    (abort 가 아니다). 브라우저도 같다 (tools/web_smoke.mjs 15)."""
+    print("\n[1c] mruby_cpp_exception: 바인딩의 C++ 예외는 Ruby 예외가 된다 (rescue, 잡히지 않으면 종료 코드 1)")
+    if not HAS_MRUBY:
+        print("  SKIP: 이 빌드에는 mruby 가 없습니다")
+        return
+    work = tempfile.mkdtemp(prefix="initial2d-cppexc-")
+    try:
+        os.makedirs(os.path.join(work, "scripts", "ruby"))
+        os.makedirs(os.path.join(work, "maps"))
+        with open(os.path.join(work, "scripts", "ruby", "main.rb"), "w", encoding="utf-8") as fp:
+            fp.write(MRUBY_CPP_EXCEPTION_SCENE)
+        with open(os.path.join(work, "maps", "bad.json"), "w", encoding="utf-8") as fp:
+            fp.write('{"version": "x", "width": 1}\n')
+        env = dict(os.environ)
+        env["INITIAL2D_EXIT_AFTER"] = "60"
+        result = subprocess.run([GAME], cwd=work, env=env, capture_output=True, text=True, timeout=60)
+        log = result.stdout + result.stderr
+        check("rescue 가 RuntimeError 로 잡는다 (타입: 메시지)",
+              "cpp:rescued RuntimeError: Json::LogicError: Value is not convertible to Int." in log, log[-400:])
+        check("Tilemap.load 는 nil", "cpp:load nil" in log, log[-400:])
+        err = result.stderr.splitlines()
+        block = [
+            "mruby: uncaught exception in update",
+            "trace (most recent call last):",
+            "\t[2] scripts/ruby/main.rb:16",
+            "\t[1] scripts/ruby/main.rb:13:in update",
+            "scripts/ruby/main.rb:13:in initialize: Json::LogicError: Value is not convertible to Int. (RuntimeError)",
+        ]
+        found = any(err[i:i + len(block)] == block for i in range(len(err)))
+        check("잡히지 않으면 스크립트 오류와 같은 줄 묶음", found, " / ".join(err[-6:]))
+        check("종료 코드 1 (abort 가 아니다)", result.returncode == 1, f"rc={result.returncode}")
+        check("오류 뒤 destroy 훅은 불리지 않는다", "cpp:destroy" not in log, log[-300:])
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
 
 
 def check_flappy_run(work, result, shots, keep_as):
@@ -1432,6 +1550,8 @@ def main():
         test_mruby_assert_scene,
         test_mruby_flappy_scene,
         test_lua_error_scene,
+        test_mruby_binding_guard,
+        test_mruby_cpp_exception,
         test_hot_reload_error,
         test_scene_flappy_lua,
         test_scene_flappy_mruby,

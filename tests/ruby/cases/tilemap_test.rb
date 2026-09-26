@@ -83,9 +83,22 @@ T.run_case("tilemap") do |t|
   File.open("./tilemap_bad_ver.json", "w") { |f| f.write(text.sub('"version": 1', '"version": 99')) }
   t.check_eq(Tilemap.load("./tilemap_bad_ver.json"), nil, "지원하지 않는 버전은 nil")
 
+  # 타입이 틀린 값은 jsoncpp 가 C++ 예외(Json::LogicError)를 던진다. 바인딩 경계(MRUBY_GUARD)에서
+  # RuntimeError 가 되어 rescue 로 잡히고, 메시지는 "타입: 메시지" 다
+  File.open("./tilemap_bad_type.json", "w") { |f| f.write(text.sub('"version": 1', '"version": "x"')) }
+  cpp = nil
+  begin
+    Tilemap.new("./tilemap_bad_type.json")
+  rescue RuntimeError => e
+    cpp = e.message
+  end
+  t.check_eq(cpp, "Json::LogicError: Value is not convertible to Int.", "C++ 예외는 RuntimeError (타입: 메시지)")
+  t.check_eq(Tilemap.load("./tilemap_bad_type.json"), nil, "C++ 예외가 난 맵도 Tilemap.load 는 nil")
+
   File.delete("./tilemap_bad_size.json")
   File.delete("./tilemap_v2.json")
   File.delete("./tilemap_bad_ver.json")
+  File.delete("./tilemap_bad_type.json")
 
   # 커밋된 샘플 맵
   sample = Tilemap.load("./resources/maps/sample.json")

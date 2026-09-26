@@ -134,18 +134,14 @@ namespace {
 			std::fclose(fp);
 		}
 
-		try {
-			// 브라우저의 initial2d_reload() 와 같은 길 (ScriptRuntime.h). 스크립트 오류면 메시지는
-			// 이미 stderr 에 나갔고, 게임은 스크립트만 멈춘 채 다음 번들을 기다린다.
-			if (Script_Restart()) {
-				SDL_Log("HotReload: reloaded with %d files", static_cast<int>(bundle.size()));
-			} else {
-				SDL_Log("HotReload: reload failed with %d files (script error), scripts stopped until the next reload",
-					static_cast<int>(bundle.size()));
-			}
-		}
-		catch (...) {
-			SDL_Log("HotReload: reload failed — restart the app");
+		// 브라우저의 initial2d_reload() 와 같은 길 (ScriptRuntime.h). 스크립트 오류면 메시지는
+		// 이미 stderr 에 나갔고, 게임은 스크립트만 멈춘 채 다음 번들을 기다린다.
+		// Script_Restart 는 C++ 예외도 안에서 받아 스크립트를 멈추고 false 를 돌려준다.
+		if (Script_Restart()) {
+			SDL_Log("HotReload: reloaded with %d files", static_cast<int>(bundle.size()));
+		} else {
+			SDL_Log("HotReload: reload failed with %d files (script error), scripts stopped until the next reload",
+				static_cast<int>(bundle.size()));
 		}
 	}
 #endif

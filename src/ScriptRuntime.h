@@ -49,6 +49,8 @@ int Script_Destroy();
  * 시작 때와 같은 형식("Lua error in ...")으로 이미 stderr 에 나갔다. 이때 게임은 끝나지 않고
  * 스크립트만 멈춘다 (Update 와 Render 를 건너뛴다). 다음 재시작이 성공하면 다시 돈다.
  * 시작 때의 오류와 Update, Render 의 오류는 전처럼 게임을 끝낸다 (종료 코드 1).
+ * 재시작 중에 바인딩 밖의 엔진 코드가 C++ 예외를 던지면 "script restart failed: 타입: 메시지" 를 적고
+ * 스크립트 오류와 같이 false 를 돌려준다 (스크립트는 멈춘다).
  */
 bool Script_Restart();
 

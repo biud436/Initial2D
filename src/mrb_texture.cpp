@@ -42,9 +42,9 @@ namespace
 void MRuby_DefineTextureManager(mrb_state* mrb)
 {
 	struct RClass* tm = mrb_define_module(mrb, "TextureManager");
-	mrb_define_module_function(mrb, tm, "load", tm_load, MRB_ARGS_REQ(2));
-	mrb_define_module_function(mrb, tm, "remove", tm_remove, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, tm, "valid?", tm_valid, MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, tm, "load", MRUBY_GUARD(tm_load), MRB_ARGS_REQ(2));
+	mrb_define_module_function(mrb, tm, "remove", MRUBY_GUARD(tm_remove), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, tm, "valid?", MRUBY_GUARD(tm_valid), MRB_ARGS_REQ(1));
 }
 
 #endif // INITIAL2D_HAS_MRUBY
