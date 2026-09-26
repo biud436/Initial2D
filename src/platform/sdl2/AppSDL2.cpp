@@ -33,7 +33,16 @@
 #include <sys/stat.h>
 
 #include "../Utf8.h"
+#include "../Env.h"
+
+#ifdef __EMSCRIPTEN__
+// 브라우저에는 블로킹 루프도 소켓도 없다. 루프는 WebMain 이 requestAnimationFrame 에 걸고,
+// 핫 리로드는 TCP 대신 JS export initial2d_reload() 가 맡는다 (R3, docs/plans/r3-emscripten.md).
+#include <emscripten.h>
+#include "../emscripten/WebMain.h"
+#else
 #include "../HotReloadServer.h"
+#endif
 
 #include "json/json.h"
 
@@ -47,6 +56,9 @@
  * renderScale은 픽셀 확대 배율이다 (기본 1). 창 크기는 그대로 두고 논리
  * 해상도만 1/배율로 줄여 화면 전체를 크게 그린다. 스크립트에서 씬마다
  * SetRenderScale로 바꿀 수도 있다 (INITIAL2D_SCALE 환경 변수는 초기값).
+ *
+ * 환경 변수는 Platform::GetEnv 로 읽는다. 브라우저에서는 로더가 넘긴 Module.initial2dEnv 가
+ * 같은 이름으로 그 자리를 채운다 (platform/Env.h).
  */
 void App::LoadDisplaySettings()
 {
@@ -71,7 +83,7 @@ void App::LoadDisplaySettings()
 		}
 	}
 
-	const char* env = SDL_getenv("INITIAL2D_WINDOW");
+	const char* env = Initial2D::Platform::GetEnv("INITIAL2D_WINDOW");
 	if (env != nullptr)
 	{
 		int w = 0, h = 0;
@@ -82,7 +94,7 @@ void App::LoadDisplaySettings()
 		}
 	}
 
-	const char* scaleEnv = SDL_getenv("INITIAL2D_SCALE");
+	const char* scaleEnv = Initial2D::Platform::GetEnv("INITIAL2D_SCALE");
 	if (scaleEnv != nullptr)
 	{
 		int s = 0;
@@ -98,6 +110,7 @@ void App::LoadDisplaySettings()
 
 namespace {
 
+#ifndef __EMSCRIPTEN__
 	// 수신된 스크립트 번들(Lua 또는 mruby)을 cwd에 기록하고 스크립트 VM을 재시작한다.
 	// (docs/porting/android-hmr-plan.md — 이슈 #16)
 	void ApplyHotReload(const std::vector<Initial2D::Platform::HotReloadFile>& bundle)
@@ -122,20 +135,41 @@ namespace {
 		}
 
 		try {
-			Script_Destroy();
-			Script_Init();
+			// 브라우저의 initial2d_reload() 와 같은 길 (ScriptRuntime.h)
+			Script_Restart();
 			SDL_Log("HotReload: reloaded with %d files", static_cast<int>(bundle.size()));
 		}
 		catch (...) {
 			SDL_Log("HotReload: reload failed — restart the app");
 		}
 	}
+#endif
+
+	// 게임 루프의 상태. Run 이 초기화하고 StepFrame 이 한 바퀴마다 갱신한다.
+	// (네이티브의 while 과 브라우저의 requestAnimationFrame 이 같은 함수를 부르기 위해
+	//  지역 변수였던 것을 여기로 옮겼다. Run 은 프로세스에 한 번이다)
+	struct LoopState {
+		bool done = false;
+		int lag = 0;
+		std::chrono::time_point<std::chrono::steady_clock> endTime;
+		long tickCount = 0;
+		long fpsElapsedTime = 0;
+		long frameCount = 0;
+	};
+
+	LoopState g_loop;
 
 } // namespace
 
 int App::Run(int nCmdShow)
 {
 	(void)nCmdShow;
+
+#ifdef __EMSCRIPTEN__
+	// 키보드 이벤트를 window 가 아니라 canvas 에서 받는다. canvas 가 포커스를 가진 동안만
+	// 키가 게임으로 오고, 에디터의 편집기로 가면 놓는다 (로더가 canvas 에 tabindex 를 준다).
+	SDL_SetHint(SDL_HINT_EMSCRIPTEN_KEYBOARD_ELEMENT, "#canvas");
+#endif
 
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_EVENTS) != 0) {
 		std::fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
@@ -209,6 +243,7 @@ int App::Run(int nCmdShow)
 	if (m_context.renderer == nullptr) {
 		// 헤드리스 환경(SDL_VIDEODRIVER=dummy 등)에는 가속 드라이버가 없다.
 		// CI에서 테스트를 돌리기 위한 최후 폴백 (docs/plans/09-testing.md 3.2절).
+		// 브라우저에서는 WebGL 이 없을 때(헤드리스 크로미움 등) 여기로 온다.
 		m_context.renderer = SDL_CreateRenderer(m_context.window, -1, SDL_RENDERER_SOFTWARE);
 	}
 
@@ -218,6 +253,19 @@ int App::Run(int nCmdShow)
 		SDL_Quit();
 		return -1;
 	}
+
+#ifdef __EMSCRIPTEN__
+	{
+		// 어느 렌더러가 잡혔는지(opengles2 = WebGL, software = canvas 2D)를 콘솔에 남긴다.
+		// 검수(tools/web_smoke.mjs)가 이 줄을 시작 신호로 기다린다.
+		SDL_RendererInfo info;
+		SDL_zero(info);
+		SDL_GetRendererInfo(m_context.renderer, &info);
+		SDL_Log("Initial2D web: renderer=%s window=%dx%d scale=%d features=%s",
+			info.name ? info.name : "?", GetBaseWidth(), GetBaseHeight(), GetRenderScale(),
+			Script_Features().c_str());
+	}
+#endif
 
 	SDL_RenderSetLogicalSize(m_context.renderer, GetWindowWidth(), GetWindowHeight());
 
@@ -231,163 +279,190 @@ int App::Run(int nCmdShow)
 
 	Initialize();
 
+#ifndef __EMSCRIPTEN__
 	// 핫 리로드 서버 — Android 디버그 빌드는 상시(개발용), 데스크톱은 환경변수
 	// 옵트인. 릴리즈 빌드(NDEBUG)에는 개발 서버를 열지 않는다.
 #if defined(__ANDROID__) && !defined(NDEBUG)
 	const bool hmrEnabled = true;
 #else
-	const bool hmrEnabled = SDL_getenv("INITIAL2D_HMR") != nullptr;
+	const bool hmrEnabled = Initial2D::Platform::GetEnv("INITIAL2D_HMR") != nullptr;
 #endif
 	if (hmrEnabled) {
 		if (Initial2D::Platform::HotReloadServer::Start(5959)) {
 			SDL_Log("HotReload: listening on 127.0.0.1:5959 (tools/hmr_push.py)");
 		}
 	}
+#endif
 
-	bool done = false;
-
-	int lag = 0;
-	std::chrono::time_point<std::chrono::steady_clock> endTime = std::chrono::steady_clock::now();
-
+	g_loop = LoopState();
+	g_loop.endTime = std::chrono::steady_clock::now();
 	m_nFPS = 0;
-	long tickCount = 0;
-	long fpsElapsedTime = 0;
 
+#ifdef __EMSCRIPTEN__
+	// 브라우저: 루프를 requestAnimationFrame 에 걸고 바로 돌아온다. main 이 끝나도
+	// 런타임은 살아 있고(EXIT_RUNTIME=0), 종료는 initial2d_quit() 이나 SDL_QUIT 이 낸다.
+	Initial2D::Platform::Web::StartMainLoop(this);
+	return 0;
+#else
 	// Win32 Run()과 동일한 구조의 게임 루프 (C++11 chrono)
-	while (!done)
+	while (StepFrame()) {
+	}
+
+	Teardown();
+	return 0;
+#endif
+}
+
+bool App::StepFrame()
+{
+	std::chrono::time_point<std::chrono::steady_clock> startTime = std::chrono::steady_clock::now();
+	std::chrono::milliseconds elapsedTime(std::chrono::duration_cast<std::chrono::milliseconds>(startTime - g_loop.endTime));
+	g_loop.endTime = startTime;
+
+	// macOS에서는 창 생성 직후 첫 Present가 수백 ms~수 초 지연될 수 있어
+	// 원본 루프 구조(ObjectUpdate에 프레임 elapsed를 그대로 전달)와 결합하면
+	// 게임 오브젝트가 순간이동한다. 엔진 자체 상수 MAX_FRAME_TIME(0.1s)으로 클램프한다.
+	// (Win32/GDI 경로는 무수정 — 이 보정은 SDL2 어댑터에만 존재)
+	// 브라우저에서는 탭이 가려져 있던 동안(requestAnimationFrame 정지)도 같은 클램프가 받는다.
+	const long long maxFrameMs = static_cast<long long>(MAX_FRAME_TIME * 1000.0);
+	if (elapsedTime.count() > maxFrameMs) {
+		elapsedTime = std::chrono::milliseconds(maxFrameMs);
+	}
+
+	g_loop.lag += static_cast<int>(elapsedTime.count());
+
+	if (Initial2D::Platform::GetEnv("INITIAL2D_DEBUG_DRAW") != nullptr) {
+		std::fprintf(stderr, "frame elapsed=%lldms lag=%d\n",
+			static_cast<long long>(elapsedTime.count()), g_loop.lag);
+	}
+
+#ifndef __EMSCRIPTEN__
+	// 브라우저에서는 SDL_Delay 가 바쁜 대기(busy wait)라 쓰지 않는다. 프레임 간격은
+	// requestAnimationFrame 이 정한다.
+	if (elapsedTime.count() == 0)
 	{
-		std::chrono::time_point<std::chrono::steady_clock> startTime = std::chrono::steady_clock::now();
-		std::chrono::milliseconds elapsedTime(std::chrono::duration_cast<std::chrono::milliseconds>(startTime - endTime));
-		endTime = startTime;
+		SDL_Delay(5);
+	}
+#endif
+	const int fps = 60;
+	const int lengthOfFrame = 1000 / fps;
 
-		// macOS에서는 창 생성 직후 첫 Present가 수백 ms~수 초 지연될 수 있어
-		// 원본 루프 구조(ObjectUpdate에 프레임 elapsed를 그대로 전달)와 결합하면
-		// 게임 오브젝트가 순간이동한다. 엔진 자체 상수 MAX_FRAME_TIME(0.1s)으로 클램프한다.
-		// (Win32/GDI 경로는 무수정 — 이 보정은 SDL2 어댑터에만 존재)
-		const long long maxFrameMs = static_cast<long long>(MAX_FRAME_TIME * 1000.0);
-		if (elapsedTime.count() > maxFrameMs) {
-			elapsedTime = std::chrono::milliseconds(maxFrameMs);
+	SDL_Event event;
+	while (SDL_PollEvent(&event))
+	{
+		if (event.type == SDL_QUIT) {
+			g_loop.done = true;
 		}
+		HandleEvent(event);
+	}
 
-		lag += static_cast<int>(elapsedTime.count());
-
-		if (SDL_getenv("INITIAL2D_DEBUG_DRAW") != nullptr) {
-			std::fprintf(stderr, "frame elapsed=%lldms lag=%d\n",
-				static_cast<long long>(elapsedTime.count()), lag);
+#ifndef __EMSCRIPTEN__
+	// 수신된 Lua 번들이 있으면 프레임 사이에서 반영한다
+	{
+		std::vector<Initial2D::Platform::HotReloadFile> bundle;
+		if (Initial2D::Platform::HotReloadServer::TakeBundle(bundle)) {
+			ApplyHotReload(bundle);
 		}
+	}
+#endif
 
-		if (elapsedTime.count() == 0)
-		{
-			SDL_Delay(5);
-		}
-		const int fps = 60;
-		const int lengthOfFrame = 1000 / fps;
+	while (g_loop.lag >= lengthOfFrame)
+	{
+		UpdateInput();
+		// 고정 스텝에는 고정 delta를 전달한다. 프레임 elapsed를 그대로 넘기면
+		// 120Hz 디스플레이(모바일 등)에서 elapsed≈8ms가 60Hz 게이트와 결합해
+		// 게임이 절반 속도로 진행된다. 60Hz에서는 elapsed≈16ms라 기존과 동일.
+		ObjectUpdate(lengthOfFrame);
+		g_loop.lag -= lengthOfFrame;
 
-		SDL_Event event;
-		while (SDL_PollEvent(&event))
-		{
-			if (event.type == SDL_QUIT) {
-				done = true;
+		g_loop.tickCount++;
+		m_elapsed = 1.0 / elapsedTime.count();
+	}
+
+	RenderClear();
+	RenderTransform();
+	Render();
+
+	// 검증/CI용 프레임 덤프 — INITIAL2D_SCREENSHOT=<path.bmp>가 설정되면
+	// 120번째 프레임을 BMP로 저장한다. INITIAL2D_EXIT_AFTER=<n>이 설정되면
+	// n 프레임 후 자동 종료한다. 둘 다 없으면 아무 영향이 없다.
+	{
+		g_loop.frameCount++;
+		const long s_frameCount = g_loop.frameCount;
+
+		// INITIAL2D_SCREENSHOT_FRAME은 쉼표로 구분된 프레임 목록을 지원한다 (예: "12,35,60").
+		// 여러 프레임을 지정할 때 경로에 %ld를 넣으면 프레임 번호로 치환된다.
+		const char* shotPath = Initial2D::Platform::GetEnv("INITIAL2D_SCREENSHOT");
+		if (shotPath != nullptr) {
+			const char* shotFrame = Initial2D::Platform::GetEnv("INITIAL2D_SCREENSHOT_FRAME");
+			bool hit = false;
+			if (shotFrame == nullptr) {
+				hit = (s_frameCount == 120);
+			} else {
+				const char* p = shotFrame;
+				while (*p != '\0') {
+					if (SDL_atoi(p) == s_frameCount) { hit = true; break; }
+					while (*p != '\0' && *p != ',') { ++p; }
+					if (*p == ',') { ++p; }
+				}
 			}
-			HandleEvent(event);
-		}
 
-		// 수신된 Lua 번들이 있으면 프레임 사이에서 반영한다
-		{
-			std::vector<Initial2D::Platform::HotReloadFile> bundle;
-			if (Initial2D::Platform::HotReloadServer::TakeBundle(bundle)) {
-				ApplyHotReload(bundle);
-			}
-		}
-
-		while (lag >= lengthOfFrame)
-		{
-			UpdateInput();
-			// 고정 스텝에는 고정 delta를 전달한다. 프레임 elapsed를 그대로 넘기면
-			// 120Hz 디스플레이(모바일 등)에서 elapsed≈8ms가 60Hz 게이트와 결합해
-			// 게임이 절반 속도로 진행된다. 60Hz에서는 elapsed≈16ms라 기존과 동일.
-			ObjectUpdate(lengthOfFrame);
-			lag -= lengthOfFrame;
-
-			tickCount++;
-			m_elapsed = 1.0 / elapsedTime.count();
-		}
-
-		RenderClear();
-		RenderTransform();
-		Render();
-
-		// 검증/CI용 프레임 덤프 — INITIAL2D_SCREENSHOT=<path.bmp>가 설정되면
-		// 120번째 프레임을 BMP로 저장한다. INITIAL2D_EXIT_AFTER=<n>이 설정되면
-		// n 프레임 후 자동 종료한다. 둘 다 없으면 아무 영향이 없다.
-		{
-			static long s_frameCount = 0;
-			s_frameCount++;
-
-			// INITIAL2D_SCREENSHOT_FRAME은 쉼표로 구분된 프레임 목록을 지원한다 (예: "12,35,60").
-			// 여러 프레임을 지정할 때 경로에 %ld를 넣으면 프레임 번호로 치환된다.
-			const char* shotPath = SDL_getenv("INITIAL2D_SCREENSHOT");
-			if (shotPath != nullptr) {
-				const char* shotFrame = SDL_getenv("INITIAL2D_SCREENSHOT_FRAME");
-				bool hit = false;
-				if (shotFrame == nullptr) {
-					hit = (s_frameCount == 120);
+			if (hit) {
+				char pathBuffer[1024];
+				if (SDL_strchr(shotPath, '%') != nullptr) {
+					SDL_snprintf(pathBuffer, sizeof(pathBuffer), shotPath, s_frameCount);
 				} else {
-					const char* p = shotFrame;
-					while (*p != '\0') {
-						if (SDL_atoi(p) == s_frameCount) { hit = true; break; }
-						while (*p != '\0' && *p != ',') { ++p; }
-						if (*p == ',') { ++p; }
-					}
+					SDL_strlcpy(pathBuffer, shotPath, sizeof(pathBuffer));
 				}
 
-				if (hit) {
-					char pathBuffer[1024];
-					if (SDL_strchr(shotPath, '%') != nullptr) {
-						SDL_snprintf(pathBuffer, sizeof(pathBuffer), shotPath, s_frameCount);
-					} else {
-						SDL_strlcpy(pathBuffer, shotPath, sizeof(pathBuffer));
+				int w = 0, h = 0;
+				SDL_GetRendererOutputSize(m_context.renderer, &w, &h);
+				SDL_Surface* shot = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, SDL_PIXELFORMAT_RGBA32);
+				if (shot != nullptr) {
+					if (SDL_RenderReadPixels(m_context.renderer, nullptr,
+							SDL_PIXELFORMAT_RGBA32, shot->pixels, shot->pitch) == 0) {
+						SDL_SaveBMP(shot, pathBuffer);
 					}
-
-					int w = 0, h = 0;
-					SDL_GetRendererOutputSize(m_context.renderer, &w, &h);
-					SDL_Surface* shot = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, SDL_PIXELFORMAT_RGBA32);
-					if (shot != nullptr) {
-						if (SDL_RenderReadPixels(m_context.renderer, nullptr,
-								SDL_PIXELFORMAT_RGBA32, shot->pixels, shot->pitch) == 0) {
-							SDL_SaveBMP(shot, pathBuffer);
-						}
-						SDL_FreeSurface(shot);
-					}
+					SDL_FreeSurface(shot);
 				}
-			}
-
-			const char* exitAfter = SDL_getenv("INITIAL2D_EXIT_AFTER");
-			if (exitAfter != nullptr && s_frameCount >= SDL_atoi(exitAfter)) {
-				done = true;
 			}
 		}
 
-		RenderPresent();
-		m_nFPS++;
-
-		fpsElapsedTime += static_cast<long>(elapsedTime.count());
-
-		if (fpsElapsedTime >= 1000)
-		{
-			std::stringstream sstr;
-			sstr << m_nFPS;
-
-			SDL_SetWindowTitle(m_context.window, sstr.str().c_str());
-
-			fpsElapsedTime = 0;
-			m_nFPS = 0;
-			m_elapsed = 0;
-			tickCount = 0;
+		const char* exitAfter = Initial2D::Platform::GetEnv("INITIAL2D_EXIT_AFTER");
+		if (exitAfter != nullptr && s_frameCount >= SDL_atoi(exitAfter)) {
+			g_loop.done = true;
 		}
 	}
 
+	RenderPresent();
+	m_nFPS++;
+
+	g_loop.fpsElapsedTime += static_cast<long>(elapsedTime.count());
+
+	if (g_loop.fpsElapsedTime >= 1000)
+	{
+#ifndef __EMSCRIPTEN__
+		// 브라우저에서 창 제목은 document.title 이라 손대지 않는다 (에디터 탭 이름이 바뀐다).
+		std::stringstream sstr;
+		sstr << m_nFPS;
+
+		SDL_SetWindowTitle(m_context.window, sstr.str().c_str());
+#endif
+
+		g_loop.fpsElapsedTime = 0;
+		m_nFPS = 0;
+		m_elapsed = 0;
+		g_loop.tickCount = 0;
+	}
+
+	return !g_loop.done;
+}
+
+void App::Teardown()
+{
+#ifndef __EMSCRIPTEN__
 	Initial2D::Platform::HotReloadServer::Stop();
+#endif
 
 	// 텍스처(SDL_Texture)는 렌더러보다 먼저 해제되어야 하므로
 	// Destroy()를 부르는 delete this 이후에 렌더러/창을 정리한다.
@@ -399,8 +474,6 @@ int App::Run(int nCmdShow)
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
-
-	return 0;
 }
 
 void App::HandleEvent(const SDL_Event& event)

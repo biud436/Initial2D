@@ -51,7 +51,7 @@ target_include_directories(vendored_tinyxml PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/e
 # ---------------------------------------------------------------------------
 option(INITIAL2D_MRUBY "Build the mruby script backend when libmruby is found" ON)
 set(INITIAL2D_HAS_MRUBY OFF)
-if(INITIAL2D_MRUBY AND NOT WIN32)
+if(INITIAL2D_MRUBY AND NOT WIN32 AND NOT EMSCRIPTEN)
   set(_mruby_hints /opt/homebrew/opt/mruby /usr/local/opt/mruby)
   find_path(MRUBY_INCLUDE_DIR mruby.h HINTS ${_mruby_hints} PATH_SUFFIXES include)
   find_library(MRUBY_LIBRARY mruby HINTS ${_mruby_hints} PATH_SUFFIXES lib)
@@ -80,12 +80,57 @@ endif()
 
 # ---------------------------------------------------------------------------
 # SDL2 (Phase 2부터 필수 — Phase 0에서는 존재 여부만 보고)
+#
+# INITIAL2D_SDL2_AUDIO: SoundManager 를 코어에 넣는가 (SDL2_mixer 가 있을 때)
+# INITIAL2D_SDL2_GAME:  게임 실행 파일을 만드는가 (SDL2, SDL2_image, SDL2_mixer 가 전부 있을 때)
 # ---------------------------------------------------------------------------
-find_package(SDL2 QUIET CONFIG)
-if(SDL2_FOUND)
-  message(STATUS "SDL2 found: ${SDL2_VERSION}")
+set(INITIAL2D_SDL2_AUDIO OFF)
+set(INITIAL2D_SDL2_GAME OFF)
+
+if(EMSCRIPTEN)
+  # R3 (docs/plans/r3-emscripten.md): 브라우저 빌드는 Homebrew 대신 Emscripten 포트를 쓴다.
+  # -sUSE_* 플래그가 컴파일 때는 헤더 경로를, 링크 때는 라이브러리를 준다 (첫 빌드에서 포트를
+  # 소스에서 컴파일한다). 이미지는 png 와 jpg, 오디오는 ogg 와 wav 만 넣는다 (리소스가 그 둘이다).
+  set(INITIAL2D_EM_PORTS
+    -sUSE_SDL=2
+    -sUSE_SDL_IMAGE=2 "-sSDL2_IMAGE_FORMATS=png,jpg"
+    -sUSE_SDL_MIXER=2 "-sSDL2_MIXER_FORMATS=ogg,wav"
+    -sUSE_OGG=1 -sUSE_VORBIS=1)
+  # 예외: vendored Lua 는 C++ 로 컴파일되어 오류를 throw 로 던지고 pcall 이 catch 한다.
+  # Emscripten 기본은 catch 를 끈 상태라 첫 Lua 오류에서 abort 하므로 wasm 네이티브 예외를 켠다.
+  add_compile_options(${INITIAL2D_EM_PORTS} -fwasm-exceptions)
+  add_link_options(${INITIAL2D_EM_PORTS} -fwasm-exceptions)
+  # 아래 코드가 쓰는 이름을 그대로 채운다. 라이브러리 경로는 비워 둔다 (포트가 링크한다).
+  add_library(SDL2::SDL2 INTERFACE IMPORTED)
+  set(SDL2_FOUND ON)
+  set(SDL2_MIXER_LIBRARY "")
+  set(SDL2_MIXER_INCLUDE_DIR "")
+  set(SDL2_IMAGE_LIBRARY "")
+  set(SDL2_IMAGE_INCLUDE_DIR "")
+  set(INITIAL2D_SDL2_AUDIO ON)
+  set(INITIAL2D_SDL2_GAME ON)
+  message(STATUS "Emscripten: SDL2, SDL2_image, SDL2_mixer, ogg, vorbis from emscripten ports")
 else()
-  message(STATUS "SDL2 not found — Phase 2 이후 단계에서 필요합니다 (brew install sdl2 sdl2_image sdl2_mixer sdl2_ttf)")
+  find_package(SDL2 QUIET CONFIG)
+  if(SDL2_FOUND)
+    message(STATUS "SDL2 found: ${SDL2_VERSION}")
+  else()
+    message(STATUS "SDL2 not found — Phase 2 이후 단계에서 필요합니다 (brew install sdl2 sdl2_image sdl2_mixer sdl2_ttf)")
+  endif()
+  if(SDL2_FOUND)
+    find_library(SDL2_MIXER_LIBRARY SDL2_mixer)
+    # Homebrew의 SDL2 CMake 타깃은 자기 keg의 include만 내보내므로
+    # 다른 keg에 설치된 SDL_mixer.h / SDL_image.h는 별도로 찾아야 한다.
+    find_path(SDL2_MIXER_INCLUDE_DIR SDL_mixer.h PATH_SUFFIXES SDL2)
+    find_library(SDL2_IMAGE_LIBRARY SDL2_image)
+    find_path(SDL2_IMAGE_INCLUDE_DIR SDL_image.h PATH_SUFFIXES SDL2)
+    if(SDL2_MIXER_LIBRARY AND SDL2_MIXER_INCLUDE_DIR)
+      set(INITIAL2D_SDL2_AUDIO ON)
+    endif()
+    if(NOT WIN32 AND SDL2_IMAGE_LIBRARY AND SDL2_MIXER_LIBRARY)
+      set(INITIAL2D_SDL2_GAME ON)
+    endif()
+  endif()
 endif()
 
 # ---------------------------------------------------------------------------
@@ -116,18 +161,14 @@ endif()
 
 # 오디오(SoundManager)는 SDL2_mixer가 있을 때만 코어에 포함
 if(SDL2_FOUND)
-  find_library(SDL2_MIXER_LIBRARY SDL2_mixer)
-  # Homebrew의 SDL2 CMake 타깃은 자기 keg의 include만 내보내므로
-  # 다른 keg에 설치된 SDL_mixer.h / SDL_image.h는 별도로 찾아야 한다.
-  find_path(SDL2_MIXER_INCLUDE_DIR SDL_mixer.h PATH_SUFFIXES SDL2)
-  find_library(SDL2_IMAGE_LIBRARY SDL2_image)
-  find_path(SDL2_IMAGE_INCLUDE_DIR SDL_image.h PATH_SUFFIXES SDL2)
-  if(SDL2_MIXER_LIBRARY AND SDL2_MIXER_INCLUDE_DIR)
+  if(INITIAL2D_SDL2_AUDIO)
     target_sources(initial2d_core PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src/SoundManager.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/src/lua_audio.cpp
     )
-    target_include_directories(initial2d_core PUBLIC ${SDL2_MIXER_INCLUDE_DIR})
+    if(SDL2_MIXER_INCLUDE_DIR)
+      target_include_directories(initial2d_core PUBLIC ${SDL2_MIXER_INCLUDE_DIR})
+    endif()
     target_link_libraries(initial2d_core PUBLIC SDL2::SDL2 ${SDL2_MIXER_LIBRARY})
     message(STATUS "SoundManager enabled (SDL2_mixer: ${SDL2_MIXER_LIBRARY})")
   else()
@@ -139,7 +180,7 @@ endif()
 # 게임 실행 파일 (SDL2 백엔드) — Phase 2~5
 # Windows의 Initial2D.vcxproj(GDI 백엔드)에 대응하는 macOS 빌드.
 # ---------------------------------------------------------------------------
-if(NOT WIN32 AND SDL2_FOUND AND SDL2_IMAGE_LIBRARY AND SDL2_MIXER_LIBRARY)
+if(INITIAL2D_SDL2_GAME)
   add_executable(Initial2D
     # 게임 로직 (플랫폼 중립 — Win32 부분은 RS_WINDOWS 가드로 제외됨)
     ${CMAKE_CURRENT_SOURCE_DIR}/src/App.cpp
@@ -172,12 +213,48 @@ if(NOT WIN32 AND SDL2_FOUND AND SDL2_IMAGE_LIBRARY AND SDL2_MIXER_LIBRARY)
     ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/sdl2/ExperimentalFontStub.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/sdl2/sdl2Main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/Utf8.cpp
-    # 개발용 Lua 핫 리로드 (INITIAL2D_HMR=1 옵트인)
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/HotReloadServer.cpp
   )
-  target_include_directories(Initial2D PRIVATE ${SDL2_IMAGE_INCLUDE_DIR})
+  if(EMSCRIPTEN)
+    # 브라우저 어댑터 (R3): 소켓이 없으므로 핫 리로드 TCP 서버 대신 JS export 가 VM 을 재시작하고,
+    # 환경 변수는 로더가 넘긴 Module.initial2dEnv 에서 읽는다.
+    target_sources(Initial2D PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/emscripten/WebMain.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/emscripten/Env.cpp
+    )
+  else()
+    # 개발용 Lua 핫 리로드 (INITIAL2D_HMR=1 옵트인)
+    target_sources(Initial2D PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/HotReloadServer.cpp)
+  endif()
+  if(SDL2_IMAGE_INCLUDE_DIR)
+    target_include_directories(Initial2D PRIVATE ${SDL2_IMAGE_INCLUDE_DIR})
+  endif()
   target_link_libraries(Initial2D PRIVATE initial2d_core vendored_tinyxml ${SDL2_IMAGE_LIBRARY})
   message(STATUS "Initial2D game executable enabled (SDL2 backend)")
+
+  if(EMSCRIPTEN)
+    # 산출물은 build-web/Initial2D.js 와 Initial2D.wasm. 페이지는 ES 모듈로 createInitial2D 를 import 한다.
+    #   MODULARIZE + EXPORT_ES6: 전역을 더럽히지 않는 팩토리 함수 하나
+    #   INVOKE_RUN=0:            로더가 파일을 MEMFS 에 올린 뒤 callMain 을 스스로 부른다
+    #   EXIT_RUNTIME=0:          main 이 돌아와도 런타임과 requestAnimationFrame 루프가 산다
+    #   FORCE_FILESYSTEM:        게임이 game.json, scripts/, resources/ 를 fopen 으로 읽는다 (MEMFS)
+    #   ALLOW_MEMORY_GROWTH:     디코딩된 PNG 와 OGG 가 wasm 메모리에 산다
+    #   ASYNCIFY 는 쓰지 않는다: 루프가 emscripten_set_main_loop 이라 블로킹 호출이 없다
+    set_target_properties(Initial2D PROPERTIES OUTPUT_NAME Initial2D SUFFIX ".js")
+    target_link_options(Initial2D PRIVATE
+      -sALLOW_MEMORY_GROWTH=1
+      -sINITIAL_MEMORY=67108864
+      -sSTACK_SIZE=2097152
+      -sMODULARIZE=1
+      -sEXPORT_ES6=1
+      -sEXPORT_NAME=createInitial2D
+      -sENVIRONMENT=web
+      "-sEXPORTED_RUNTIME_METHODS=FS,ccall,cwrap,callMain,ENV,UTF8ToString,stringToNewUTF8"
+      "-sEXPORTED_FUNCTIONS=_main,_initial2d_reload,_initial2d_quit,_initial2d_features,_malloc,_free"
+      -sFORCE_FILESYSTEM=1
+      -sEXIT_RUNTIME=0
+      -sINVOKE_RUN=0
+    )
+  endif()
 
   # mruby 바인딩 (S1). 파일 하나에 모듈이나 클래스 하나, lua_*.cpp 와 같은 배치.
   if(INITIAL2D_HAS_MRUBY)

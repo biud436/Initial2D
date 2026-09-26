@@ -1290,6 +1290,52 @@ adb logcat -s SDL/APP                    # 엔진 로그만 보기
 - 세이브 데이터 보존: 에셋 재추출 시 `db.sqlite`를 덮어쓰지 않도록 쓰기 파일 분리
 - 고 DPI 환경에서 텍스트 가독성 실기 확인
 
+## 웹 빌드 (Emscripten)
+
+같은 C++ 엔진을 WebAssembly 로 빌드해 브라우저 안에서 돌립니다. 에디터(InitialEditor)의 게임 뷰가 이것을
+canvas 에 올리고, 부산물로 정적 페이지 하나짜리 웹 데모가 생깁니다. SDL2, SDL2_image, SDL2_mixer 는 Emscripten
+포트를 쓰고, 게임 루프는 `requestAnimationFrame` 에 걸립니다 (ASYNCIFY 없음). 설계와 결정은
+[docs/plans/r3-emscripten.md](./docs/plans/r3-emscripten.md).
+
+```bash
+# emsdk (한 번만. 첫 빌드는 포트를 소스에서 컴파일하므로 몇 분 걸립니다)
+git clone https://github.com/emscripten-core/emsdk.git ~/emsdk
+cd ~/emsdk && ./emsdk install latest && ./emsdk activate latest
+
+# 빌드: build-web/Initial2D.js 와 .wasm, 그리고 build-web/site/ (페이지 + 로더 + 프로젝트 파일)
+tools/build_web.sh
+
+# 보기
+python3 -m http.server -d build-web/site 8080     # http://localhost:8080 에서 "실행"
+
+# 검수: 헤드리스 크로미움으로 타이틀까지 띄워 골든과 대조하고 키보드, reload, quit 을 확인
+node tools/web_smoke.mjs --golden tests/golden/aldebaran_title.png
+```
+
+브라우저에는 프로세스도 환경 변수도 파일 시스템도 없어서 페이지가 셋을 대신합니다. `tools/web_stage.py` 가
+`game.json`, `scripts/lua/**`, `resources/**` 를 `build-web/site/project/` 에 복사하고 목록을 `project.json` 으로
+씁니다 (`RTP.zip`, `rtp/`, `*.psd` 는 뺍니다). 페이지는 그 목록을 fetch 해 wasm 의 메모리 파일 시스템 `/project`
+에 쓰고 거기로 `chdir` 한 뒤 엔진을 시작합니다. 그래서 엔진은 네이티브와 똑같이 `./scripts/lua/main.lua` 를 엽니다.
+환경 변수 `INITIAL2D_*` 는 같은 이름의 설정 객체로 넘기며, C++ 의 `Platform::GetEnv` 와 Lua 의 `os.getenv` 가
+둘 다 그 값을 봅니다. 로더는 번들러 없는 ES 모듈 하나입니다.
+
+```js
+import { bootInitial2D } from "./initial2d-loader.js";
+const game = await bootInitial2D({
+  canvas: document.getElementById("canvas"),
+  files: { "scripts/lua/main.lua": "...", "resources/bird.png": new Uint8Array(...) },
+  env: { INITIAL2D_SCRIPT: "lua", INITIAL2D_SCENE: "flappy" },
+  print: console.log, printErr: console.error,
+});
+game.reload({ "scripts/lua/main.lua": "..." });   // 바뀐 파일만 다시 올리고 VM 재시작 (핫 리로드)
+game.quit();
+```
+
+키보드는 canvas 가 포커스를 가진 동안만 게임으로 갑니다. 소리는 브라우저 정책상 클릭 뒤에 납니다. 아직 없는 것은
+mruby(libmruby 교차 빌드가 필요합니다)와 TCP 핫 리로드(`tools/hmr_push.py` 대신 `reload()` 를 씁니다)이고,
+`INITIAL2D_SCREENSHOT` 은 메모리 파일 시스템에 쓰이므로 `game.module.FS.readFile` 로 꺼냅니다. `--features` 는
+`lua wasm` 을 찍습니다.
+
 ## 핫 리로드 (HMR)
 
 APK를 다시 빌드하거나 설치하지 않고, 수정한 `scripts/lua/*.lua`를 실행 중인 게임에 밀어 넣어 바로 반영합니다.

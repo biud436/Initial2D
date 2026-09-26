@@ -39,6 +39,7 @@
 #else
 #include <SDL.h>
 #include "platform/Utf8.h"
+#include "platform/Env.h"
 #endif
 
 #include <algorithm>
@@ -341,7 +342,7 @@ namespace
 	{
 		const char* name = nullptr;
 		mrb_get_args(mrb, "z", &name);
-		const char* value = std::getenv(name);
+		const char* value = Initial2D::Platform::GetEnv(name);
 		if (value == nullptr)
 		{
 			return mrb_nil_value();

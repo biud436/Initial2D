@@ -28,7 +28,10 @@ enum class ScriptBackend
 ScriptBackend Script_Backend();
 const char* Script_BackendName();
 
-/** 이 빌드가 실행할 수 있는 언어 목록 ("lua" 또는 "lua mruby"). `--features` 가 찍는다. */
+/**
+ * 이 빌드가 실행할 수 있는 언어 목록 ("lua" 또는 "lua mruby"). `--features` 가 찍는다.
+ * Emscripten 빌드는 "lua wasm" 이다 (mruby 는 아직 없고, 에디터가 wasm 빌드를 알아본다. R3).
+ */
 std::string Script_Features();
 bool Script_HasMRuby();
 
@@ -36,6 +39,13 @@ int Script_Init();
 int Script_Update(double elapsed);
 int Script_Render();
 int Script_Destroy();
+
+/**
+ * 스크립트 VM 을 내리고 다시 올린다 (Destroy 뒤 Init). 핫 리로드 서버가 번들을 받은 뒤와
+ * 브라우저의 initial2d_reload() 가 같은 길을 쓴다. 게임 진행 상태는 초기화된다 (풀 리스타트).
+ * 반환값은 Init 의 것이다.
+ */
+int Script_Restart();
 
 /** 스크립트 오류(예외, 없는 언어)로 게임을 끝냈는가. 프로세스 종료 코드에 쓴다. */
 bool Script_Failed();
