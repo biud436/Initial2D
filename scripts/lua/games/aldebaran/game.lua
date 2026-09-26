@@ -141,6 +141,7 @@ local stones = {}              -- 짐도둑의 돌팔매 { x, y, vx, vy }
 local bag = nil                -- 떨어진 배낭 { x, y }
 local bossClear = nil          -- 보스를 쓰러뜨린 뒤 끝나기까지 남은 초
 local startAt = nil            -- 검수용 시작 x (INITIAL2D_ALDEBARAN_AT)
+local trace = false            -- 검수용 배치 줄 (INITIAL2D_ALDEBARAN_TRACE)
 local carriedExp, carriedGold = 0, 0   -- 앞 스테이지에서 들고 온 것
 local climates = {}            -- 구간 이름 → 기후 상태 (A7)
 local climate = nil            -- 지금 구간의 기후
@@ -251,6 +252,10 @@ local function spawnMonsters()
 	monsters = {}
 	for _, s in ipairs(Stage.spawns) do
 		addMonster(s)
+		if trace then
+			print(string.format("알데바란: 몬스터 %s x %g 범위 %g..%g", tostring(s.species), s.x,
+				s.minX or s.x, s.maxX or s.x))
+		end
 	end
 end
 
@@ -638,6 +643,11 @@ function AldebaranScene.init()
 	-- 검수용: 시작 x를 옮긴다 (INITIAL2D_ALDEBARAN_AT=2200). 방마다의 기후를
 	-- 눈으로 확인하려면 그 방까지 걸어가지 않고 바로 서 볼 수 있어야 한다.
 	startAt = tonumber(env("INITIAL2D_ALDEBARAN_AT") or "")
+	-- 검수용: 읽은 맵의 타일 검사합과 몬스터 자리를 찍는다 (INITIAL2D_ALDEBARAN_TRACE=1)
+	trace = env("INITIAL2D_ALDEBARAN_TRACE") ~= nil
+	if trace then
+		print(string.format("알데바란: 맵 %s 타일 %d", Stage.map, Placement.tileChecksum(Stage.map)))
+	end
 
 	map, mapError = Tilemap.Load(Stage.map)
 	if map ~= nil then

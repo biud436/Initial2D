@@ -32,6 +32,15 @@ module Aldebaran
         end
       end
 
+      # 맵의 타일 레이어 검사합. 레이어 순서와 칸 순서대로 (합 * 31 + gid) mod 1000000007
+      def self.tile_checksum(path)
+        sum = 0
+        (load(path)["layers"] || []).each do |layer|
+          (layer["data"] || []).each { |gid| sum = (sum * 31 + gid.to_i) % 1_000_000_007 }
+        end
+        sum
+      end
+
       def self.sym(value)
         value.nil? ? nil : value.to_sym
       end

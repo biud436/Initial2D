@@ -32,6 +32,17 @@ function M.load(path)
 	return maps[path]
 end
 
+--- 맵의 타일 레이어 검사합. 레이어 순서와 칸 순서대로 (합 * 31 + gid) mod 1000000007
+function M.tileChecksum(path)
+	local sum = 0
+	for _, layer in ipairs(M.load(path).layers or {}) do
+		for _, gid in ipairs(layer.data or {}) do
+			sum = (sum * 31 + math.tointeger(gid)) % 1000000007
+		end
+	end
+	return sum
+end
+
 --- x 오름차순으로 줄 세운다. x가 같으면 파일 순서를 지킨다.
 local function sortByX(list)
 	for i, e in ipairs(list) do e.order = i end
