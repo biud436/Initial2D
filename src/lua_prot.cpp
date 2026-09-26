@@ -193,8 +193,8 @@ int Lua_MessageBox(lua_State *g_pLuaSt)
 }
 
 // 스크립트 오류는 PANIC(abort, 종료 코드 134) 대신 mruby 와 같은 무게로 다룬다:
-// 메시지(파일:줄: ...)를 stderr 에 적고 게임을 끝내며 종료 코드는 1 이다 (Script_Failed).
-// 에디터의 콘솔이 그 줄을 링크로 만든다 (InitialEditor E1).
+// 메시지(파일:줄: ...)를 stderr 에 적고 VM 을 멈춘다. 에디터의 콘솔이 그 줄을 링크로 만든다
+// (InitialEditor E1). 게임을 끝낼지(종료 코드 1)는 ScriptRuntime 이 Lua_Failed 를 보고 정한다.
 static bool s_luaFailed = false;
 
 static bool Lua_ReportIfError(int status, const char* where)
@@ -207,11 +207,7 @@ static bool Lua_ReportIfError(int status, const char* where)
 	std::fprintf(stderr, "Lua error in %s: %s\n", where, msg ? msg : "(no message)");
 	std::fflush(stderr);
 	lua_pop(g_pLuaState, 1);
-	if (!s_luaFailed)
-	{
-		s_luaFailed = true;
-		App::GetInstance().Quit();
-	}
+	s_luaFailed = true;
 	return true;
 }
 
@@ -520,6 +516,8 @@ static const struct luaL_Reg printlib[] = {
 
 int Lua_Init()
 {
+	// 새 VM 은 오류 없이 시작한다 (재시작 때 이전 VM 의 실패를 넘겨받지 않는다)
+	s_luaFailed = false;
 
 	g_pLuaState = luaL_newstate();
 	luaL_openlibs(g_pLuaState);

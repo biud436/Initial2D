@@ -6,7 +6,7 @@
 #include "../lua/lauxlib.h"
 
 int Lua_MessageBox(lua_State *g_pLuaSt);
-/** 스크립트 오류로 끝났는가 (mruby 의 MRuby_Failed 와 같은 뜻) */
+/** 스크립트 오류로 VM 이 멈췄는가 (mruby 의 MRuby_Failed 와 같은 뜻. 게임 종료는 ScriptRuntime 이 정한다) */
 bool Lua_Failed();
 int Lua_LoadScript(lua_State *pL);
 int Lua_PreparaFont(lua_State *pL);

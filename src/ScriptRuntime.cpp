@@ -26,6 +26,24 @@ namespace
 	ScriptBackend s_backend = ScriptBackend::Lua;
 	bool s_initialized = false;
 	bool s_failed = false;
+	// Script_Restart 가 도는 동안 켜진다. 이때의 스크립트 오류는 게임을 끝내지 않는다.
+	bool s_restarting = false;
+
+	// 백엔드가 오류를 보고한 뒤 부른다 (메시지는 백엔드가 이미 stderr 에 적었다).
+	// 첫 오류에서 게임을 끝내고 종료 코드는 1 이 된다. 재시작(핫 리로드) 중이면 게임은 두고
+	// 스크립트만 멈춘다. 다음 재시작이 성공하면 되살아난다.
+	void MarkFailed()
+	{
+		if (s_failed)
+		{
+			return;
+		}
+		s_failed = true;
+		if (!s_restarting)
+		{
+			App::GetInstance().Quit();
+		}
+	}
 
 	bool FileExists(const char* path)
 	{
@@ -152,15 +170,14 @@ int Script_Init()
 		const int rc = MRuby_Init();
 		if (MRuby_Failed())
 		{
-			s_failed = true;
+			MarkFailed();
 		}
 		return rc;
 #else
 		std::fprintf(stderr,
 			"mruby: this build has no mruby. Install it (brew install mruby) and run cmake again,\n"
 			"       or select Lua with INITIAL2D_SCRIPT=lua.\n");
-		s_failed = true;
-		App::GetInstance().Quit();
+		MarkFailed();
 		return 1;
 #endif
 	}
@@ -170,7 +187,7 @@ int Script_Init()
 		const int rc = Lua_Init();
 		if (Lua_Failed())
 		{
-			s_failed = true;
+			MarkFailed();
 		}
 		return rc;
 	}
@@ -188,7 +205,7 @@ int Script_Update(double elapsed)
 		const int rc = MRuby_Update(elapsed);
 		if (MRuby_Failed())
 		{
-			s_failed = true;
+			MarkFailed();
 		}
 		return rc;
 	}
@@ -197,7 +214,7 @@ int Script_Update(double elapsed)
 		const int rc = Lua_Update(elapsed);
 		if (Lua_Failed())
 		{
-			s_failed = true;
+			MarkFailed();
 		}
 		return rc;
 	}
@@ -215,7 +232,7 @@ int Script_Render()
 		const int rc = MRuby_Render();
 		if (MRuby_Failed())
 		{
-			s_failed = true;
+			MarkFailed();
 		}
 		return rc;
 	}
@@ -224,7 +241,7 @@ int Script_Render()
 		const int rc = Lua_Render();
 		if (Lua_Failed())
 		{
-			s_failed = true;
+			MarkFailed();
 		}
 		return rc;
 	}
@@ -243,7 +260,7 @@ int Script_Destroy()
 		const int rc = MRuby_Destroy();
 		if (MRuby_Failed())
 		{
-			s_failed = true;
+			MarkFailed();
 		}
 		return rc;
 	}
@@ -252,16 +269,25 @@ int Script_Destroy()
 		const int rc = Lua_Destory();
 		if (Lua_Failed())
 		{
-			s_failed = true;
+			MarkFailed();
 		}
 		return rc;
 	}
 }
 
-int Script_Restart()
+bool Script_Restart()
 {
+	struct RestartScope
+	{
+		RestartScope() { s_restarting = true; }
+		~RestartScope() { s_restarting = false; }
+	} scope;
+
 	Script_Destroy();
-	return Script_Init();
+	// 내린 VM 의 실패(이전 오류, destroy 훅의 오류)는 새 VM 의 성패와 상관없다
+	s_failed = false;
+	Script_Init();
+	return !s_failed;
 }
 
 bool Script_Failed()

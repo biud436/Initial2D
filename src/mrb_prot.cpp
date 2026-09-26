@@ -55,7 +55,7 @@ mrb_state* g_pMrbState = nullptr;
 
 namespace
 {
-	bool s_failed = false;   // 예외로 게임을 끝냈다
+	bool s_failed = false;   // 예외로 VM 이 멈췄다 (게임을 끝낼지는 ScriptRuntime 이 정한다)
 	bool s_halted = false;   // 그 뒤로는 훅을 부르지 않는다
 	std::set<std::string> s_required;
 
@@ -64,7 +64,8 @@ namespace
 	mrb_sym s_symRender = 0;
 	mrb_sym s_symDestroy = 0;
 
-	// 스크립트 예외를 보고하고 게임을 끝낸다. mrb->exc 는 비운다.
+	// 스크립트 예외를 보고하고 VM 을 멈춘다. mrb->exc 는 비운다.
+	// 게임을 끝낼지(종료 코드 1)는 ScriptRuntime 이 MRuby_Failed 를 보고 정한다.
 	void ReportError(mrb_state* mrb, const char* where)
 	{
 		if (mrb->exc == nullptr)
@@ -78,7 +79,6 @@ namespace
 		mrb->exc = nullptr;
 		s_failed = true;
 		s_halted = true;
-		App::GetInstance().Quit();
 	}
 
 	// 파일을 읽어 실행한다. 실패하면 Ruby 예외를 일으킨다 (호출자가 Ruby 안이면
@@ -532,7 +532,6 @@ int MRuby_Init()
 	{
 		std::fprintf(stderr, "mruby: mrb_open failed\n");
 		s_failed = true;
-		App::GetInstance().Quit();
 		return 1;
 	}
 	mrb_state* mrb = g_pMrbState;
@@ -601,7 +600,6 @@ int MRuby_Init()
 			std::fprintf(stderr, "mruby: cannot open ./scripts/ruby/main.rb\n");
 			s_failed = true;
 			s_halted = true;
-			App::GetInstance().Quit();
 			return 1;
 		}
 		mrb_ccontext* cxt = mrb_ccontext_new(mrb);

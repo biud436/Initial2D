@@ -43,11 +43,18 @@ int Script_Destroy();
 /**
  * 스크립트 VM 을 내리고 다시 올린다 (Destroy 뒤 Init). 핫 리로드 서버가 번들을 받은 뒤와
  * 브라우저의 initial2d_reload() 가 같은 길을 쓴다. 게임 진행 상태는 초기화된다 (풀 리스타트).
- * 반환값은 Init 의 것이다.
+ *
+ * 새 VM 이 오류 없이 올라오면(진입 파일 읽기와 init 훅) true. 스크립트 오류면 false 이고, 메시지는
+ * 시작 때와 같은 형식("Lua error in ...")으로 이미 stderr 에 나갔다. 이때 게임은 끝나지 않고
+ * 스크립트만 멈춘다 (Update 와 Render 를 건너뛴다). 다음 재시작이 성공하면 다시 돈다.
+ * 시작 때의 오류와 Update, Render 의 오류는 전처럼 게임을 끝낸다 (종료 코드 1).
  */
-int Script_Restart();
+bool Script_Restart();
 
-/** 스크립트 오류(예외, 없는 언어)로 게임을 끝냈는가. 프로세스 종료 코드에 쓴다. */
+/**
+ * 스크립트가 오류로 멈춰 있는가 (예외, 없는 언어). 프로세스 종료 코드에 쓴다.
+ * 재시작이 성공하면 false 로 돌아간다.
+ */
 bool Script_Failed();
 
 #endif

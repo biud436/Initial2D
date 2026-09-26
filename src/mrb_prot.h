@@ -38,7 +38,7 @@ int MRuby_Update(double elapsed);
 int MRuby_Render();
 int MRuby_Destroy();
 
-/** 스크립트 예외로 게임을 끝냈는가 (ScriptRuntime 이 종료 코드로 옮긴다). */
+/** 스크립트 예외로 VM 이 멈췄는가 (ScriptRuntime 이 게임 종료와 종료 코드로 옮긴다). */
 bool MRuby_Failed();
 
 // 하위 바인딩. 각 mrb_*.cpp 가 자기 모듈이나 클래스를 정의한다
