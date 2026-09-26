@@ -81,10 +81,7 @@ end
 -- 맵 파일의 이벤트는 에디터와 도구가 쓴다. 게임이 맵을 열 때 전부 검사해 틀린
 -- 이벤트만 건너뛴다. 경로는 1부터 세는 Lua 표기다 (docs/plans/m2-rpg-events.md 3절).
 
-local function isInteger(v)
-	return type(v) == "number" and v == v and v ~= math.huge and v ~= -math.huge
-		and v == math.floor(v)
-end
+local isInteger = Shape.isInteger
 
 local function isNonNegInt(v) return isInteger(v) and v >= 0 end
 

@@ -28,6 +28,12 @@ function M.isArray(v)
 	return true
 end
 
+--- 정수인가: 값이 정수인 수 (2.0 도 정수다). NaN 과 무한대는 아니다.
+function M.isInteger(v)
+	return type(v) == "number" and v == v and v ~= math.huge and v ~= -math.huge
+		and v == math.floor(v)
+end
+
 --- 객체인가: 표이고 키가 전부 글이다.
 function M.isObject(v)
 	if type(v) ~= "table" then return false end

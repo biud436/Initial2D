@@ -306,16 +306,32 @@ function M.run(t)
 	table.sort(described)
 	t.check_eq(table.concat(described, ","), table.concat(Commands.codes(), ","),
 		"describe 는 모든 커맨드를 적는다")
-	t.check_eq(desc.message.required.text, "string", "message 의 text 는 필수 글")
+	t.check_eq(desc.message.required.text, "text", "message 의 text 는 필수 text 인자")
 	t.check_eq(desc.message.required.name, nil, "message 의 name 은 필수가 아니다")
-	t.check_eq(desc.moveRoute.required.route, "table", "moveRoute 의 route 는 필수 표")
+	t.check_eq(desc.moveRoute.required.route, "route", "moveRoute 의 route 는 필수 route 인자")
 	t.check_eq(next(desc.script.required), nil, "script 의 name 은 validate 의 따로 규칙이 본다")
+	local argNames = {}
+	for _, arg in ipairs(desc.transfer.args) do argNames[#argNames + 1] = arg.name end
+	t.check_eq(table.concat(argNames, ","), "map,x,y,dir", "transfer 의 인자는 스키마 순서로 넷")
+	t.check_eq(desc.transfer.args[1].ref, "map", "transfer.map 은 map 참조")
+	t.check_eq(table.concat(desc.transfer.args[4].values, ","), "down,left,right,up",
+		"transfer.dir 은 네 방향 enum")
+	t.check(desc.playBgm.args[2].min == 0 and desc.playBgm.args[2].max == 128,
+		"playBgm.volume 은 0..128")
+	t.check(Commands.argTypes().condition and not Commands.argTypes().charset,
+		"검증이 아는 타입에 condition 은 있고 이벤트 칸의 charset 은 없다")
+	local conds = Commands.describeConditions()
+	t.check_eq(conds.item[3].name .. ":" .. conds.item[3].type, "value:integer", "item 조건의 value 는 정수")
 	t.check_eq(table.concat(desc.choice.lists, ","), "branches", "choice 의 하위 목록은 branches")
 	t.check_eq(desc.choice.perOption.branches, "options", "branches 는 항목마다 하나")
 	t.check_eq(table.concat(desc["if"].lists, ","), "thenDo,elseDo", "if 의 하위 목록은 thenDo, elseDo")
 	t.check_eq(#desc.message.lists, 0, "message 에는 하위 목록이 없다")
 	desc.message.required.text = "number"
-	t.check_eq(Commands.describe().message.required.text, "string", "describe 는 사본을 돌려준다")
+	desc.transfer.args[4].values[1] = "north"
+	conds.item[1].name = "other"
+	t.check_eq(Commands.describe().message.required.text, "text", "describe 는 사본을 돌려준다")
+	t.check_eq(Commands.describe().transfer.args[4].values[1], "down", "인자 명세의 values 도 사본")
+	t.check_eq(Commands.describeConditions().item[1].name, "item", "조건 명세도 사본")
 
 	-- ---- [14] walk: 하위 목록까지 적힌 순서로 ------------------------------
 	local visited = {}
@@ -340,9 +356,9 @@ function M.run(t)
 	t.check(type(probs[1].message) == "string" and probs[1].message ~= "", "이유가 따로 온다")
 
 	-- ---- [16] 새 검사: 얼굴과 방향 ------------------------------------------
-	local function pathsOf(list)
+	local function pathsOf(list, env)
 		local out = {}
-		for _, p in ipairs(Commands.problems(list)) do out[#out + 1] = p.path end
+		for _, p in ipairs(Commands.problems(list, env)) do out[#out + 1] = p.path end
 		table.sort(out)
 		return table.concat(out, " ")
 	end
@@ -419,6 +435,86 @@ function M.run(t)
 		"options 자리의 객체")
 	t.check_eq(pathsOf({ { code = "if", cond = { flag = "a" }, thenDo = {}, elseDo = {} } }), "",
 		"빈 표는 빈 목록이다 ({} 와 [] 를 가릴 수 없다)")
+
+	-- ---- [18] 있는 인자는 필수든 선택이든 스키마의 타입이다 ----------------------
+	local door = "./resources/audio/door.wav"
+	t.check_eq(pathsOf({
+		{ code = "message", text = "a", name = "선장" },
+		{ code = "choice", options = { "가", "나" }, cancel = 2 },
+		{ code = "wait", ms = 0 },
+		{ code = "transfer", map = "inn", x = 0, y = 12.0, dir = "up" },
+		{ code = "moveRoute", target = "player", route = { "up", "turn:left", "wait:100" },
+		  wait = false, loop = true },
+		{ code = "setFlag", key = "k", value = "글" },
+		{ code = "setFlag", key = "k", value = 3 },
+		{ code = "setVar", key = "v", op = "+", value = 2.5 },
+		{ code = "giveItem", item = "shell", count = 1 },
+		{ code = "takeItem", item = "shell", count = 2 },
+		{ code = "if", cond = { item = "shell", op = ">", value = 0 } },
+		{ code = "if", cond = { flag = "f", equals = false } },
+		{ code = "if", cond = { var = "v", op = "~=", value = -1.5 } },
+		{ code = "if", cond = {} },
+		{ code = "playSe", file = door, id = "door" },
+		{ code = "playBgm", file = door, volume = 128, fade = 0 },
+		{ code = "showLocation", text = "항구", seconds = 2.5 },
+		{ code = "scene", name = "title", fade = true, text = "끝" },
+		{ code = "script", name = "s", args = { any = { 1, "x" } } },
+		{ code = "comment", text = "메모" },
+	}, { scripts = { s = function() end } }), "", "스키마 타입의 인자는 통과한다 (빈 조건 포함)")
+
+	-- 검수가 게임을 멈추게 한 선택 인자들
+	t.check_eq(pathsOf({
+		{ code = "playSe", file = door, id = true },
+		{ code = "playSe", file = door, id = { k = 1 } },
+		{ code = "message", text = "hi", name = { a = 1 } },
+		{ code = "message", text = "hi", name = true },
+		{ code = "transfer", map = "inn", x = { a = 1 }, y = { 2 } },
+		{ code = "transfer", map = "inn", x = "abc", y = 12 },
+		{ code = "playBgm", file = door, volume = { a = 1 } },
+		{ code = "playBgm", file = door, volume = "loud" },
+		{ code = "scene", name = "title", text = { "x" } },
+	}), "[1].id [2].id [3].name [4].name [5].x [5].y [6].x [7].volume [8].volume [9].text",
+		"선택 인자의 틀린 타입을 그 인자의 경로에 낸다")
+
+	t.check_eq(pathsOf({
+		{ code = "choice", options = { "가" }, cancel = 1.5 },
+		{ code = "wait", ms = "100" },
+		{ code = "moveRoute", target = "player", route = { "up", 5 }, wait = "yes", loop = 1 },
+		{ code = "setFlag", key = "k", value = { a = 1 } },
+		{ code = "setVar", key = "k", op = "*", value = "3" },
+		{ code = "giveItem", item = "shell", count = 0 },
+		{ code = "takeItem", item = 5 },
+		{ code = "showLocation", text = "X", seconds = -1 },
+		{ code = "scene", name = "title", fade = 30 },
+		{ code = "playSe", file = "" },
+		{ code = "comment", text = 5 },
+		{ code = "playBgm", file = door, volume = 200, fade = -1 },
+		{ code = "moveRoute", target = "player", route = { a = "up" } },
+		{ code = "turn", target = 3, dir = "up" },
+	}), "[10].file [11].text [12].fade [12].volume [13].route [14].target [1].cancel [2].ms "
+		.. "[3].loop [3].route[2] [3].wait [4].value [5].op [5].value [6].count [7].item "
+		.. "[8].seconds [9].fade", "타입, enum 값, 범위, 빈 경로, 걸음 목록")
+
+	t.check_eq(pathsOf({
+		{ code = "if", cond = "a" },
+		{ code = "if", cond = { item = 5, op = "=>", value = 1.5 } },
+		{ code = "if", cond = { flag = "f", equals = { a = 1 } } },
+		{ code = "if", cond = { var = "v", op = "==", value = "2" } },
+		{ code = "if", cond = { item = "shell", value = -1 } },
+		{ code = "if", cond = { 1, 2 } },
+		{ code = "if", cond = { flag = "f", value = "안 본다" } },
+	}), "[1].cond [2].cond.item [2].cond.op [2].cond.value [3].cond.equals [4].cond.value "
+		.. "[5].cond.value [6].cond", "조건은 객체이고 판정하는 꼴의 인자만 본다")
+
+	-- script 의 이름이 글이 아니면 타입 오류 하나 (등록 검사는 글일 때만)
+	local scriptProbs = Commands.problems({ { code = "script", name = 5 } }, { scripts = {} })
+	t.check(#scriptProbs == 1 and scriptProbs[1].path == "[1].name",
+		"script.name 이 글이 아니면 한 번만 알린다")
+
+	-- 틀린 인자가 든 이벤트는 Event.new 가 받지 않는다 (정의 파일도 같은 검사)
+	local okBad = pcall(Event.new, { id = "bad_arg", commands = {
+		{ code = "message", text = "a", name = true } } })
+	t.check(not okBad, "선택 인자가 틀린 커맨드는 이벤트를 만들 때 걸린다")
 
 	-- walk 도 구멍 뒤까지 훑는다 (resolveAssets 가 쓴다)
 	local walked = {}

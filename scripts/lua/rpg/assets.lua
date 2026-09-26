@@ -99,10 +99,7 @@ local SHEET_COUNT = {
 	face = Specs.faceset.perSheet,
 }
 
-local function isInteger(v)
-	return type(v) == "number" and v == v and v ~= math.huge and v ~= -math.huge
-		and v == math.floor(v)
-end
+local isInteger = Shape.isInteger
 
 --- 외형이나 얼굴 참조의 모양을 검사한다. 파일로 풀기 전의 값을 본다.
 -- @return 문제 배열. 항목은 { path = "" | ".set" | ".file" | ".index", message = 이유 }

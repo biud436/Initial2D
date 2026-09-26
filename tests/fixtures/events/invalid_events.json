@@ -479,6 +479,222 @@
       "commands": {}
     },
     {
+      "id": "arg_verifier",
+      "x": 0,
+      "y": 0,
+      "commands": [
+        {
+          "code": "playSe",
+          "file": "./resources/audio/door.wav",
+          "id": true
+        },
+        {
+          "code": "playSe",
+          "file": "./resources/audio/door.wav",
+          "id": {
+            "k": 1
+          }
+        },
+        {
+          "code": "message",
+          "text": "hi",
+          "name": {
+            "a": 1
+          }
+        },
+        {
+          "code": "message",
+          "text": "hi",
+          "name": true
+        },
+        {
+          "code": "playBgm",
+          "file": "./resources/audio/door.wav",
+          "volume": {
+            "a": 1
+          }
+        },
+        {
+          "code": "playBgm",
+          "file": "./resources/audio/door.wav",
+          "volume": "loud"
+        },
+        {
+          "code": "scene",
+          "name": "title",
+          "text": [
+            "x"
+          ]
+        },
+        {
+          "code": "transfer",
+          "map": "inn",
+          "x": {
+            "a": 1
+          },
+          "y": [
+            2
+          ]
+        },
+        {
+          "code": "transfer",
+          "map": "inn",
+          "x": "abc",
+          "y": 12
+        }
+      ]
+    },
+    {
+      "id": "arg_types",
+      "x": 0,
+      "y": 0,
+      "commands": [
+        {
+          "code": "choice",
+          "options": [
+            "가"
+          ],
+          "cancel": 1.5
+        },
+        {
+          "code": "wait",
+          "ms": "100"
+        },
+        {
+          "code": "moveRoute",
+          "target": "player",
+          "route": [
+            "up",
+            5
+          ],
+          "wait": "yes",
+          "loop": 1
+        },
+        {
+          "code": "setFlag",
+          "key": "k",
+          "value": {
+            "a": 1
+          }
+        },
+        {
+          "code": "setVar",
+          "key": "k",
+          "op": "*",
+          "value": "3"
+        },
+        {
+          "code": "giveItem",
+          "item": "shell",
+          "count": 0
+        },
+        {
+          "code": "takeItem",
+          "item": 5
+        },
+        {
+          "code": "showLocation",
+          "text": "X",
+          "seconds": -1
+        },
+        {
+          "code": "scene",
+          "name": "title",
+          "fade": 30
+        },
+        {
+          "code": "playSe",
+          "file": ""
+        },
+        {
+          "code": "comment",
+          "text": 5
+        },
+        {
+          "code": "playBgm",
+          "file": "./resources/audio/door.wav",
+          "volume": 200,
+          "fade": -1
+        },
+        {
+          "code": "moveRoute",
+          "target": "player",
+          "route": {
+            "a": "up"
+          }
+        },
+        {
+          "code": "turn",
+          "target": 3,
+          "dir": "up"
+        }
+      ]
+    },
+    {
+      "id": "cond_types",
+      "x": 0,
+      "y": 0,
+      "commands": [
+        {
+          "code": "if",
+          "cond": "a"
+        },
+        {
+          "code": "if",
+          "cond": {
+            "item": 5,
+            "op": "=>",
+            "value": 1.5
+          }
+        },
+        {
+          "code": "if",
+          "cond": {
+            "flag": "f",
+            "equals": {
+              "a": 1
+            }
+          }
+        },
+        {
+          "code": "if",
+          "cond": {
+            "var": "v",
+            "op": "==",
+            "value": "2"
+          }
+        },
+        {
+          "code": "if",
+          "cond": {
+            "item": "shell",
+            "value": -1
+          }
+        },
+        {
+          "code": "if",
+          "cond": [
+            1,
+            2
+          ]
+        },
+        {
+          "code": "if",
+          "cond": {
+            "flag": "f",
+            "value": "안 본다"
+          },
+          "thenDo": [
+            {
+              "code": "message",
+              "text": "t",
+              "name": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "tail",
       "x": 3,
       "y": 3,

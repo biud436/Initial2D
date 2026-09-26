@@ -4,9 +4,11 @@
 -- 대조한다. 커맨드를 더하고 스키마를 안 고치면(또는 그 반대면) 이 테스트가 깨진다.
 --   [A] 스키마 형식 (에디터의 해석기가 거절하는 것이 없다)
 --   [B] 커맨드 목록 == Commands.codes()
---   [C] 커맨드마다 필수 인자와 Lua 타입 == Commands.describe()
+--   [C] 커맨드마다 인자 명세(이름, 순서, 타입, 필수, min, max, values, ref) == describe()[code].args,
+--       스키마의 인자마다 틀린 타입의 값을 validate 가 그 경로에서 거절한다
 --   [D] 하위 목록 == describe()[code].lists
---   [E] 조건의 꼴과 순서 == Commands.CONDITIONS, 비교 연산이 Commands.test 에서 참과 거짓을 가른다
+--   [E] 조건의 꼴과 순서 == Commands.CONDITIONS, 꼴마다 인자 명세 == describeConditions(),
+--       비교 연산이 Commands.test 에서 참과 거짓을 가른다
 --   [F] 이벤트 칸: 트리거, 방향, 예약 id, 이동 루트의 걸음과 접두사
 --   [G] 자산 이름 == Assets.SETS, 시트 규격 == Specs
 --   [H] 모든 맵 파일의 이벤트가 validateEvents 를 통과하고, 정의 파일의 커맨드도 검증을 통과한다
@@ -52,20 +54,16 @@ local ARG_TYPES = {
 }
 -- 이벤트 칸에만 쓰는 타입 (커맨드 인자로는 쓰지 않는다)
 local EVENT_ONLY = { charset = true, wander = true, list = true }
--- 필수 인자가 될 수 있는 타입과 commands.lua SPEC 의 Lua 타입
-local LUA_TYPE = {
-	string = "string", text = "string", integer = "number", number = "number",
-	enum = "string", ref = "string", file = "string",
-	face = "table", charset = "table", options = "table", route = "table", condition = "table",
-}
 local REF_KINDS = { map = true, item = true, flag = true, var = true, character = true }
 local ARG_KEYS = {
 	name = true, type = true, ref = true, values = true, required = true, min = true,
 	max = true, default = true, accept = true, dir = true, suggest = true, label = true,
 }
 
--- validate 의 따로 규칙이 보는 필수 인자 (SPEC 에 없다)
+-- 스키마는 필수인데 엔진의 인자 명세는 선택이고 validate 의 따로 규칙이 보는 인자
 local SPECIAL_REQUIRED = { ["script.name"] = true }
+-- 인자 명세에서 대조하는 칸 (label, default, accept, dir, suggest 는 에디터의 것)
+local COMPARED_KEYS = { "type", "required", "min", "max", "ref" }
 
 -- ---- 도움 함수 ---------------------------------------------------------------
 
@@ -237,6 +235,107 @@ local function setDiff(actual, expected)
 	return missing, extra
 end
 
+-- 스키마의 인자 배열과 엔진의 인자 명세를 양방향으로 대조한다
+local function compareArgs(fromSchema, fromEngine, where, bad)
+	local a, b = {}, {}
+	for _, arg in ipairs(fromSchema or {}) do a[#a + 1] = tostring(arg.name) end
+	for _, arg in ipairs(fromEngine or {}) do b[#b + 1] = tostring(arg.name) end
+	if join(a) ~= join(b) then
+		bad[#bad + 1] = where .. ": 스키마 {" .. join(a) .. "} / 엔진 {" .. join(b) .. "}"
+	end
+	for _, s in ipairs(fromSchema or {}) do
+		local e = findArg(fromEngine, s.name)
+		local w = where .. "." .. tostring(s.name)
+		if e ~= nil then
+			for _, k in ipairs(COMPARED_KEYS) do
+				local sv, ev = s[k], e[k]
+				if k == "required" then
+					sv, ev = sv == true, ev == true
+					if SPECIAL_REQUIRED[w] then sv = not sv end
+				end
+				if sv ~= ev then
+					bad[#bad + 1] = w .. "." .. k .. ": 스키마 " .. tostring(s[k]) .. " / 엔진 " .. tostring(e[k])
+				end
+			end
+			if join(s.values or {}) ~= join(e.values or {}) then
+				bad[#bad + 1] = w .. ".values: 스키마 {" .. join(s.values or {}) .. "} / 엔진 {"
+					.. join(e.values or {}) .. "}"
+			end
+		end
+	end
+end
+
+-- 스키마 타입의 올바른 표본 값 (엔진의 명세를 보지 않고 스키마만으로 만든다)
+local function validSample(arg, schema)
+	local t = arg.type
+	if t == "string" or t == "text" or t == "ref" then return "a" end
+	if t == "file" then return "./resources/audio/door.wav" end
+	if t == "integer" then return arg.min or 1 end
+	if t == "number" then return (arg.min or 0) + 0.5 end
+	if t == "boolean" then return true end
+	if t == "enum" then return arg.values[1] end
+	if t == "scalar" then return 1 end
+	if t == "face" then return { set = next(schema.assets.face), index = 0 } end
+	if t == "options" then return { "a" } end
+	if t == "route" then return { schema.route.moves[1] } end
+	if t == "condition" then return { flag = "a" } end
+	if t == "json" then return { a = { 1, "x" } } end
+	return nil
+end
+
+-- 스키마 타입이 받지 않는 값들. json 은 어떤 값이든 받는다
+local function wrongSamples(arg)
+	local t = arg.type
+	local out = {}
+	if t == "string" or t == "text" or t == "ref" or t == "enum" then
+		out = { 5, true, { a = 1 }, { 1 } }
+	elseif t == "file" then
+		out = { "", 5, { a = 1 } }
+	elseif t == "integer" then
+		out = { 1.5, "1", true, { a = 1 } }
+	elseif t == "number" then
+		out = { "1", true, { a = 1 } }
+	elseif t == "boolean" then
+		out = { "yes", 1, { a = 1 } }
+	elseif t == "scalar" then
+		out = { { a = 1 }, { 1 } }
+	elseif t == "face" then
+		out = { 3, "npc", { 1, 2 }, { index = 0 } }
+	elseif t == "options" or t == "route" then
+		out = { "a", { a = "b" }, { "a", 5 } }
+	elseif t == "condition" then
+		out = { "a", { 1, 2 } }
+	end
+	if t == "enum" then out[#out + 1] = "없는 값" end
+	if (t == "integer" or t == "number") and arg.min ~= nil then out[#out + 1] = arg.min - 1 end
+	if (t == "integer" or t == "number") and arg.max ~= nil then out[#out + 1] = arg.max + 1 end
+	if t == "options" and arg.min ~= nil and arg.min > 0 then out[#out + 1] = {} end
+	return out
+end
+
+local function shallowCopy(t)
+	local out = {}
+	for k, v in pairs(t) do out[k] = v end
+	return out
+end
+
+-- 문제 중에 그 인자의 경로(또는 그 아래)가 있는가
+local function hits(problems, here)
+	for _, p in ipairs(problems) do
+		local path = p.path
+		if path == here or path:sub(1, #here + 1) == here .. "."
+			or path:sub(1, #here + 1) == here .. "[" then
+			return true
+		end
+	end
+	return false
+end
+
+local function shown(v)
+	if type(v) == "table" then return Shape.isArray(v) and "[배열]" or "{객체}" end
+	return type(v) .. " " .. tostring(v)
+end
+
 -- ---- 케이스 ------------------------------------------------------------------
 
 function M.run(t)
@@ -321,6 +420,20 @@ function M.run(t)
 		if type(route.turnPrefix) ~= "string" then bad[#bad + 1] = "route.turnPrefix" end
 		if type(route.waitPrefix) ~= "string" then bad[#bad + 1] = "route.waitPrefix" end
 
+		local known = Commands.argTypes()
+		local unknown = {}
+		for _, cmd in ipairs(schema.commands or {}) do
+			for _, arg in ipairs(cmd.args or {}) do
+				if not known[arg.type] then unknown[#unknown + 1] = tostring(cmd.code) .. "." .. tostring(arg.name) end
+			end
+		end
+		for _, cond in ipairs(schema.conditions or {}) do
+			for _, arg in ipairs(cond.args or {}) do
+				if not known[arg.type] then unknown[#unknown + 1] = tostring(cond.kind) .. "." .. tostring(arg.name) end
+			end
+		end
+		t.check(#unknown == 0, "커맨드와 조건의 인자 타입을 엔진 검증이 안다", table.concat(unknown, ", "))
+
 		t.check(#bad == 0, "스키마가 형식을 지킨다", table.concat(bad, ", "))
 		t.check_eq(#(schema.commands or {}), 17, "커맨드 17종을 다 적었다")
 		t.check_eq(#(schema.conditions or {}), 3, "조건 세 꼴을 다 적었다")
@@ -334,43 +447,62 @@ function M.run(t)
 			"스키마의 code 집합 == Commands.codes()")
 	end
 
-	-- [C] 필수 인자와 Lua 타입 ---------------------------------------------------
+	-- [C] 인자 명세 ---------------------------------------------------------------
 	do
 		local bad = {}
 		for _, code in ipairs(Commands.codes()) do
 			local cmd = findCommand(schema, code)
 			local d = describe[code]
 			if cmd ~= nil and d ~= nil then
-				local fromSchema = {}
-				for _, arg in ipairs(cmd.args or {}) do
-					if arg.required and not SPECIAL_REQUIRED[code .. "." .. arg.name] then
-						fromSchema[arg.name] = LUA_TYPE[arg.type] or ("(" .. tostring(arg.type) .. ")")
-					end
-				end
-				local a, b = join(keysOf(fromSchema)), join(keysOf(d.required))
-				if a ~= b then
-					bad[#bad + 1] = code .. ": 스키마 필수 {" .. a .. "} / SPEC {" .. b .. "}"
-				end
-				for name, luaType in pairs(d.required) do
-					if fromSchema[name] ~= nil and fromSchema[name] ~= luaType then
-						bad[#bad + 1] = code .. "." .. name .. ": 스키마 " .. fromSchema[name]
-							.. " / SPEC " .. luaType
-					end
-				end
+				compareArgs(cmd.args, d.args, code, bad)
 			end
 		end
-		t.check(#bad == 0, "커맨드마다 필수 인자와 타입이 SPEC 과 같다", table.concat(bad, "; "))
+		t.check(#bad == 0, "커맨드마다 인자 명세가 스키마의 args 와 같다 (양방향)", table.concat(bad, "; "))
 
 		for key in pairs(SPECIAL_REQUIRED) do
 			local code, name = key:match("^(.-)%.(.+)$")
 			local arg = findArg((findCommand(schema, code) or {}).args, name)
 			t.check(arg ~= nil and arg.required == true, key .. " 는 스키마에서 필수")
-			t.check_eq(describe[code].required[name], nil, key .. " 는 SPEC 이 아니라 따로 규칙이 본다")
+			t.check_eq(describe[code].required[name], nil, key .. " 는 인자 명세가 아니라 따로 규칙이 본다")
 		end
 		-- script.name 의 따로 규칙이 실제로 도는지
 		local _, errors = Commands.validate({ { code = "script" } })
 		t.check(#errors == 1 and errors[1]:find("%[1%]%.name") ~= nil,
 			"이름 없는 script 는 .name 에 걸린다", table.concat(errors, " "))
+
+		-- 스키마의 인자마다: 표본으로 채운 커맨드는 통과하고, 그 인자에 틀린 타입의 값을 넣거나
+		-- 필수 인자를 빼면 validate 가 그 인자의 경로에 문제를 낸다. 새 인자를 스키마에 더하고
+		-- 엔진이 검사하지 않으면 여기서 깨진다.
+		local env = { scripts = { a = function() end } }
+		local missed, tried = {}, 0
+		for _, spec in ipairs(schema.commands or {}) do
+			local base = { code = spec.code }
+			for _, arg in ipairs(spec.args or {}) do
+				if arg.required then base[arg.name] = validSample(arg, schema) end
+			end
+			local full = shallowCopy(base)
+			for _, arg in ipairs(spec.args or {}) do full[arg.name] = validSample(arg, schema) end
+			local _, baseErrors = Commands.validate({ base }, env)
+			t.check(#baseErrors == 0, spec.code .. ": 필수 인자만 채우면 통과한다", table.concat(baseErrors, "; "))
+			local _, fullErrors = Commands.validate({ full }, env)
+			t.check(#fullErrors == 0, spec.code .. ": 모든 인자를 스키마 타입으로 채우면 통과한다",
+				table.concat(fullErrors, "; "))
+			for _, arg in ipairs(spec.args or {}) do
+				local cases = wrongSamples(arg)
+				if arg.required then cases[#cases + 1] = "(없음)" end
+				for _, wrong in ipairs(cases) do
+					local cmd = shallowCopy(full)
+					if wrong == "(없음)" then cmd[arg.name] = nil else cmd[arg.name] = wrong end
+					tried = tried + 1
+					if not hits(Commands.problems({ cmd }, env), "[1]." .. arg.name) then
+						missed[#missed + 1] = spec.code .. "." .. arg.name .. " = " .. shown(wrong)
+					end
+				end
+			end
+		end
+		t.check(#missed == 0 and tried > 100,
+			"스키마의 인자마다 틀린 타입과 빠진 필수를 그 경로에서 거절한다 (" .. tried .. "가지)",
+			table.concat(missed, "; "))
 	end
 
 	-- [D] 하위 목록 ---------------------------------------------------------------
@@ -406,6 +538,32 @@ function M.run(t)
 		local kinds = {}
 		for _, cond in ipairs(schema.conditions or {}) do kinds[#kinds + 1] = cond.kind end
 		t.check_eq(join(kinds), join(Commands.CONDITIONS), "조건의 꼴과 순서 == Commands.CONDITIONS")
+
+		-- 꼴마다 인자 명세가 같고, 판정하는 꼴의 인자마다 틀린 값을 .cond.<인자> 에서 거절한다
+		local condDescribe = Commands.describeConditions()
+		t.check_eq(join(keysOf(condDescribe)), join(sortedCopy(Commands.CONDITIONS)),
+			"조건 명세의 꼴 == CONDITIONS")
+		local bad, missed, tried = {}, {}, 0
+		for _, cond in ipairs(schema.conditions or {}) do
+			compareArgs(cond.args, condDescribe[cond.kind], "conditions." .. tostring(cond.kind), bad)
+			local full = {}
+			for _, arg in ipairs(cond.args or {}) do full[arg.name] = validSample(arg, schema) end
+			local _, okErrors = Commands.validate({ { code = "if", cond = full } })
+			t.check(#okErrors == 0, cond.kind .. " 조건: 스키마 타입으로 채우면 통과한다", table.concat(okErrors, "; "))
+			for _, arg in ipairs(cond.args or {}) do
+				for _, wrong in ipairs(wrongSamples(arg)) do
+					local c = shallowCopy(full)
+					c[arg.name] = wrong
+					tried = tried + 1
+					if not hits(Commands.problems({ { code = "if", cond = c } }), "[1].cond." .. arg.name) then
+						missed[#missed + 1] = cond.kind .. "." .. arg.name .. " = " .. shown(wrong)
+					end
+				end
+			end
+		end
+		t.check(#bad == 0, "조건 꼴마다 인자 명세가 스키마와 같다 (양방향)", table.concat(bad, "; "))
+		t.check(#missed == 0 and tried > 20,
+			"조건의 인자마다 틀린 값을 .cond.<인자> 에서 거절한다 (" .. tried .. "가지)", table.concat(missed, "; "))
 
 		-- 비교 연산의 뜻. 스키마의 op 값마다 참인 경우와 거짓인 경우를 만들어 판정한다
 		local EXPECT = {
