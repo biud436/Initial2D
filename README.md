@@ -743,6 +743,7 @@ python3 tests/run_engine_tests.py 2>&1 | grep -A3 "mruby"
 ```
 
 Android 빌드에는 아직 mruby가 없습니다 (Lua만 그대로 돕니다). NDK로 libmruby를 교차 빌드해 얹는 것이 다음 일입니다.
+웹 빌드에는 들어 있습니다 (emcc 로 교차 빌드, 아래 [웹 빌드](#웹-빌드-emscripten) 절).
 
 # 터치 조작 (가상 패드, 동작 버튼, 멀티터치)
 
@@ -1339,24 +1340,31 @@ git clone https://github.com/emscripten-core/emsdk.git ~/emsdk
 cd ~/emsdk && ./emsdk install latest && ./emsdk activate latest
 
 # 빌드: build-web/Initial2D.js 와 .wasm, 그리고 build-web/site/ (페이지 + 로더 + 프로젝트 파일)
+# mruby 4.0.0 소스를 build-web/mruby-src 에 받아 emcc 로 libmruby 를 먼저 만듭니다 (rake 가 필요합니다)
 tools/build_web.sh
+INITIAL2D_WEB_MRUBY=0 tools/build_web.sh          # mruby 없이 Lua 만 (소스를 받지 않습니다)
+MRUBY_SRC=~/src/mruby tools/build_web.sh          # 받아 둔 mruby 4.0.0 소스를 쓸 때
 
 # 보기
-python3 -m http.server -d build-web/site 8080     # http://localhost:8080 에서 "실행"
+python3 -m http.server -d build-web/site 8080     # http://localhost:8080 에서 언어(Lua, Ruby)를 고르고 "실행"
 
-# 검수: 헤드리스 크로미움으로 타이틀까지 띄워 골든과 대조하고 키보드, reload, quit, 오류 처리를 확인
+# 검수: 헤드리스 크로미움으로 타이틀까지 띄워 골든과 대조하고 키보드, reload, quit, 오류 처리를 확인.
+# Ruby 판도 같은 타이틀을 그리는지(네이티브 mruby 와 대조), Ruby 예외가 네이티브와 같은 줄로 나오는지 봅니다
 node tools/web_smoke.mjs --golden tests/golden/aldebaran_title.png
+node tools/web_smoke.mjs --lua-only               # INITIAL2D_WEB_MRUBY=0 으로 만든 사이트
 ```
 
 에디터는 이 웹 빌드를 InitialEditor 저장소에서 `INITIAL2D_DIR=<이 엔진 경로> yarn sync:engine-web` 으로 복사해 갑니다
 (`build-web/site/` 에서 가져가므로 먼저 `tools/build_web.sh`).
 
 브라우저에는 프로세스도 환경 변수도 파일 시스템도 없어서 페이지가 셋을 대신합니다. `tools/web_stage.py` 가
-`game.json`, `scripts/lua/**`, `resources/**` 를 `build-web/site/project/` 에 복사하고 목록을 `project.json` 으로
+`game.json`, `scripts/lua/**`, `scripts/ruby/**`, `resources/**` 를 `build-web/site/project/` 에 복사하고 목록을 `project.json` 으로
 씁니다 (`RTP.zip`, `rtp/`, `*.psd` 는 뺍니다). 페이지는 그 목록을 fetch 해 wasm 의 메모리 파일 시스템 `/project`
-에 쓰고 거기로 `chdir` 한 뒤 엔진을 시작합니다. 그래서 엔진은 네이티브와 똑같이 `./scripts/lua/main.lua` 를 엽니다.
-환경 변수 `INITIAL2D_*` 는 같은 이름의 설정 객체로 넘기며, C++ 의 `Platform::GetEnv` 와 Lua 의 `os.getenv` 가
-둘 다 그 값을 봅니다. 로더는 번들러 없는 ES 모듈 하나입니다.
+에 쓰고 거기로 `chdir` 한 뒤 엔진을 시작합니다. 그래서 엔진은 네이티브와 똑같이 `./scripts/lua/main.lua` 나
+`./scripts/ruby/main.rb` 를 엽니다. 언어도 네이티브와 같은 순서로 고릅니다 (`INITIAL2D_SCRIPT`, `game.json` 의
+`"script": "mruby"`, `main.rb` 만 있으면 mruby). 환경 변수 `INITIAL2D_*` 는 같은 이름의 설정 객체로 넘기며,
+C++ 의 `Platform::GetEnv`, Lua 의 `os.getenv`, Ruby 의 `System.env` 가 모두 그 값을 봅니다. 로더는 번들러 없는
+ES 모듈 하나입니다.
 
 ```js
 import { bootInitial2D } from "./initial2d-loader.js";
@@ -1372,14 +1380,20 @@ game.frames();                                     // 지금까지 돈 프레임
 game.quit();
 ```
 
-Lua 오류는 네이티브와 똑같이 다룹니다. 오류 줄(`Lua error in update: ./scripts/lua/main.lua:5: boom`)이 글자 그대로
-`printErr` 로 나오고 JS 예외로 새지 않습니다. 시작 때와 `Update`, `Render` 의 오류는 게임을 끝내고(`onExit(1)`),
-`reload()` 의 오류는 `false` 를 돌려준 채 스크립트만 멈춥니다. 고친 파일로 다시 `reload()` 하면 이어서 돕니다.
+스크립트 오류는 네이티브와 똑같이 다룹니다. 오류 줄(`Lua error in update: ./scripts/lua/main.lua:5: boom`, Ruby 는
+`mruby: uncaught exception in update` 와 역추적)이 글자 그대로 `printErr` 로 나오고 JS 예외로 새지 않습니다.
+시작 때와 `Update`, `Render` 의 오류는 게임을 끝내고(`onExit(1)`), `reload()` 의 오류는 `false` 를 돌려준 채
+스크립트만 멈춥니다. 고친 파일로 다시 `reload()` 하면 이어서 돕니다.
+
+mruby 는 네이티브 CI 와 같은 4.0.0 을 `MRuby::CrossBuild` 로 굽습니다 (설정 `tools/web/mruby_build_config.rb`).
+gem 은 네이티브(Homebrew 의 full-core)에서 브라우저에 맞지 않는 소켓과 태스크 스케줄러, 실행 파일만 뺐고,
+`File` 과 `Dir` 은 메모리 파일 시스템 위에서 돕니다. 예외는 엔진의 나머지와 같은 wasm 예외(`-fwasm-exceptions`)이며,
+정수는 네이티브처럼 64비트입니다. Ruby 판 알데바란도 브라우저에서 60 프레임으로 돕니다.
 
 키보드는 canvas 가 포커스를 가진 동안만 게임으로 갑니다. 소리는 브라우저 정책상 클릭 뒤에 납니다. 아직 없는 것은
-mruby(libmruby 교차 빌드가 필요합니다)와 TCP 핫 리로드(`tools/hmr_push.py` 대신 `reload()` 를 씁니다)이고,
-`INITIAL2D_SCREENSHOT` 은 메모리 파일 시스템에 쓰이므로 `game.module.FS.readFile` 로 꺼냅니다. `--features` 는
-`lua wasm` 을 찍습니다.
+TCP 핫 리로드(`tools/hmr_push.py` 대신 `reload()` 를 씁니다)이고, `INITIAL2D_SCREENSHOT` 은 메모리 파일 시스템에
+쓰이므로 `game.module.FS.readFile` 로 꺼냅니다. `game.features()` 는 `lua mruby wasm` 입니다 (mruby 없이 빌드하면
+`lua wasm`).
 
 ## 핫 리로드 (HMR)
 
