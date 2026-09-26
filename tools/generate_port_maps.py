@@ -10,11 +10,16 @@
 
 타일은 resources/tiles/port16.png (tools/generate_port_tileset.py).
 
+타일, collision, tilesets만 새로 쓰고 기존 파일의 events와 objects는 그대로 둔다
+(tools/mapfile.py의 write_map). 이벤트는 에디터가 맵 파일에 놓는 것이라 생성기가
+만들지 않는다.
+
 Usage: python3 tools/generate_port_maps.py
 """
 
-import json
 import os
+
+from mapfile import write_map
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAPS = os.path.join(REPO, "resources", "maps")
@@ -182,8 +187,8 @@ class Grid:
                 if (dx, dy) in holes:
                     self.block(x + dx, y + dy, False)
 
-    def to_map(self, name, map_id, events=None):
-        """맵 포맷. events가 있으면 v2다 (없으면 v1 그대로 — 옛 파일도 열린다).
+    def to_map(self, name, map_id):
+        """맵 포맷. events와 objects는 write_map이 기존 파일에서 이어받는다.
 
         over 층은 비어 있으면 내보내지 않는다. 그래야 실내처럼 머리 위에 아무것도
         없는 맵이 쓸데없이 빈 배열을 싣지 않는다.
@@ -195,17 +200,14 @@ class Grid:
         if any(self.over):
             layers.append({"name": "over", "data": self.over})
 
-        data = {
-            "version": 2 if events else 1, "name": name, "id": map_id,
+        return {
+            "version": 2, "name": name, "id": map_id,
             "width": self.w, "height": self.h,
             "tileWidth": 16, "tileHeight": 16,
             "layers": layers,
             "collision": self.collision,
             "tilesets": [dict(TILESET)],
         }
-        if events:
-            data["events"] = events
-        return data
 
 
 # ---- 항구 마을 -------------------------------------------------------------
@@ -326,19 +328,7 @@ def build_town():
     # 다 그린 뒤에 잔디와 모래가 만나는 자리를 가장자리 타일로 바꾼다
     m.blend_sand(GRASS)
 
-    # 맵 파일이 실어 나르는 이벤트 (포맷 v2). 좌표와 커맨드가 전부 데이터라
-    # 맵 에디터가 이 자리에서 만들 수 있다 — 나머지 이벤트는 아직 Lua 정의
-    # 파일에 있다 (배회 설정처럼 데이터로만 적기 어려운 것이 섞여 있다).
-    events = [{
-        "id": "crates",
-        "x": 14, "y": 40,
-        "trigger": "action",
-        "commands": [{
-            "code": "message",
-            "text": "누군가의 짐이다. 남쪽으로 간다는 표가 붙어 있다.",
-        }],
-    }]
-    return m.to_map("항구 마을", 10, events)
+    return m.to_map("항구 마을", 10)
 
 
 # ---- 여관 1층 --------------------------------------------------------------
@@ -389,10 +379,9 @@ def build_inn():
 
 def write(name, data):
     path = os.path.join(MAPS, name)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    merged = write_map(path, data)
     print("generated:", os.path.relpath(path, REPO),
-          f"({data['width']}x{data['height']})")
+          f"({data['width']}x{data['height']}, 이벤트 {len(merged.get('events') or [])}개 유지)")
 
 
 def main():

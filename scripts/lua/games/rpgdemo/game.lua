@@ -8,18 +8,24 @@
 --   X (터치는 취소 버튼): 소지품 창 열고 닫기, 선택지 취소
 --   ESC 또는 Android 뒤로가기: 타이틀로
 --
--- 맵과 이벤트 정의는 scripts/lua/maps/<이름>.lua 가 짝으로 들고 있다. 이 씬은 그
--- 정의를 읽어 씬을 세우고, ctx.transfer 요청이 오면 페이드를 걸고 다시 세운다.
+-- 맵 등록(이름, 맵 파일, 정의 파일)은 resources/data/rpg-game.json 에 있다 (config.lua).
+-- 이벤트는 맵 파일의 events 와 정의 파일 scripts/lua/maps/<이름>.lua 양쪽에서 온다.
+-- 맵 파일의 이벤트는 열 때 검사해 틀린 것만 건너뛰고 rpg:error 줄을 찍는다
+-- (docs/plans/m2-rpg-events.md). ctx.transfer 요청이 오면 페이드를 걸고 다시 세운다.
 --
 -- 16px 타일을 768x896 화면에 1:1로 그리면 캐릭터가 점처럼 보이므로 렌더 배율
 -- 2를 켠다 (논리 해상도 384x448). 씬을 나갈 때 1로 되돌린다.
 --
 -- 환경 변수
---   INITIAL2D_MAP       시작 맵 정의 이름 (village, room)
+--   INITIAL2D_MAP       시작 맵 이름 (rpg-game.json 의 maps[].name)
 --   INITIAL2D_CHARSET   다른 CharSet. 없으면 변환된 RTP를, 그것도 없으면 플레이스홀더
 --                       (대화창 스킨과 얼굴도 같은 규칙으로 고른다)
 --   INITIAL2D_RPG_SCALE 렌더 배율 (기본 2)
 --   INITIAL2D_DEBUG     좌표와 FPS 표시
+--   INITIAL2D_RPG_AT    첫 맵의 시작 칸과 방향 (x,y[,dir])
+--   INITIAL2D_RPG_STATE 새 게임의 시작 상태 (arrived,silver=2,item:shell=1)
+--   INITIAL2D_RPG_ROUTE 한 번만 걷는 자동 재생 경로. 끝나면 rpg:route:done 을 찍고 끝낸다
+--   INITIAL2D_RPG_TRACE 맵, 플레이어, 이벤트, 대사, 선택지, 이동을 rpg: 줄로 찍는다
 
 local MapScene = require("scripts/lua/rpg/map_scene")
 local Player = require("scripts/lua/rpg/player")
@@ -37,16 +43,14 @@ local Bgm = require("scripts/lua/bgm")
 local Inventory = require("scripts/lua/rpg/inventory")
 local Menu = require("scripts/lua/rpg/menu")
 local Items = require("scripts/lua/games/rpgdemo/items")
+local Config = require("scripts/lua/games/rpgdemo/config")
+local PlayEnv = require("scripts/lua/games/rpgdemo/playenv")
 
 RpgDemoScene = {}
 
--- 데모의 맵. village와 room은 6단계의 회귀 테스트가 계속 쓰므로 남겨 둔다.
-local MAPS = {
-	port_town = "scripts/lua/maps/port_town",
-	inn = "scripts/lua/maps/inn",
-	village = "scripts/lua/maps/village",
-	room = "scripts/lua/maps/room",
-}
+-- 맵 이름 → 정의 모듈 경로. init 이 rpg-game.json 에서 채운다.
+local MAPS = {}
+local config = nil
 local START_MAP = "port_town"
 
 -- 엔진의 텍스트 경로에는 확대와 축소가 없다. 화면이 논리 384x448이라 32px 폰트는
@@ -94,9 +98,35 @@ local padPrev = nil               -- 가상 패드 방향의 직전 값 (엣지 
 local DEFAULT_AUTO_ROUTE = { "talk" }
 local autoRoute = DEFAULT_AUTO_ROUTE
 local autoTimer, autoIndex = 0, 1
+local autoplay = false            -- AUTOPLAY 이거나 INITIAL2D_RPG_ROUTE 가 있다
+
+-- INITIAL2D_RPG_ROUTE 의 걸음. 맵을 옮겨도 이어서 걷고, 다 걸으면 끝낸다.
+local routeSteps, routeIndex, routeDone = nil, 1, false
+local tracing = false             -- INITIAL2D_RPG_TRACE
 
 local function env(name)
 	return (os.getenv ~= nil) and os.getenv(name) or nil
+end
+
+--- rpg:error 줄. TRACE 와 상관없이 늘 찍는다.
+local function reportError(where, message)
+	print(PlayEnv.errorLine(where, message))
+end
+
+local function trace(line)
+	if tracing then print(line) end
+end
+
+-- trace 줄의 값. 정수 모양의 실수(JSON 의 2.0)도 2 로 쓰고, nil 은 빈칸이다.
+local function field(v)
+	if v == nil then return "" end
+	return tostring(math.type(v) == "float" and math.tointeger(v) or v)
+end
+
+--- 정의 파일 경로 (rpg-game.json 의 def, "./" 없이)
+local function defFileOf(name)
+	local entry = Config.mapEntry(config, name)
+	return entry ~= nil and Config.bare(entry.def) or tostring(MAPS[name]) .. ".lua"
 end
 
 -- ---- 대화창 (7단계) -------------------------------------------------------
@@ -123,16 +153,22 @@ end
 local function spawnEvent(def)
 	local ev = Event.new{
 		id = def.id, x = def.x, y = def.y, dir = def.dir,
-		trigger = def.trigger, script = def.script,
+		trigger = def.trigger,
+		-- 함수 script 는 정의 파일만 준다. 맵 파일의 같은 이름 키는 모르는 키로 두고 쓰지 않는다
+		script = (type(def.script) == "function") and def.script or nil,
 		commands = def.commands, scripts = mapScripts,
 		charset = def.charset, through = def.through, solid = def.solid,
 		data = def.data,
 	}
 
 	if def.charset ~= nil then
+		local file = def.charset.file
+		if type(file) ~= "string" or file == "" then
+			error("외형(charset)에 file 이 없다", 0)
+		end
 		ev.character = scene:addCharacter{
 			tx = def.x, ty = def.y, dir = def.dir,
-			charset = def.charset.file or charsetPath,
+			charset = file,
 			charIndex = def.charset.index or 0,
 			speed = def.speed or 3,
 			name = def.id,
@@ -149,6 +185,19 @@ local function spawnEvent(def)
 	return ev
 end
 
+--- 맵 파일의 이벤트를 읽어 검사하고, 틀린 것은 빼고 외형과 얼굴을 파일로 푼다.
+-- @return 이벤트 배열, 뺀 수, 읽기 오류
+local function mapFileEvents(def, mapFile)
+	local fromMap, _, loadErr = MapData.loadEvents(def.map)
+	if loadErr ~= nil then return nil, 0, loadErr end
+	local _, problems, valid, skipped = MapData.validateEvents(fromMap, { scripts = def.scripts })
+	for _, p in ipairs(problems) do
+		reportError(mapFile .. ":" .. p.path, p.message)
+	end
+	return MapData.resolveAssets(valid), skipped, nil
+end
+
+--- 맵을 연다. 실패하면 씬을 비우고 sceneError 에 이유를 둔다 (화면에 "맵 로드 실패").
 local function loadMap(name, startX, startY, startDir)
 	disposeMap()
 	mapName = name
@@ -156,15 +205,19 @@ local function loadMap(name, startX, startY, startDir)
 	local modulePath = MAPS[name]
 	if modulePath == nil then
 		sceneError = "알 수 없는 맵: " .. tostring(name)
+		reportError("rpg-game.json", "등록되지 않은 맵 " .. tostring(name))
 		return
 	end
 
+	local defFile = defFileOf(name)
 	local ok, def = pcall(require, modulePath)
 	if not ok then
 		sceneError = "이벤트 정의 로드 실패: " .. tostring(def)
+		reportError(defFile, def)
 		return
 	end
 	mapScripts = def.scripts
+	local mapFile = Config.bare(def.map) or tostring(def.map)
 
 	local err
 	-- groundLayers는 "캐릭터보다 아래에 그릴 레이어 수"다. 맵마다 다르므로
@@ -177,9 +230,29 @@ local function loadMap(name, startX, startY, startDir)
 	}
 	if scene == nil then
 		sceneError = err
+		reportError(mapFile, err)
 		return
 	end
 	sceneError = nil
+
+	-- 이벤트는 맵 파일(에디터가 놓은 것)과 정의 파일(사람이 쓴 것) 양쪽에서 온다.
+	-- 같은 id 면 정의 파일이 이긴다.
+	local fromMap, skipped, loadErr = mapFileEvents(def, mapFile)
+	if loadErr ~= nil then
+		disposeMap()
+		sceneError = "맵 이벤트 로드 실패: " .. tostring(loadErr)
+		reportError(mapFile, sceneError)
+		return
+	end
+	local eventDefs, overridden = MapData.merge(fromMap, def.events)
+	trace(string.format("rpg:map:%s events:%d skipped:%d", name, #eventDefs, skipped))
+	for _, id in ipairs(overridden) do
+		trace("rpg:override:" .. tostring(id))
+	end
+	local fromDef = {}
+	for _, edef in ipairs(def.events or {}) do
+		if type(edef) == "table" and edef.id ~= nil then fromDef[edef.id] = true end
+	end
 
 	-- 맵마다 곡이 다를 수 있다. 같은 곡이면 Bgm이 알아서 넘어가므로 맵을
 	-- 오갈 때 음악이 끊기지 않는다.
@@ -196,21 +269,20 @@ local function loadMap(name, startX, startY, startDir)
 		charset = charsetPath, charIndex = 0, speed = 4, name = "player",
 	}
 	scene:setCameraTarget(playerChar)
+	trace("rpg:player:" .. name .. "," .. field(playerChar.tx) .. "," .. field(playerChar.ty)
+		.. "," .. field(playerChar.dir))
 
 	rng = Rng.new(WANDER_SEED)   -- 맵마다 같은 시드에서 시작 (재현 가능한 데모)
 
 	events = Event.newManager{ player = playerChar, interpreter = interp }
-	-- 이벤트는 맵 파일(에디터가 놓은 것)과 정의 파일(사람이 쓴 것) 양쪽에서 온다
-	local eventDefs, eventErr = MapData.eventsFor(def)
-	if eventErr ~= nil then
-		sceneError = "맵 이벤트 로드 실패: " .. tostring(eventErr)
-		return
-	end
 	for _, edef in ipairs(eventDefs) do
-		-- 커맨드가 틀리면 Event.new가 어느 자리인지와 함께 죽는다. 게임을 통째로
-		-- 멈추는 대신 씬 오류로 띄운다 (맵 로드 실패와 같은 경로).
+		-- 정의 파일의 이벤트가 틀리면 Event.new 가 어느 자리인지와 함께 죽는다. 게임을
+		-- 통째로 멈추는 대신 씬 오류로 띄우고 stdout 에도 찍는다.
 		local built, result = pcall(spawnEvent, edef)
 		if not built then
+			local source = fromDef[edef.id] and defFile or mapFile
+			reportError(source .. ":" .. tostring(edef.id), result)
+			disposeMap()
 			sceneError = tostring(result)
 			return
 		end
@@ -232,8 +304,10 @@ local function loadMap(name, startX, startY, startDir)
 end
 
 --- ctx.transfer 요청. 페이드가 끝난 뒤에 실제 교체가 일어난다.
-local function requestTransfer(target, x, y)
-	fade.pending = { name = target, x = x, y = y }
+-- dir 이 없으면 정의 파일의 start.dir 로 선다.
+local function requestTransfer(target, x, y, dir)
+	trace("rpg:transfer:" .. field(target) .. "," .. field(x) .. "," .. field(y) .. "," .. field(dir))
+	fade.pending = { name = target, x = x, y = y, dir = dir }
 	fade.dir = 1
 	Audio.PlaySound(SE_DOOR, "door", 0)
 end
@@ -318,6 +392,16 @@ function RpgDemoScene.init()
 
 	charsetPath = env("INITIAL2D_CHARSET") or Assets.playerCharset()
 
+	tracing = PlayEnv.enabled(env("INITIAL2D_RPG_TRACE"))
+	local routeText = env("INITIAL2D_RPG_ROUTE")
+	routeSteps, routeIndex, routeDone = nil, 1, false
+	if routeText ~= nil then
+		local steps, bad = PlayEnv.parseRoute(routeText)
+		for _, b in ipairs(bad) do reportError("route:" .. b.entry, b.message) end
+		routeSteps = steps
+	end
+	autoplay = (AUTOPLAY == true) or routeSteps ~= nil
+
 	if VirtualPad.shouldShow() then
 		local size = math.floor(PAD_DEVICE_SIZE / scale)
 		local margin = math.floor(24 / scale)
@@ -368,8 +452,30 @@ function RpgDemoScene.init()
 		},
 	}
 
+	local port = dialogue:port()
+	if tracing then
+		local showMessage, showChoice = port.showMessage, port.showChoice
+		port.showMessage = function(text, opts)
+			print("rpg:message:" .. PlayEnv.escape(opts ~= nil and opts.name or "")
+				.. "|" .. PlayEnv.escape(text))
+			return showMessage(text, opts)
+		end
+		port.showChoice = function(options, opts)
+			local shown = {}
+			for i, option in ipairs(options) do shown[i] = PlayEnv.escape(option) end
+			print("rpg:choice:" .. table.concat(shown, "|"))
+			return showChoice(options, opts)
+		end
+	end
+
+	-- 새 게임의 시작 상태 (INITIAL2D_RPG_STATE). 틀린 항목은 건너뛴다.
+	local startState, badState = PlayEnv.parseState(env("INITIAL2D_RPG_STATE"), Items)
+	for _, b in ipairs(badState) do reportError("state:" .. b.entry, b.message) end
+
 	interp = Interpreter.new{
-		messagePort = dialogue:port(),
+		messagePort = port,
+		state = startState,
+		onStart = function(event) trace("rpg:event:" .. tostring(event.id)) end,
 		host = {
 			transfer = requestTransfer, characterById = characterById,
 			playSe = hostPlaySe, playBgm = hostPlayBgm,
@@ -377,7 +483,45 @@ function RpgDemoScene.init()
 		},
 	}
 
-	loadMap(env("INITIAL2D_MAP") or START_MAP)
+	-- 틀린 maps 항목은 빠져 있고 나머지 맵은 그대로 열린다. 문제마다 한 줄
+	local configProblems
+	config, configProblems = Config.load()
+	for _, p in ipairs(configProblems) do
+		reportError(Config.where("rpg-game.json", p.path), p.message)
+	end
+	if config == nil then
+		MAPS = {}
+		sceneError = "rpg-game.json: " .. tostring(configProblems[1].message)
+		return
+	end
+	MAPS = Config.mapModules(config)
+
+	-- 첫 맵의 시작 칸 (INITIAL2D_RPG_AT). 틀리면 정의 파일의 시작에 선다.
+	local at = nil
+	local atText = env("INITIAL2D_RPG_AT")
+	if atText ~= nil and atText ~= "" then
+		local why
+		at, why = PlayEnv.parseAt(atText)
+		if at == nil then reportError("at:" .. atText, why) end
+	end
+	if at ~= nil then
+		loadMap(env("INITIAL2D_MAP") or START_MAP, at.x, at.y, at.dir)
+	else
+		loadMap(env("INITIAL2D_MAP") or START_MAP)
+	end
+end
+
+--- 자동 시연의 다음 걸음. INITIAL2D_RPG_ROUTE 는 한 번만 걷고 다 걸으면 nil,
+-- 그 밖에는 맵 정의 파일의 autoRoute 를 되풀이한다.
+local function nextAutoStep()
+	if routeSteps ~= nil then
+		local step = routeSteps[routeIndex]
+		if step ~= nil then routeIndex = routeIndex + 1 end
+		return step
+	end
+	local step = autoRoute[autoIndex]
+	autoIndex = autoIndex % #autoRoute + 1
+	return step
 end
 
 -- 결정키: 대화를 넘기거나, 선택지를 고르거나, 말을 건다
@@ -441,7 +585,7 @@ function RpgDemoScene.update(elapsed)
 			local t = fade.pending
 			fade.pending = nil
 			if t ~= nil then
-				loadMap(t.name, t.x, t.y)
+				loadMap(t.name, t.x, t.y, t.dir)
 			end
 			fade.dir = -1
 		elseif fade.dir < 0 and fade.alpha <= 0 then
@@ -461,48 +605,53 @@ function RpgDemoScene.update(elapsed)
 	end
 	if menu ~= nil then menu:update(nil) end
 
-	if AUTOPLAY then
-		-- 자동 시연: 촌장 쪽으로 걸어가 말을 걸고, 대화는 알아서 넘긴다
+	if autoplay then
+		-- 자동 시연: 정해진 길을 걸으며 말을 걸고, 대화는 알아서 넘긴다 (선택지는 첫 항목)
 		autoTimer = autoTimer + elapsed
 		if dialogue:isBusy() then
 			if autoTimer > 700 then
 				autoTimer = 0
 				input.confirm = true
 			end
-		elseif interp:isBusy() then
-			-- 스크립트가 도는 중이면 기다린다
+		elseif interp:isBusy() or events:hasPendingAuto() then
+			-- 스크립트가 돌거나 다음 auto 가 기다리면 기다린다
 		elseif autoTimer > 200 and not playerChar:isMoving() then
 			autoTimer = 0
-			local step = autoRoute[autoIndex]
-			autoIndex = autoIndex % #autoRoute + 1
+			local step = nextAutoStep()
 			if step == "talk" then
 				events:confirm()
-			else
+			elseif step ~= nil then
 				playerChar:request(step)
+			elseif not routeDone and not events:hasPendingAuto() then
+				-- INITIAL2D_RPG_ROUTE 를 다 걸었고 도는 이벤트도 기다리는 auto 도 없다
+				routeDone = true
+				print("rpg:route:done")
+				if GameExit ~= nil then GameExit() end
 			end
 		end
 	end
 
 	-- 대화창이 결정키를 먼저 가져간다. 대화를 닫은 그 누름으로 같은 NPC에게 다시
 	-- 말을 걸지 않도록, 말 걸기는 "이번 프레임을 한가하게 시작했는가"로 판단한다.
-	local wasIdle = not dialogue:isBusy() and not interp:isBusy()
+	-- 기다리는 auto 가 있으면 한가하지 않다 (auto 와 auto 사이에도 조작이 잠긴다).
+	local wasIdle = not dialogue:isBusy() and not interp:isBusy() and not events:hasPendingAuto()
 	dialogue:update(input, interp:isBusy())
 
 	-- 취소키는 한가할 때 소지품 창을 연다. 선택지가 떠 있으면 대화창이 먼저
 	-- 가져가므로(위의 dialogue:update) 여기까지 오지 않는다.
-	if not AUTOPLAY and wasIdle and input.cancel and menu ~= nil then
+	if not autoplay and wasIdle and input.cancel and menu ~= nil then
 		menu:open(Inventory.list(interp.state, Items))
 		Audio.PlaySound(SE_DECISION, "uiDecision", 0)
 		return
 	end
 
-	if not AUTOPLAY and wasIdle and input.confirm then
+	if not autoplay and wasIdle and input.confirm then
 		events:confirm()
 	end
 
-	if player ~= nil and not AUTOPLAY then
-		-- 이벤트가 도는 동안 플레이어만 멈춘다. 맵과 병렬 이벤트는 계속 돈다.
-		player.enabled = not interp:isBusy() and not dialogue:isBusy()
+	if player ~= nil and not autoplay then
+		-- 이벤트가 돌거나 다음 auto 가 기다리는 동안 플레이어만 멈춘다. 맵과 병렬 이벤트는 계속 돈다.
+		player.enabled = not interp:isBusy() and not dialogue:isBusy() and not events:hasPendingAuto()
 		player:update()
 	end
 

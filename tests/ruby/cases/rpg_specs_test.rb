@@ -99,6 +99,10 @@ T.run_case("rpg_specs") do |t|
   t.check_eq(s.walk_pattern_at(3), 1, "걸음 3 (서기로 복귀)")
   t.check_eq(s.walk_pattern_at(4), 0, "걸음 4는 다시 처음")
   t.check_eq(s.walk_pattern_at(103), s.walk_pattern_at(3), "큰 값도 주기가 같다")
+  # 서기 열은 규격 표의 칸이다 (event-commands.json 의 sheets.charset.standPattern 과 같은 값)
+  t.check_eq(c[:stand_pattern], 1, "서 있는 자세는 가운데 열")
+  t.check_eq(s.walk_pattern_at(1), c[:stand_pattern], "걷기 순서의 둘째 걸음이 서기 열")
+  t.check_eq(s.walk_pattern_at(3), c[:stand_pattern], "걷기 순서의 넷째 걸음이 서기 열")
 
   # [6] FaceSet과 ChipSet 좌표
   fx, fy, fw = s.faceset_rect(0)

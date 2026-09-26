@@ -131,6 +131,9 @@
     }
   ],
   "play": {
+    "maps": [
+      "aldebaran_*"
+    ],
     "env": {
       "INITIAL2D_SCENE": "aldebaran",
       "INITIAL2D_SKIP_INTRO": "1",

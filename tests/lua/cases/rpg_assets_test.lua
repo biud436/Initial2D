@@ -65,6 +65,43 @@ function M.run(t)
 	t.check_eq(Assets.mapPath("room", nil), "./resources/maps/room.json",
 		"칩셋 이름이 없으면 기본 판")
 	t.check(Assets.exists(Assets.mapPath("room", "Interior")), "오두막 맵도 실재한다")
+
+	-- [6] 논리 이름 (맵 파일의 { set, index }). 목록 자체는 rpg_event_schema_test 가 스키마와 대조한다
+	t.check_eq(Assets.SETS.charset.npc, Assets.NPC_CHARSET, "charset.npc 는 NPC 후보 목록")
+	t.check_eq(Assets.SETS.charset.player, Assets.PLAYER_CHARSET, "charset.player 는 플레이어 후보 목록")
+	t.check_eq(Assets.SETS.face.npc, Assets.FACESET, "face.npc 는 FaceSet 후보 목록")
+	t.check_eq(Assets.resolveRef("charset", { set = "npc", index = 3 }), Assets.npcCharset(),
+		"set 은 후보 중 있는 파일로 푼다")
+	t.check_eq(Assets.resolveRef("charset", { set = "player" }), Assets.playerCharset(),
+		"플레이어 외형도 이름으로 고른다")
+	t.check_eq(Assets.resolveRef("face", { set = "npc", index = 6 }), Assets.faceset(), "얼굴 이름")
+	t.check_eq(Assets.resolveRef("face", { file = "./x.png", index = 1 }), "./x.png",
+		"file 은 그대로 돌려준다")
+	local missing, why = Assets.resolveRef("face", { set = "player" })
+	t.check(missing == nil and type(why) == "string", "없는 이름은 nil 과 이유", why)
+	t.check_eq(Assets.resolveRef("sprite", { set = "npc" }), nil, "모르는 종류는 nil")
+	t.check_eq(Assets.resolveRef("charset", "npc"), nil, "객체가 아니면 nil")
+
+	-- [7] checkRef: 모양 검사 (경로 끝부분과 이유)
+	local function tails(kind, ref)
+		local out = {}
+		for _, p in ipairs(Assets.checkRef(kind, ref)) do
+			out[#out + 1] = p.path == "" and "@" or p.path    -- @ 는 참조 자체
+		end
+		return table.concat(out, ",")
+	end
+	t.check_eq(tails("charset", { set = "npc", index = 7 }), "", "올바른 외형")
+	t.check_eq(tails("charset", { set = "npc", index = 8 }), ".index", "외형 번호는 0..7")
+	t.check_eq(tails("face", { set = "npc", index = 15 }), "", "얼굴 번호 15 는 된다")
+	t.check_eq(tails("face", { set = "npc", index = 16 }), ".index", "얼굴 번호는 0..15")
+	t.check_eq(tails("face", { set = "npc", index = -1 }), ".index", "음수 번호")
+	t.check_eq(tails("face", { set = "player" }), ".set", "얼굴에는 player 이름이 없다")
+	t.check_eq(tails("charset", { set = "npc", file = "./a.png" }), "@", "둘 다 있으면 참조 자체")
+	t.check_eq(tails("charset", {}), "@", "둘 다 없어도 참조 자체")
+	t.check_eq(tails("charset", 3), "@", "객체가 아니면 참조 자체 하나")
+	t.check_eq(tails("charset", { file = 5 }), ".file", "파일이 글이 아니다")
+	t.check_eq(tails("face", { file = "", index = 0 }), ".file", "얼굴 파일이 빈 글")
+	t.check_eq(tails("charset", { "npc", 1 }), "@", "배열은 객체가 아니다 (참조 자체 하나)")
 end
 
 return M

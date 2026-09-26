@@ -156,6 +156,73 @@ function M.run(t)
 	t.check_eq(#mgr.events, 0, "이벤트 목록이 비워진다")
 	t.check_eq(mgr:get("intro"), nil, "id 색인도 비워진다")
 	t.check_eq(mgr:at(0, 0), nil, "조회도 비워진다")
+
+	-- ---- [8] auto 가 여럿이면 병합 순서대로 하나씩 돈다 ----------------------
+	port = fakePort()
+	interp = Interpreter.new{ messagePort = port }
+	player = Character.new{ tx = 0, ty = 0 }
+	mgr = Event.newManager{ player = player, interpreter = interp }
+	local order = {}
+	local function autoSays(id, text)
+		return Event.new{ id = id, x = 0, y = 0, trigger = "auto",
+			script = function(self, ctx) order[#order + 1] = id; ctx.message(text) end }
+	end
+	mgr:add(autoSays("first", "하나"))
+	mgr:add(Event.new{ id = "sign", x = 3, y = 3, trigger = "action",
+		script = function() order[#order + 1] = "sign" end })
+	local off = mgr:add(autoSays("disabled", "꺼짐"))
+	off.enabled = false
+	mgr:add(autoSays("second", "둘"))
+
+	mgr:onMapStart()
+	t.check_eq(table.concat(order, ","), "first", "맵에 들어오면 첫 auto 만 시작한다")
+	t.check_eq(mgr:hasPendingAuto(), true, "둘째 auto 가 기다린다")
+	mgr:update()
+	t.check_eq(table.concat(order, ","), "first", "첫 auto 가 도는 동안 둘째는 기다린다")
+
+	port.close(); interp:update()
+	t.check_eq(interp:isBusy(), false, "첫 auto 가 끝났다")
+	mgr:update()
+	t.check_eq(table.concat(order, ","), "first,second",
+		"첫 auto 가 끝나면 다음 auto 가 돈다 (꺼진 것은 건너뛴다)")
+	t.check_eq(interp:isBusy(), true, "둘째 auto 도 조작을 잠근다")
+	t.check_eq(mgr:hasPendingAuto(), false, "기다리는 auto 가 더 없다")
+
+	port.close(); interp:update()
+	for _ = 1, 3 do mgr:update(); interp:update() end
+	t.check_eq(table.concat(order, ","), "first,second", "auto 는 맵에 들어올 때 한 번씩만 돈다")
+
+	-- ---- [9] 첫 auto 가 transfer 하면 둘째는 돌지 않는다 ---------------------
+	local function leavingCase(messageFirst)
+		local p = fakePort()
+		local moved = nil
+		local it = Interpreter.new{ messagePort = p,
+			host = { transfer = function(map) moved = map end } }
+		local m = Event.newManager{ player = Character.new{ tx = 0, ty = 0 }, interpreter = it }
+		local ran = {}
+		local leave = { { code = "transfer", map = "inn", x = 1, y = 1 } }
+		if messageFirst then
+			table.insert(leave, 1, { code = "message", text = "떠난다" })
+		end
+		m:add(Event.new{ id = "leave", x = 0, y = 0, trigger = "auto", commands = leave })
+		m:add(Event.new{ id = "stay", x = 0, y = 0, trigger = "auto",
+			script = function() ran.stay = true end })
+		m:onMapStart()
+		if messageFirst then
+			t.check_eq(m:hasPendingAuto(), true, "대화 중에는 둘째 auto 가 기다린다")
+			p.close(); it:update()
+		end
+		t.check_eq(moved, "inn", "첫 auto 가 transfer 를 부른다")
+		for _ = 1, 3 do m:update(); it:update() end
+		return ran.stay, m:hasPendingAuto()
+	end
+
+	local stayed, pending = leavingCase(false)
+	t.check_eq(stayed, nil, "첫 커맨드가 transfer 면 둘째 auto 는 돌지 않는다")
+	t.check_eq(pending, false, "맵을 떠나면 기다리던 auto 를 버린다")
+	stayed, pending = leavingCase(true)
+	t.check_eq(stayed, nil, "대화 뒤에 transfer 해도 둘째 auto 는 돌지 않는다")
+	t.check_eq(pending, false, "대화 뒤의 transfer 도 기다리던 auto 를 버린다")
 end
 
 return M
