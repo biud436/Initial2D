@@ -308,6 +308,21 @@ def test_mruby_flappy_scene():
         shutil.copy(os.path.join(work, "shot_0150.bmp"), "/tmp/initial2d_mruby_flappy.bmp")
 
 
+def test_lua_error_scene():
+    """Lua 스크립트 오류가 PANIC(abort, 134)이 아니라 "파일:줄: 메시지" 한 줄과 종료 코드 1로 끝난다.
+    mruby 와 같은 무게이며, 에디터(InitialEditor E1)의 콘솔이 그 줄을 링크로 만든다."""
+    print("\n[1g] lua_error_scene — Lua 오류는 abort 가 아니라 보고와 종료 코드 1")
+    work, result, _ = run_scene("lua_error_scene.lua", [], 600)
+    log = result.stdout + result.stderr
+    check("종료 코드 1", result.returncode == 1, f"returncode={result.returncode}")
+    check("PANIC 이 없다", "PANIC" not in log, log[-300:])
+    check("파일:줄: 메시지 한 줄",
+          re.search(r"Lua error in update: \./scripts/lua/main\.lua:15: attempt to index a nil value", log) is not None,
+          log[-400:])
+    check("init 은 돌았다", "lua_error:init" in log, log[-300:])
+    shutil.rmtree(work, ignore_errors=True)
+
+
 def test_lua_units():
     """tests/lua/ 의 Lua 단위 테스트를 엔진 바이너리로 실행한다 (09-testing.md 3.2절)."""
     print("\n[0] lua_unit_tests — Lua 단위 테스트 (엔진 VM에서 실행)")
@@ -1187,6 +1202,7 @@ def main():
         test_assert_scene,
         test_mruby_assert_scene,
         test_mruby_flappy_scene,
+        test_lua_error_scene,
         test_tilemap_scene,
         test_rpg_walk_scene,
         test_rpg_event_scene,

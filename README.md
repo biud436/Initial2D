@@ -191,6 +191,7 @@ macOS 포팅을 기반으로 Android까지 확장하였습니다. 역시 AI와�
 - 알데바란의 그림을 이미지 생성 모델에게 (진행 중, 2026-09). 코드로 찍던 도트를 GPT가 그리고, `tools/import_gpt_art.py`가 잘라서 시트로 굽습니다. 카르토와 숲 몬스터부터 바꿨고, 배경 원본은 `python3 tools/import_gpt_art.py pull far_entrance`로 `~/Downloads`에서 가져온 뒤 `python3 tools/import_gpt_art.py inspect-bg resources/aldebaran/src/gpt/far_entrance.png`로 확인하고 `python3 tools/import_gpt_art.py build-bg far_entrance --preview /tmp/far_entrance_preview.png`로 384x448 반복 배경을 굽습니다 ([메타 프롬프트](./docs/prompts/aldebaran-art-meta-prompt.md))
 - Ruby(mruby)로도 스크립트를 쓸 수 있게 (완료, 2026-09). Lua와 하나씩 짝이 되는 바인딩이고, Lua 검증 씬을 Ruby로 옮긴 것이 같은 골든 스크린샷을 통과합니다. 플래피를 Ruby로 다시 썼습니다 ([계획](./docs/plans/s1-mruby-binding.md))
 - 다음 로드맵: 에디터의 이벤트 편집기, 저장과 로드, 오토타일, 씬 스택 ([로드맵 v2](./docs/plans/roadmap-v2.md))
+- 에디터를 다시 세우는 계획 (2026-09). Tauri 2 셸 위의 장르 중립 에디터로, 타일맵은 확장이고 실행 버튼이 이 엔진을 띄웁니다. 엔진 쪽 선행 작업(씬 로더, API 스텁, Emscripten 빌드)은 [docs/plans](./docs/plans/index.md)의 에디터 트랙에, 에디터 계획은 InitialEditor 저장소의 `docs/plans/`에 있습니다
 
 # 스크립트 예제
 
@@ -581,6 +582,8 @@ Ruby 알데바란은 `scripts/ruby/games/aldebaran/`에 있고 Lua 판(`scripts/
 ## 씬 계약
 
 Lua의 `Initialize`, `Update`, `Render`, `Destroy`에 해당하는 최상위 메서드 넷입니다. 없는 것은 부르지 않습니다. 예외가 새어 나오면 메시지와 역추적을 stderr에 찍고 게임이 종료 코드 1로 끝납니다.
+
+Lua도 같습니다 (2026-09). 스크립트 오류는 abort(PANIC, 종료 코드 134)가 아니라 `Lua error in update: ./scripts/lua/main.lua:15: attempt to index a nil value` 처럼 파일과 줄이 든 한 줄을 stderr에 찍고 종료 코드 1로 끝납니다. `LoadScript`의 실패(문법 오류, 없는 파일)도 삼키지 않고 Lua 오류로 올립니다. 에디터의 콘솔은 그 줄을 눌러 그 자리로 갑니다.
 
 ```ruby
 def init; end             # 한 번
@@ -1372,6 +1375,32 @@ SDL_VIDEODRIVER=dummy INITIAL2D_SCENE=tilemap INITIAL2D_MAP=./resources/maps/my_
 INITIAL2D_SCENE=rpg INITIAL2D_MAP=village ./build/Initial2D
 ```
 
+## 스크립트 API 명세 (에디터 자동완성)
+
+엔진이 Lua와 Ruby에 내놓는 함수를 `resources/api/initial2d-api.json` 한 장에 모두 적어 두었습니다. Lua 이름과 Ruby 이름의 짝, 인자와 타입, 반환 타입, 한 줄 설명이 들어 있고 에디터 자동완성의 원천이 됩니다. 이 파일은 손으로 고치며, 바인딩과 어긋나면 테스트가 깨집니다.
+
+```bash
+# 명세를 고친 뒤 에디터용 스텁 두 장을 다시 만듭니다
+python3 tools/gen_api_stubs.py
+
+# 스텁이 명세와 같은지만 확인합니다 (다르면 종료 코드 1. tests/run_all.sh가 부릅니다)
+python3 tools/gen_api_stubs.py --check
+
+# 명세와 바인딩의 대조는 Lua, mruby 단위 테스트의 api_surface 케이스가 합니다
+python3 tests/run_engine_tests.py --only=lua_units,mruby_units
+```
+
+| 파일 | 내용 |
+| :--- | :--- |
+| `resources/api/initial2d-api.json` | 명세 원본 (손으로 유지) |
+| `resources/api/initial2d.lua` | Lua 스텁. LuaLS(EmmyLua) 주석이라 VS Code의 Lua 확장이 그대로 읽습니다 |
+| `resources/api/initial2d.rb` | Ruby 스텁. YARD 주석이라 Solargraph가 읽습니다 |
+
+- 바인딩을 더하거나 바꾸면 명세도 고치고 스텁을 다시 만들어 함께 커밋합니다. 명세를 빠뜨리면 `api_surface_test`가 양쪽으로 잡습니다 (명세에 있는데 엔진에 없는 이름, 엔진에 있는데 명세에 없는 이름).
+- 에디터는 브리지의 `GET /api/files/resources/api/initial2d-api.json`으로 명세를 읽어 완성 목록을 만듭니다. 모듈 이름 뒤에 점을 찍으면 `functions`와 `methods`를, 괄호를 열면 `params`와 `doc`을 보여 주는 식입니다.
+- Lua 쪽 모듈 이름이 `null`이면 전역 함수입니다 (`DrawText`, `WindowWidth`). `Sprite`, `Tilemap`, `FontEx`는 Ruby에서는 클래스이고 Lua에서는 숫자 핸들을 첫 인자로 받는 함수 표입니다.
+- 명세의 규칙과 필드 설명은 [docs/plans/r2-api-stubs.md](./docs/plans/r2-api-stubs.md)에 있습니다.
+
 # RTP 리소스 변환 (RPG Maker 2003)
 
 RPG Maker 2003의 RTP 소재를 엔진이 바로 읽는 형태로 바꾸는 도구입니다 (`tools/rtp_import.py`, Pillow 필요).
@@ -1426,7 +1455,7 @@ actor.setPosition(100, 200)
 
 # 테스트
 
-전체 검수는 스크립트 하나로 실행합니다. C++ 단위 테스트, Lua 단위 테스트, mruby 단위 테스트, 픽셀 검증, 골든 스크린샷 비교, 브리지 서버 테스트, RTP 변환 검증이 순서대로 수행됩니다.
+전체 검수는 스크립트 하나로 실행합니다. C++ 단위 테스트, API 스텁 확인, Lua 단위 테스트, mruby 단위 테스트, 픽셀 검증, 골든 스크린샷 비교, 브리지 서버 테스트, RTP 변환 검증이 순서대로 수행됩니다.
 
 ```bash
 # 빌드부터 전체 테스트까지 한 번에 실행 (기본은 헤드리스라 창을 띄우지 않습니다. CI와 동일)
