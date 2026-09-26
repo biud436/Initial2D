@@ -29,6 +29,9 @@ echo "== [2/6] C++ 단위 테스트 =="
 echo ""
 echo "== [3/6] 도구 self-test =="
 python3 tools/import_gpt_art.py selftest
+# 에디터 자동완성용 API 스텁이 명세(resources/api/initial2d-api.json)와 같은가 (R2).
+# 명세만 고치고 스텁을 다시 만들지 않았으면 여기서 멈춘다. 바인딩과의 대조는 [4/6] 의 단위 테스트가 한다
+python3 tools/gen_api_stubs.py --check
 
 echo ""
 echo "== [4/6] 엔진 씬 테스트 (Lua 단위 + 픽셀 검증 + 골든) =="
