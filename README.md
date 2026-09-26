@@ -148,6 +148,14 @@ INITIAL2D_SCENE=aldebaran INITIAL2D_SKIP_INTRO=1 \
   INITIAL2D_ALDEBARAN_STAGE=aldebaran_tomb INITIAL2D_ALDEBARAN_AT=2480 ./build/Initial2D
 ```
 
+`INITIAL2D_ALDEBARAN_TRACE=1`을 더하면 게임이 실제로 읽은 맵을 콘솔에 찍습니다. 맵 경로와 타일 검사합(레이어 순서와 칸 순서대로 `(합 * 31 + gid) mod 1000000007`), 그리고 몬스터마다 종류와 x와 순찰 범위입니다. 에디터의 실데이터 인수 테스트가 저장한 맵과 이 줄을 대조합니다. 시작 x를 준 실행은 늘 `알데바란: 시작 x ...` 줄도 찍습니다.
+
+```text
+알데바란: 맵 ./resources/maps/aldebaran_forest.json 타일 221069392
+알데바란: 시작 x 1966 (y 304)
+알데바란: 몬스터 spider x 224 범위 180..280
+```
+
 맵 생성기를 다시 돌려도 `objects`는 남습니다. 타일과 collision은 생성기가 새로 쓰므로 손으로 칠한 타일은 덮입니다. 맵 파일은 에디터와 같은 형식(2칸 들여쓰기, 타일은 맵 한 줄을 한 줄에)으로 쓰므로 diff가 칸 단위로 보입니다 (`tools/mapfile.py`, 형식은 `docs/plans/02-tilemap.md`).
 
 ```bash

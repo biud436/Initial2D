@@ -85,6 +85,10 @@ Lua 5.3과 mruby 모두 JSON의 `3`을 정수로, `3.0`을 실수로 읽는다. 
   `name`), 파일 이름(`aldebaran_tomb.json`), 프로젝트 기준 경로(`resources/maps/aldebaran_tomb.json`,
   `./`로 시작해도 된다), 그 경로로 끝나는 절대 경로(역슬래시도 된다)를 받는다. `Stages.get`이 이름을
   풀기 때문에 `game.lua`와 `game.rb`의 부르는 쪽은 그대로다. 다른 폴더의 같은 이름 파일은 받지 않는다.
+- `INITIAL2D_ALDEBARAN_TRACE=1`이면 스테이지를 열 때 `알데바란: 맵 <경로> 타일 <검사합>`을, 몬스터를 세울 때마다
+  `알데바란: 몬스터 <종류> x <x> 범위 <minX>..<maxX>`를 찍는다. 검사합은 레이어 순서와 칸 순서대로
+  `(합 * 31 + gid) mod 1000000007`이다 (`Placement.tileChecksum` / `tile_checksum`). 에디터의 인수 테스트가
+  저장한 맵에서 같은 값을 계산해 게임이 그 맵을 읽었는지 확인한다.
 - `INITIAL2D_ALDEBARAN_AT`은 x만 준다. y는 시작 지점의 y(384)인데, 그 x의 지면이 더 높으면 캐릭터가
   땅속에서 시작해 움직이지 못했다 (숲의 턱과 절벽 대부분). 그래서 발이 지면 속이면 한 칸씩 올려 지면
   위에 세운다 (`Placement.standY` / `stand_y`). 지면이 더 낮으면 그대로 두어 떨어진다. 기존 검수가 쓰는

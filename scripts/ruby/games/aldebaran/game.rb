@@ -222,7 +222,12 @@ module AldebaranScene
     def spawn_monsters
       @monsters.each { |e| e[:img].release if e[:img] }
       @monsters = []
-      stage.spawns.each { |s| add_monster(s) }
+      stage.spawns.each do |s|
+        add_monster(s)
+        next unless @trace
+        puts format("알데바란: 몬스터 %s x %g 범위 %g..%g", s[:species].to_s, s[:x],
+                    s[:min_x] || s[:x], s[:max_x] || s[:x])
+      end
     end
 
     # 레벨을 반영한다. 레벨이 오르면 HP와 MP를 전부 회복하는 것이 규칙이다 (기획서 7.2절)
@@ -625,6 +630,12 @@ module AldebaranScene
       # 확인할 때 그 방까지 걸어가지 않고 바로 시작할 수 있게 한다.
       at = env("INITIAL2D_ALDEBARAN_AT")
       @start_at = numeric?(at) ? at.to_f : nil
+      # 검수용: 읽은 맵의 타일 검사합과 몬스터 자리를 찍는다 (INITIAL2D_ALDEBARAN_TRACE=1)
+      @trace = !env("INITIAL2D_ALDEBARAN_TRACE").nil?
+      if @trace
+        puts format("알데바란: 맵 %s 타일 %d", stage.map,
+                    Aldebaran::Stages::Placement.tile_checksum(stage.map))
+      end
 
       begin
         @map = Tilemap.new(stage.map)
