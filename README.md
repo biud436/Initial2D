@@ -1335,9 +1335,8 @@ canvas 에 올리고, 부산물로 정적 페이지 하나짜리 웹 데모가 �
 [docs/plans/r3-emscripten.md](./docs/plans/r3-emscripten.md).
 
 ```bash
-# emsdk (한 번만. 첫 빌드는 포트를 소스에서 컴파일하므로 몇 분 걸립니다)
-git clone https://github.com/emscripten-core/emsdk.git ~/emsdk
-cd ~/emsdk && ./emsdk install latest && ./emsdk activate latest
+# emsdk (한 번만. CI 와 같은 6.0.10 을 ~/emsdk 에 받아 활성화합니다. 첫 빌드는 포트를 소스에서 컴파일하므로 몇 분 걸립니다)
+tools/web_ci.sh emsdk
 
 # 빌드: build-web/Initial2D.js 와 .wasm, 그리고 build-web/site/ (페이지 + 로더 + 프로젝트 파일)
 # mruby 4.0.0 소스를 build-web/mruby-src 에 받아 emcc 로 libmruby 를 먼저 만듭니다 (rake 가 필요합니다)
@@ -1352,7 +1351,14 @@ python3 -m http.server -d build-web/site 8080     # http://localhost:8080 에서
 # Ruby 판도 같은 타이틀을 그리는지(네이티브 mruby 와 대조), Ruby 예외가 네이티브와 같은 줄로 나오는지 봅니다
 node tools/web_smoke.mjs --golden tests/golden/aldebaran_title.png
 node tools/web_smoke.mjs --lua-only               # INITIAL2D_WEB_MRUBY=0 으로 만든 사이트
+
+# CI 의 웹 작업(engine-web)과 같은 순서를 한 번에: emsdk, Playwright(build-web/playwright 에 1.63.0 과 크로미움),
+# 네이티브 엔진(대조용), 웹 빌드, 검수. 단계 하나만은 tools/web_ci.sh emsdk|playwright|native|build|smoke
+tools/web_ci.sh all
 ```
+
+검수 스크립트는 Playwright 를 `PLAYWRIGHT_DIR`, `build-web/playwright`, 이 저장소의 `node_modules`, 옆 저장소
+`../InitialEditor` 순서로 찾습니다.
 
 에디터는 이 웹 빌드를 InitialEditor 저장소에서 `INITIAL2D_DIR=<이 엔진 경로> yarn sync:engine-web` 으로 복사해 갑니다
 (`build-web/site/` 에서 가져가므로 먼저 `tools/build_web.sh`).
@@ -1384,6 +1390,16 @@ game.quit();
 `mruby: uncaught exception in update` 와 역추적)이 글자 그대로 `printErr` 로 나오고 JS 예외로 새지 않습니다.
 시작 때와 `Update`, `Render` 의 오류는 게임을 끝내고(`onExit(1)`), `reload()` 의 오류는 `false` 를 돌려준 채
 스크립트만 멈춥니다. 고친 파일로 다시 `reload()` 하면 이어서 돕니다.
+
+바인딩 안에서 난 C++ 예외(타입이 틀린 맵의 `Tilemap.new` 같은)는 바인딩 경계에서 Ruby 의 `RuntimeError` 가 되어
+`rescue` 로 잡힙니다. 메시지는 `Json::LogicError: Value is not convertible to Int.` 처럼 타입과 메시지이고, 네이티브도
+같습니다. C 를 거치는 Ruby 재귀(문자열 보간 안의 `to_s` 등)는 네이티브처럼 호출 깊이 512 에서 `SystemStackError` 가
+납니다. 엔진 밖으로 빠지는 C++ 예외는 `fatal: 타입: 메시지` 한 줄과 `onExit(1)` 로 끝납니다.
+
+브라우저에서 Lua 의 `os.exit(code)` 와 Ruby 의 `exit!(code)` 는 **게임을 끝내지 않습니다.** 그 프레임의 남은 스크립트만
+건너뛰고(`pcall` 과 `rescue` 로 잡히지 않는 것은 네이티브와 같습니다) 루프는 계속 돌며, `onExit` 이 오지 않고 종료 코드는
+버려집니다. 게임을 끝낼 때는 Lua 는 `GameExit()`, Ruby 는 `System.exit` 이나 `exit` 를 씁니다. 이유는
+[r3-emscripten.md](./docs/plans/r3-emscripten.md) 10.4 절에 있습니다.
 
 mruby 는 네이티브 CI 와 같은 4.0.0 을 `MRuby::CrossBuild` 로 굽습니다 (설정 `tools/web/mruby_build_config.rb`).
 gem 은 네이티브(Homebrew 의 full-core)에서 브라우저에 맞지 않는 소켓과 태스크 스케줄러, 실행 파일만 뺐고,
@@ -1663,7 +1679,8 @@ tests/run_all.sh --update-golden
 - 화면을 보는 테스트는 `tests/engine/scenes/`에 씬을 만들고 `tests/run_engine_tests.py`에 검사를 추가합니다. 씬 테스트는 `scripts/`를 통째로 얹고 `main.lua`만 갈아 끼우므로, 게임이 실제로 여는 파일을 그대로 검사합니다.
 - 사람의 조작이 필요한 시나리오는 `tests/lua/input_replay.lua`로 재생합니다. 프레임 단위로 키를 예약하거나(`{ at = 10, press = "Z" }`), 화면 상태를 보고 그때그때 누를 수도 있습니다(`replay:tap("Z")`, `replay:press("LEFT")`). 고정 타임스텝이라 같은 시나리오는 항상 같은 결과를 냅니다.
 
-푸시할 때마다 GitHub Actions(macOS 러너)가 같은 검수를 헤드리스로 실행합니다.
+푸시할 때마다 GitHub Actions(macOS 러너)가 같은 검수를 헤드리스로 실행합니다. 웹 빌드 검수(`tools/web_ci.sh`,
+[웹 빌드](#웹-빌드-emscripten) 절)는 같은 러너 계열의 두 번째 작업이 돌립니다.
 
 # 코딩 스타일
 

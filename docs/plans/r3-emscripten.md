@@ -193,7 +193,7 @@ vendored Lua 만 예외 없이 컴파일되었다 (`add_compile_options` 는 그
 | `pcall(error, "x")` | 없음 | Lua 가 잡는다 (`false`, `"x"`) | 같음 |
 | 핫 리로드의 문법 오류 | `Lua error in scripts/lua/main.lua: ./scripts/lua/main.lua:2: ...` | **바꿨다.** 이전에는 게임이 끝났다 (종료 코드 1). 이제 게임은 두고 스크립트만 멈춘다 (8.3) | `reload()` 가 `false`, 루프는 돈다. 고친 파일로 `reload()` 하면 `true` 이고 다시 그린다 |
 | `quit()`, `GameExit()`, `INITIAL2D_EXIT_AFTER` | 없음 | 종료 코드 0 | `onExit(0)` |
-| 프레임 밖으로 빠지는 C++ 예외 | | `std::terminate` (abort) | 프레임 함수가 받아 `fatal: 메시지` 한 줄, 루프가 멈추고 `onExit(1)` |
+| 프레임 밖으로 빠지는 C++ 예외 | | `std::terminate` (abort) | 프레임 함수가 받아 `fatal: 타입: 메시지` 한 줄, 루프가 멈추고 `onExit(1)` (8.5) |
 
 오류 줄의 형식이 같으므로 에디터가 프로세스 실행(E1)에 쓰는 오류 링크 파서가 게임 뷰(E4)에도 그대로 통한다.
 
@@ -242,9 +242,15 @@ vendored Lua 만 예외 없이 컴파일되었다 (`add_compile_options` 는 그
 - `frames()`: 지금까지 돈 엔진 프레임 수. 루프가 멈추면 마지막 값에 선다.
 - `errorText(e)`: 모듈 밖으로 나온 것을 문자열로. C++ 예외(`WebAssembly.Exception`)는 `getExceptionMessage` 로
   `타입: 메시지` 를, 그 밖에는 `e.message` 나 `String(e)` 를 준다. `undefined` 를 돌려주지 않는다.
-- `fatal:` 줄: 프레임 밖으로 빠지려는 C++ 예외는 엔진(C++)이, `callMain` 밖으로 나온 예외와 abort 는 로더가 같은
-  형식으로 적는다. abort 는 C++ 가 잡을 수 없어 브라우저가 `RuntimeError` 를 잡히지 않은 오류로도 보고한다
-  (모듈은 더 쓸 수 없다).
+- `fatal:` 줄 (10.3): C++ 예외는 한 형식 `fatal: 타입: 메시지` 로 적는다. 프레임 밖으로 빠지려는 것은 엔진의 프레임
+  함수(`WebMain.cpp` 의 `PrintFatal`, `src/ExceptionText.h`)가, `callMain` 이나 `reload()` 밖으로 나온 것은 로더가
+  `errorText` 로 적는다. 타입은 디맹글한 이름이고 std::exception 이 아니면 메시지 없이 타입만 적는다. 예:
+  `fatal: std::runtime_error: INITIAL2D_WEB_TEST_FATAL=frame`. 한 줄 뒤에 루프가 멈추고 `onExit(1)` 이 한 번 온다.
+  C++ 예외가 아닌 것은 로더가 적는다. JS 오류(브라우저의 호출 스택 한계 등)는 `fatal: 메시지`, abort 는
+  `fatal: aborted: 이유` 다. abort 는 C++ 가 잡을 수 없어 브라우저가 `RuntimeError` 를 잡히지 않은 오류로도 보고한다
+  (모듈은 더 쓸 수 없다). mruby 바인딩의 C++ 예외는 fatal 이 아니라 Ruby 의 `RuntimeError` 다 (10.2).
+- 검수는 `INITIAL2D_WEB_TEST_FATAL` 로 스크립트가 닿지 않는 두 자리를 연다 (`main` 이면 `main` 안에서, `frame` 이면 세
+  번째 프레임에서 `std::runtime_error` 를 던진다). `tools/web_smoke.mjs` 16 이 두 줄이 같은 형식인지 본다.
 
 ### 8.6 검수 결과 (2026-09-27)
 
@@ -256,7 +262,7 @@ reload 뒤 0 이 되고, 고친 reload 뒤 초록 칸 107584 픽셀이 그려졌
 세 항목(`play_music`, `play_sound`)으로, 이 변경 전의 master 를 따로 빌드해 돌려도 같은 세 항목이 같은 값으로 실패해
 이 작업 기계의 소리 장치 문제로 보았다 (Lua 단위 테스트는 소리를 흉내 내어 영향이 없다). 브리지 25 개와 RTP 검증도
 통과. CI(`.github/workflows/tests.yml`)는 네이티브 스위트만 돌리므로 `[1h]` 는 CI 에서 돌고, 웹 검수(emsdk 와 Playwright
-필요)는 로컬 절차다.
+필요)는 로컬 절차였다 (10.5 에서 CI 작업 `engine-web` 을 더했다).
 
 ## 9. mruby: 같은 엔진의 두 번째 언어도 브라우저에서 (2026-09-27, E4 마일스톤 6)
 
@@ -331,9 +337,9 @@ reload 뒤 0 이 되고, 고친 reload 뒤 초록 칸 107584 픽셀이 그려졌
 
 - **`exit!` 와 Lua 의 `os.exit` 는 브라우저에서 네이티브와 다르다.** 네이티브는 프로세스가 그 종료 코드로 끝나지만,
   브라우저의 `exit()` 는 `EXIT_RUNTIME=0` 에서 그 프레임만 끊고 루프는 이어 돈다 (`onExit` 도 오지 않는다).
-  mruby 이전부터 Lua 에 있던 차이이고 이번에 고치지 않았다. 스크립트는 `System.exit`, `GameExit()` 를 쓴다.
+  고치지 않은 이유와 정확한 동작은 10.4. 스크립트는 `System.exit`, `GameExit()` 를 쓴다.
 - `Socket` 과 `Task` 는 브라우저 빌드에 없다.
-- 첫 빌드는 mruby 소스를 내려받는다 (인터넷). CI 는 웹 빌드를 돌리지 않으므로 12 ~ 13 은 로컬 절차다.
+- 첫 빌드는 mruby 소스를 내려받는다 (인터넷). CI 작업 `engine-web` 이 12 ~ 16 까지 돌린다 (10.5).
 
 ### 9.6 네이티브 스위트
 
@@ -342,7 +348,142 @@ mruby 단위 테스트의 소리 재생 세 항목(`play_music`, `play_sound`)�
 실패한다 (8.6). run_all 이 [4/6] 에서 멈추므로 뒤의 둘은 따로 돌렸다: 브리지 25/25 통과, `verify_rtp.py` 통과.
 네이티브 쪽 CMake 분기, 소스, 실행 파일은 바뀌지 않았다 (새 분기는 `INITIAL2D_MRUBY AND EMSCRIPTEN` 안).
 
-## 10. 체크리스트
+## 10. C 를 거치는 재귀, 바인딩의 C++ 예외, fatal 줄, CI (2026-09-27, 검증 뒤 보강)
+
+검증에서 나온 문제: 문자열 보간 안의 `to_s` 처럼 C 를 거쳐 VM 을 다시 부르는 mruby 재귀가 2 MB wasm 스택을 넘쳐
+메모리를 깨뜨렸다 (네이티브는 `SystemStackError`). 바인딩 안의 C++ 예외(`Tilemap.new` 의 `Json::LogicError`)는 VM 의
+C 프레임을 지나가 브라우저에서는 `fatal:` 이나 반쯤 풀린 VM 으로, 네이티브에서는 abort(update)나 SIGSEGV(핫 리로드)로
+끝났다. 두 `fatal:` 줄은 형식이 달랐고, CI 는 웹 검수를 돌리지 않았다.
+
+### 10.1 wasm 스택과 mruby 의 호출 깊이 한도
+
+mruby 4.0 에서 네이티브의 `MRB_FUNCALL_DEPTH_MAX` 에 해당하는 것은 `MRB_CALL_LEVEL_MAX` 다 (`src/vm.c`, 기본 512).
+호출 정보(ci) 스택의 깊이를 세며, `mrb_funcall` 로 C 에서 VM 을 다시 부를 때도 이 한도를 본다. 한도에 닿으면
+미리 만들어 둔 `SystemStackError` 를 raise 한다. 결정:
+
+- 웹의 libmruby 는 `MRB_CALL_LEVEL_MAX=512` 로 고정한다 (`tools/web/mruby_build_config.rb`, 네이티브 Homebrew 의 기본값과
+  같다). 깊이 500 의 재귀가 네이티브에서 되면 브라우저에서도 된다.
+- wasm 스택(`-sSTACK_SIZE`)을 2 MB 에서 8 MB 로 (`CMakeLists.txt`). 한도까지 가도 스택이 먼저 바닥나지 않는다.
+
+실측 방법: 측정용 빌드(스크래치에만)에 `System.stack_used`(`emscripten_stack_get_base() - emscripten_stack_get_current()`)와
+`System.ci_depth` 를 더하고, 재귀의 바닥에서 두 값을 적었다. 깊이 30 과 90(중첩 자료는 100 과 300)의 차이를 단계 수로
+나눈 값이 한 단계의 wasm 스택이다. 헤드리스 크로미움(Playwright 1.63), `-O3`, `MRB_NO_BOXING`.
+
+| 재귀 경로 (한 단계) | wasm 스택 / 단계 | ci / 단계 | wasm 스택 / ci |
+|---|---|---|---|
+| 문자열 보간 안의 `to_s` (`"#{child}"`) | 5,360 B | 1 | **5,360 B (최악)** |
+| `format("%s", child)` | 6,528 B | 2 | 3,264 B |
+| `String(child)`, `[child].inspect`, `{a: child}.inspect` | 5,312 ~ 5,504 B | 2 | 2,656 ~ 2,752 B |
+| `[child] == [other]` (사용자 `==`), `respond_to_missing?` | 5,552 ~ 5,568 B | 2 | 약 2,780 B |
+| `sort { }` 블록 안의 재귀 | 5,440 B | 4 | 1,360 B |
+| 중첩 배열, Hash, Struct, Set 의 `inspect`, `==`, `<=>`, `Object#inspect`(인스턴스 변수) | 800 ~ 1,152 B | 1 | 800 ~ 1,152 B |
+| `send`, `each`, `map`, `times`, `loop`, `inject`, `instance_eval`, `Proc#call`, `Method#call`, `define_method`, `method_missing`, `Class#new`, `eval`, `gsub` 블록, `catch` | 0 B | 1 ~ 5 | 0 B (VM 안에서 돈다) |
+| 중첩 `Fiber` (`Fiber.new { 재귀 }.resume`) | 0 B | 0 (파이버마다 ci 스택이 따로다) | 0 B |
+
+`init` 에서의 기본 사용량은 8,144 B. 한도 512 에서 최악 경로는 512 × 5,360 B = 약 2.75 MB 라 2 MB 로는 약 390 단계에서
+넘쳤다 (검증: 380 성공, 400 에서 엉뚱한 `NoMethodError` 와 `fatal: null function`). 8 MB 는 한도에서 쓰는 양의 약 3 배다.
+
+브라우저 자신의 호출 스택도 재어 두었다 (한도를 100000 으로 올린 측정용 libmruby, wasm 스택 64 MB). 크로미움(V8)은 wasm
+프레임을 제 네이티브 스택(약 1 MB)에 쌓으므로 이것이 C 재귀의 진짜 천장이다.
+
+| 경로 | 브라우저 호출 스택이 다하는 깊이 | 그때의 wasm 스택 |
+|---|---|---|
+| `to_s` 보간, `init` (시작 직후) | 704 성공, 720 실패 | 3.8 MB |
+| `to_s` 보간, `update` 두 번째 프레임 | 736 성공, 768 실패 | 3.95 MB |
+| `to_s` 보간, 600 프레임 데운 뒤 | 800 성공, 900 실패 | 4.3 MB |
+| 중첩 배열 `join` (C 안의 재귀, ci 가 늘지 않는다, 단계마다 368 B) | 5,000 성공, 6,000 실패 | 약 2.2 MB |
+
+그래서 한도 512 는 브라우저 천장(704)의 약 73% 에서 걸리고, 8 MB 는 잰 경로 모두에서 브라우저 천장보다 먼저 바닥나지
+않는다 (wasm 스택이 조용히 넘쳐 메모리를 깨뜨리는 대신 브라우저의 `RangeError` 가 먼저 난다). 남는 차이: ci 를 늘리지
+않는 C 안의 재귀(수천 단계로 중첩된 배열의 `join`)는 네이티브(60,000 단계도 된다)와 달리 약 5,000 단계에서
+`RangeError: Maximum call stack size exceeded` 로 끝난다. `init` 이면 로더가 `fatal: Maximum call stack size exceeded` 와
+`onExit(1)` 을 내고, 프레임 안이면 잡히지 않은 오류로 루프가 멈춘다 (`onExit` 은 오지 않는다. Emscripten 의 메인 루프가
+그 오류를 다시 던진다). 스택 넘침 검사(`-sSTACK_OVERFLOW_CHECK=2`)는 wasm 을 3.8% (111 KB) 키우고, 위의 이유로 먼저
+걸릴 일이 없어 넣지 않았다. 한도를 올리거나 mruby 를 다른 최적화로 빌드하면 이 표를 다시 잰다.
+
+### 10.2 바인딩의 C++ 예외는 바인딩 경계에서 Ruby 예외로
+
+- `src/mrb_prot.h` 의 `MRuby_Guarded<F>` 가 바인딩 함수를 `try` 로 감싸고, C++ 예외를 `RuntimeError`("타입: 메시지",
+  `src/ExceptionText.h`)로 바꿔 raise 한다. raise(longjmp)는 catch 블록을 벗어난 뒤에 해서 C++ 예외 객체가 먼저 정리된다.
+  바인딩을 등록하는 `mrb_define_*` 112 곳이 전부 `MRUBY_GUARD(함수)` 를 넘긴다 (`src/mrb_*.cpp`). C++ 예외는 더 이상 VM 의
+  C 프레임을 지나가지 않으므로 VM 이 반쯤 풀리는 일이 없고, Ruby 의 `rescue` 로 잡힌다. 프렐류드의 `Tilemap.load` 는
+  `RuntimeError` 를 받아 `nil` 을 준다.
+- wasm 에서 C++ 의 `catch (...)` 는 C++ 예외 태그만 잡고 mruby 의 raise(`SUPPORT_LONGJMP=wasm` 의 longjmp)는 지나간다
+  (작은 C, C++ 프로그램으로 emcc 6.0.10 과 네이티브 clang 에서 확인). 그래서 바인딩이 부른 `mrb_raise` 는 전처럼 Ruby 에 닿는다.
+- 결과 (네이티브와 웹이 같다): 잡지 않으면 `scripts/ruby/main.rb:13:in initialize: Json::LogicError: Value is not
+  convertible to Int. (RuntimeError)` 와 역추적, 종료 코드 1 (`onExit(1)`). 전에는 네이티브가 abort(종료 코드 134, libc++abi
+  terminating)였다. 핫 리로드의 `init` 에서 나면 `reload()` 가 `false` 이고 스크립트는 멈춘다 (전에는 네이티브가 이어서
+  SIGSEGV).
+- `Script_Restart()` 는 바인딩 밖의 엔진 코드가 던진 C++ 예외도 안에서 받는다. `script restart failed: 타입: 메시지` 를
+  적고 VM 은 닫지 않고 버린 채(상태를 믿을 수 없다) 스크립트를 멈추고 `false` 를 돌려준다. 그래서 네이티브 핫 리로드와
+  `initial2d_reload` 의 `catch (...)`("reload failed, restart the app")는 없앴다. 이 길은 가드를 하나 뺀 빌드로 확인했다
+  (재시작이 `false`, 다음 재시작이 되살린다).
+- Lua 는 이미 바꾼다. vendored Lua 는 C++ 로 컴파일되어 `pcall` 의 `catch (...)` 가 C++ 예외도 받아 오류로 만든다.
+  오류 값은 그때 스택 꼭대기의 값이라 알아보기 어렵지만(`Lua error in update: maps/bad.json`) 두 빌드가 같고 VM 은 온전하다.
+  이번에 바꾸지 않았다.
+
+### 10.3 fatal 줄 한 형식
+
+8.5 의 형식으로 맞췄다. 엔진 쪽은 `e.what()` 만 적던 것을 로더의 `errorText`(Emscripten 의 `getExceptionMessage`)와 같은
+`타입: 메시지` 로 바꾸었다 (`src/ExceptionText.h` 의 `DescribeCurrentException`, 타입은 `abi::__cxa_demangle`).
+프레임 함수와 정리(`Teardown`)의 catch 가 같은 함수를 쓴다. 검증에서는 `update` 의 같은 예외가 엔진에서
+`fatal: Value is not convertible to Int.`, `init` 에서는 로더가 `fatal: Json::LogicError: Value is not convertible to Int.`
+였다. 이제 스크립트로는 이 두 자리에 닿지 않으므로(10.2) 검수 16 이 `INITIAL2D_WEB_TEST_FATAL` 로 연다.
+
+### 10.4 `os.exit` 와 `exit!` (바꾸지 않음)
+
+브라우저에서 Lua 의 `os.exit(code)` 와 Ruby 의 `exit!(code)` 는 libc `exit()` 에 닿고, Emscripten 은 `EXIT_RUNTIME=0`
+에서 JS 예외(`ExitStatus`)를 던진다. 이 예외는 C++ 예외가 아니므로 `pcall` 과 `rescue` 가 잡지 않는다 (네이티브처럼
+`pcall(os.exit, 0)` 은 돌아오지 않는다). 그 프레임의 나머지(`Render` 포함)를 건너뛰고 메인 루프가 예외를 삼키므로
+다음 프레임부터 게임은 계속 돈다. `onExit` 은 오지 않고 종료 코드는 버려진다. 네이티브는 그 자리에서 프로세스가 끝난다
+(destroy 훅 없이, 주어진 종료 코드).
+
+루프를 그 종료 코드로 내리려면 `exit` 를 가로채(링커 `--wrap` 이나 스크립트의 `os.exit`, `exit!` 재정의) destroy 훅을
+부르지 않는 정리(소리와 WebGL 을 닫는 `SDL_Quit`)를 새로 만들고, `callMain` 과 `reload()` 에서 `ExitStatus` 를 종료로
+다루도록 로더도 고쳐야 한다. 작고 안전한 변경이 아니어서 한계로 두고 README 에 적었다. 게임을 끝낼 때는 Lua 는
+`GameExit()`, Ruby 는 `System.exit` 이나 `exit`(`SystemExit` 예외라 네이티브와 같다)를 쓴다.
+
+### 10.5 CI 작업 `engine-web`
+
+`.github/workflows/tests.yml` 에 두 번째 작업을 더했다 (기존 `engine-macos` 는 그대로). 골든을 만든 작업과 같은
+`macos-26` 러너에서 돈다. 단계는 `tools/web_ci.sh` 의 명령이라 로컬에서도 같다.
+
+| 단계 | 명령 | 하는 일 |
+|---|---|---|
+| 의존성, mruby, 플레이스홀더 | `engine-macos` 와 같은 절차 | 네이티브 대조용 엔진을 위한 SDL2 와 mruby 4.0.0, `pillow` |
+| emsdk | `tools/web_ci.sh emsdk` | `$EMSDK`(기본 `~/emsdk`)가 없으면 emsdk 저장소의 `6.0.10` 태그를 받고, `emsdk install/activate 6.0.10`. CI 는 `~/emsdk` 를 `actions/cache` 에 둔다 (포트 컴파일 결과 포함) |
+| Playwright | `tools/web_ci.sh playwright` | `build-web/playwright` 에 `playwright@1.63.0`, `playwright install chromium` |
+| 네이티브 | `tools/web_ci.sh native` | `build/Initial2D` (검수가 같은 파일을 네이티브로도 돌린다) |
+| 웹 빌드 | `tools/web_ci.sh build` | `tools/build_web.sh` (mruby 4.0.0 포함) |
+| 웹 검수 | `tools/web_ci.sh smoke` | `node tools/web_smoke.mjs --golden tests/golden/aldebaran_title.png` (1 ~ 16) |
+
+`tools/web_smoke.mjs` 는 Playwright 를 `PLAYWRIGHT_DIR`, `build-web/playwright`, 저장소의 `node_modules`, 옆 저장소
+`../InitialEditor` 순서로 찾는다 (전에는 `/Users/u/InitialEditor` 고정). 실패하면 캡처와 mruby 빌드 로그를 아티팩트로
+남긴다. push 할 수 없어 CI 에서 돌려 보지는 못했다. 대신 워크플로를 actionlint 1.7.12(shellcheck 0.11.0 포함)로 검사해
+새 작업에는 지적이 없고(기존 작업의 mruby 단계에 있던 SC2155 경고 하나는 그대로), 다섯 명령을 로컬에서 차례로 돌려 통과했다.
+
+### 10.6 검수 결과
+
+- `tools/web_smoke.mjs --golden tests/golden/aldebaran_title.png` 1 ~ 16 통과. 골든 차이 0 / 688128 (골든 무변경).
+  - 14a: `update` 의 무한 `to_s` 재귀가 네이티브와 같은 514 줄(역추적 511 단계 포함)과 `onExit(1)`. 14b, 14c: `init` 에서
+    rescue 되고 깊이 500 이 끝까지 간다 (네이티브도 종료 코드 0). 14d: `reload()` 의 무한 재귀가 `false`, 다음 `reload()` 는 `true`.
+  - 15a: `rescue` 가 `RuntimeError: Json::LogicError: Value is not convertible to Int.`, `Tilemap.load` 는 `nil`, 잡지 않으면
+    네이티브와 같은 다섯 줄과 `onExit(1)`. 15b: `reload()` 의 `init` 에서 나면 `false`, 스크립트는 멈추고 다음 `reload()` 는 `true`.
+  - 16: `fatal: std::runtime_error: INITIAL2D_WEB_TEST_FATAL=frame`(엔진, 프레임 2 에서 멈춤)과 `...=main`(로더) 이 같은 형식,
+    각각 `onExit(1)` 한 번, JS 예외 없음.
+- 검수가 원래 문제를 잡는지: 같은 오브젝트를 `STACK_SIZE=2097152` 로만 다시 링크한 사이트에서 14a 가
+  `pageerror: memory access out of bounds` 로 실패했다. `Tilemap#initialize` 의 가드만 뺀 빌드에서는 15a 가
+  `fatal: Json::LogicError: ...` 로 실패했다.
+- 검증의 재현 스크립트(`to_s` 깊이 320 ~ 500, 잡은 것과 잡지 않은 것, reload 의 무한 재귀, 바인딩의 C++ 예외와 그 뒤의
+  destroy, reload 의 C++ 예외)가 전부 네이티브와 같은 줄과 종료 코드를 냈다.
+- 네이티브: `[0g] mruby_binding_guard`(등록 112 곳이 전부 가드를 거치는가), `[1c] mruby_cpp_exception`(rescue, `Tilemap.load`,
+  잡지 않은 예외의 줄 묶음과 종료 코드 1), `[1h]` 에 `mruby_cpp`(핫 리로드의 C++ 예외, 스크립트가 멈추고 고친 파일로 되살아남),
+  mruby 단위 `tilemap` 에 두 항목. 가드 하나를 뺀 네이티브 빌드에서 이 중 6 항목이 실패했다 (그중 종료 코드 -6, abort).
+- 네이티브 전체 스위트 `SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy tests/run_all.sh`: 엔진 테스트 483 PASS / 0 FAIL,
+  C++ 단위 18, 브리지 25, RTP 검증 통과. 소리 장치를 dummy 로 두면 8.6 의 mruby 소리 세 항목도 통과한다.
+- 크기: `Initial2D.wasm` 약 2.95 MB 에서 2,963,062 B (가드 112 곳), `Initial2D.js` 187,004 B 그대로.
+
+## 11. 체크리스트
 
 - [x] CMake `EMSCRIPTEN` 분기 (포트, 예외, HotReloadServer 와 mruby 제외, 링크 플래그)
 - [x] `emscripten_set_main_loop_arg` 프레임 루프, `EXIT_RUNTIME=0`, ASYNCIFY 없음
@@ -354,5 +495,7 @@ mruby 단위 테스트의 소리 재생 세 항목(`play_music`, `play_sound`)�
 - [x] README 「웹 빌드 (Emscripten)」, index.md 갱신
 - [x] 오류 처리를 네이티브와 같게 (8절): 모든 타깃 `-fwasm-exceptions`, `onExit`, `reload()` 의 성패, `frames()`, `errorText()`, `fatal:` 줄, 네이티브 핫 리로드의 오류가 게임을 끝내지 않음, 검수 8 ~ 11 과 `[1h]`
 - [x] mruby (libmruby 교차 빌드, 9절): `lua mruby wasm`, Ruby 판 게임, Ruby 예외가 네이티브와 같은 줄, 검수 12 ~ 13
+- [x] C 를 거치는 재귀의 `SystemStackError`(`MRB_CALL_LEVEL_MAX` 512, `STACK_SIZE` 8 MB, 실측 10.1), 바인딩의 C++ 예외를 Ruby 예외로(10.2), `fatal:` 한 형식(10.3), 검수 14 ~ 16, 네이티브 `[0g]`, `[1c]`
+- [x] CI 작업 `engine-web` 과 `tools/web_ci.sh` (10.5)
 - [ ] 모바일 브라우저 터치 실기
 - [ ] 웹 데모 배포 (저자 결정, README 의 실행 링크 자리)
