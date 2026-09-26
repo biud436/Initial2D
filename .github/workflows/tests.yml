@@ -1,6 +1,10 @@
 # Initial2D 검수 CI (docs/plans/09-testing.md 5절)
 # macOS 러너에서 헤드리스(SDL dummy 드라이버 + 소프트웨어 렌더러 폴백)로
 # 전체 검수(tests/run_all.sh)를 실행한다. 실패 시 프레임 덤프를 아티팩트로 남긴다.
+#
+# 러너는 macOS 26 (Tahoe) 이다. Homebrew 의 mruby 4.0.0 병(bottle)이 arm64_tahoe 로만 있어,
+# macos-14 에서는 소스 빌드로 떨어지고 그 결과물에 mruby/presym/id.h 가 없어 컴파일이 깨졌다
+# (2026-09-26, S1 이후 master 가 붉었던 원인).
 name: tests
 
 on:
@@ -10,7 +14,7 @@ on:
 
 jobs:
   engine-macos:
-    runs-on: macos-14
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
 
