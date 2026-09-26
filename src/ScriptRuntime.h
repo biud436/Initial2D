@@ -30,7 +30,8 @@ const char* Script_BackendName();
 
 /**
  * 이 빌드가 실행할 수 있는 언어 목록 ("lua" 또는 "lua mruby"). `--features` 가 찍는다.
- * Emscripten 빌드는 "lua wasm" 이다 (mruby 는 아직 없고, 에디터가 wasm 빌드를 알아본다. R3).
+ * Emscripten 빌드는 끝에 " wasm" 이 붙는다 ("lua mruby wasm", mruby 없이 빌드하면 "lua wasm").
+ * 에디터가 이것으로 브라우저 빌드와 쓸 수 있는 언어를 알아본다 (R3).
  */
 std::string Script_Features();
 bool Script_HasMRuby();

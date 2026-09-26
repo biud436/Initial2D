@@ -4,13 +4,14 @@
 // 엔진을 띄운다. 흐름은 넷이다.
 //   1. createInitial2D 로 wasm 모듈을 만든다 (canvas, print 훅, 설정 객체).
 //   2. 프로젝트 파일을 MEMFS 의 /project 아래에 쓰고 cwd 를 거기로 옮긴다.
-//      (엔진은 ./game.json, ./scripts/lua/main.lua, ./resources/ 를 상대 경로로 연다)
+//      (엔진은 ./game.json, ./scripts/lua/main.lua 나 ./scripts/ruby/main.rb, ./resources/ 를 상대 경로로 연다)
 //   3. callMain 으로 엔진을 시작한다. main 은 루프를 requestAnimationFrame 에 걸고 바로 돌아온다.
 //   4. { module, reload, quit, frames, errorText ... } 핸들을 돌려준다.
 //
 // 오류는 네이티브 엔진과 같게 다룬다 (docs/plans/r3-emscripten.md 8절).
-//   - Lua 오류는 JS 예외로 나오지 않는다. 네이티브와 같은 줄("Lua error in update: ./scripts/lua/main.lua:5: boom")이
-//     printErr 로 나오고, 시작 때와 Update, Render 의 오류는 루프를 내린다 (onExit(1)).
+//   - 스크립트 오류는 JS 예외로 나오지 않는다. 네이티브와 같은 줄("Lua error in update: ./scripts/lua/main.lua:5: boom",
+//     Ruby 는 "mruby: uncaught exception in update" 와 역추적)이 printErr 로 나오고, 시작 때와 Update, Render 의
+//     오류는 루프를 내린다 (onExit(1)).
 //   - reload() 의 스크립트 오류는 false 를 돌려주고 루프는 돈다 (스크립트만 멈춘다). 고친 파일로 다시
 //     reload() 하면 true 이고 게임이 다시 그려진다.
 //   - 프레임 밖으로 빠지려는 C++ 예외는 엔진이 "fatal: 메시지" 한 줄로 적고 루프를 내린다 (onExit(1)).
@@ -19,6 +20,8 @@
 // 설정(env)은 네이티브의 INITIAL2D_* 환경 변수와 같은 이름이다. 두 곳에 넣는다.
 //   - Module.initial2dEnv: C++ 의 Platform::GetEnv 가 먼저 보는 곳 (reload 때 바꿀 수 있다)
 //   - Module.ENV:          libc getenv. Lua 의 os.getenv 가 여기를 본다 (런타임이 뜨기 전에 넣어야 한다)
+//   Ruby 의 System.env 는 C++ 쪽이라 Module.initial2dEnv 를 본다. 언어는 네이티브와 같은 순서로 고른다
+//   (INITIAL2D_SCRIPT, game.json 의 "script", main.lua 가 없고 main.rb 만 있으면 mruby).
 
 /**
  * @param {object} options
@@ -169,7 +172,7 @@ export async function bootInitial2D({
 		quit() {
 			module._initial2d_quit();
 		},
-		/** 이 빌드의 언어 목록 ("lua wasm") */
+		/** 이 빌드의 언어 목록 ("lua mruby wasm", mruby 없이 빌드하면 "lua wasm") */
 		features() {
 			return module.ccall("initial2d_features", "string", [], []);
 		},

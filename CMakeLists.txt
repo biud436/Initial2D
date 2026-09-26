@@ -87,6 +87,36 @@ if(INITIAL2D_MRUBY AND NOT WIN32 AND NOT EMSCRIPTEN)
   endif()
 endif()
 
+# 브라우저 빌드의 mruby (R3, docs/plans/r3-emscripten.md 9절). Homebrew 대신 tools/build_web.sh 가
+# emcc 로 만든 libmruby 를 쓴다 (설정은 tools/web/mruby_build_config.rb). Emscripten 의 find_* 는
+# sysroot 안만 보므로 경로를 직접 확인한다. 정의(-D)는 libmruby.flags.mak 의 MRUBY_CFLAGS 에서 가져온다.
+if(INITIAL2D_MRUBY AND EMSCRIPTEN)
+  set(INITIAL2D_MRUBY_WEB_DIR "${CMAKE_BINARY_DIR}/mruby/emscripten" CACHE PATH
+    "mruby Emscripten build output (lib/libmruby.a, include/, lib/libmruby.flags.mak)")
+  set(_mruby_web_flags "${INITIAL2D_MRUBY_WEB_DIR}/lib/libmruby.flags.mak")
+  if(EXISTS "${INITIAL2D_MRUBY_WEB_DIR}/lib/libmruby.a"
+      AND EXISTS "${INITIAL2D_MRUBY_WEB_DIR}/include/mruby.h"
+      AND EXISTS "${_mruby_web_flags}")
+    set(INITIAL2D_HAS_MRUBY ON)
+    set(MRUBY_INCLUDE_DIR "${INITIAL2D_MRUBY_WEB_DIR}/include")
+    set(MRUBY_LIBRARY "${INITIAL2D_MRUBY_WEB_DIR}/lib/libmruby.a")
+    set(MRUBY_DEFINITIONS "")
+    file(STRINGS "${_mruby_web_flags}" _mruby_cflags_line REGEX "^MRUBY_CFLAGS = ")
+    string(REGEX REPLACE "^MRUBY_CFLAGS = " "" _mruby_cflags "${_mruby_cflags_line}")
+    separate_arguments(_mruby_cflags_list UNIX_COMMAND "${_mruby_cflags}")
+    foreach(_flag IN LISTS _mruby_cflags_list)
+      if(_flag MATCHES "^-D(.+)$")
+        list(APPEND MRUBY_DEFINITIONS "${CMAKE_MATCH_1}")
+      endif()
+    endforeach()
+    # mruby 를 다시 빌드해 정의가 바뀌면 cmake 가 다시 돈다
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_mruby_web_flags}")
+    message(STATUS "mruby (emscripten) found: ${MRUBY_LIBRARY}")
+  else()
+    message(STATUS "mruby (emscripten) not found in ${INITIAL2D_MRUBY_WEB_DIR}, Lua only (tools/build_web.sh builds it)")
+  endif()
+endif()
+
 # ---------------------------------------------------------------------------
 # SDL2 (Phase 2부터 필수 — Phase 0에서는 존재 여부만 보고)
 #
@@ -280,6 +310,10 @@ if(INITIAL2D_SDL2_GAME)
     target_include_directories(Initial2D PRIVATE ${MRUBY_INCLUDE_DIR})
     target_compile_definitions(Initial2D PRIVATE INITIAL2D_HAS_MRUBY ${MRUBY_DEFINITIONS})
     target_link_libraries(Initial2D PRIVATE ${MRUBY_LIBRARY} m)
+    if(EMSCRIPTEN)
+      # libmruby 의 raise 는 setjmp/longjmp 다. -fwasm-exceptions 에서의 기본값(wasm)을 명시한다
+      target_link_options(Initial2D PRIVATE -sSUPPORT_LONGJMP=wasm)
+    endif()
     message(STATUS "mruby script backend enabled")
   endif()
 else()

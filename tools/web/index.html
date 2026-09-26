@@ -9,8 +9,9 @@
 	body { margin: 0; font: 14px/1.5 -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; background: #111; color: #ddd; }
 	header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #1c1c1c; border-bottom: 1px solid #333; }
 	header h1 { font-size: 16px; margin: 0; font-weight: 600; }
-	button { font: inherit; padding: 6px 18px; border-radius: 6px; border: 1px solid #666; background: #2a2a2a; color: #eee; cursor: pointer; }
-	button:disabled { opacity: 0.5; cursor: default; }
+	button, select { font: inherit; padding: 6px 18px; border-radius: 6px; border: 1px solid #666; background: #2a2a2a; color: #eee; cursor: pointer; }
+	select { padding: 6px 10px; }
+	button:disabled, select:disabled { opacity: 0.5; cursor: default; }
 	#status { color: #9a9; }
 	main { display: grid; grid-template-columns: auto 1fr; gap: 16px; padding: 16px; align-items: start; }
 	canvas { background: #000; outline: none; image-rendering: pixelated; }
@@ -23,6 +24,10 @@
 <body>
 <header>
 	<h1>Initial2D 웹 데모: 알데바란</h1>
+	<select id="script" aria-label="스크립트 언어">
+		<option value="lua">Lua</option>
+		<option value="mruby">Ruby (mruby)</option>
+	</select>
 	<button id="run">실행</button>
 	<span id="status">실행을 누르면 프로젝트 파일을 내려받아 엔진을 띄웁니다 (소리는 브라우저 정책상 클릭 뒤에 납니다)</span>
 </header>
@@ -35,6 +40,7 @@ import { bootInitial2D } from "./initial2d-loader.js";
 
 const canvas = document.getElementById("canvas");
 const button = document.getElementById("run");
+const scriptSelect = document.getElementById("script");
 const status = document.getElementById("status");
 const consoleEl = document.getElementById("console");
 const MAX_LINES = 400;
@@ -50,10 +56,14 @@ function log(line, isErr) {
 }
 
 // 설정: 네이티브의 환경 변수와 같은 이름. ?env=INITIAL2D_SCENE=flappy 처럼 URL 로 더할 수 있다 (검수용)
+// 언어는 고르기 상자가 INITIAL2D_SCRIPT 로 넘긴다. ?env=INITIAL2D_SCRIPT=mruby 면 Ruby 가 골라진 채로 열린다
 const env = { INITIAL2D_SCRIPT: "lua" };
 for (const pair of new URLSearchParams(location.search).getAll("env")) {
 	const i = pair.indexOf("=");
 	if (i > 0) env[pair.slice(0, i)] = pair.slice(i + 1);
+}
+if (/^(mruby|ruby|rb)$/i.test(env.INITIAL2D_SCRIPT)) {
+	scriptSelect.value = "mruby";
 }
 
 // project.json (tools/web_stage.py 가 만든다): { "root": "project", "files": ["game.json", "scripts/lua/main.lua", ...] }
@@ -79,6 +89,8 @@ async function loadProject() {
 
 button.addEventListener("click", async () => {
 	button.disabled = true;
+	scriptSelect.disabled = true;
+	env.INITIAL2D_SCRIPT = scriptSelect.value;
 	try {
 		const files = await loadProject();
 		status.textContent = "엔진 시작 중";
@@ -94,13 +106,14 @@ button.addEventListener("click", async () => {
 		});
 		window.__initial2d = handle;
 		if (handle.module._initial2d_running()) {
-			status.textContent = `실행 중 (${handle.features()}). canvas 를 누르면 키보드가 게임으로 갑니다`;
+			status.textContent = `실행 중 (${env.INITIAL2D_SCRIPT}, 빌드 ${handle.features()}). canvas 를 누르면 키보드가 게임으로 갑니다`;
 		}
 		canvas.focus();
 	} catch (e) {
 		status.textContent = "실패: " + (e && e.message ? e.message : e);
 		log(String(e && e.stack ? e.stack : e), true);
 		button.disabled = false;
+		scriptSelect.disabled = false;
 	}
 });
 </script>
