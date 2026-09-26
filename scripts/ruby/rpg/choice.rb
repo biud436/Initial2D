@@ -1,15 +1,13 @@
-# choice.rb : 선택지 창 (7단계, docs/plans/07-rpg-dialogue.md). scripts/lua/rpg/choice.lua 의 Ruby 판.
+# choice.rb : 선택지 창 (docs/plans/07-rpg-dialogue.md).
 #
-# 항목을 세로로 늘어놓고 스킨 커서로 하나를 덮는다. 위아래로 옮기고 결정키로
-# 고르며, 취소키는 지정한 항목(cancel_index)으로 빠져나간다. 결과는 번호다.
-#
+# 항목을 세로로 나열하고 스킨 커서로 하나를 표시한다. 위아래로 이동하고 결정키로
+# 선택하며, 취소키는 지정한 항목(cancel_index)을 결과로 하여 종료한다. 결과는 번호다.
 # 항목이 많으면 보이는 만큼만 그리고 스킨의 화살표로 더 있음을 알린다.
 #
-# 창 크기는 글자 폭에서 나온다. 그래서 폭 측정 함수를 주입받는다. 엔진 없이
-# 도는 단위 테스트가 가짜 measure로 배치까지 검증할 수 있다.
+# 창 폭은 글자 폭으로 정해지므로 폭 측정 함수를 주입받는다.
 #
-# Lua 와 다른 점: 항목 번호는 전부 **0부터**다 (index, result, cancel_index, index_at,
-# visible_range). Lua 판은 1부터였다. 입력과 옵션은 Symbol 키 Hash, 콜백은 Proc.
+# 항목 번호(index, result, cancel_index, index_at, visible_range)는 0부터 센다.
+# 입력과 옵션은 Symbol 키 Hash, 콜백은 Proc이다.
 #
 # 사용:
 #   choice = Rpg::Choice.new(skin: skin, measure: ->(s) { Graphics.text_width(s) })
@@ -27,7 +25,7 @@ module Rpg
     attr_accessor :index, :top, :blink, :cancel_index
     attr_reader :skin, :measure, :draw_text, :line_height, :max_visible, :min_width,
                 :padding, :ink_margin, :se, :open_frames, :items, :window, :value
-    alias_method :options, :items   # Lua 판의 필드 이름
+    alias_method :options, :items   # items의 별칭
 
     # skin         Rpg::Skin (필수)
     # measure      Proc (measure.call(text) -> 픽셀 폭) (필수)
@@ -48,9 +46,8 @@ module Rpg
       @max_visible = max_visible || 4
       @min_width = min_width || 80
       @padding = padding || (@skin.spec[:frame_corner] * @skin.scale)
-      # 폭 측정(Graphics.text_width)은 글자의 진행 폭(advance)을 더한 값이라, 획이 그보다
-      # 몇 픽셀 더 나가는 글자가 있으면 마지막 글자가 테두리에 닿아 보인다.
-      # 창을 그만큼만 더 넓게 잡는다.
+      # 폭 측정값은 진행 폭(advance)의 합이라 획이 그보다 넓은 글자는 테두리에 닿을 수 있다.
+      # 그만큼 창을 더 넓게 만든다.
       @ink_margin = ink_margin || (2 * @skin.scale)
       @se = se || {}
       @open_frames = open_frames
@@ -63,11 +60,11 @@ module Rpg
       @blink = 0
     end
 
-    # 항목을 열고 선택을 시작한다.
-    # x, y          창 좌상단 (없으면 anchor 기준으로 놓는다)
+    # 항목을 표시하고 선택을 시작한다.
+    # x, y          창 좌상단 (없으면 anchor 기준으로 배치한다)
     # anchor        { x:, y:, w: } 오른쪽 위 기준점 (보통 메시지 창의 사각형)
     # cancel_index  취소키를 눌렀을 때의 결과 (없으면 취소 불가)
-    # index         처음 놓일 항목 (기본 0)
+    # index         커서의 처음 위치 (기본 0)
     def show(items, opts = {})
       raise ArgumentError, "choice: 항목이 필요하다" unless items.is_a?(Array) && !items.empty?
       opts ||= {}
@@ -92,7 +89,7 @@ module Rpg
       x, y = opts[:x], opts[:y]
       anchor = opts[:anchor]
       if x.nil? && !anchor.nil?
-        # 메시지 창 오른쪽 위에 붙인다 (R2K3의 선택지 위치)
+        # 메시지 창 오른쪽 위에 배치한다 (R2K3의 선택지 위치)
         x = anchor[:x] + anchor[:w] - w
         y = anchor[:y] - h
       end
@@ -105,7 +102,7 @@ module Rpg
       self
     end
 
-    # 선택이 진행 중인가 (실행기가 이걸 보고 스크립트를 멈춘다)
+    # 선택이 진행 중인가
     def active?
       !@items.nil?
     end
@@ -158,10 +155,7 @@ module Rpg
       end
     end
 
-    # 화면 좌표 아래에 있는 항목 번호 (없으면 nil).
-    # 터치 플랫폼에서 항목을 직접 누를 수 있게 하는 값이다. 커서 이동과 결정을
-    # 어떻게 엮을지는 부르는 쪽이 정한다 (한 번 눌러 바로 결정할 수도, 커서만
-    # 옮길 수도 있다).
+    # 화면 좌표 위치에 있는 항목 번호 (없으면 nil). 터치로 항목을 직접 누를 때 쓴다.
     def index_at(x, y)
       win = @window
       return nil if @items.nil? || win.nil? || !win.open?
@@ -175,8 +169,7 @@ module Rpg
       first + row
     end
 
-    # 지금 화면에 보이는 항목 범위 [first, last] (테스트가 스크롤을 확인한다).
-    # 항목이 없으면 빈 범위 [0, -1].
+    # 지금 화면에 보이는 항목 범위 [first, last]. 항목이 없으면 [0, -1].
     def visible_range
       return [0, -1] if @items.nil?
       visible = [@max_visible, @items.size].min
@@ -205,7 +198,7 @@ module Rpg
         end
       end
 
-      # 위아래로 더 있으면 화살표 (스킨의 스크롤 화살표를 그대로 쓴다)
+      # 위아래에 항목이 더 있으면 화살표를 그린다 (스킨의 스크롤 화살표를 그대로 쓴다)
       spec = @skin.spec
       s = @skin.scale
       wx, wy, ww, wh = win.rect
@@ -225,7 +218,7 @@ module Rpg
 
     private
 
-    # 효과음 Proc 이 있을 때만 부른다
+    # 효과음 Proc이 있을 때만 호출한다
     def play(fn)
       fn.call if fn.respond_to?(:call)
     end

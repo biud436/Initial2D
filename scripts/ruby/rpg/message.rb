@@ -1,19 +1,18 @@
-# message.rb : 대화창 (7단계, docs/plans/07-rpg-dialogue.md). scripts/lua/rpg/message.lua 의 Ruby 판.
+# message.rb : 대화창 (docs/plans/07-rpg-dialogue.md).
 #
 # 화면 아래 고정 위치의 창에 대사를 한 글자씩 출력한다. 결정키를 누르면 남은
 # 글자를 즉시 다 보여 주고, 한 번 더 누르면 다음 쪽으로 넘어가거나 닫힌다.
 #
-# 6단계 실행기(interpreter.lua)가 요구하는 항구(port)의 구현체다. 실행기는
-# show_message / show_choice / busy? / result 네 가지만 알고, 그것들이 창인지
-# print 스텁인지는 모른다. 그래서 선택지 창도 여기서 함께 들고 있는다.
-# 실행기 쪽에서 보면 대화 하나로 보여야 하기 때문이다.
+# 실행기(interpreter.lua)가 요구하는 메시지 포트(port) 인터페이스의 구현체다.
+# 실행기는 show_message / show_choice / busy? / result 네 가지만 호출한다.
+# 선택지 창도 이 클래스가 함께 관리한다.
 #
-# 시간은 프레임으로 잰다 (실행기와 같은 고정 스텝 규칙). 폭 측정과 글자 그리기는
-# 주입받으므로, 엔진 없이도 배치와 쪽 나눔을 단위 테스트할 수 있다.
+# 시간은 프레임으로 잰다. 폭 측정과 글자 그리기는 주입받으므로 엔진 없이도
+# 단위 테스트할 수 있다.
 #
-# Lua 와 다른 점: 선택 결과(result, cancel_index, index)는 Choice 와 같이 0부터다.
-# page 는 Lua 와 같은 "n번째 쪽"(1부터, 0이면 쪽 없음)이다. 여러 값을 돌려주던
-# text_rect / pause_arrow_rect 는 배열 [x, y, w, h]. 얼굴은 { file:, index: } Hash.
+# 선택 결과(result, cancel_index, index)는 0부터 센다. page는 "n번째 쪽"(1부터,
+# 0이면 쪽 없음)이다. text_rect / pause_arrow_rect는 배열 [x, y, w, h]를 돌려주고,
+# 얼굴은 { file:, index: } Hash다.
 #
 # 사용:
 #   dlg = Rpg::Dialogue.new(skin: skin)
@@ -31,9 +30,7 @@ module Rpg
   class Dialogue
     ARROW_BLINK_FRAMES = 24    # 다음 쪽 대기 화살표 깜빡임 주기
 
-    # 실행기에 넘기는 항구. Lua 판은 클로저 네 개를 담은 테이블이었다.
-    # 실행기는 port.show_message(text, opts), port.show_choice(items, opts),
-    # port.busy?, port.result 만 부른다.
+    # 실행기에 넘기는 메시지 포트. show_message, show_choice, busy?, result를 Dialogue에 위임한다.
     class Port
       def initialize(dialogue)
         @dialogue = dialogue
@@ -126,8 +123,7 @@ module Rpg
 
     # ---- 쪽 나눔 --------------------------------------------------------------
 
-    # 대사 한 덩어리를 창 폭에 맞춰 줄로 나누고, 다시 쪽으로 묶는다.
-    # 순수 계산이라 단위 테스트가 그대로 부른다.
+    # 대사를 창 폭에 맞춰 줄로 나누고, 쪽으로 묶는다 (순수 계산).
     def paginate(text, text_width)
       wrapped = Text.wrap(text, text_width, @measure)
       pages, page = [], []
@@ -143,7 +139,7 @@ module Rpg
       pages
     end
 
-    # 글자를 그릴 영역 [x, y, w, h] (얼굴이 있으면 그만큼 오른쪽으로 밀린다)
+    # 글자를 그릴 영역 [x, y, w, h] (얼굴이 있으면 얼굴 폭만큼 오른쪽으로 이동한다)
     def text_rect
       cx, cy, cw, ch = @window.content_rect
       unless @face.nil?
@@ -155,9 +151,9 @@ module Rpg
 
     # ---- 표시 ----------------------------------------------------------------
 
-    # 대사를 띄운다. 실행기가 부르는 진입점이기도 하다.
+    # 대사를 표시한다 (실행기의 진입점).
     # face  { file: 경로, index: 0..15 }
-    # name  화자 이름 (작은 창으로 위에 붙는다)
+    # name  화자 이름 (대화창 위에 작은 창으로 표시한다)
     def show_message(text, opts = {})
       opts ||= {}
       @face = opts[:face]
@@ -171,14 +167,14 @@ module Rpg
       self
     end
 
-    # n번째 쪽(1부터)을 처음부터 출력하기 시작한다. speed가 0이면 타자 효과 없이 바로 전부.
+    # n번째 쪽(1부터)을 처음부터 출력하기 시작한다. speed가 0이면 타자 효과 없이 전부 바로 표시한다.
     def start_page(n)
       @page = n
       @page_chars = total_chars(@pages[n - 1] || [])
       @revealed = (@speed <= 0) ? @page_chars : 0
     end
 
-    # 선택지를 띄운다 (대화창은 열린 채로 둔다. 방금 한 말이 보여야 한다).
+    # 선택지를 표시한다. 대화창은 열린 채로 둔다.
     def show_choice(items, opts = {})
       opts ||= {}
       wx, wy, ww = @window.x, @window.y, @window.width
@@ -207,12 +203,12 @@ module Rpg
       )
     end
 
-    # 실행기가 보는 상태. 대사가 남아 있거나 선택 중이면 참.
+    # 대사가 남아 있거나 선택 중이면 true. 실행기가 대기 여부를 이 값으로 판단한다.
     def busy?
       @busy || @choice.active?
     end
 
-    # 마지막 선택 결과 (실행기가 choice 대기 뒤에 읽는다). 0부터.
+    # 마지막 선택 결과 (0부터).
     def result
       @choice.result
     end
@@ -222,14 +218,14 @@ module Rpg
       @revealed >= (@page_chars || 0)
     end
 
-    # 실행기에 넘길 항구. Lua 판은 클로저 테이블이었고, Ruby 는 위임 객체다.
+    # 실행기에 넘길 메시지 포트 (Port).
     def port
       Port.new(self)
     end
 
     # ---- 프레임 --------------------------------------------------------------
 
-    # 대사를 한 칸 진행시킨다 (결정키가 없을 때).
+    # 타자 효과를 한 프레임만큼 진행시킨다 (결정키 입력이 없을 때).
     def advance_reveal
       if @speed <= 0
         @revealed = @page_chars
@@ -244,7 +240,7 @@ module Rpg
       end
     end
 
-    # 결정키를 눌렀을 때: 다 안 나왔으면 마저 보여 주고, 다 나왔으면 다음 쪽으로.
+    # 결정키를 눌렀을 때: 글자가 남았으면 전부 표시하고, 다 표시했으면 다음 쪽으로 넘어간다.
     def confirm
       unless revealed?
         @revealed = @page_chars
@@ -260,7 +256,7 @@ module Rpg
 
     # 매 프레임 한 번.
     # input        { confirm:, up:, down:, cancel: } 이번 프레임에 눌린 키
-    # script_busy  실행기가 아직 도는 중인가. 거짓이고 할 일도 없으면 창을 닫는다.
+    # script_busy  실행기가 아직 실행 중인가. 거짓이고 남은 대사도 없으면 창을 닫는다.
     def update(input, script_busy)
       input ||= {}
       @frame += 1
@@ -269,7 +265,7 @@ module Rpg
       @name_window.update unless @name_window.nil?
 
       if @choice.active?
-        # 선택 중에는 대화창은 그대로 두고 선택지만 움직인다
+        # 선택 중에는 대화창은 그대로 두고 선택지만 갱신한다
         @choice.update(input)
         @busy = false unless @choice.active?
         return
@@ -291,8 +287,7 @@ module Rpg
         @window.close
         @name_window.close unless @name_window.nil?
         if @window.closed?
-          # 다 닫힌 뒤에는 지난 대사를 버린다. 다음에 열릴 때 옛 글자가
-          # 한 프레임 비치는 것을 막는다.
+          # 완전히 닫힌 뒤에는 이전 대사를 버린다 (다음에 열릴 때 한 프레임 동안 보이지 않게).
           @pages, @page, @face = [], 0, nil
         end
       end
@@ -324,7 +319,7 @@ module Rpg
       img.draw
     end
 
-    # 지금 화면에 보이는 줄들 (타자 효과가 잘라 낸 상태). 테스트도 이걸 본다.
+    # 지금 화면에 보이는 줄들 (타자 효과로 잘린 상태).
     def visible_lines
       page = current_page
       return [] if page.nil?
@@ -353,8 +348,7 @@ module Rpg
 
       @window.draw
 
-      # 대사는 창이 다 열려 있는 동안 계속 보인다 (선택지를 고르는 중에도, 닫히기
-      # 직전까지도). 방금 무슨 말을 들었는지가 화면에 남아 있어야 한다.
+      # 대사는 창이 완전히 열려 있는 동안 계속 그린다 (선택지를 고르는 중에도).
       if @window.open? && !current_page.nil?
         draw_face
         tx, ty = text_rect
@@ -369,7 +363,7 @@ module Rpg
       @choice.draw
     end
 
-    # 대기 화살표를 그릴 자리 [x, y, w, h] (창 아래 가운데). 테스트도 이 값으로 픽셀을 본다.
+    # 대기 화살표를 그릴 자리 [x, y, w, h] (창 아래 가운데).
     def pause_arrow_rect
       s = @skin.scale
       arrow = @skin.spec[:arrow_down]
@@ -378,7 +372,7 @@ module Rpg
        arrow[:w] * s, arrow[:h] * s]
     end
 
-    # 다음을 기다리는 동안 창 아래에서 깜빡이는 화살표 (스킨의 스크롤 화살표).
+    # 다음 입력을 기다리는 동안 창 아래에서 깜빡이는 화살표 (스킨의 스크롤 화살표).
     def draw_pause_arrow
       return if !@busy || !revealed? || @choice.active?
       return if (@frame % (ARROW_BLINK_FRAMES * 2)) >= ARROW_BLINK_FRAMES
@@ -387,7 +381,7 @@ module Rpg
     end
 
     def dispose
-      # 얼굴 그림은 경로마다 제 텍스처를 가지므로 텍스처까지 놓는다 (Lua 의 Image.dispose)
+      # 얼굴 그림은 경로마다 자기 텍스처를 가지므로 텍스처까지 해제한다
       @faces.each_value do |img|
         img.respond_to?(:release) ? img.release : img.dispose
       end
@@ -399,7 +393,7 @@ module Rpg
 
     private
 
-    # 지금 쪽 (page 는 1부터, 0이면 nil)
+    # 지금 쪽 (page는 1부터, 0이면 nil)
     def current_page
       return nil if @page < 1
       @pages[@page - 1]
@@ -412,7 +406,7 @@ module Rpg
       n
     end
 
-    # 효과음 Proc 이 있을 때만 부른다
+    # 효과음 Proc이 있을 때만 호출한다
     def play(fn)
       fn.call if fn.respond_to?(:call)
     end

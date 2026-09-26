@@ -1,16 +1,11 @@
-# buttons.rb : 화면 위 동작 버튼 (터치 조작, 범용 UI 모듈, 9단계, T1에서 멀티터치).
-# scripts/lua/ui/buttons.lua 의 Ruby 판.
+# buttons.rb : 화면 위 동작 버튼 (터치 조작, 범용 UI 모듈. docs/plans/t1-touch-input.md)
 #
-# 가상 패드(vpad.rb)가 방향을 맡고, 이쪽이 동작을 맡는다. 8단계까지는
-# "패드 밖 아무 데나 탭 = 결정"이었는데, 걸으려다 대화가 넘어가고 대화를 넘기려다
-# 걷는 일이 잦았다 (기획서 docs/design/port-town.md 6.3절).
-#
-# 포인터는 touch.rb 가 합쳐 준다: 멀티터치 API가 있으면 손가락들을, 없으면
-# 마우스를 쓴다. 손가락마다 따로 판정하므로 패드로 달리면서 버튼을 누를 수
-# 있고, 두 버튼을 동시에 누를 수도 있다 (T1).
+# 가상 패드(vpad.rb)가 방향 입력을 담당하고, 이 모듈이 동작 입력을 담당한다.
+# 포인터는 touch.rb에서 받는다. 손가락마다 따로 판정하므로 패드로 이동하면서
+# 버튼을 누를 수 있고, 두 버튼을 동시에 누를 수도 있다.
 #
 # 판정 반경은 표시 반경의 1.25배다 (히트 슬롭, 작은 버튼도 누르기 쉽게).
-# 슬롭끼리 겹치는 자리는 중심이 더 가까운 버튼 하나만 먹는다.
+# 슬롭이 겹치는 위치에서는 중심이 더 가까운 버튼 하나만 입력을 받는다.
 #
 # 사용:
 #   require "scripts/ruby/ui/buttons"
@@ -38,9 +33,8 @@ module Ui
     LABEL_LINE = 16   # 라벨 세로 중앙 보정 (16px 폰트 기준)
     HIT_SCALE = 1.25  # 판정 반경 / 표시 반경
 
-    # 점이 원 안에 있는가 (순수 함수, 단위 테스트가 그대로 부른다).
-    # hit_scale을 주면 판정 반경을 그만큼 키운다 (기본 1 = 표시 반경).
-    # item 은 { x:, y:, size: } 를 가진 Hash.
+    # 점이 원 안에 있는가 (순수 함수). item은 { x:, y:, size: } Hash,
+    # hit_scale은 판정 반경의 배율 (기본 1 = 표시 반경).
     def self.hit(item, x, y, hit_scale = nil)
       r = item[:size].to_f / 2 * (hit_scale || 1)
       half = item[:size].to_f / 2
@@ -51,12 +45,12 @@ module Ui
       dx * dx + dy * dy <= r * r
     end
 
-    # Ruby 식 술어 이름 (hit 와 같다)
+    # hit의 술어형 별칭
     def self.hit?(item, x, y, hit_scale = nil)
       hit(item, x, y, hit_scale)
     end
 
-    # 포인터가 먹는 버튼 하나를 고른다 (순수 함수). 슬롭이 겹치면 중심이 가까운 쪽.
+    # 포인터가 누른 버튼 하나를 고른다 (순수 함수). 슬롭이 겹치면 중심이 가까운 쪽.
     def self.pick(items, x, y, hit_scale = nil)
       best = nil
       best_d2 = nil
@@ -81,8 +75,8 @@ module Ui
     #   items:          [{ id:, label:, x:, y:, size: }, ...] (필수, 하나 이상)
     #   draw_text:      Proc (x, y, text) (기본 Graphics.draw_text)
     #   measure:        Proc (text) -> 폭 (기본 Graphics.text_width)
-    #   input:          엔진 Input과 같은 표면 (기본 전역 Input)
-    #   image_factory:  Image 생성자 (기본 Image::FACTORY, 테스트가 가짜를 넣는다)
+    #   input:          엔진 Input과 같은 메서드를 가진 객체 (기본 전역 Input)
+    #   image_factory:  Image 생성자 (기본 Image::FACTORY, 테스트가 가짜를 주입한다)
     def initialize(opts = nil, **kw)
       opts = (opts || {}).merge(kw)
       defs = opts[:items]
@@ -137,7 +131,7 @@ module Ui
       end
     end
 
-    # 이번 프레임에 눌렸는가 (엣지). 대화창과 선택지가 보는 값이다. Lua 의 pressed(id)
+    # 이번 프레임에 눌렸는가 (엣지). 대화창과 선택지가 읽는 값이다.
     def pressed?(id)
       @items.each do |item|
         return item[:edge] if item[:id] == id
@@ -145,7 +139,7 @@ module Ui
       false
     end
 
-    # Lua 이름 그대로 (pressed? 와 같다)
+    # pressed?의 별칭
     def pressed(id)
       pressed?(id)
     end
@@ -169,7 +163,7 @@ module Ui
       end
     end
 
-    # Lua 의 img.dispose() 는 텍스처까지 놓는다. Ruby 에서는 release 가 그 일을 한다.
+    # 버튼 스프라이트와 텍스처를 함께 해제한다 (Sprite#release, image.rb).
     def dispose
       @items.each do |item|
         item[:img].release

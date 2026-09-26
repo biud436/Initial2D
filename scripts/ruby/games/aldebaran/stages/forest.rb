@@ -1,18 +1,11 @@
 # 알데바란, 스테이지 1-1 「검은 안개의 숲」 (기획서 4.3절).
-# scripts/lua/games/aldebaran/stages/forest.lua 의 Ruby 판.
 #
-# 배치와 구간과 이야기 글. 좌표는 전부 손으로 정한 자리다 (픽셀,
-# tools/generate_aldebaran_maps.py의 지형과 짝이 맞아야 한다).
-# 코드가 아니라 표다. 다른 스테이지는 다른 표를 만든다 (stages/tomb.rb).
+# 스테이지의 배치, 구간, 이야기 글 데이터. 좌표는 픽셀이며
+# tools/generate_aldebaran_maps.py의 지형과 일치해야 한다. 종별 표는 data/monsters.rb에 있다.
 #
-# 종별 표는 data/monsters.rb 에 있다.
-#
-# Lua 의 칸은 여기서 두 겹이다. 값은 상수(Lua 의 대문자 칸은 이름 그대로,
-# 소문자 칸은 대문자로 바꿔서)에 두고, 씬은 모듈 함수(stage.id, stage.sections,
-# ...)로 읽는다. 함수 이름은 Lua 칸 이름의 snake_case 다. 이름이 겹치는 자리만
-# 풀어 썼다: Lua 에는 소문자 intro(컷씬의 종류)와 대문자 INTRO(나레이션)가 함께
-# 있으므로 intro 는 상수 INTRO_KIND 와 함수 intro, INTRO 는 상수 INTRO 와 함수
-# intro_text 다. GAMEOVER 도 짝을 맞춰 함수 gameover_text 로 읽는다.
+# 값은 대문자 상수에 두고 씬은 모듈 함수(stage.id, stage.sections, ...)로 읽는다.
+# 함수 이름은 상수 이름의 snake_case이며, 예외는 INTRO_KIND/intro, INTRO/intro_text,
+# GAMEOVER/gameover_text 셋이다.
 
 require "scripts/ruby/games/aldebaran/data/monsters"
 
@@ -20,15 +13,15 @@ module Aldebaran
   module Stages
     module Forest
       # ---- 스테이지가 씬에게 알려 주는 것 -------------------------------------
-      # game.rb 는 이 칸들만 보고 무대를 차린다. 새 스테이지는 같은 칸을 채우면 된다.
+      # game.rb가 읽는 항목. 새 스테이지는 같은 항목을 정의한다.
 
       ID = "forest"
       NUMBER = "1-1"
       TITLE = "검은 안개의 숲"
       MAP = "./resources/maps/aldebaran_forest.json"
       BGM_SLOT = "./resources/audio/aldebaran_forest.ogg"
-      BRIGHT = "./resources/aldebaran/forest_bright.png"   # 환각 때 겹치는 옛 숲
-      FOG = true                                            # 안개 입자를 뿌린다
+      BRIGHT = "./resources/aldebaran/forest_bright.png"   # 환각 연출 때 겹쳐 그리는 옛 숲
+      FOG = true                                            # 안개 입자를 그린다
       BOSS = { species: :monkey, kind: :thief, drops: :bag }  # 짐도둑
       INTRO_KIND = :thief                                   # 도입 컷씬의 종류
 
@@ -43,8 +36,8 @@ module Aldebaran
       def self.intro; INTRO_KIND; end
 
       # ---- 구간 (기획서 4.3절) -------------------------------------------------
-      # 걸을수록 무대가 바뀐다. 씬은 카메라 x 로 지금 구간을 알아내고, 경계 앞뒤
-      # FADE 픽셀에서 두 벌을 겹쳐 서서히 바꾼다.
+      # 구간마다 배경이 다르다. 씬은 카메라 x로 구간을 찾고, 경계 앞뒤 SECTION_FADE
+      # 픽셀에서 두 배경을 겹친다.
 
       SECTIONS = [
         { name: :entrance, x1: 767 },     # 타일 0~47
@@ -58,8 +51,8 @@ module Aldebaran
       def self.sections; SECTIONS; end
       def self.section_fade; SECTION_FADE; end
 
-      # 카메라 x 가 속한 구간과, 다음 구간으로 얼마나 넘어갔는가 (0..1).
-      # Lua 의 세 값 반환을 [지금 구간, 다음 구간, 섞는 비율] 로 옮겼다.
+      # 카메라 x가 속한 구간과, 다음 구간으로 얼마나 넘어갔는가 (0..1).
+      # [지금 구간, 다음 구간, 섞는 비율]을 돌려준다.
       def self.section_at(x)
         SECTIONS.each_with_index do |s, i|
           if x <= s[:x1]
@@ -86,7 +79,7 @@ module Aldebaran
 
       START = { x: 56, y: 384 }          # 숲 입구 (타일 3.5, 지면 24)
       # 체크포인트 둘 (2구간 끝의 석주, 4구간 초입의 우리). 지나면 부활 지점이 된다.
-      # 씬이 지난 것을 cp[:taken] 에 적는다 (그래서 얼리지 않는다).
+      # 씬이 지났다는 표시를 cp[:taken]에 기록하므로 freeze하지 않는다.
       CHECKPOINTS = [
         { x: 1552, y: 304 },
         { x: 2400, y: 352 },
@@ -99,19 +92,17 @@ module Aldebaran
       def self.lives; LIVES; end
       def self.seed; SEED; end
 
-      # 1-1 에는 기후가 없다 (Lua 에는 CLIMATE 칸이 아예 없다)
+      # 1-1에는 기후가 없다
       def self.climate; nil; end
 
       # ---- 종별 표 ------------------------------------------------------------
-      # 원안 규격서를 그릇으로 삼은 표는 data/monsters.rb 로 옮겼다 (A6). 여기서는
-      # 이름만 다시 내보낸다. 배치(spawns)가 이 키를 쓰기 때문이다.
+      # data/monsters.rb의 표를 그대로 내보낸다. 배치(spawns)가 이 표의 키를 쓴다.
 
       def self.species; Aldebaran::Monsters::SPECIES; end
 
       # ---- 배치 (지형: 입구 24, 턱 22/21/20, 다리, 어깨 20, 내리막 22, 숲 24) ----
 
-      # 배치는 지면 높이를 계산해 정했다 (계획 3.5절의 레벨 디자인 원칙).
-      # 적은 구간 경계에서 100px 이상 안쪽에 두어, 넘어오는 순간 맞지 않게 한다.
+      # 적은 구간 경계에서 100px 이상 안쪽에 둔다 (계획 3.5절의 레벨 디자인 원칙).
       SPAWNS = [
         # 1구간 숲 입구 (지면 384 / 턱 352): 베기를 가르치고, 점프한 뒤 싸우게 한다
         { species: :spider, x: 224, y: 384, min_x: 180, max_x: 280 },
@@ -123,7 +114,7 @@ module Aldebaran
         { species: :spider, x: 1400, y: 304, min_x: 1370, max_x: 1450 },
         { species: :spider, x: 1470, y: 304, min_x: 1440, max_x: 1520 },
 
-        # 3구간 기암 절벽: 어깨 한가운데 (착지하자마자 맞지 않게)
+        # 3구간 기암 절벽: 어깨 한가운데 (착지하자마자 공격받지 않게)
         { species: :spider, x: 1700, y: 304, min_x: 1660, max_x: 1760 },
         { species: :wolf, x: 1990, y: 304, min_x: 1950, max_x: 2030 },
         { species: :spider, x: 2290, y: 320, min_x: 2260, max_x: 2340 },
@@ -143,10 +134,10 @@ module Aldebaran
       def self.spawns; SPAWNS; end
 
       # ---- 흔적 (기획서 4.3.1절) ----------------------------------------------
-      # 구간마다 하나. 밟으면 글이 뜨고 발견 기록에 남는다. 강제가 아니다.
+      # 구간마다 하나. 그 위를 지나면 글이 표시되고 발견 기록에 남는다. 강제가 아니다.
 
       LANDMARKS = [
-        # 첫 거미를 잡은 뒤, 턱 앞의 평지 (읽는 동안 맞지 않는 자리)
+        # 첫 거미를 잡은 뒤, 턱 앞의 평지 (읽는 동안 공격받지 않는 자리)
         { id: :tracks, x0: 300, x1: 348, title: "여러 갈래의 발자국",
           text: "발자국이 여럿이다. 그놈은 혼자가 아니었다.", skill: :edge },
         # 포석이 시작되는 자리 (2구간 초입)
@@ -155,16 +146,16 @@ module Aldebaran
         # 다리를 건너기 전 어깨 (체크포인트 바로 뒤)
         { id: :cart, x0: 1640, x1: 1688, title: "버려진 짐수레",
           text: "짐이 그대로 실려 있다. 사람들은 급히 떠났다.", skill: :leap },
-        # 마을 초입의 우리. 여기서 안개에 취해 옛 숲이 보인다
+        # 마을 초입의 우리. 여기서 안개의 환각으로 옛 숲이 보인다
         { id: :cage, x0: 2440, x1: 2488, title: "부서진 우리",
           text: "실험실의 우리다. 안개는 저들이 열매를 태워 만든다.",
           hallucination: 3.0, skill: :berserk },
-        # 제단 앞. 보스와 붙기 전에 읽는다
+        # 제단 앞. 보스와 싸우기 전에 읽는다
         { id: :altar, x0: 3700, x1: 3748, title: "네 개의 화두",
           text: "고대 문자와 굳은 피. 지도에 그려진 것이 이곳이었다.", skill: :bolt },
       ]
 
-      # 다섯을 다 모은 플레이어만 읽는 마지막 한 줄
+      # 흔적 다섯을 모두 찾은 플레이어만 읽는 마지막 한 줄
       EPILOGUE_FULL = "도둑이 노린 것은 금괴가 아니었다. 이 숲의 지형을 그린 그 지도였다."
 
       def self.landmarks; LANDMARKS; end
@@ -189,8 +180,8 @@ module Aldebaran
       # 게임 오버 (목숨을 다 잃으면)
       GAMEOVER = "검은 안개가 시야를 덮었다. ...멀리서 늑대 울음이 들린다."
 
-      # 표지 글: 그 x 구간에 처음 닿으면 화면 위에 잠깐 뜬다 (컷씬이 아니다)
-      SIGNS = []     # 표지 글은 흔적(LANDMARKS)으로 바뀌었다
+      # 표지 글: 그 x 구간에 처음 들어가면 화면 위에 잠깐 표시된다. 이 스테이지에는 없다.
+      SIGNS = []
 
       def self.intro_text; INTRO; end
       def self.epilogue; EPILOGUE; end

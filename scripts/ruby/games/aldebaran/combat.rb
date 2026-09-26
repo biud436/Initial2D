@@ -1,10 +1,9 @@
-# 알데바란, 전투와 성장의 수식 (docs/design/aldebaran.md 7절).
-# scripts/lua/games/aldebaran/combat.lua 의 Ruby 판 (docs/plans/s2-ruby-aldebaran.md).
+# 알데바란, 전투와 성장의 수식 (docs/design/aldebaran.md 7절, docs/plans/s2-ruby-aldebaran.md).
 #
-# 엔진에 닿지 않는 순수 함수 묶음. 난수는 시드 난수(scripts/ruby/rpg/rng.rb 의 Rpg::Rng)를
-# 주입받는다 (같은 시드는 같은 전투를 만든다). float 만 있으면 가짜도 된다.
+# 엔진에 의존하지 않는 순수 함수 묶음. 난수는 시드 난수(scripts/ruby/rpg/rng.rb의 Rpg::Rng)를
+# 주입받는다 (같은 시드는 같은 전투를 만든다). float만 있으면 가짜 객체도 된다.
 #
-# Lua 표의 방어력 키 def 는 Ruby 예약어라 :defense 로 쓴다 (BASE, GROWTH, stats_at).
+# 방어력 키는 def가 Ruby 예약어라 :defense로 쓴다 (BASE, GROWTH, stats_at).
 
 module Aldebaran
   module Combat
@@ -28,7 +27,7 @@ module Aldebaran
       { kind: :normal, mult: 1 }
     end
 
-    # 굴림까지 합친 최종 데미지. { dmg:, kind: } 를 돌려준다.
+    # 굴림까지 합친 최종 데미지. { dmg:, kind: }를 돌려준다.
     def self.resolve(atk, defense, rng, luck = 0)
       r = roll(rng, luck)
       { dmg: (damage(atk, defense) * r[:mult]).floor, kind: r[:kind] }
@@ -47,7 +46,7 @@ module Aldebaran
     def self.level_for(exp)
       level = 1
       EXP_TABLE.each_with_index do |need, i|
-        level = i + 2 if exp >= need   # i 는 0부터 (Lua 의 i + 1)
+        level = i + 2 if exp >= need   # i는 0부터라 레벨은 i + 2
       end
       level
     end
@@ -71,7 +70,7 @@ module Aldebaran
       EXP_TABLE[level - 1] - exp
     end
 
-    # 지금 레벨 구간에서의 진행 비율 (EXP 바가 그린다, 0..1 실수)
+    # 지금 레벨 구간에서의 진행 비율 (EXP 막대가 쓴다, 0..1 실수)
     def self.exp_ratio(exp)
       level = level_for(exp)
       return 1.0 if level >= MAX_LEVEL
@@ -82,12 +81,9 @@ module Aldebaran
 
     # ---- 힘 (기획서 5.3절) ------------------------------------------------------
     #
-    # 카르토는 마법에 취약한 보물 사냥꾼이다. 단검 한 자루로 늑대 인간을 상대할 수는
-    # 없다. 숲을 지날수록 **검은 안개가 단검에 스며** 힘이 붙는 것으로 푼다 (원안의
-    # "보라색 검기"와 "마법 캐스팅" 그래픽이 여기에 쓰인다).
-    #
-    # 다섯 흔적이 하나씩 준다. 셋은 늘 켜져 있는 것(passive)이고 둘은 쓰는 것(active)이다.
-    # 쓰는 것에는 **쿨타임**이 있고 HUD의 슬롯에 남은 시간이 보인다.
+    # 숲을 지날수록 **검은 안개가 단검에 스며** 힘이 강해진다는 설정이다. 다섯 흔적이
+    # 힘을 하나씩 준다. 셋은 상시 효과(passive)이고 둘은 직접 사용하는 기술(active)이다.
+    # 사용하는 기술에는 **쿨타임**이 있고 HUD의 슬롯에 남은 시간이 표시된다.
 
     SKILLS = {
       edge: {
@@ -118,7 +114,7 @@ module Aldebaran
 
     SKILL_ORDER = [:edge, :read, :leap, :berserk, :bolt]
 
-    # 익힌 힘 표를 하나 만든다 (전부 꺼진 채로)
+    # 익힌 힘 표를 하나 만든다 (전부 익히지 않은 상태로)
     def self.new_skills
       s = { cooldown: {} }
       SKILL_ORDER.each do |id|
@@ -128,7 +124,7 @@ module Aldebaran
       s
     end
 
-    # 쓸 수 있는가 (익혔고, 쿨타임이 돌지 않았고, MP가 있다)
+    # 쓸 수 있는가 (익혔고, 쿨타임이 끝났고, MP가 충분하다)
     def self.can_use?(skills, id, mp)
       spec = SKILLS[id]
       return false if spec.nil? || spec[:kind] != :active
@@ -137,7 +133,7 @@ module Aldebaran
       mp >= spec[:mp]
     end
 
-    # 매 프레임 쿨타임을 흘린다
+    # 매 프레임 쿨타임을 dt만큼 줄인다
     def self.tick_cooldowns(skills, dt)
       cooldown = skills[:cooldown]
       cooldown.keys.each do |id|

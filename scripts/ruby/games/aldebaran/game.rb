@@ -1,21 +1,21 @@
-# 알데바란, 스테이지 씬 (docs/plans/aldebaran-1-core.md 7절, -2-combat.md, -3-content.md)
-# scripts/lua/games/aldebaran/game.lua 의 Ruby 판 (S2, docs/plans/s2-ruby-aldebaran.md).
+# 알데바란, 스테이지 씬 (docs/plans/aldebaran-1-core.md 7절, -2-combat.md, -3-content.md,
+# docs/plans/s2-ruby-aldebaran.md).
 #
 # 횡스크롤 액션. 기획서는 docs/design/aldebaran.md.
 #   ← → : 이동 (같은 방향 빠르게 두 번 = 대쉬)
 #   Z 또는 스페이스: 점프 (공중에서 한 번 더 = 2단 점프), 대화 넘기기
 #   X: 공격 (연타로 3단 콤보)         C: 버서커 (MP 10, 4초)
 #   ESC 또는 P (Android 뒤로가기): 일시 정지. 계속 하기 / 다시 하기 / 끝내기
-#   터치: 좌하단 조이스틱(잡고 끌기), 우하단 점프와 공격과 폭주와 검기 버튼,
+#   터치: 좌하단 조이스틱(누른 채 끌기), 우하단 점프와 공격과 폭주와 검기 버튼,
 #         우상단 정지 버튼. 멀티터치라 달리면서 누를 수 있고, 배치와 크기는
-#         화면 크기에 비례한다 (T1, scripts/ruby/ui/layout.rb)
+#         화면 크기에 비례한다 (scripts/ruby/ui/layout.rb)
 #
 # 흐름 (기획서 4절): 도입 컷씬(짐도둑이 배낭을 지고 달아난다) → 숲 주파와 전투 →
 # 공터의 짐도둑을 쓰러뜨리고 배낭을 주우면 에필로그와 결과 창 → 타이틀로.
 # 목숨을 다 잃으면 게임 오버. 다시 하기 / 타이틀로.
 #
 # 16px 타일을 768x896 화면에 1:1로 그리면 너무 작아 렌더 배율 2를 켠다
-# (논리 384x448). 씬을 나갈 때 되돌린다. rpgdemo 와 같은 규칙.
+# (논리 384x448). 씬을 나갈 때 되돌린다.
 #
 # 몬스터 배치와 종별 표와 이야기 글은 stages/, 수식은 combat.rb, 상태 기계는 monster.rb.
 #
@@ -80,7 +80,7 @@ module AldebaranScene
   }
 
   SCALE = 2
-  # 원경 두 겹: 먼 숲은 느리게, 가까운 숲은 그보다 빠르게 흐른다 (깊이).
+  # 배경 레이어 두 개(원경과 근경): 먼 숲은 느리게, 가까운 숲은 그보다 빠르게 스크롤한다.
   PARALLAX_FAR = 0.25
   PARALLAX_NEAR = 0.5
   SIGN_SECONDS = 4.0
@@ -88,15 +88,15 @@ module AldebaranScene
   STONE_TOSS = -170
   STONE_GRAVITY = 720
 
-  # 기후 조각들 (tools/generate_aldebaran_tomb.py). 엔진의 scale= 은 균등 배율뿐이라
-  # 늘여 쓸 수 없다. 빛기둥과 물은 쓸 크기 그대로 구워 뒀다.
+  # 기후 조각들 (tools/generate_aldebaran_tomb.py). 엔진의 scale=은 가로세로 같은 배율만
+  # 지원하므로 빛기둥과 물은 실제로 쓸 크기 그대로 이미지에 만들어 두었다.
   CLIP = {
     hail: [CLIMATE_PATH, 0, 0, 8, 8],
     warn: [CLIMATE_PATH, 8, 0, 16, 8],
     flake: [CLIMATE_PATH, 56, 0, 8, 8],
     beam: [BEAM_PATH, 0, 0, 88, 448],
     water: [WATER_PATH, 0, 0, 384, 128],
-    # 물결 없는 몸통만 (수면 아래를 이어 채울 때. 물결이 반복되면 줄무늬가 진다)
+    # 물결 없는 몸통 부분만 (수면 아래를 이어 채울 때 쓴다. 물결이 반복되면 줄무늬가 생긴다)
     waterbody: [WATER_PATH, 0, 64, 384, 64],
   }
 
@@ -104,18 +104,17 @@ module AldebaranScene
   GAMEOVER_ITEMS = ["다시 하기", "타이틀로"]
 
   class << self
-    # 스테이지를 넘어갈 때 들고 가는 것 (원안 7.2절: 레벨은 이어진다).
-    # 씬은 전환할 때 destroy 되고 다시 init 되므로 지역 변수로는 남지 않는다.
-    # 타이틀로 돌아가면 지운다. 한 회차가 끝난 것이다.
+    # 스테이지를 넘어갈 때 이어서 가져가는 값 (원안 7.2절: 레벨은 이어진다).
+    # 씬 전환 때 destroy와 init을 거치므로 인스턴스 변수가 아니라 여기에 둔다. 타이틀로 돌아가면 지운다.
     attr_accessor :carry
 
-    # 지금 무대. 씬을 열기 전에 AldebaranScene.set_stage(id) 로 바꾼다 (타이틀과
+    # 현재 스테이지. 씬을 시작하기 전에 AldebaranScene.set_stage(id)로 바꾼다 (타이틀과
     # 결과 창이 그렇게 한다). 기본은 목록의 첫 스테이지다.
     def stage
       @stage ||= Stages.first
     end
 
-    # 다음에 열 스테이지를 정한다. init 전에 불러야 한다. [true, nil] 또는 [false, 이유].
+    # 다음에 시작할 스테이지를 정한다. init 전에 호출해야 한다. [true, nil] 또는 [false, 이유]를 돌려준다.
     def set_stage(id)
       st, why = Stages.get(id)
       return [false, why] if st.nil?
@@ -123,7 +122,7 @@ module AldebaranScene
       [true, nil]
     end
 
-    # 지금 무대의 id (진행 저장과 결과 창이 쓴다)
+    # 현재 스테이지의 id (진행 저장과 결과 창이 쓴다)
     def stage_id
       stage ? stage.id : nil
     end
@@ -136,7 +135,7 @@ module AldebaranScene
       System.env(name)
     end
 
-    # Lua 의 tonumber(env or "") 에 해당. 이 mruby 에는 Regexp 가 없어 손으로 본다.
+    # 문자열이 숫자 형태인가. 이 mruby에는 Regexp가 없어 문자 단위로 검사한다.
     def numeric?(s)
       return false if s.nil? || s.empty?
       s.each_char.all? { |c| "0123456789.-".include?(c) } && s.count("0123456789") > 0
@@ -196,7 +195,7 @@ module AldebaranScene
       input
     end
 
-    # 몬스터 하나를 목록에 더한다 (배치와 보스의 소환이 함께 쓴다)
+    # 몬스터 하나를 목록에 추가한다 (초기 배치와 보스의 소환이 함께 쓴다)
     def add_monster(spawn)
       spec = stage.species[spawn[:species]]
       return nil if spec.nil?
@@ -210,14 +209,14 @@ module AldebaranScene
       e
     end
 
-    # 대화창(나레이션)이 보는 결정키. 화면 탭도 결정으로 친다.
+    # 대화창(나레이션)에 넘기는 결정키. 화면 탭도 결정으로 취급한다.
     def poll_confirm
       confirm = Input.key_down?(:z) || Input.key_down?(:return) ||
                 Input.key_down?(:space) || Input.mouse_down?(:left)
       { confirm: confirm }
     end
 
-    # ---- 스테이지 세우기 --------------------------------------------------------
+    # ---- 스테이지 구성 ----------------------------------------------------------
 
     def spawn_monsters
       @monsters.each { |e| e[:img].release if e[:img] }
@@ -225,7 +224,7 @@ module AldebaranScene
       stage.spawns.each { |s| add_monster(s) }
     end
 
-    # 레벨 반영. 레벨이 오르면 전량 회복이 규칙이다 (기획서 7.2절)
+    # 레벨을 반영한다. 레벨이 오르면 HP와 MP를 전부 회복하는 것이 규칙이다 (기획서 7.2절)
     def apply_level(new_level)
       @level = new_level
       s = Combat.stats_at(@level)
@@ -233,12 +232,11 @@ module AldebaranScene
                  max_hp: s[:hp], max_mp: s[:mp] }
     end
 
-    # 스테이지를 처음부터 (첫 진입, 그리고 다시 하기)
+    # 스테이지를 처음 상태로 되돌린다 (첫 진입과 다시 하기)
     def reset_stage
       @rng = Rpg::Rng.new(stage.seed)
       @player = Player.new(@start_at || stage.start[:x], stage.start[:y])
-      # 앞 스테이지에서 이어 온 경험치와 골드. 첫 스테이지면 0 이다.
-      # 다시 하기에서도 유지된다. 잃는 것은 이 판의 진행이지 지난 판이 아니다.
+      # 앞 스테이지에서 이어 온 경험치와 골드 (첫 스테이지면 0). 다시 하기에서도 유지된다.
       @exp = @carried_exp
       @gold = @carried_gold
       @lives = stage.lives
@@ -267,7 +265,7 @@ module AldebaranScene
       @cam_x = 0
     end
 
-    # 목숨 하나를 잃었다 (HP 0 또는 낭떠러지)
+    # 목숨 하나를 잃는다 (HP 0 또는 추락)
     def lose_life
       @deaths += 1
       @lives -= 1
@@ -302,9 +300,9 @@ module AldebaranScene
       end
     end
 
-    # 보스가 쓰러졌다. 무엇으로 끝나는가는 스테이지가 정한다.
-    #   숲: 짐도둑이 배낭을 떨구고, 그것을 주워야 끝난다 (기획서 4.3절).
-    #   그 밖: 쓰러뜨린 것으로 끝난다. 죽는 연출을 보여 주고 잠시 뒤 에필로그.
+    # 보스가 쓰러졌을 때. 스테이지 종료 조건은 스테이지가 정한다.
+    #   숲: 짐도둑이 배낭을 떨어뜨리고, 그것을 주워야 끝난다 (기획서 4.3절).
+    #   그 밖: 쓰러뜨린 것으로 끝난다. 죽는 연출을 보여 주고 잠시 뒤 에필로그로 넘어간다.
     def boss_down(m)
       if stage.boss[:drops] == :bag
         @bag = { x: m.x, y: m.y }
@@ -313,7 +311,7 @@ module AldebaranScene
       end
     end
 
-    # 날린 검기. 몬스터에 닿으면 터지고, 벽이나 화면 밖에서 사라진다.
+    # 발사한 검기. 몬스터에 닿으면 피해를 주고 사라지며, 벽이나 화면 밖에서도 사라진다.
     def update_bolts(dt)
       spec = Combat::SKILLS[:bolt]
       (@bolts.size - 1).downto(0) do |i|
@@ -341,11 +339,8 @@ module AldebaranScene
     end
 
     # ---- 보스의 패턴 (docs/plans/aldebaran-7-tomb.md 6절) -----------------------
-    # 페이즈 표는 data/monsters.rb 의 BOSS_PHASES 에 있다. 여기는 그 표를 읽어
-    # 도는 코드일 뿐이다.
-    #
-    # 패턴은 **후딜에 들어서는 순간** 하나씩 나간다. 후딜이 곧 플레이어의 펀치
-    # 윈도우이므로, 그때 다음 위협을 예고하면 "때릴까 피할까"가 선택이 된다.
+    # 페이즈 표는 data/monsters.rb의 BOSS_PHASES에 있고, 여기서 그 표를 읽어 실행한다.
+    # 패턴은 보스가 후딜레이에 들어서는 순간 하나씩 발동한다.
 
     def boss_fire_hail(m, count)
       return if @boss_hail.nil?
@@ -357,7 +352,7 @@ module AldebaranScene
         end
       end
       (1..count).each do |i|
-        # 보스 앞뒤로 고르게. 플레이어의 머리 위만 노리면 피할 수 없다
+        # 보스 앞뒤로 고르게 떨어뜨린다. 플레이어의 머리 위만 노리면 피할 수 없기 때문이다
         spread = 60 + (i - 1) * 46
         side = (i % 2 == 0) ? 1 : -1
         Climate.drop(@boss_hail, @player.x + side * spread * @rng.float, floor_y)
@@ -372,7 +367,7 @@ module AldebaranScene
       end
     end
 
-    # 보스 하나의 한 프레임. e 는 @monsters 의 항목이다.
+    # 보스 하나의 한 프레임 처리. e는 @monsters의 항목이다.
     def update_boss_pattern(e, dt)
       m = e[:model]
       return if m.spec[:phases].nil? || m.dead || m.state == :dying
@@ -383,8 +378,7 @@ module AldebaranScene
       if m.state == :recover
         unless m.pattern_fired
           m.pattern_fired = true
-          # Lua 는 1 기준 순환 번호를 들고 있었다. 여기서는 지금까지 낸 횟수를 세고
-          # 그 나머지로 패턴을 고른다 (같은 순서다).
+          # 지금까지 발동한 횟수를 세고, 그 값을 사이클 길이로 나눈 나머지로 패턴을 고른다.
           fired = m.cycle_index || 0
           pattern = ph[:cycle][fired % ph[:cycle].size]
           m.cycle_index = fired + 1
@@ -395,8 +389,8 @@ module AldebaranScene
           elsif pattern == :flood
             Climate.surge(@climate, 4.0)
           end
-          # :charge 는 상태 기계가 스스로 한다 (spec[:charge_repeat]). 사이클에
-          # 남겨 둔 것은 박자를 세기 위해서다.
+          # :charge는 상태 기계가 스스로 처리한다 (spec[:charge_repeat]). 사이클에
+          # 남겨 둔 것은 패턴 순서의 간격을 맞추기 위해서다.
         end
       else
         m.pattern_fired = false
@@ -412,8 +406,7 @@ module AldebaranScene
         bx0, by0, bx1, by1 = m.body
         next unless overlap?(ax0, ay0, ax1, ay1, bx0, by0, bx1, by1)
         @player.attack_hit[m] = true
-        # 별들의 방: 빛 안의 영혼만 실체가 된다. 그늘에서는 칼이
-        # 그냥 지나간다 (원안 표 16의 '빛의 축제'를 규칙으로 삼았다).
+        # 별들의 방: 빛 안의 영혼만 공격할 수 있다 (원안 표 16).
         solid = !m.spec[:flies] || Climate.lit(@climate, m.x)
         next unless solid
         atk = @stats[:atk] * @player.attack_mult
@@ -463,7 +456,7 @@ module AldebaranScene
         if m.spec[:special] == :sting
           sting = { chance: m.spec[:sting_chance], bonus: m.spec[:sting_bonus] }
         end
-        m.strike_hit = true # 회피당해도 그 공격은 끝났다
+        m.strike_hit = true # 회피되어도 그 공격은 끝난 것으로 처리한다
         if damage_player(base, m.x, sting) && charging
           m.charge_used = !m.spec[:charge_repeat]
           m.timer = 0
@@ -475,12 +468,12 @@ module AldebaranScene
     # ---- 돌팔매 (짐도둑의 투사체) ------------------------------------------------
 
     def update_stones(dt)
-      # 짐도둑의 strike 가 돌을 만든다 (monster.rb 는 thrown 깃발만 세운다)
+      # 짐도둑의 strike 상태에서 돌을 만든다 (monster.rb는 thrown 플래그만 설정한다)
       @monsters.each do |e|
         m = e[:model]
         next unless m.spec[:special] == :throw && m.state == :strike && !m.thrown
         m.thrown = true
-        # 두 번째 판에서는 돌을 두 개씩 던진다 (기획서 4.3.4절)
+        # 2페이즈에서는 돌을 두 개씩 던진다 (기획서 4.3.4절)
         shots = m.phase2 ? 2 : 1
         (1..shots).each do |k|
           @stones.push({
@@ -515,7 +508,7 @@ module AldebaranScene
 
     # ---- 씬 --------------------------------------------------------------------
 
-    # 터치 컨트롤의 중심 좌표 표 (status 용). { pad: {cx, cy, size}, id => {cx, cy, size} }
+    # 터치 컨트롤의 중심 좌표 표 (status용). { pad: {cx, cy, size}, id => {cx, cy, size} }
     def control_centers
       return nil if @controls.nil?
       out = {
@@ -561,8 +554,7 @@ module AldebaranScene
         monsters: ms,
         stones: @stones.size,
         intro: !@intro.nil?,
-        # 창이 화면에 남아 있는가 (닫히는 중도 포함). 컷씬이 끝난 뒤 이것이
-        # 참으로 남으면 "대화창이 안 꺼진다" 버그다 (2026-08-23 사용자 보고)
+        # 창이 화면에 남아 있는가 (닫히는 중도 포함). 검증이 컷씬 뒤에 창이 닫혔는지 확인하는 데 쓴다.
         dialogue_shown: (@dialogue && @dialogue.window && !@dialogue.window.closed?) || false,
         bag: !@bag.nil?,
         ending: @ending ? @ending[:phase] : nil,
@@ -573,8 +565,7 @@ module AldebaranScene
         skills: @skills,
         bolts: @bolts.size,
         hallucination: @hallucination > 0,
-        # 터치 컨트롤 배치 (T1). 인수 시나리오가 좌표를 하드코딩하지 않고
-        # 계산된 중심을 누르게 한다. 터치 UI 가 없으면 nil.
+        # 터치 컨트롤 배치. 인수 시나리오가 계산된 중심 좌표를 누르는 데 쓴다. 터치 UI가 없으면 nil.
         touch_controls: control_centers,
       }
     end
@@ -606,7 +597,7 @@ module AldebaranScene
       @ending = nil
       @game_over = nil
 
-      # 검수용: 어느 스테이지를 열지 밖에서 지정한다 (INITIAL2D_ALDEBARAN_STAGE=tomb)
+      # 검수용: 어느 스테이지를 시작할지 환경 변수로 지정한다 (INITIAL2D_ALDEBARAN_STAGE=tomb)
       carry = @carry
       @carried_exp = carry ? carry[:exp] : 0
       @carried_gold = carry ? carry[:gold] : 0
@@ -616,8 +607,8 @@ module AldebaranScene
         ok, why = set_stage(want)
         puts "알데바란: #{why}" unless ok
       end
-      # 검수용: 시작 x 를 옮긴다 (INITIAL2D_ALDEBARAN_AT=2200). 방마다의 기후를
-      # 눈으로 확인하려면 그 방까지 걸어가지 않고 바로 서 볼 수 있어야 한다.
+      # 검수용: 시작 x를 바꾼다 (INITIAL2D_ALDEBARAN_AT=2200). 방마다의 기후를
+      # 확인할 때 그 방까지 걸어가지 않고 바로 시작할 수 있게 한다.
       at = env("INITIAL2D_ALDEBARAN_AT")
       @start_at = numeric?(at) ? at.to_f : nil
 
@@ -633,7 +624,7 @@ module AldebaranScene
         @world_h = @map_h * @tile_h
       end
 
-      # 구간마다 배경 한 벌. 두 장씩 두는 것은 가로로 이어 붙여 흘리기 위해서다.
+      # 구간마다 원경과 근경 배경 스프라이트를 두 장씩 둔다. 가로로 이어 붙여 스크롤하기 위해서다.
       @layers = {}
       stage.sections.each do |s|
         far = "#{BG_DIR}far_#{s[:name]}.png"
@@ -645,19 +636,19 @@ module AldebaranScene
                  Image.create(near, 0, 0, @w, @h, 1, "AldNear:#{s[:name]}")],
         }
       end
-      # 환각 때 겹쳐 보이는 옛 무대. 스테이지마다 있을 수도 없을 수도 있다
+      # 환각 때 겹쳐 보이는 옛 배경. 스테이지에 따라 있을 수도 없을 수도 있다
       @bright_img = stage.bright ? Image.create(stage.bright, 0, 0, @w, @h, 1, "AldBright:#{stage.id}") : nil
       @hallucination = 0
 
       # 구간마다 기후 하나 (원안 표 19: 아포피스가 방마다 기후를 좌우한다).
-      # 표가 없는 스테이지는 전부 nil 이고, 그러면 아무 규칙도 걸리지 않는다.
+      # 기후 표가 없는 스테이지는 전부 nil이고, 그러면 아무 규칙도 적용되지 않는다.
       @climates = {}
       stage.sections.each do |sec|
         @climates[sec[:name]] = Climate.create(stage.climate && stage.climate[sec[:name]])
       end
       @climate = nil
-      # 보스의 우박은 방의 기후가 아니라 보스의 것이다. 간격을 무한대로 두고
-      # 씬이 패턴을 돌 때마다 한 알씩 직접 떨군다.
+      # 보스의 우박은 방의 기후와 별개인 보스 전용 상태다. 자동 낙하 간격을 무한대로 두고
+      # 씬이 패턴을 실행할 때마다 직접 떨어뜨린다.
       @boss_hail = Climate.create({ kind: :hail, interval: 1e9, first: 1e9,
                                     warn: 0.5, damage: 10, speed: 340, half_w: 5, count: 1 })
 
@@ -672,8 +663,8 @@ module AldebaranScene
       @stone_img = Image.create(STONE_PATH, 0, 0, 8, 8, 1, "AldebaranStone")
       @bag_img = Image.create(BAG_PATH, 0, 0, 16, 16, 1, "AldebaranBag")
 
-      # 기후 조각. 엔진의 스프라이트는 만들 때의 크기를 소스 사각형으로 쓰므로
-      # 크기마다 하나씩 둔다 (hud.rb 와 같은 사정).
+      # 기후 조각. 엔진의 스프라이트는 만들 때의 크기를 소스 사각형 크기로 쓰므로
+      # 크기마다 하나씩 둔다 (hud.rb와 같은 이유).
       @climate_img = {}
 
       # 도입 컷씬의 짐도둑 (몬스터와 같은 시트, 다른 스프라이트).
@@ -699,7 +690,7 @@ module AldebaranScene
       @pad_was_left = false
       @pad_was_right = false
 
-      # 창 부품 (일시 정지, 게임 오버, 나레이션. 전부 공용품이다)
+      # 창 부품 (일시 정지, 게임 오버, 나레이션이 함께 쓴다)
       @skin = Rpg::Skin.new(path: Rpg::Assets.windowskin, scale: 1)
       se = {
         cursor: -> { play_se(:cursor) },
@@ -726,8 +717,8 @@ module AldebaranScene
       elsif stage.intro == :thief
         @intro = { phase: :thief, timer: 0.0, x: stage.start[:x] + 40 }
       else
-        # 컷씬 없이 나레이션만. 글을 지금 띄우지 않으면 busy? 가 거짓이라
-        # 첫 프레임에 그대로 사라진다 (A3 에서 한 번 당한 자리다).
+        # 컷씬 없이 나레이션만. 글을 여기서 바로 표시해야 busy?가 참이 되어
+        # 첫 프레임에 인트로가 끝나지 않는다.
         @intro = { phase: :text, timer: 0.0 }
         @dialogue.show_message(stage.intro_text)
       end
@@ -736,7 +727,7 @@ module AldebaranScene
       @buttons = nil
       @controls = nil
       if Ui::VirtualPad.should_show?
-        # 화면 크기 비례 배치 (T1). 점프가 모서리(엄지가 쉬는 자리), 공격이 그 안쪽,
+        # 화면 크기 비례 배치. 점프가 모서리(엄지가 놓이는 자리), 공격이 그 안쪽,
         # 폭주와 검기는 그 윗줄, 정지는 우상단.
         @controls = Ui::Layout.controls(@w, @h, {
           main: [
@@ -804,7 +795,7 @@ module AldebaranScene
       end
     end
 
-    # ---- 컷씬과 끝 --------------------------------------------------------------
+    # ---- 컷씬과 종료 ------------------------------------------------------------
 
     def update_intro(dt)
       if @intro[:phase] == :thief
@@ -816,11 +807,11 @@ module AldebaranScene
         end
       else
         @dialogue.update(poll_confirm, false)
-        @intro = nil unless @dialogue.busy? # 조작이 풀린다
+        @intro = nil unless @dialogue.busy? # 조작이 가능해진다
       end
     end
 
-    # 에필로그의 쪽 목록. 흔적을 다 모은 플레이어만 마지막 한 줄을 읽는다.
+    # 에필로그의 쪽 목록. 흔적을 전부 찾은 경우에만 마지막 쪽이 추가된다.
     def epilogue_pages
       pages = stage.epilogue.dup
       pages.push(stage.epilogue_full) if @found_order.size >= stage.landmarks.size
@@ -849,16 +840,16 @@ module AldebaranScene
           end
         end
       else
-        # 결과 창 (기획서 4.4절). 결정키로 닫으면 **다음 스테이지로 이어진다**.
-        # 다음이 없으면 거기서 한 회차가 끝난 것이라 타이틀로 돌아간다.
-        @dialogue.update({}, false) # 에필로그 창이 닫히는 것을 마저 본다
+        # 결과 창 (기획서 4.4절). 결정키로 닫으면 다음 스테이지로 이어진다.
+        # 다음 스테이지가 없으면 한 회차가 끝난 것이므로 타이틀로 돌아간다.
+        @dialogue.update({}, false) # 에필로그 창이 닫히는 애니메이션을 끝까지 진행한다
         @ending[:wait] += 1
         if @ending[:wait] > 10 && poll_confirm[:confirm]
           next_stage = Stages.after(stage.id)
           if next_stage
             @carry = { exp: @exp, gold: @gold }
             set_stage(next_stage.id)
-            switch_scene("aldebaran") # 같은 씬을 새 무대로 다시 연다
+            switch_scene("aldebaran") # 같은 씬을 새 스테이지로 다시 시작한다
           else
             clear_carry
             switch_scene("aldebaran_title")
@@ -877,7 +868,7 @@ module AldebaranScene
           })
         end
       else
-        @dialogue.update({}, false) # 게임 오버 글의 창이 닫히는 것을 마저 본다
+        @dialogue.update({}, false) # 게임 오버 글의 창이 닫히는 애니메이션을 끝까지 진행한다
         @pause_choice.update(poll_menu_input)
         unless @pause_choice.active?
           picked = @pause_choice.result
@@ -924,9 +915,8 @@ module AldebaranScene
         return
       end
 
-      # 대화창은 한가할 때도 매 프레임 돌린다. busy? 는 마지막 쪽을 넘긴 즉시
-      # 거짓이 되고 창이 닫히는 것은 그 뒤의 update 가 하는 일이라, 컷씬이
-      # 끝났다고 갱신을 멈추면 창이 열린 채로 화면에 남는다.
+      # 대화창은 표시할 내용이 없을 때도 매 프레임 갱신한다. 창을 닫는 애니메이션은
+      # busy?가 거짓이 된 뒤의 update가 진행하기 때문이다.
       @dialogue.update({}, false)
 
       @stage_time += dt
@@ -938,7 +928,7 @@ module AldebaranScene
         return
       end
 
-      # 힘 (기획서 5.3절): 익힌 것만 쓸 수 있고, 쓰면 쿨타임이 돈다
+      # 힘 (기획서 5.3절): 익힌 것만 쓸 수 있고, 쓰면 쿨타임이 시작된다
       @berserk_timer = [0, @berserk_timer - dt].max
       Combat.tick_cooldowns(@skills, dt)
 
@@ -961,7 +951,7 @@ module AldebaranScene
       end
 
       # ---- 기후 (원안 표 19) --------------------------------------------------
-      # 지금 선 방의 기후를 흘리고, 그 결과를 플레이어의 환경으로 씌운다.
+      # 플레이어가 있는 방의 기후를 갱신하고, 그 결과를 플레이어의 환경으로 설정한다.
       here = stage.section_at(@player.x)[0]
       @climate = @climates[here]
       if @climate
@@ -988,7 +978,7 @@ module AldebaranScene
       play_se(:jump) if @player.jumped
       play_se(:swing) if @player.swung
 
-      # 우박에 맞았는가 (예고를 지나 실제로 떨어지는 것만 아프다)
+      # 우박에 맞았는가 (예고 단계를 지나 실제로 떨어지는 것만 피해를 준다)
       if @climate && @player.invuln_timer <= 0
         px0, py0, px1, py1 = player_box
         Climate.hazards(@climate).each_with_index do |hz, i|
@@ -1016,7 +1006,7 @@ module AldebaranScene
         end
       end
 
-      # 흔적 (기획서 4.3.1절): 밟으면 글이 뜨고, 기록에 남고, 힘을 하나 준다
+      # 흔적 (기획서 4.3.1절): 밟으면 글이 표시되고, 기록에 남고, 힘을 하나 익힌다
       @sign_timer = [0, @sign_timer - dt].max
       @sign_text = nil if @sign_timer <= 0
       @learned_timer = [0, @learned_timer - dt].max
@@ -1043,7 +1033,7 @@ module AldebaranScene
         update_boss_pattern(e, dt) if e[:boss]
       end
 
-      # 보스가 부른 우박은 방의 기후와 따로 흐른다
+      # 보스가 떨어뜨린 우박은 방의 기후와 별개로 갱신한다
       if @boss_hail && @boss_hail.drops.size > 0
         Climate.update(@boss_hail, dt, { x: @player.x, floor_y: @player.y, ceil_y: 96, rng: @rng })
         if @player.invuln_timer <= 0
@@ -1072,7 +1062,7 @@ module AldebaranScene
         return
       end
 
-      # 배낭이 없는 무대는 보스를 쓰러뜨린 것으로 끝난다
+      # 배낭이 없는 스테이지는 보스를 쓰러뜨린 것으로 끝난다
       if @boss_clear
         @boss_clear -= dt
         if @boss_clear <= 0
@@ -1102,7 +1092,7 @@ module AldebaranScene
       img.draw
     end
 
-    # 우박 알과 예고를 그린다 (방의 기후와 보스의 것이 같은 그림을 쓴다)
+    # 우박과 예고 표시를 그린다 (방의 기후와 보스의 우박이 같은 그림을 쓴다)
     def draw_drops(state, cx)
       return if state.nil? || state.drops.nil?
       state.drops.each do |dp|
@@ -1120,7 +1110,7 @@ module AldebaranScene
       return if @climate.nil?
 
       if @climate.kind == :light
-        # 빛기둥 셋. 켜져 있는 동안만 영혼이 실체가 된다
+        # 빛기둥 셋. 켜져 있는 동안만 영혼을 공격할 수 있다
         if Climate.light_on(@climate)
           (@climate.spec[:pillars] || []).each do |px|
             climate_piece(:beam, px - 44 - cx, 0, 115)
@@ -1133,11 +1123,9 @@ module AldebaranScene
       elsif @climate.kind == :flood
         wy = @climate.water_y
         if wy && wy < @h
-          # 조각은 384 폭이라 화면 폭만큼 옆으로 잇는다. 모바일은 논리 폭이
-          # 384 보다 넓어, 한 장만 그리면 물이 화면 왼쪽에만 보였다
-          # (2026-08-24 실기 검수). 수면 아래가 조각(128)보다 깊으면
-          # 몸통 조각으로 마저 채운다.
-          # (이 mruby 에는 Range#step 이 없어 while 로 센다)
+          # 조각은 폭이 384라 화면 폭만큼 옆으로 이어 그린다 (모바일은 논리 폭이 더 넓다).
+          # 수면 아래가 조각 높이(128)보다 깊으면 몸통 조각으로 나머지를 채운다.
+          # (이 mruby에는 Range#step이 없어 while로 반복한다)
           tx = 0
           while tx <= @w - 1
             climate_piece(:water, tx, wy, 150)
@@ -1155,7 +1143,7 @@ module AldebaranScene
         end
 
       elsif @climate.kind == :snow
-        # 눈: 규칙은 마찰이고 이것은 그 표시다. 좌표 해시라 흔들리지 않는다
+        # 눈의 시각 표시 (규칙은 마찰이다). 위치를 좌표 해시로 정하므로 프레임마다 흔들리지 않는다
         24.times do |i|
           fx = (i * 79 + (cx * 0.5).floor) % (@w + 32) - 16
           fy = ((i * 137 + (@climate.t * 40).floor) % (@h + 32)) - 16
@@ -1197,7 +1185,7 @@ module AldebaranScene
         Graphics.draw_text(76, 30, "Lv #{@level}")
       end
 
-      # 스킬 슬롯 (원안 8.2절의 스킬 1~3 자리). 쿨타임이 슬롯에서 줄어든다.
+      # 스킬 슬롯 (원안 8.2절의 스킬 1~3 자리). 남은 쿨타임을 슬롯에 표시한다.
       sx = @w - 8
       [:bolt, :berserk].each do |id|
         spec = Combat::SKILLS[id]
@@ -1225,7 +1213,7 @@ module AldebaranScene
       draw_centered_text(by + 10, "#{stage.number} #{stage.title}, 끝")
       Graphics.draw_text(bx + 16, by + 34, "레벨 #{@level}   경험치 #{@exp}   골드 #{@gold}")
       Graphics.draw_text(bx + 16, by + 52, format("걸린 시간 %d초", @stage_time.floor))
-      # 알아낸 것: 흔적을 밟은 만큼만 남는다 (기획서 4.3.1절)
+      # 알아낸 것: 밟은 흔적만 목록에 남는다 (기획서 4.3.1절)
       Graphics.draw_text(bx + 16, by + 76, format("알아낸 것  %d / %d", @found_order.size, stage.landmarks.size))
       @found_order.each_with_index do |title, i|
         Graphics.draw_text(bx + 26, by + 94 + i * 18, "- #{title}")
@@ -1235,9 +1223,8 @@ module AldebaranScene
       end
     end
 
-    # 스프라이트의 트랜스폼은 update 에서 커밋된다. 위치를 render 에서 정하므로
-    # 그리기 직전에 update(0) 을 불러야 한다. 그러지 않으면 한 프레임 늦고,
-    # 컷씬처럼 update 가 일찍 반환하는 동안에는 아예 반영되지 않는다.
+    # 스프라이트의 트랜스폼은 update에서 반영되므로, render에서 정한 위치는
+    # 그리기 직전에 update(0)을 호출해 반영한다.
     def draw_layer(pair, factor, opacity)
       return if pair.nil? || opacity <= 0
       bx = -(@cam_x * factor).floor % @w
@@ -1260,7 +1247,7 @@ module AldebaranScene
 
       cx = @cam_x.floor
 
-      # 구간 둘을 겹쳐 서서히 바꾼다 (문이 열리는 것이 아니라 어느새 다른 곳)
+      # 구간 둘의 배경을 겹쳐 서서히 전환한다 (경계 없이 자연스럽게 다른 구간으로 바뀐다)
       cur, nxt, blend = stage.section_at(@cam_x)
       a = @layers[cur]
       b = @layers[nxt]
@@ -1269,9 +1256,9 @@ module AldebaranScene
       draw_layer(a && a[:near], PARALLAX_NEAR, 255)
       draw_layer(b && b[:near], PARALLAX_NEAR, 255 * blend) if blend > 0 && nxt != cur
 
-      # 안개에 취하면 잠깐 옛 숲이 겹쳐 보인다
+      # 환각 중에는 잠깐 옛 숲이 겹쳐 보인다
       if @hallucination > 0 && @bright_img
-        fade = [1, @hallucination / (6.0 / 10)].min # 0.6 을 나눗셈으로 쓰는 이유: mruby 가 이 리터럴을 1ulp 다르게 읽는다
+        fade = [1, @hallucination / (6.0 / 10)].min # 0.6을 나눗셈으로 쓰는 이유: mruby가 이 리터럴을 1ulp 다르게 읽는다
         @bright_img.set_position(0, 0)
         @bright_img.opacity = (200 * fade).floor
         @bright_img.update(0)
@@ -1331,11 +1318,11 @@ module AldebaranScene
 
       draw_hud
 
-      # 흔적의 글과 익힌 힘 (상단 가운데). HUD 가 왼쪽 위 y 46 까지 쓰므로 그 아래에 둔다.
+      # 흔적의 글과 익힌 힘 (상단 가운데). HUD가 왼쪽 위 y 46까지 차지하므로 그 아래에 둔다.
       draw_centered_text(58, @sign_text) if @sign_text && $font_ready
       draw_centered_text(78, @learned_text) if @learned_text && $font_ready
 
-      # 날린 검기
+      # 발사한 검기
       @bolts.each do |b|
         next if @stone_img.nil?
         @stone_img.set_position(b[:x].floor - 4 - cx, b[:y].floor - 4)
@@ -1433,6 +1420,6 @@ module AldebaranScene
     end
   end
 
-  # 충돌 조회를 Proc 으로 (Player 와 Monster 가 probe.call(px, py) 로 부른다)
+  # 충돌 조회 Proc (Player와 Monster가 probe.call(px, py)로 호출한다)
   @probe = ->(px, py) { AldebaranScene.probe(px, py) }
 end

@@ -1,15 +1,15 @@
-# 알데바란, HUD (기획서 8.2절): HP/MP/EXP 막대, 레벨, 목숨, 골드. scripts/lua/games/aldebaran/hud.lua 의 Ruby 판.
+# 알데바란, HUD (기획서 8.2절): HP/MP/EXP 막대, 레벨, 목숨, 골드.
 #
-# 막대는 hud.png 의 채움 띠를 원하는 폭만큼 잘라 그린다. 엔진의 스프라이트는
-# 만들 때의 크기를 소스 사각형 크기로 쓰므로(window.rb 의 Skin 과 같은 사정)
-# 폭마다 스프라이트를 하나씩 캐시한다. 텍스처는 한 장을 같이 쓴다.
+# 막대는 hud.png의 채움 띠를 원하는 폭만큼 잘라 그린다. 엔진의 스프라이트는
+# 만들 때의 크기를 소스 사각형 크기로 쓰므로(window.rb의 Skin과 같은 이유)
+# 폭마다 스프라이트를 하나씩 캐시한다. 텍스처는 한 장을 공유한다.
 
 require "scripts/ruby/image"
 
 module Aldebaran
   class Hud
     PATH = "./resources/aldebaran/hud.png"
-    # hud.png 의 띠와 아이콘 좌표 (tools/generate_aldebaran_assets.py 의 make_hud)
+    # hud.png의 띠와 아이콘 좌표 (tools/generate_aldebaran_assets.py의 make_hud)
     STRIP_Y = { hp: 0, mp: 8, exp: 16, bg: 24 }
     ICON = { star: { x: 66, y: 0 }, star_empty: { x: 66, y: 12 }, coin: { x: 66, y: 24 } }
 
@@ -41,7 +41,7 @@ module Aldebaran
       img.draw
     end
 
-    # 막대 하나: 바탕 위에 비율만큼의 채움 (0 이 아니면 최소 1px)
+    # 막대 하나: 바탕 위에 비율만큼의 채움 (0이 아니면 최소 1px)
     def bar(x, y, kind, ratio)
       piece(0, STRIP_Y[:bg], BAR_W, BAR_H, x, y)
       w = ([0, [1, ratio].min].max * BAR_W).floor
@@ -55,8 +55,8 @@ module Aldebaran
       piece(r[:x], r[:y], ICON_SIZE, ICON_SIZE, x, y)
     end
 
-    # 스킬 슬롯 하나. 익히지 않았으면 흐리고, 쿨타임이 돌면 위에서 아래로 찬다.
-    # ratio 는 남은 쿨타임의 비율(1 이면 방금 썼다), ready 는 지금 쓸 수 있는가.
+    # 스킬 슬롯 하나. 익히지 않았으면 테두리만 그리고, 쿨타임 중이면 남은 비율만큼
+    # 위에서부터 어둡게 덮는다. ratio는 남은 쿨타임의 비율(1이면 방금 썼다), ready는 지금 쓸 수 있는가.
     def skill_slot(x, y, size, learned, ratio, ready)
       # 테두리 (막대의 바탕 띠를 잘라 쓴다)
       size.times do |i|
@@ -83,7 +83,7 @@ module Aldebaran
     end
 
     def dispose
-      # 텍스처 한 장을 같이 쓴다. 해제(release)는 한 번만, 나머지는 스프라이트만 놓는다
+      # 텍스처 한 장을 공유한다. 텍스처 해제(release)는 한 번만 하고, 나머지는 스프라이트만 해제한다(dispose)
       first = true
       @cache.each_value do |img|
         if first && img.respond_to?(:release)

@@ -1,7 +1,5 @@
-# 엔진 데모: Flappy Bird 스타일, mruby 판 (S1, docs/plans/s1-mruby-binding.md)
+# 엔진 데모: Flappy Bird 스타일 (docs/plans/s1-mruby-binding.md)
 #
-# scripts/lua/games/flappy.lua 를 Ruby 로 옮긴 것이다. 규칙과 수치는 같다.
-# (Lua 는 scripts/lua/, Ruby 는 scripts/ruby/ 에 둔다)
 # 조작: 마우스 클릭/터치 또는 스페이스 바로 날갯짓
 # 상태: :ready(대기) -> :play(플레이) -> :dead(게임 오버) -> :ready
 # 게임 오버 화면에서 화면 상단(1/3)을 누르면 게임을 끝낸다.
@@ -42,7 +40,7 @@ module FlappyScene
     end
 
     def sfx(name)
-      # loop 에 숫자를 주면 추가 반복 횟수다 (1 = 2회 연속 재생).
+      # loop에 숫자를 주면 추가 반복 횟수다 (1 = 2회 연속 재생).
       # 효과음 파일이 절반 길이로 만들어져 있어 2회 재생이 정상 길이가 된다.
       Audio.play_sound("./resources/audio/#{name}.wav", name, 1)
     end
@@ -53,7 +51,7 @@ module FlappyScene
     end
 
     def random_gap
-      # Lua 의 math.random(0, n) 은 양 끝을 포함한다
+      # 0..n의 정수 난수 (양 끝을 포함하도록 n + 1을 넘긴다)
       200 + rand([1, (@h - GROUND_H - gap - 340).floor].max + 1)
     end
 
@@ -84,11 +82,11 @@ module FlappyScene
       @best ||= 0
       @dead_time = 0.0
 
-      # 스크롤 배경 2장 (이어붙여 좌측으로 흐름)
+      # 스크롤 배경 2장 (이어 붙여 왼쪽으로 스크롤한다)
       @bg1 = Sprite.load("./resources/background_768x896.png", "Background", 0, 0, @w, @h, 1)
       @bg2 = Sprite.load("./resources/background_768x896.png", "Background", 0, 0, @w, @h, 1)
 
-      # 지면 2장 (파이프와 같은 속도로 흘러 속도감을 준다)
+      # 지면 2장 (파이프와 같은 속도로 스크롤해 속도감을 준다)
       @gnd1 = Sprite.load("./resources/ground_768x64.png", "Ground", 0, 0, @w, GROUND_H, 1)
       @gnd2 = Sprite.load("./resources/ground_768x64.png", "Ground", 0, 0, @w, GROUND_H, 1)
 
@@ -188,7 +186,7 @@ module FlappyScene
     end
 
     def update(elapsed)
-      dt_ms = [elapsed, 50].min # 스파이크 방어
+      dt_ms = [elapsed, 50].min # 큰 elapsed 값 제한
       dt = dt_ms / 1000.0
 
       # ESC (Android 뒤로가기): 어느 상태에서든 게임 종료 (단독 진입점이다)
@@ -214,7 +212,7 @@ module FlappyScene
       case @state
       when :ready
         @ready_time += dt
-        # 대기 중엔 새가 상하로 부유
+        # 대기 중에는 새가 위아래로 천천히 움직인다
         @bird_y = (@h / 2.0 - BIRD_H / 2.0) + Math.sin(@ready_time * 4.0) * 14.0
         @bird_angle = Math.sin(@ready_time * 4.0) * 6.0
         if flap_pressed? || (@autoplay && @ready_time > 1.0)
@@ -226,7 +224,7 @@ module FlappyScene
         update_play(dt)
       when :dead
         @dead_time += dt
-        # 게임 오버 후 새는 고꾸라지며 지면까지 낙하
+        # 게임 오버 후 새는 앞으로 기울며 지면까지 낙하한다
         if @bird_y + BIRD_H < @ground_y
           @bird_vy += GRAVITY * dt
           @bird_y += @bird_vy * dt
@@ -257,7 +255,7 @@ module FlappyScene
       @gnd2.update(0)
 
       @pipes.each do |p|
-        # 위 파이프는 180도 원점 회전이라 (x+W, gap_y)에 놓아야 (x, gap_y-H)에 그려진다
+        # 위 파이프는 180도 원점 회전이라 (x+W, gap_y)에 두어야 (x, gap_y-H)에 그려진다
         p[:top].set_position(p[:x] + PIPE_W, p[:gap_y])
         p[:bottom].set_position(p[:x], p[:gap_y] + gap)
         p[:top].update(0)

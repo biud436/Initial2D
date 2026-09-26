@@ -1,37 +1,29 @@
 # 알데바란, 몬스터 규격서 (docs/plans/aldebaran-6-source-mining.md 3절 6항).
-# scripts/lua/games/aldebaran/data/monsters.lua 의 Ruby 판.
 #
-# 원안 스피카의 몬스터 규격서(표 39 밀림 전갈 거미, 표 40 늑대 인간)를 그릇으로
-# 삼은 표다. 채굴본은 docs/design/spica-source/tables.md에 있다.
+# 원안 스피카의 몬스터 규격서(표 39 밀림 전갈 거미, 표 40 늑대 인간)의 항목 구성을
+# 그대로 따른 표다. 채굴본은 docs/design/spica-source/tables.md에 있다.
 #
-# 종 하나는 두 층으로 되어 있다.
-#
-#   평평한 칸  엔진이 그대로 읽는 값이다 (game.rb, monster.rb). A1에서 A5까지
-#              정해 온 수치이며, 여기 손을 대면 게임이 바뀐다.
-#   spec       원안 규격서의 칸이다. 코드는 아직 대부분 보지 않는다. 값이 원안에
-#              없으면 nil로 둔다 ("비어 있다"와 "0이다"는 다르다).
-#
-# 이 두 층을 나눈 이유는 원안이 채워 놓은 칸과 우리가 정한 칸을 섞지 않기
-# 위해서다. P5에서 적을 열 종으로 늘릴 때, 새 종은 spec부터 채우고 평평한 칸을
-# 그 spec에서 유도한다.
-#
-# spec[:source]는 그 값이 어느 표 몇 절에서 왔는지다. 원안에 없어서 지어낸 것은
+# 종 하나는 두 부분으로 되어 있다.
+#   평평한 필드  엔진이 그대로 읽는 값이다 (game.rb, monster.rb). 이 값을 바꾸면 게임이 바뀐다.
+#   spec         원안 규격서의 항목이다. 코드는 대부분 읽지 않는다. 값이 원안에
+#                없으면 nil로 둔다 ("비어 있다"와 "0이다"는 다르다).
+# spec[:source]는 그 값이 어느 표 몇 절에서 왔는지다. 원안에 없어서 우리가 정한 것은
 # source가 없고 notes에 그 사실을 적는다.
 #
-# Ruby 판의 규약 (docs/plans/s2-ruby-aldebaran.md 3절): 표는 전부 Symbol 키 Hash 이고
-# 키는 snake_case 다 (chargeAtk -> :charge_atk). 방어력 def 는 Ruby 예약어라 :defense.
-# 문자열 열거값(special, attack_type, element, move_speed, 속도 단계의 key, 페이즈
-# 사이클의 패턴 이름)은 Symbol 이다. 시트 경로와 서술문은 문자열 그대로다.
+# 표기 규약 (docs/plans/s2-ruby-aldebaran.md 3절): 표는 전부 Symbol 키 Hash이고
+# 키는 snake_case다 (예: :charge_atk). 방어력은 def가 Ruby 예약어라 :defense로 쓴다.
+# 열거값(special, attack_type, element, move_speed, 속도 단계의 key, 페이즈
+# 사이클의 패턴 이름)은 Symbol이다. 시트 경로와 서술문은 문자열이다.
 #
-# 0.3, 0.35, 0.6, 0.7 이 3.0 / 10 처럼 나눗셈으로 적혀 있는 이유: 이 엔진의 mruby 4.0.0 은
-# 그 리터럴들을 1 ulp 어긋나게 읽는다 (0.3 == 3.0 / 10 이 false). IEEE 나눗셈은 바르게
-# 반올림되므로 Lua 의 strtod 와 같은 double 이 나온다. 값은 Lua 표와 같다.
+# 0.3, 0.35, 0.6, 0.7을 3.0 / 10처럼 나눗셈으로 적는 이유: 이 엔진의 mruby 4.0.0은 그
+# 리터럴들을 1 ulp 어긋나게 읽고, 나눗셈은 정확한 값을 준다. Lua 구현과 같은 골든
+# 스크린샷을 통과하려면 값이 같아야 한다.
 
 module Aldebaran
   module Monsters
     # ---- 원안 2.3.1절 표 6: 적의 4가지 공격 방식 --------------------------------
-    # 종마다 하나를 고른다. 체력/공격력/방어력의 상대적인 높낮이가 여기서 나온다.
-    # suicide(자폭 형)는 아직 어느 종도 쓰지 않는다 (P5의 몫이다).
+    # 종마다 하나를 고른다. 체력/공격력/방어력의 상대적인 높낮이가 여기서 정해진다.
+    # suicide(자폭 형)는 파괴의 조각(:shard) 하나만 쓴다.
 
     ATTACK_TYPES = {
       melee: { name: "근접 형", hp: "많음", atk: "낮음", defense: "보통",
@@ -44,9 +36,8 @@ module Aldebaran
                  pattern: "매우 강한 공격력으로 자폭을 한다." },
     }
 
-    # 원안에 없는 공격 방식. **사료와 섞지 않으려고 표를 나눠 둔다.**
-    # 1-2에서 적이 묻는 질문을 늘리려고 우리가 만든 것이다
-    # (docs/plans/aldebaran-7-tomb.md 5절).
+    # 원안에 없는 공격 방식 (docs/plans/aldebaran-7-tomb.md 5절). 원안 자료와 섞이지 않도록
+    # 표를 따로 둔다.
     EXTRA_ATTACK_TYPES = {
       air: { name: "공중 형", hp: "적음", atk: "보통", defense: "낮음",
              pattern: "떠다니다가 내려찍는다. 지면에서는 닿지 않는다.",
@@ -56,13 +47,13 @@ module Aldebaran
                 question: "뒤로 돌아가라" },
     }
 
-    # 공격 방식 하나 (원안의 것이든 우리 것이든)
+    # 공격 방식 하나 (원안의 표와 우리가 추가한 표 모두에서 찾는다)
     def self.attack_type(key)
       ATTACK_TYPES[key] || EXTRA_ATTACK_TYPES[key]
     end
 
     # ---- 원안 6.2.2절 표 37: 몬스터의 이동 속도 5단계 ----------------------------
-    # 원안의 값은 초당 픽셀이 아니라 배율이다. 우리 walk_speed(픽셀/초)와 짝지어 둔다.
+    # 원안의 값은 초당 픽셀이 아니라 배율이다. 우리 walk_speed(픽셀/초)와 대응시켜 둔다.
 
     SPEED_TIERS = [
       { key: :veryslow, name: "아주 느림", scale: 3.0 / 10 },
@@ -75,7 +66,7 @@ module Aldebaran
     # ---- 종별 표 ----------------------------------------------------------------
 
     SPECIES = {
-      # 밀림 전갈거미: 근접형. 움츠렸다가 턱을 내빼는 선딜레이가 공격 신호다.
+      # 밀림 전갈거미: 근접형. 몸을 움츠렸다가 턱을 내미는 선딜레이 동작이 공격 예고다.
       spider: {
         name: "밀림 전갈거미",
         hp: 26, atk: 9, defense: 2, exp: 5, gold: 10,
@@ -83,7 +74,7 @@ module Aldebaran
         alert_range: 96, attack_range: 20,
         windup: 35.0 / 100, active: 0.15, recover: 0.5,
         half_w: 12, body_h: 14,
-        special: :sting,             # 명중의 20%로 데미지 +8 (씬이 굴린다)
+        special: :sting,             # 명중 시 20% 확률로 데미지 +8 (확률 판정은 씬이 한다)
         sting_chance: 0.2, sting_bonus: 8,
         sheet: "./resources/aldebaran/spider.png",
         cols: 4, rows: 2, frame_w: 48, frame_h: 32,
@@ -110,7 +101,7 @@ module Aldebaran
             text: "두터운 세포로 둘러싸여 있으나 빛에 민감해 오래 노출되면 세포질이 " +
               "약해져 부서진다. 신성 계열 마법에 상당히 약하고, 은으로 도금된 " +
               "무기에 치명타를 입는다.",
-            light: true, holy: true, silver: true,   # P4의 상성이 여기서 나온다
+            light: true, holy: true, silver: true,   # 상성 계산이 이 값을 쓴다
           },
           weapon: "발달된 턱과 강한 산성의 독침.",
           combat_style: "민첩하게 접근해 큰 턱으로 타격하고, 일정 확률로 마비와 독침을 " +
@@ -123,7 +114,7 @@ module Aldebaran
             other: nil,                    # 원안 "없음"
           },
           appearance: { length: nil, weight: nil, body: nil, face: nil,
-                        hair: nil, outfit: nil },   # 원안이 비워 둔 칸
+                        hair: nil, outfit: nil },   # 원안이 비워 둔 항목
           behavior_stages: [
             "단계 1 : 평타",
             "단계 2 : 마비, 평타",
@@ -189,7 +180,7 @@ module Aldebaran
             poison: true, curse: true,
           },
           weapon: "강철 둔기 같은 근육과 뾰족한 손톱, 발톱.",
-          combat_style: nil,               # 원안이 서술 지시만 남기고 비워 둔 칸
+          combat_style: nil,               # 원안이 서술 지시만 남기고 비워 둔 항목
           attack_patterns: {
             normal: "단단한 팔과 손톱을 검처럼 머리 위로 높이 뻗어 내리찍는다. " +
               "공격 속도가 매우 빠르다.",
@@ -228,7 +219,7 @@ module Aldebaran
         },
       },
 
-      # 검은 늑대: 마을의 우두머리. 늑대의 1.5배이고 돌격을 다시 쓴다.
+      # 검은 늑대: 마을의 우두머리. 늑대 인간의 1.5배이고 돌격을 반복한다.
       blackwolf: {
         name: "검은 늑대",
         hp: 72, atk: 24, defense: 6, exp: 16, gold: 25,
@@ -238,7 +229,7 @@ module Aldebaran
         half_w: 10, body_h: 32,
         special: :charge,
         charge_speed: 170, charge_time: 0.9, charge_atk: 20,
-        charge_repeat: true,             # 한 번 쓰고 끝내지 않는다
+        charge_repeat: true,             # 돌격을 반복한다
         regen: true,
         sheet: "./resources/aldebaran/blackwolf.png",
         cols: 5, rows: 2, frame_w: 48, frame_h: 48,
@@ -246,7 +237,7 @@ module Aldebaran
         frames: { walk: [0, 1], charge: 2, attack: 3, hurt: 4 },
 
         spec: {
-          source: nil,                     # 원안에 규격서가 없다. A2에서 만든 종이다
+          source: nil,                     # 원안에 규격서가 없다. 우리가 만든 종이다
           index: 3,
           name: "검은 늑대",
           element: :dark,
@@ -270,7 +261,7 @@ module Aldebaran
         },
       },
 
-      # 가면 원숭이 짐도둑: 투척형 (보스, 3단계에서 배치된다)
+      # 가면 원숭이 짐도둑: 투척형 (1-1의 보스)
       monkey: {
         name: "가면 원숭이",
         hp: 60, atk: 8, defense: 1, exp: 12, gold: 30,
@@ -279,7 +270,7 @@ module Aldebaran
         windup: 0.4, active: 0.2, recover: 6.0 / 10,
         half_w: 8, body_h: 28,
         special: :throw,
-        flee_range: 64,              # 이보다 가까우면 반대로 달아난다
+        flee_range: 64,              # 이 거리보다 가까우면 반대 방향으로 달아난다
         sheet: "./resources/aldebaran/monkey.png",
         cols: 4, rows: 2, frame_w: 48, frame_h: 48,
         anchor_x: 24, anchor_y: 46,
@@ -314,9 +305,8 @@ module Aldebaran
 
     # ---- 1-2 황제의 무덤의 적 셋 (docs/plans/aldebaran-7-tomb.md 5절) ----------
     #
-    # 셋 다 원안의 서술에 뿌리가 있지만 수치는 우리가 정했다. 텔레그래프 부등식
-    # (선딜 >= 회피 성립 17프레임 + 인지 15프레임 = 32프레임 = 0.53초)을 지킨다.
-    # 그 검사는 tests/ruby/cases/aldebaran_monsters_data_test.rb가 데이터에서 돌린다.
+    # 원안의 서술에 근거가 있지만 수치는 우리가 정했다. 선딜은 텔레그래프 부등식
+    # (회피 성립 17프레임 + 인지 15프레임 = 0.53초 이상)을 지킨다 (검사: tests/ruby/cases/aldebaran_monsters_data_test.rb).
 
     SPECIES[:soul] = {
       name: "순장된 영혼",
@@ -325,7 +315,7 @@ module Aldebaran
       alert_range: 128, attack_range: 40, alert_range_y: 96,
       windup: 0.55, active: 0.28, recover: 7.0 / 10,  # 선딜 33프레임
       half_w: 10, body_h: 22,
-      # 내려찍기는 0.28초에 380px/s = 106px. 떠 있는 높이(약 64px)보다 깊게 내려온다.
+      # 내려찍기는 0.28초에 380px/s = 106px. 떠 있는 높이(약 64px)보다 더 내려온다.
       flies: true, fly_speed: 55, dive_speed: 380, rise_speed: 190,
       sheet: "./resources/aldebaran/soul.png",
       cols: 4, rows: 2, frame_w: 32, frame_h: 32,
@@ -432,19 +422,16 @@ module Aldebaran
 
     # ---- 보스: 아포피스 (원안 표 16, 19, 20) ------------------------------------
     #
-    # 파괴의 방의 수호자이자 무덤의 기후를 좌우하는 자 (표 19). 원안은 그를
-    # "직접 나서지 않고 부하를 통솔한다"고 적었으므로(표 20) 마지막 방에서만 만난다.
-    #
-    # 보스 규칙 (메타 프롬프트 P7): 3페이즈, 패턴 사이클이 명시적, 펀치 윈도우가
-    # 있고, 즉사가 없고, 두 번째 시도에서 더 잘하게 될 것.
-    # 페이즈 표는 BOSS_PHASES에 있다 (코드가 아니라 표다).
+    # 파괴의 방의 수호자이자 무덤의 기후를 좌우하는 자 (표 19, 20). 마지막 방에서만 만난다.
+    # 보스 규칙: 3페이즈, 명시적인 패턴 사이클, 반격 가능 구간, 즉사 없음.
+    # 페이즈 표는 BOSS_PHASES에 있다.
 
     SPECIES[:apophis] = {
       name: "아포피스",
       hp: 260, atk: 20, defense: 7, exp: 60, gold: 120,
       walk_speed: 34, chase_speed: 66,
       alert_range: 260, attack_range: 30,
-      windup: 7.0 / 10, active: 0.22, recover: 1.2,   # 후딜 1.2초가 1페이즈의 펀치 윈도우
+      windup: 7.0 / 10, active: 0.22, recover: 1.2,   # 후딜레이 1.2초가 1페이즈의 반격 가능 구간
       half_w: 16, body_h: 44,
       special: :charge,
       charge_speed: 190, charge_time: 0.8, charge_atk: 22, charge_repeat: true,
@@ -487,18 +474,18 @@ module Aldebaran
       },
     }
 
-    # 종별 표. Lua 의 M.species 에 해당한다. id 를 주면 그 종 하나, 없으면 표 전체.
+    # 종별 표. id를 주면 그 종 하나, 없으면 표 전체를 돌려준다.
     def self.species(id = nil)
       id.nil? ? SPECIES : SPECIES[id]
     end
 
-    # 페이즈 표. game.rb가 이 표를 읽어 사이클을 돌린다.
-    #   at            이 비율 아래로 내려가면 이 페이즈다
-    #   cycle         패턴 순서. 하나씩 돌아간다
-    #   recover       그 페이즈의 후딜 (펀치 윈도우)
+    # 페이즈 표. game.rb가 이 표를 읽어 패턴 사이클을 진행한다.
+    #   at            체력 비율이 이 값 이하로 내려가면 이 페이즈다
+    #   cycle         패턴 순서. 차례로 반복한다
+    #   recover       그 페이즈의 후딜레이 (반격 가능 구간)
     #   hail          우박 줄 수, summon 소환 수
-    # 페이즈 번호는 Lua 와 같이 1부터 센다 (Monster#phase). 배열이라 칸은 [n - 1]이며,
-    # boss_phase(n)이 그 셈을 대신한다.
+    # 페이즈 번호는 1부터 센다 (Monster#phase). 배열 첨자는 [n - 1]이며,
+    # boss_phase(n)이 그 변환을 대신한다.
     BOSS_PHASES = [
       { at: 1.00, cycle: [:hail, :charge], recover: 1.2,
         hail: 3, summon: 0, charge_count: 1 },
@@ -524,10 +511,9 @@ module Aldebaran
     end
 
     # ---- 스키마 검사 ------------------------------------------------------------
-    # 그릇이 그릇 노릇을 하려면 모양이 지켜져야 한다. P5에서 종이 열로 늘어날 때
-    # 칸 하나를 빠뜨리는 것을 여기서 잡는다.
+    # 표의 구조가 규약대로인지 검사한다 (빠진 필드와 오타를 찾는다).
 
-    # 엔진이 반드시 읽는 칸. 하나라도 없으면 game.rb가 nil 산술로 죽는다.
+    # 엔진이 반드시 읽는 필드. 하나라도 없으면 game.rb가 nil 산술 오류로 중단된다.
     REQUIRED = [
       :name, :hp, :atk, :defense, :exp, :gold,
       :walk_speed, :chase_speed, :alert_range, :attack_range,
@@ -535,7 +521,7 @@ module Aldebaran
       :sheet, :cols, :rows, :frame_w, :frame_h, :anchor_x, :anchor_y,
     ]
 
-    # 원안 규격서(표 39, 40)의 칸 이름. spec에 이 밖의 이름이 있으면 오타로 본다.
+    # 원안 규격서(표 39, 40)의 항목 이름. spec에 이 밖의 이름이 있으면 오타로 본다.
     SPEC_FIELDS = {
       source: true, index: true, name: true, gender: true, element: true,
       attack_type: true, traits: true, habitat: true, preference: true,
@@ -551,8 +537,8 @@ module Aldebaran
       regen_hp: true, regen_mp: true,
     }
 
-    # 종 하나를 검사한다. 문제가 없으면 nil, 있으면 사람이 읽는 이유를 돌려준다.
-    # entry 는 종 하나의 표(평평한 칸 + spec)다.
+    # 종 하나를 검사한다. 문제가 없으면 nil, 있으면 사람이 읽을 수 있는 이유를 돌려준다.
+    # entry는 종 하나의 표(평평한 필드 + spec)다.
     def self.validate_species(key, entry)
       unless entry.is_a?(Hash)
         return "#{key}: 종의 정의가 표가 아니다"
