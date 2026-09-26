@@ -140,10 +140,16 @@ def export(root, names, engine=DEFAULT_ENGINE, dry_run=False, out=print):
         if moved:
             out("  옮김: " + ", ".join(moved))
         if left:
-            out("  옮기지 않음 (정의 파일에 남긴다. 게임에서는 맵 파일의 이벤트 뒤에 온다):")
+            out("  옮기지 않음 (정의 파일에 남긴다):")
             for item in left:
                 for problem in item["problems"]:
                     out("    %s  %s" % (item["id"], problem))
+            for item in left:
+                if item.get("overrides"):
+                    out("  %s 은(는) 게임에서 맵 파일의 같은 id 이벤트를 덮는다. 맵 파일 쪽을 고쳐도 게임에 보이지 않는다"
+                        % item["id"])
+                else:
+                    out("  %s 은(는) 게임에서 맵 파일의 이벤트 뒤에 온다" % item["id"])
         if not dry_run:
             data["events"] = events
             write_map(path, data)
@@ -196,6 +202,9 @@ return {
 		{ id = "wrongkind", x = 8, y = 2, charset = { file = FACESET } },
 		{ id = "bad", x = -1, y = 2 },
 		{ id = "sign", x = 9, y = 2, commands = { { code = "message", text = "정의 파일", note = 1 } } },
+		setmetatable({ id = "meta", x = 3, y = 3, commands = {} }, { __index = { trigger = "touch" } }),
+		{ id = "dup", x = 10, y = 3 },
+		{ id = "dup", x = 11, y = 3 },
 	},
 }
 '''
@@ -366,6 +375,9 @@ SELFTEST_LEFT = {
     "wrongkind": ["events[8].charset.file: charset 자리에 @face:npc 표식"],
     "bad": ["events[9].x: 0 이상의 정수가 아니다 (지금은 -1)"],
     "sign": ["events[10].commands[1].note: 스키마에 없는 인자"],
+    "meta": ["events[11]: 메타테이블이 있는 표는 옮길 수 없다 (메타테이블로 오는 칸을 잃는다)"],
+    "dup": ["events[12].id: 같은 id 의 이벤트가 정의 파일에 둘 이상이다 (게임은 뒤의 것만 쓴다)",
+            "events[13].id: 같은 id 의 이벤트가 정의 파일에 둘 이상이다 (게임은 뒤의 것만 쓴다)"],
 }
 
 
@@ -437,8 +449,12 @@ def cmd_selftest(engine):
             parts = line.strip().split("  ", 1)
             if line.startswith("    ") and len(parts) == 2:
                 left.setdefault(parts[0], []).append(parts[1])
-        check(left == SELFTEST_LEFT, "함수, 모르는 칸, 자리 밖의 표식, 다른 종류의 표식, 검사에 걸린 이벤트는 남긴다",
-              json.dumps(left, ensure_ascii=False))
+        check(left == SELFTEST_LEFT, "함수, 모르는 칸, 자리 밖의 표식, 다른 종류의 표식, 검사에 걸린 이벤트, "
+              "메타테이블이 있는 이벤트, 겹치는 id 는 남긴다", json.dumps(left, ensure_ascii=False))
+        check(any(line.startswith("  sign 은(는) 게임에서 맵 파일의 같은 id 이벤트를 덮는다") for line in quiet),
+              "맵 파일과 같은 id 로 남긴 이벤트는 덮는다고 알린다", " / ".join(quiet))
+        check(any(line.startswith("  memo 은(는) 게임에서 맵 파일의 이벤트 뒤에 온다") for line in quiet),
+              "맵 파일에 없는 id 로 남긴 이벤트는 뒤에 온다고 알린다", " / ".join(quiet))
 
         export(tmp, ["selftest"], engine, out=quiet.append)
         with open(target, encoding="utf-8") as f:

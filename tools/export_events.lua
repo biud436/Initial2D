@@ -360,6 +360,21 @@ local function requireDef(module)
 end
 
 -- @return 결과 JSON 글
+--- 메타테이블이 있는 표의 경로 (없으면 nil). 이벤트 안의 표까지 본다
+local function metatablePath(value, path, seen)
+	if type(value) ~= "table" then return nil end
+	seen = seen or {}
+	if seen[value] then return nil end
+	seen[value] = true
+	if getmetatable(value) ~= nil then return path end
+	for k, v in pairs(value) do
+		local key = (type(k) == "number") and ("[" .. k .. "]") or ("." .. tostring(k))
+		local found = metatablePath(v, path .. key, seen)
+		if found ~= nil then return found end
+	end
+	return nil
+end
+
 local function exportMap(schema, req)
 	local module = req.def:gsub("%.lua$", "")
 	local ok, def = requireDef(module)
@@ -388,12 +403,28 @@ local function exportMap(schema, req)
 
 	local movable, left = {}, {}
 	local env = { scripts = def.scripts }
+	-- 정의 파일 안에서 id 가 몇 번 나오는가 (둘 이상이면 게임은 뒤의 것만 쓴다)
+	local idCount = {}
+	for j = 1, Shape.length(defEvents) do
+		local ev = defEvents[j]
+		if type(ev) == "table" and type(ev.id) == "string" then idCount[ev.id] = (idCount[ev.id] or 0) + 1 end
+	end
+	local mapIds = {}
+	for i = 1, Shape.length(fromMap) do mapIds[fromMap[i].id] = true end
 	for j = 1, Shape.length(defEvents) do
 		local ev = defEvents[j]
 		local label = (type(ev) == "table" and type(ev.id) == "string") and ev.id or ("events[" .. j .. "]")
 		local walker = newWalker(schema)
 		local converted = walker:event(ev, "events[" .. j .. "]")
 		local problems = walker.problems
+		-- pairs 는 메타테이블(__index)로 오는 칸을 보지 못한다. 그런 칸을 잃지 않게 옮기지 않는다
+		local metaPath = metatablePath(ev, "events[" .. j .. "]")
+		if metaPath ~= nil then
+			problems[#problems + 1] = metaPath .. ": 메타테이블이 있는 표는 옮길 수 없다 (메타테이블로 오는 칸을 잃는다)"
+		end
+		if type(ev) == "table" and type(ev.id) == "string" and idCount[ev.id] > 1 then
+			problems[#problems + 1] = "events[" .. j .. "].id: 같은 id 의 이벤트가 정의 파일에 둘 이상이다 (게임은 뒤의 것만 쓴다)"
+		end
 		table.sort(problems)
 		if #problems == 0 then
 			local _, found = MapData.validateEvents({ converted }, env)
@@ -405,7 +436,7 @@ local function exportMap(schema, req)
 		if #problems == 0 then
 			movable[#movable + 1] = converted
 		else
-			left[#left + 1] = { id = label, problems = problems }
+			left[#left + 1] = { id = label, problems = problems, overrides = mapIds[label] == true }
 		end
 	end
 
@@ -422,7 +453,8 @@ local function exportMap(schema, req)
 	for _, l in ipairs(left) do
 		local ps = {}
 		for i, p in ipairs(l.problems) do ps[i] = encString(p) end
-		leftParts[#leftParts + 1] = '{"id":' .. encString(l.id) .. ',"problems":[' .. table.concat(ps, ",") .. "]}"
+		leftParts[#leftParts + 1] = '{"id":' .. encString(l.id) .. ',"overrides":' .. tostring(l.overrides)
+			.. ',"problems":[' .. table.concat(ps, ",") .. "]}"
 	end
 	return '{"name":' .. encString(req.name)
 		.. ',"mapCount":' .. Shape.length(fromMap)
