@@ -36,6 +36,7 @@ return {
     "scripts/lua/luatests/cases/rpg_assets_test",
     "scripts/lua/luatests/cases/rpgdemo_playenv_test",
     "scripts/lua/luatests/cases/rpgdemo_config_test",
+    "scripts/lua/luatests/cases/rpgdemo_events_test",
     "scripts/lua/luatests/cases/aldebaran_player_test",
     "scripts/lua/luatests/cases/aldebaran_combat_test",
     "scripts/lua/luatests/cases/aldebaran_monster_test",

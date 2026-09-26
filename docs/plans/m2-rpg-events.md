@@ -425,13 +425,21 @@ rpg:route:done
 도구: `tools/export_events.py <맵 이름>...` 와 `tools/export_events.lua`.
 
 1. 테스트 러너처럼 작업 폴더를 세우고 `export_events.lua` 를 `main.lua` 자리에 넣어 **엔진 VM 에서** 돈다 (게임과 같은 Lua 5.3.5, 도구에 Lua 를 따로 깔지 않는다)
-2. `package.loaded["scripts/lua/rpg/assets"]` 를 가짜로 바꿔 `npcCharset()` 는 `"@charset:npc"`, `faceset()` 은 `"@face:npc"` 를 돌려주게 한 뒤
-   정의 파일을 `require` 한다. 플레이스홀더 경로는 플레이어와 NPC 가 같은 파일이라 경로를 거꾸로 풀면 구분이 안 된다. 표식으로 받아
-   `{ "set", "index" }` 로 바꾼다. 가짜 모듈은 진짜 모듈을 `__index` 로 두고 두 함수만 덮는다. 정의 파일이 모듈 머리에서 부르는 다른 함수,
-   곧 여관의 `INN_BGM = Assets.pick{...}` 과 마을, 오두막의 `Assets.mapPath(...)` 는 진짜 것이 그대로 돈다
-3. `MapData.merge` 로 맵 파일 것과 합친 **순서 그대로** 쓴다 (`crates` 가 먼저). 순서는 auto 이벤트의 실행 순서이자 배회 난수의 소비 순서다
-4. 함수(`script`, `run`)나 스키마에 없는 칸을 만나면 그 이벤트를 옮기지 않고 목록을 알린다. 지금 데모에는 없다
-5. JSON 은 2.6 의 키 순서로 찍고, 정수와 실수를 가린다 (`seconds = 2.5`). 파이썬이 받아 `mapfile.write_map` 으로 `events` 만 바꿔 쓴다
+2. `package.loaded["scripts/lua/rpg/assets"]` 를 가짜로 바꿔 `npcCharset()` 는 `"@charset:npc"`, `faceset()` 은 `"@face:npc"`,
+   `playerCharset()` 은 `"@charset:player"` 를 돌려주게 한 뒤 정의 파일을 `require` 한다. 플레이스홀더 경로는 플레이어와 NPC 가 같은 파일이라
+   경로를 거꾸로 풀면 구분이 안 된다. 표식으로 받아 외형과 얼굴의 `file` 자리에서 `{ "set", "index" }` 로 바꾼다. 가짜 모듈은 진짜 모듈을
+   `__index` 로 두고 `Assets.SETS` 의 후보를 고르는 세 함수만 덮는다 (`playerCharset` 을 덮지 않으면 그 그림을 쓴 이벤트가 파일 경로로 굳는다).
+   정의 파일이 모듈 머리에서 부르는 다른 함수, 곧 여관의 `INN_BGM = Assets.pick{...}` 과 마을, 오두막의 `Assets.mapPath(...)` 는 진짜 것이
+   그대로 돈다. 도구는 `INITIAL2D_NO_RTP=1` 로 돌아 RTP 경로가 맵 파일에 들어가지 않는다
+3. `MapData.merge` 로 맵 파일 것과 합친 **순서 그대로** 쓴다 (`crates` 가 먼저). 순서는 auto 이벤트의 실행 순서이자 배회 난수의 소비 순서다.
+   맵 파일에 있던 이벤트는 파이썬이 원래 객체 그대로 옮겨 적는다 (바이트가 같다). 정의 파일이 같은 id 로 덮던 이벤트는 그 자리에 정의 파일 것이 들어간다
+4. 이벤트를 옮기지 않고 이유와 함께 알리는 경우: 함수(`script`, `run`), 스키마에 없는 칸(이벤트 칸, 커맨드 인자, 조건 칸, 외형과 얼굴, 배회와 구역),
+   외형과 얼굴의 `file` 밖에 있는 표식이나 종류가 다른 표식, `validateEvents` 에 걸리는 이벤트, 메타테이블이 있는 표(`pairs` 가 `__index` 로
+   오는 칸을 보지 못한다), 정의 파일 안에서 id 가 겹치는 이벤트. 그런 이벤트는 정의 파일에 남는다. 게임에서는 맵 파일에 같은 id 가 있으면 그
+   자리를 덮고(`rpg:override`, 도구가 "맵 파일 쪽을 고쳐도 게임에 보이지 않는다"고 알린다), 없으면 맵 파일의 이벤트 뒤에 온다. 지금 데모에는 없다. 맵 전체를 멈추는 경우: `rpg-game.json` 에 없는 이름, `alt` 가 있는 맵(아래 표), id 가 없거나
+   겹치는 이벤트가 든 맵 파일(병합할 수 없다)
+5. JSON 은 2.6 의 키 순서로 찍고, 정수와 실수를 가린다 (`seconds = 2.5`). 파이썬이 받아 `mapfile.write_map` 으로 `events` 만 바꿔 쓴다.
+   `selftest` 가 표본 정의 파일로 쓴 글 전체, 남기는 이벤트와 이유, `--dry-run`, 되풀이, 멈추는 경우를 본다 (`tests/run_all.sh` 3단계)
 
 옮긴 뒤 정의 파일에서 `events` 와 그것만 쓰던 지역 값(얼굴 표, 효과음 경로, `departure()`, `handKey()`)을 지운다. 남기지 않으면 같은 id 의 Lua 가
 이겨 에디터의 편집이 게임에 안 보인다.
@@ -529,11 +537,12 @@ E5 초안의 물음 열한 개는 저자가 자리에 없는 동안 리드가 �
 
 ### 마일스톤 3: 이전 (PR 2)
 
-- [ ] `tools/export_events.py`, `tools/export_events.lua` (6절). 가짜 자산 모듈은 진짜 모듈 위에 두 함수만 덮는다
-- [ ] 항구 마을 16개, 여관 6개를 맵 파일로. 정의 파일 정리 (`departure()`, `handKey()` 포함)
-- [ ] 인수 시나리오와 골든 세 장과 벽 앞 픽셀 검사와 `rpg_event_scene` 무변경, 에디터 왕복 바이트 같음, 사람이 브리지 왕복 한 번
+- [x] `tools/export_events.py`, `tools/export_events.lua` (6절). 가짜 자산 모듈은 진짜 모듈 위에 `SETS` 의 후보를 고르는 세 함수만 덮는다. `selftest` 를 `tests/run_all.sh` 가 돌린다
+- [x] 항구 마을 16개, 여관 6개를 맵 파일로. 정의 파일 정리 (`departure()`, `handKey()` 포함). 정의 파일에는 맵 속성(`map`, `start`, `groundLayers`, `bgm`, `autoRoute`)만 남는다
+- [x] 인수 시나리오와 골든 세 장과 벽 앞 픽셀 검사와 `rpg_event_scene` 무변경 (stdout 이 옮기기 전과 바이트까지 같다). `test_rpg_play_here` [E] 는 정의 파일의 외형 오류를 보는 검사라, 이벤트가 Lua 에 남은 마을의 촌장을 대상으로 옮겼다 (같은 단언, 대상만 바뀌었다)
+- [ ] 에디터 왕복 바이트 같음 (에디터 E5 모델), 사람이 브리지 왕복 한 번
 - [ ] 에디터 픽스처 다시 동기화, 에디터의 `yarn test:engine-events` 가 이전한 항구 마을로 다시 통과
-- [ ] README 에 `tools/export_events.py`
+- [x] README 에 `tools/export_events.py` (데모 절의 "이벤트를 맵 파일로 옮기기")
 
 ## 9. 검수
 
@@ -548,3 +557,5 @@ E5 초안의 물음 열한 개는 저자가 자리에 없는 동안 리드가 �
 | 검수의 재현 스크립트 | 검수가 게임을 멈추게 한 경우(`null` 가지 뒤의 얼굴 번호 99)가 이제 `rpg:error` 두 줄과 `skipped:1` 로 그 이벤트만 건너뛰고 끝까지 돈다. `events` 를 객체로 쓴 맵은 `rpg:error:...:events: 이벤트 목록이 배열이 아니다` 를 찍는다. 검수 2 의 스크립트(선택 인자 세 묶음 23가지, 줄바꿈 셋, CR, 아이템 표와 맵 등록의 `null` 과 객체)도 전부 `rpg:error` 한 줄씩과 rc 0 이다 |
 | 맵 형식 | 모든 맵이 `mapfile.py check` 를 통과하고 `tests/run_all.sh` 가 `resources/maps/*.json` 을 본다. 생성기 둘을 다시 돌리면 커밋된 맵과 바이트가 같다 |
 | 전체 스위트 (`tests/run_all.sh`, 헤드리스, `INITIAL2D_NO_RTP=1`) | 통과. C++ 단위 18, 엔진 씬 526, 브리지 25 (이 기계는 오디오 장치가 없어 `SDL_AUDIODRIVER=dummy` 를 함께 준다. 없으면 mruby `audio_test` 셋이 master 에서도 실패한다) |
+| 이전 도구 (마일스톤 3) | `export_events.py selftest` 10건 통과. 표본 정의 파일(지역 함수로 두 번 쓰는 얼굴 있는 대사, 실수 2.5, 배회와 구역, 빈 가지, 조건, `script.args`, 플레이어 외형)로 쓴 글 전체를 기대 글과 대조하고, 남기는 여섯 경우(함수, 모르는 칸, 모르는 인자, 자리 밖의 표식, 다른 종류의 표식, 검사에 걸린 이벤트)의 이유 글, 맵 파일 이벤트의 바이트 보존, 되풀이, 멈추는 셋(`alt`, id 없는 이벤트, 등록 안 된 이름)을 본다. `REF_KEYS` 순서를 바꾸거나 조건의 꼴 찾기를 끄면 깨지는 것을 보았다 |
+| 옮기기 전 목록 (마일스톤 3) | `tests/fixtures/events/rpgdemo_events_before.json` 은 master `74febb4` 에서 게임과 같은 순서로 만든 항구 마을 17개와 여관 6개의 목록이다 (자산은 표식). `rpgdemo_events_test.lua` 가 표식 그대로 한 번, 지금 고르는 경로로 한 번 대조하고, 옮기기 전 트리에서 먼저 통과시켰다. 옮긴 맵 파일에서 외형 하나를 `player` 로, `seconds` 를 2 로, 이벤트 둘의 순서를 바꾸면 깨진다 |
