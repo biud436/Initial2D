@@ -43,7 +43,7 @@ local MAP_FILES = {
 	"resources/maps/village_rtp.json",
 }
 
--- 스키마의 인자 타입 (m2-rpg-events.md 2.2절 표)
+-- 스키마의 인자 타입 (m2-rpg-events.md 2.3절 표)
 local ARG_TYPES = {
 	string = true, text = true, integer = true, number = true, boolean = true, enum = true,
 	scalar = true, ref = true, file = true, face = true, charset = true, options = true,
