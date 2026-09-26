@@ -15,9 +15,13 @@
 //   GET    /api/files/<path>     파일 읽기 (텍스트와 바이너리, Content-Type은 확장자로)
 //   HEAD   /api/files/<path>     존재 여부와 크기만 (본문 없음)
 //   PUT    /api/files/<path>     파일 쓰기 (본문이 파일 내용, 상위 폴더 자동 생성)
-//   DELETE /api/files/<path>     파일 삭제
-//   POST   /api/reload           scripts/**/*.lua 를 엔진 HMR 서버로 push (본문 JSON {host, port} 선택)
-//   WS     /ws                   파일 변경 알림 {type:"change", path, event, origin}
+//   DELETE /api/files/<path>     파일 삭제 (디렉터리는 통째로)
+//   GET    /api/dir/<path>       폴더 한 층 목록 {entries:[{name, path, kind, size, mtime}]} (루트는 /api/dir)
+//   GET    /api/stat/<path>      종류와 크기 {kind, size, mtime}, 없으면 404
+//   POST   /api/mkdir/<path>     폴더 만들기 (상위 폴더 포함)
+//   POST   /api/rename           본문 JSON {from, to}. 파일과 폴더 이름 바꾸기 (옮기기)
+//   POST   /api/reload           scripts/**/*.lua 와 *.rb 를 엔진 HMR 서버로 push (본문 JSON {host, port} 선택)
+//   WS     /ws                   파일 변경 알림 {type:"change", path, event, kind: create|modify|delete, origin: bridge|external}
 //
 // 의존성 없음 (Node 20 이상의 내장 모듈만 사용).
 import crypto from 'node:crypto';
@@ -32,7 +36,7 @@ import { BridgeError, ProjectFiles, contentTypeFor } from './lib/files.js';
 import { pushBundle } from './lib/hmr.js';
 import { WebSocketHub } from './lib/ws.js';
 
-export const BRIDGE_VERSION = '0.1.0';
+export const BRIDGE_VERSION = '0.2.0';
 export const DEFAULT_PORT = 5960;
 export const DEFAULT_HMR_PORT = 5959;
 const MAX_BODY_BYTES = 32 * 1024 * 1024;
@@ -96,7 +100,7 @@ export function createBridge(options = {}) {
     throw new Error(`project root is not a directory: ${projectRoot}`);
   }
 
-  const files = new ProjectFiles(projectRoot, options.allowedDirs);
+  const files = new ProjectFiles(projectRoot, options.allowedDirs, options.allowedFiles);
   const hub = new WebSocketHub();
   // rel path → { at, hash }: 브리지가 최근에 쓴(또는 HMR push 로 엔진이 되쓸) 내용.
   // 감시 이벤트가 오면 파일 내용의 해시를 비교해 브리지 발 변경인지 외부 편집인지 가른다.
@@ -133,6 +137,8 @@ export function createBridge(options = {}) {
       root: projectRoot,
       bridgeVersion: BRIDGE_VERSION,
       allowedDirs: files.allowedDirs,
+      allowedFiles: files.allowedFiles,
+      hasGameJson: fs.existsSync(path.join(projectRoot, 'game.json')),
       scripts,
       maps,
       tilesets,
@@ -141,7 +147,7 @@ export function createBridge(options = {}) {
   }
 
   async function collectScripts() {
-    const rels = await files.list('scripts', (rel) => rel.endsWith('.lua'));
+    const rels = await files.list('scripts', (rel) => rel.endsWith('.lua') || rel.endsWith('.rb'));
     const out = [];
     for (const rel of rels) {
       const { data } = await files.read(rel);
@@ -160,7 +166,7 @@ export function createBridge(options = {}) {
       }
     }
     const bundle = await collectScripts();
-    if (bundle.length === 0) throw new BridgeError(409, 'no *.lua under scripts/');
+    if (bundle.length === 0) throw new BridgeError(409, 'no *.lua or *.rb under scripts/');
     const host = typeof opts.host === 'string' ? opts.host : hmrHost;
     const port = Number.isInteger(opts.port) ? opts.port : hmrPort;
     try {
@@ -197,6 +203,45 @@ export function createBridge(options = {}) {
       return;
     }
 
+    // v2 (0.2.0): 에디터의 ProjectBackend 가 쓰는 폴더 단위 API
+    if ((pathname === '/api/dir' || pathname.startsWith('/api/dir/')) && method === 'GET') {
+      const rel = pathname === '/api/dir' ? '' : pathname.slice('/api/dir/'.length);
+      const entries = await files.listDir(rel);
+      sendJson(res, 200, { ok: true, path: rel.replace(/\/+$/, ''), entries }, cors);
+      return;
+    }
+
+    if (pathname.startsWith('/api/stat/') && method === 'GET') {
+      const info = await files.stat(pathname.slice('/api/stat/'.length));
+      sendJson(res, 200, { ok: true, path: info.rel, kind: info.kind, size: info.size, mtime: Math.floor(info.mtimeMs) }, cors);
+      return;
+    }
+
+    if (pathname.startsWith('/api/mkdir/') && method === 'POST') {
+      const { rel: normalized } = await files.mkdir(pathname.slice('/api/mkdir/'.length));
+      recentWrites.set(normalized, { at: Date.now(), hash: null });
+      log(`MKDIR ${normalized}`);
+      sendJson(res, 200, { ok: true, path: normalized }, cors);
+      return;
+    }
+
+    if (pathname === '/api/rename' && method === 'POST') {
+      const body = await readBody(req, 64 * 1024);
+      let opts;
+      try {
+        opts = JSON.parse(body.toString('utf8'));
+      } catch {
+        throw new BridgeError(400, 'rename body must be JSON {from, to}');
+      }
+      if (typeof opts.from !== 'string' || typeof opts.to !== 'string') throw new BridgeError(400, 'rename needs from and to');
+      const result = await files.rename(opts.from, opts.to);
+      recentWrites.set(result.from, { at: Date.now(), hash: null });
+      recentWrites.set(result.to, { at: Date.now(), hash: null });
+      log(`RENAME ${result.from} -> ${result.to}`);
+      sendJson(res, 200, { ok: true, from: result.from, to: result.to, kind: result.kind }, cors);
+      return;
+    }
+
     if (pathname.startsWith('/api/files/')) {
       const rel = pathname.slice('/api/files/'.length);
       if (method === 'GET' || method === 'HEAD') {
@@ -221,10 +266,10 @@ export function createBridge(options = {}) {
         return;
       }
       if (method === 'DELETE') {
-        const { rel: normalized } = await files.remove(rel);
+        const { rel: normalized, kind } = await files.remove(rel);
         recentWrites.set(normalized, { at: Date.now(), hash: null });
         log(`DELETE ${normalized}`);
-        sendJson(res, 200, { ok: true, path: normalized }, cors);
+        sendJson(res, 200, { ok: true, path: normalized, kind }, cors);
         return;
       }
       throw new BridgeError(405, `method ${method} not allowed`);
@@ -273,9 +318,15 @@ export function createBridge(options = {}) {
     }
   });
 
-  async function classifyChange(rel) {
+  async function classifyChange(rel, stat) {
     const recent = recentWrites.get(rel);
     if (!recent || Date.now() - recent.at > SELF_WRITE_WINDOW_MS) {
+      recentWrites.delete(rel);
+      return 'external';
+    }
+    // 디렉터리와 삭제는 내용 해시가 없다. 최근에 브리지가 만진 경로면 브리지 발로 본다
+    if (!stat || stat.isDirectory()) {
+      if (recent.hash === null) return 'bridge';
       recentWrites.delete(rel);
       return 'external';
     }
@@ -283,45 +334,97 @@ export function createBridge(options = {}) {
     try {
       hash = sha1(await fsp.readFile(path.join(projectRoot, rel)));
     } catch {
-      hash = null; // 삭제됨
+      hash = null;
     }
     if (hash === recent.hash) return 'bridge';
     recentWrites.delete(rel);
     return 'external';
   }
 
+  // 감시가 아는 경로 집합. 이것으로 create 와 modify 를 가른다 (fs.watch 의 rename 은 둘 다에 온다)
+  const knownPaths = new Set();
+  const watchedDirs = new Set();
+
   async function emitChange(rel, event) {
-    const origin = await classifyChange(rel);
-    hub.broadcast(JSON.stringify({ type: 'change', path: rel, event, origin, at: Date.now() }));
+    const stat = await fsp.stat(path.join(projectRoot, rel)).catch(() => null);
+    let kind;
+    if (!stat) {
+      kind = 'delete';
+      knownPaths.delete(rel);
+      for (const known of [...knownPaths]) if (known.startsWith(rel + '/')) knownPaths.delete(known);
+    } else if (knownPaths.has(rel)) {
+      kind = 'modify';
+    } else {
+      kind = 'create';
+      knownPaths.add(rel);
+    }
+    const origin = await classifyChange(rel, stat);
+    hub.broadcast(JSON.stringify({ type: 'change', path: rel, event, kind, origin, at: Date.now() }));
   }
 
-  function startWatching() {
-    for (const dirAbs of files.existingAllowedDirs()) {
-      let watcher;
-      try {
-        watcher = fs.watch(dirAbs, { recursive: true }, (event, filename) => {
-          if (!filename) return;
-          const name = typeof filename === 'string' ? filename : filename.toString();
-          if (name.split(/[\\/]/).some((seg) => seg.startsWith('.') || seg.endsWith('.tmp'))) return;
-          const rel = path
-            .relative(projectRoot, path.join(dirAbs, name))
-            .split(path.sep)
-            .join('/');
-          const pending = pendingChanges.get(rel);
-          if (pending) clearTimeout(pending.timer);
-          const timer = setTimeout(() => {
-            pendingChanges.delete(rel);
-            emitChange(rel, event);
-          }, WATCH_DEBOUNCE_MS);
-          pendingChanges.set(rel, { event, timer });
-        });
-      } catch (err) {
-        log(`watch failed for ${dirAbs}: ${err.message}`);
-        continue;
-      }
-      watcher.on('error', (err) => log(`watch error ${dirAbs}: ${err.message}`));
-      watchers.push(watcher);
+  function scheduleChange(rel, event) {
+    const pending = pendingChanges.get(rel);
+    if (pending) clearTimeout(pending.timer);
+    const timer = setTimeout(() => {
+      pendingChanges.delete(rel);
+      emitChange(rel, event);
+    }, WATCH_DEBOUNCE_MS);
+    pendingChanges.set(rel, { event, timer });
+  }
+
+  function isHiddenName(name) {
+    return name.split(/[\\/]/).some((seg) => seg.startsWith('.') || seg.endsWith('.tmp'));
+  }
+
+  function watchDir(dirAbs) {
+    if (watchedDirs.has(dirAbs)) return;
+    let watcher;
+    try {
+      watcher = fs.watch(dirAbs, { recursive: true }, (event, filename) => {
+        if (!filename) return;
+        const name = typeof filename === 'string' ? filename : filename.toString();
+        if (isHiddenName(name)) return;
+        const rel = path.relative(projectRoot, path.join(dirAbs, name)).split(path.sep).join('/');
+        scheduleChange(rel, event);
+      });
+    } catch (err) {
+      log(`watch failed for ${dirAbs}: ${err.message}`);
+      return;
     }
+    watcher.on('error', (err) => log(`watch error ${dirAbs}: ${err.message}`));
+    watchers.push(watcher);
+    watchedDirs.add(dirAbs);
+  }
+
+  // 루트는 한 층만 본다: game.json 같은 허용 파일과, 나중에 생기는 허용 디렉터리(scripts/ 가 없던 프로젝트)
+  function watchRoot() {
+    let watcher;
+    try {
+      watcher = fs.watch(projectRoot, { recursive: false }, (event, filename) => {
+        if (!filename) return;
+        const name = typeof filename === 'string' ? filename : filename.toString();
+        if (files.allowedFiles.includes(name)) {
+          scheduleChange(name, event);
+          return;
+        }
+        if (files.allowedDirs.includes(name) && !name.startsWith('.')) {
+          const dirAbs = path.join(projectRoot, name);
+          if (fs.existsSync(dirAbs)) watchDir(dirAbs);
+          scheduleChange(name, event);
+        }
+      });
+    } catch (err) {
+      log(`watch failed for ${projectRoot}: ${err.message}`);
+      return;
+    }
+    watcher.on('error', (err) => log(`watch error ${projectRoot}: ${err.message}`));
+    watchers.push(watcher);
+  }
+
+  async function startWatching() {
+    for (const rel of await files.walkAll()) knownPaths.add(rel);
+    for (const dirAbs of files.existingAllowedDirs()) watchDir(dirAbs);
+    watchRoot();
   }
 
   return {
@@ -332,9 +435,9 @@ export function createBridge(options = {}) {
     listen(port = DEFAULT_PORT, host = '127.0.0.1') {
       return new Promise((resolve, reject) => {
         httpServer.once('error', reject);
-        httpServer.listen(port, host, () => {
+        httpServer.listen(port, host, async () => {
           httpServer.off('error', reject);
-          if (watchEnabled) startWatching();
+          if (watchEnabled) await startWatching();
           resolve(httpServer.address());
         });
       });
@@ -347,6 +450,7 @@ export function createBridge(options = {}) {
       pendingChanges.clear();
       for (const watcher of watchers) watcher.close();
       watchers.length = 0;
+      watchedDirs.clear();
       hub.closeAll();
       return new Promise((resolve) => {
         httpServer.close(() => resolve());
