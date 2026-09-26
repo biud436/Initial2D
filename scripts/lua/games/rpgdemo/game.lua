@@ -232,8 +232,9 @@ local function loadMap(name, startX, startY, startDir)
 end
 
 --- ctx.transfer 요청. 페이드가 끝난 뒤에 실제 교체가 일어난다.
-local function requestTransfer(target, x, y)
-	fade.pending = { name = target, x = x, y = y }
+-- dir 이 없으면 정의 파일의 start.dir 로 선다.
+local function requestTransfer(target, x, y, dir)
+	fade.pending = { name = target, x = x, y = y, dir = dir }
 	fade.dir = 1
 	Audio.PlaySound(SE_DOOR, "door", 0)
 end
@@ -441,7 +442,7 @@ function RpgDemoScene.update(elapsed)
 			local t = fade.pending
 			fade.pending = nil
 			if t ~= nil then
-				loadMap(t.name, t.x, t.y)
+				loadMap(t.name, t.x, t.y, t.dir)
 			end
 			fade.dir = -1
 		elseif fade.dir < 0 and fade.alpha <= 0 then
