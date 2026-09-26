@@ -1330,15 +1330,22 @@ yarn dev
 
 | 메서드와 경로 | 역할 |
 |---|---|
-| `GET /api/project` | 프로젝트 정보 (스크립트, 맵, 타일셋 목록) |
-| `GET /api/files/<path>` | 파일 읽기 (`scripts/`, `resources/` 아래만) |
+| `GET /api/project` | 프로젝트 정보 (스크립트, 맵, 타일셋 목록, `game.json` 유무) |
+| `GET /api/files/<path>` | 파일 읽기 (`scripts/`, `resources/`, `.initial-editor/` 아래와 루트의 `game.json`만) |
 | `HEAD /api/files/<path>` | 파일 존재 여부와 크기 |
 | `PUT /api/files/<path>` | 파일 쓰기 (원자적 쓰기, 상위 폴더 자동 생성) |
-| `DELETE /api/files/<path>` | 파일 삭제 |
-| `POST /api/reload` | `scripts/lua/**/*.lua`를 게임 HMR 서버로 push |
-| WebSocket `/ws` | 파일 변경 알림 (`origin`이 `external`이면 다른 편집기가 고친 것) |
+| `DELETE /api/files/<path>` | 파일 삭제 (폴더는 통째로) |
+| `GET /api/dir/<path>` | 폴더 한 층 목록 (`entries[]`에 이름, 종류, 크기, 수정 시각). 루트는 `GET /api/dir` |
+| `GET /api/stat/<path>` | 종류와 크기 (없으면 404) |
+| `POST /api/mkdir/<path>` | 폴더 만들기 |
+| `POST /api/rename` | 본문 `{"from": ..., "to": ...}`로 파일이나 폴더 이름 바꾸기 |
+| `POST /api/reload` | `scripts/**/*.lua`와 `*.rb`를 게임 HMR 서버로 push |
+| WebSocket `/ws` | 파일 변경 알림. `kind`는 `create`, `modify`, `delete`이고 `origin`이 `external`이면 다른 편집기가 고친 것 |
 
-에디터에서 할 수 있는 일은 다음과 같습니다.
+폴더 단위 API(`dir`, `stat`, `mkdir`, `rename`)는 2026-09 새 에디터의 `ProjectBackend`가 쓰려고 더한 것입니다 (브리지 0.2.0).
+새 에디터의 계획은 InitialEditor 저장소의 `docs/plans/`에 있습니다.
+
+지금 배포된 에디터(InitialEditor의 옛 화면)에서 할 수 있는 일은 다음과 같습니다.
 
 | 기능 | 조작 | 결과 |
 |---|---|---|

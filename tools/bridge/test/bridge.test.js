@@ -325,3 +325,176 @@ describe('bridge server', () => {
     ws.close();
   });
 });
+
+// v2 (0.2.0): 에디터의 ProjectBackend 가 쓰는 폴더 단위 API. 별도 프로젝트 폴더로 돈다.
+describe('bridge server v2 (dir, stat, mkdir, rename, game.json, ruby reload, change kinds)', () => {
+  let root;
+  let bridge;
+  let base;
+
+  before(async () => {
+    root = await makeProject();
+    await fs.mkdir(path.join(root, 'scripts', 'ruby'), { recursive: true });
+    await fs.writeFile(path.join(root, 'scripts', 'ruby', 'main.rb'), 'def init; end\n');
+    bridge = createBridge({ project: root, hmrPort: 1 });
+    const addr = await bridge.listen(0);
+    base = `http://127.0.0.1:${addr.port}`;
+  });
+
+  after(async () => {
+    await bridge.close();
+    await fs.rm(root, { recursive: true, force: true });
+  });
+
+  it('GET /api/dir lists the root as the whitelist that exists, and one level below', async () => {
+    const rootList = await api(base, 'GET', '/api/dir');
+    assert.equal(rootList.status, 200);
+    assert.deepEqual(rootList.body.entries.map((e) => `${e.kind}:${e.name}`), ['dir:scripts', 'dir:resources']);
+    assert.equal((await api(base, 'GET', '/api/dir/')).status, 200);
+
+    const scripts = await api(base, 'GET', '/api/dir/scripts');
+    assert.deepEqual(scripts.body.entries.map((e) => `${e.kind}:${e.name}`), ['dir:games', 'file:main.lua', 'dir:ruby']);
+    const main = scripts.body.entries.find((e) => e.name === 'main.lua');
+    assert.equal(main.path, 'scripts/main.lua');
+    assert.equal(main.size, Buffer.byteLength('print("main")\n'));
+    assert.ok(main.mtime > 0);
+
+    assert.equal((await api(base, 'GET', '/api/dir/scripts/nope')).status, 404);
+    assert.equal((await api(base, 'GET', '/api/dir/scripts/main.lua')).status, 404);
+    assert.equal((await api(base, 'GET', '/api/dir/src')).status, 403);
+    // URL 파서가 '/..' 를 먼저 접으므로 인코딩된 탈출로 검사한다
+    assert.equal((await api(base, 'GET', '/api/dir/scripts/..%2F..%2Fsecret')).status, 403);
+  });
+
+  it('GET /api/stat gives kind and size, 404 when missing', async () => {
+    const dir = await api(base, 'GET', '/api/stat/scripts');
+    assert.equal(dir.status, 200);
+    assert.equal(dir.body.kind, 'dir');
+    const file = await api(base, 'GET', '/api/stat/scripts/main.lua');
+    assert.equal(file.body.kind, 'file');
+    assert.equal(file.body.size, Buffer.byteLength('print("main")\n'));
+    assert.equal((await api(base, 'GET', '/api/stat/scripts/missing.lua')).status, 404);
+    assert.equal((await api(base, 'GET', '/api/stat/secret.txt')).status, 403);
+  });
+
+  it('game.json at the root and .initial-editor/ are allowed, other root files are not', async () => {
+    assert.equal((await api(base, 'GET', '/api/stat/game.json')).status, 404);
+    const put = await api(base, 'PUT', '/api/files/game.json', { body: '{"windowWidth": 320}\n' });
+    assert.equal(put.status, 200, JSON.stringify(put.body));
+    assert.deepEqual((await api(base, 'GET', '/api/files/game.json')).body, { windowWidth: 320 }); // .json 은 JSON 으로 파싱된다
+    const rootList = await api(base, 'GET', '/api/dir');
+    assert.ok(rootList.body.entries.some((e) => e.name === 'game.json' && e.kind === 'file'));
+    const project = await api(base, 'GET', '/api/project');
+    assert.equal(project.body.hasGameJson, true);
+    assert.deepEqual(project.body.allowedFiles, ['game.json']);
+
+    const layout = await api(base, 'PUT', '/api/files/.initial-editor/layout.json', { body: '{}' });
+    assert.equal(layout.status, 200);
+    assert.equal((await api(base, 'GET', '/api/files/.initial-editor/layout.json')).status, 200);
+
+    assert.equal((await api(base, 'PUT', '/api/files/secret.txt', { body: 'x' })).status, 403);
+    assert.equal((await api(base, 'PUT', '/api/files/other.json', { body: 'x' })).status, 403);
+  });
+
+  it('POST /api/mkdir creates folders (409 on a file), DELETE removes folders recursively', async () => {
+    const made = await api(base, 'POST', '/api/mkdir/resources/scenes/sub');
+    assert.equal(made.status, 200);
+    assert.equal(made.body.path, 'resources/scenes/sub');
+    assert.equal((await api(base, 'GET', '/api/stat/resources/scenes/sub')).body.kind, 'dir');
+    assert.equal((await api(base, 'POST', '/api/mkdir/scripts/main.lua')).status, 409);
+    assert.equal((await api(base, 'POST', '/api/mkdir/src/x')).status, 403);
+
+    await api(base, 'PUT', '/api/files/resources/scenes/sub/a.json', { body: '{}' });
+    const del = await api(base, 'DELETE', '/api/files/resources/scenes');
+    assert.equal(del.status, 200);
+    assert.equal(del.body.kind, 'dir');
+    assert.equal((await api(base, 'GET', '/api/stat/resources/scenes')).status, 404);
+    assert.equal((await api(base, 'DELETE', '/api/files/resources/scenes')).status, 404);
+  });
+
+  it('POST /api/rename moves files and folders, refuses overwrite and escapes', async () => {
+    const json = (body) => ({ body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } });
+    const file = await api(base, 'POST', '/api/rename', json({ from: 'scripts/games/notes.txt', to: 'scripts/games/notes2.txt' }));
+    assert.equal(file.status, 200, JSON.stringify(file.body));
+    assert.equal(file.body.kind, 'file');
+    assert.equal((await api(base, 'GET', '/api/stat/scripts/games/notes.txt')).status, 404);
+    assert.equal((await api(base, 'GET', '/api/files/scripts/games/notes2.txt')).body.toString(), 'not lua\n');
+
+    const dir = await api(base, 'POST', '/api/rename', json({ from: 'scripts/games', to: 'scripts/games2' }));
+    assert.equal(dir.status, 200);
+    assert.equal(dir.body.kind, 'dir');
+    assert.equal((await api(base, 'GET', '/api/files/scripts/games2/flappy.lua')).status, 200);
+
+    assert.equal((await api(base, 'POST', '/api/rename', json({ from: 'scripts/games2/flappy.lua', to: 'scripts/main.lua' }))).status, 409);
+    assert.equal((await api(base, 'POST', '/api/rename', json({ from: 'scripts/main.lua', to: '../main.lua' }))).status, 403);
+    assert.equal((await api(base, 'POST', '/api/rename', json({ from: 'scripts/nope.lua', to: 'scripts/x.lua' }))).status, 404);
+    assert.equal((await api(base, 'POST', '/api/rename', { body: 'garbage' })).status, 400);
+  });
+
+  it('POST /api/reload pushes *.rb as well as *.lua', async () => {
+    let received = null;
+    const { server, port } = await fakeHmrServer((files) => {
+      received = files;
+    });
+    try {
+      const res = await api(base, 'POST', '/api/reload', {
+        body: JSON.stringify({ port }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      assert.equal(res.status, 200, JSON.stringify(res.body));
+      assert.ok(received.map((f) => f.path).includes('scripts/ruby/main.rb'));
+      assert.ok(received.map((f) => f.path).includes('scripts/main.lua'));
+    } finally {
+      server.close();
+    }
+  });
+
+  it('WebSocket change events carry kind: create, modify, delete (and the root game.json)', async () => {
+    const ws = new WebSocket(base.replace('http://', 'ws://') + '/ws');
+    const messages = [];
+    ws.addEventListener('message', (ev) => messages.push(JSON.parse(ev.data)));
+    await new Promise((resolve, reject) => {
+      ws.addEventListener('open', resolve);
+      ws.addEventListener('error', reject);
+    });
+    const waitFor = (predicate, timeoutMs = 4000) =>
+      new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error(`timeout; got ${JSON.stringify(messages)}`)), timeoutMs);
+        const check = () => {
+          const hit = messages.find(predicate);
+          if (hit) {
+            clearTimeout(timer);
+            resolve(hit);
+          }
+        };
+        check();
+        ws.addEventListener('message', check);
+      });
+
+    const file = path.join(root, 'scripts', 'kinds.lua');
+    await fs.writeFile(file, 'a\n');
+    const created = await waitFor((m) => m.type === 'change' && m.path === 'scripts/kinds.lua' && m.kind === 'create');
+    assert.equal(created.origin, 'external');
+    messages.length = 0;
+    await fs.writeFile(file, 'b\n');
+    await waitFor((m) => m.type === 'change' && m.path === 'scripts/kinds.lua' && m.kind === 'modify');
+    messages.length = 0;
+    await fs.unlink(file);
+    await waitFor((m) => m.type === 'change' && m.path === 'scripts/kinds.lua' && m.kind === 'delete');
+
+    // 루트의 game.json 도 감시된다 (이 프로젝트에는 아까 PUT 으로 만들어져 있다)
+    messages.length = 0;
+    await fs.writeFile(path.join(root, 'game.json'), '{"windowWidth": 640}\n');
+    const game = await waitFor((m) => m.type === 'change' && m.path === 'game.json');
+    assert.equal(game.kind, 'modify');
+    assert.equal(game.origin, 'external');
+
+    // 브리지가 만든 폴더는 origin=bridge
+    messages.length = 0;
+    await api(base, 'POST', '/api/mkdir/resources/made-by-bridge');
+    const made = await waitFor((m) => m.type === 'change' && m.path === 'resources/made-by-bridge');
+    assert.equal(made.kind, 'create');
+    assert.equal(made.origin, 'bridge');
+    ws.close();
+  });
+});

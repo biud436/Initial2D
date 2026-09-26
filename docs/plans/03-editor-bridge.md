@@ -94,3 +94,14 @@ InitialEditor에는 Ace 기반 Lua 에디터가 이미 있다 (`packages/rendere
 
 - InitialEditor는 별도 저장소이므로 양쪽 버전이 어긋날 수 있다. 포맷에 `version` 필드를 두었으니 엔진 로더는 모르는 버전을 명확한 에러로 거부한다.
 - 에디터의 `Tilemap` 클래스는 882줄 갓 클래스라 수정 충돌 위험이 있다. 내보내기는 데이터(`_data`)만 읽는 순수 함수로 작성해 렌더링 코드와 얽히지 않게 한다.
+
+## 구현 노트 (2026-09-26, 브리지 0.2.0)
+
+새 에디터 계획(InitialEditor `docs/plans/03-project-and-runtime.md`)의 `ProjectBackend`는 폴더 트리를 보여 주고
+파일을 만들고 옮기고 지워야 한다. 파일 단위 API만 있던 브리지에 폴더 단위 API를 더했다.
+
+- `GET /api/dir/<path>`(한 층 목록, 루트는 `/api/dir`), `GET /api/stat/<path>`, `POST /api/mkdir/<path>`, `POST /api/rename`, 그리고 `DELETE`가 폴더도 지운다.
+- 화이트리스트에 `.initial-editor/`(에디터 전용 상태)와 루트의 `game.json`이 들어갔다. 루트 목록은 화이트리스트 중 존재하는 것만 보인다.
+- `/api/reload`가 `*.rb`도 push 한다 (`tools/hmr_push.py`와 같다).
+- 변경 알림에 `kind`(`create`, `modify`, `delete`)가 붙었다. `fs.watch`의 `rename`이 생성과 삭제 양쪽에 오므로 서버가 아는 경로 집합과 존재 여부로 가른다. 루트는 한 층만 감시해 `game.json`과 나중에 생기는 `scripts/`를 잡는다.
+- 새 에디터 쪽의 적합성 테스트(`packages/backend-bridge/test/conformance/`)가 이 서버를 임시 프로젝트로 띄워 같은 케이스 14건을 돌린다. 서버 자체 테스트는 25건.
