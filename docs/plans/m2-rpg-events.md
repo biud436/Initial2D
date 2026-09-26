@@ -232,7 +232,10 @@ events[3].commands[2].branches[1][3].text
 
 - 맵 파일의 그 이벤트만 건너뛰고(스폰하지 않는다), 문제마다 `rpg:error:<맵 파일>:<경로>: <이유>` 를 TRACE 와 상관없이 찍는다.
   맵은 나머지 이벤트로 열리고 `rpg:map:<이름> events:<n> skipped:<k>` 에 건너뛴 수가 남는다
-- 정의 파일의 이벤트가 틀린 경우(`Event.new` 의 assert)는 지금처럼 맵 전체가 "맵 로드 실패"가 되고, 그 글도 `rpg:error:<정의 파일>:<id>: <이유>` 로 stdout 에 찍는다
+- `<맵 파일>` 과 `<정의 파일>` 은 프로젝트 기준 경로이고 `./` 을 붙이지 않는다 (`resources/maps/port_town.json`, `scripts/lua/maps/inn.lua`).
+  `rpg-game.json` 의 `file`, `def` 와 같은 꼴이라 에디터가 문서 경로로 바로 쓴다. 이유 글 안의 줄바꿈은 공백 하나로 바꿔 한 줄로 찍는다
+- 정의 파일의 이벤트가 틀린 경우(`Event.new` 의 assert, `charset` 에 `file` 이 없음)는 맵 전체가 "맵 로드 실패"가 되고(씬을 비워 화면에 그 글이 뜬다),
+  그 글도 `rpg:error:<정의 파일>:<id>: <이유>` 로 stdout 에 찍는다
 - 건너뛰는 쪽을 고른 까닭: 에디터가 저장 전에 이미 오류를 보였으므로 게임에서는 나머지를 돌려 보는 편이 쓸모 있다.
   대신 엔진 테스트 러너의 rpgdemo 검사에 "stdout 에 `rpg:error` 가 없다" 한 줄을 더해(시나리오 파일은 그대로) 건너뜀이 조용히 지나가지 않게 한다
 
@@ -279,13 +282,17 @@ Ruby 에는 이벤트 레이어가 없어 커맨드 대조는 Lua 만 한다. �
 | `scripts/ruby/rpg/assets.rb` | `SETS` (Symbol 키) |
 | `scripts/lua/rpg/commands.lua` | `describe()`(필수 인자와 Lua 타입, 하위 목록과 `perOption`), `CONDITIONS`(판정 순서이자 `test` 가 도는 순서), `SET_VAR_OPS`, `walk(list, visit)`(하위 목록까지 경로와 함께), `problems(list, env, prefix)`(경로와 이유를 따로). `validate` 에 얼굴과 방향 검사. 실행 동작은 그대로다 |
 | `scripts/lua/rpg/event.lua` | auto 를 병합 순서대로 전부 돌리는 기다림 목록, `hasPendingAuto()` (5.3) |
-| `scripts/lua/rpg/interpreter.lua` | `leaveCount()`: 받은 `transfer` 와 `scene` 요청의 수 |
+| `scripts/lua/rpg/interpreter.lua` | `leaveCount()`: 받은 `transfer` 와 `scene` 요청의 수. `opts.onStart(event)`: 시작이 받아들여졌을 때 첫 재개 전에 부른다 (`rpg:event:` 줄이 그 이벤트의 첫 대사보다 먼저 나온다) |
 | `scripts/lua/rpg/mapdata.lua` | `RESERVED_IDS`, `validateEvents(events, env)`(3.3), `resolveAssets(events, assets)`(외형과 `message.face` 의 `set` 을 `file` 로, 하위 목록 안까지, 사본을 돌려준다), `merge` 와 `eventsFor` 가 정의 파일이 덮어쓴 id 배열도 돌려준다 |
 | `scripts/lua/games/rpgdemo/config.lua` | `rpg-game.json` 읽기 (`load`, `mapModules`, `mapEntry`, `loadItems`, `projectPath`, `bare`) |
 | `scripts/lua/games/rpgdemo/items.lua` | `items.json` 을 읽는다 (2.5) |
+| `scripts/lua/games/rpgdemo/playenv.lua` | `INITIAL2D_RPG_AT`, `INITIAL2D_RPG_STATE`, `INITIAL2D_RPG_ROUTE` 의 해석 (`parseAt`, `parseState`, `parseRoute`)과 trace 글(`escape`). 엔진에 닿지 않는 순수 함수라 `rpgdemo_playenv_test.lua` 가 꼴마다 본다 |
+| `scripts/lua/games/rpgdemo/game.lua` | 아래 순서로 맵을 열고, 5.2 의 환경 변수와 trace 줄 |
 
-게임이 맵을 여는 순서는 이렇게 된다: 맵 파일의 `events` 를 읽고 → `validateEvents` 로 틀린 것을 빼고 `rpg:error` 를 찍고 →
-`resolveAssets` 로 풀고 → 정의 파일의 이벤트와 `merge` 하고(덮인 id 마다 `rpg:override:<id>`) → 스폰한다.
+게임(`game.lua` 의 `loadMap`)이 맵을 여는 순서는 이렇다: 정의 파일을 `require` 하고 → 맵을 세우고 → 맵 파일의 `events` 를 읽어
+`validateEvents` 로 틀린 것을 빼며 `rpg:error` 를 찍고 → `resolveAssets` 로 풀고 → 정의 파일의 이벤트와 `merge` 하고(`rpg:map:`, 덮인 id 마다
+`rpg:override:<id>`) → 플레이어를 세우고(`rpg:player:`) → 스폰하고 → `onMapStart`(첫 auto 의 `rpg:event:`). 이벤트를 데이터로 다루는 앞 단계를
+플레이어보다 먼저 옮긴 것 말고는 순서가 전과 같다 (배회 난수의 소비 순서도 같다).
 
 ### 5.2 환경 변수와 trace 줄 (게임 쪽, `scripts/lua/games/rpgdemo/game.lua`)
 
@@ -310,12 +317,22 @@ rpg:player:inn,10,12,up
 rpg:route:done
 ```
 
+위는 줄의 꼴을 보이는 예다 (에디터가 `e2e_sign` 을 더한 항구 마을). 지금 항구 마을은 `events:17` 이고, 정의 파일이 덮는 id 가 없어
+`rpg:override:` 줄이 나오지 않는다. 한 맵을 열 때의 순서는 `rpg:error`(검사), `rpg:map`, `rpg:override`, `rpg:player`, 그리고 auto 의 `rpg:event` 다.
+
 - `rpg:player:<맵>,<x>,<y>,<dir>` 는 `loadMap` 이 플레이어를 세운 **직후, 실제 캐릭터의 값**(`playerChar.tx`, `ty`, `dir`)으로 찍는다.
   첫 맵이든 `transfer` 뒤든 맵을 세울 때마다 한 번이다. `rpg:transfer:` 줄은 커맨드의 인자를 되풀이할 뿐이라 방향이 정말 적용되었는지는
   이 줄로만 안다 (`transfer` 의 `dir` 을 데모가 버리던 문제)
 - 대사 안의 줄바꿈은 `\n` 두 글자로 찍는다. `rpg:error:...` 는 TRACE 와 상관없이 늘 찍는다 (3.3)
-- `MAPS` 는 `rpg-game.json` 에서 만든다 (2.4). 그 파일을 못 읽으면 `rpg:error:rpg-game.json: <이유>` 를 찍고 씬 오류로 띄운다
-- `charset` 에 `file` 이 없으면 플레이어 CharSet 으로 조용히 그리던 것(`def.charset.file or charsetPath`)을 오류로 바꾼다
+- `MAPS` 는 씬을 열 때마다 `rpg-game.json` 에서 만든다 (2.4). 그 파일을 못 읽으면 `rpg:error:rpg-game.json: <이유>` 를 찍고 씬 오류로 띄운다.
+  등록되지 않은 맵(`INITIAL2D_MAP`, `transfer.map`)도 `rpg:error:rpg-game.json: 등록되지 않은 맵 <이름>` 이다
+- `charset` 에 `file` 이 없으면 플레이어 CharSet 으로 조용히 그리던 것(`def.charset.file or charsetPath`)을 오류로 바꾼다 (3.3 의 정의 파일 오류)
+- `transfer` 의 `dir` 을 다음 맵에서 쓴다. 없으면 정의 파일의 `start.dir` 이다. `rpg:transfer:` 줄은 빠진 인자를 빈칸으로 찍는다 (`rpg:transfer:inn,,,`)
+- `INITIAL2D_RPG_AT` 은 첫 맵에만 걸린다. `x`, `y` 는 0 이상의 정수, `dir` 은 네 방향이고, 틀리면 `rpg:error:at:<값>: <이유>` 를 찍고 정의 파일의 시작에 선다
+- `INITIAL2D_RPG_STATE` 의 `item:<id>` 는 `item:<id>=1` 과 같다. 아이템 표에 없는 id, 0 이상의 정수가 아닌 개수, 빈 이름과 빈 값, `item:` 이 아닌
+  접두사(`foo:bar`), 소지품 자리 이름(`items`)은 틀린 항목이다. 뒤의 항목이 앞의 것을 덮는다
+- `INITIAL2D_RPG_ROUTE` 가 있으면 `INITIAL2D_AUTOPLAY` 없이도 이 씬이 자동 재생으로 돈다. 걸음은 `talk`, `up`, `down`, `left`, `right` 이고 모르는
+  걸음은 `rpg:error:route:<걸음>: <이유>` 를 찍고 뺀다. 맵을 옮겨도 남은 걸음을 이어서 걷는다. `rpg:route:done` 은 TRACE 와 상관없이 찍는다
 
 ### 5.3 auto 를 전부 돌린다 (`event.lua`)
 
@@ -350,7 +367,7 @@ rpg:route:done
 | 맵 | 옮기는 것 | 남는 것 (Lua) | 이유 |
 |---|---|---|---|
 | 항구 마을 | 16개 (맵 파일은 17개가 된다) | `map`, `start`, `groundLayers`, `bgm`, `autoRoute` | 이벤트가 아니다. 맵 속성으로 옮기는 것은 나중 후보 |
-| 여관 | 6개 (`inn.json` 이 v2 가 된다) | 위와 같고, `INN_BGM` 의 `Assets.pick` | 개인 소장 곡이 있으면 쓰는 규칙은 코드다 |
+| 여관 | 6개 (`inn.json` 에 `events` 가 생긴다. 형식은 마일스톤 1 에서 이미 v2 다) | 위와 같고, `INN_BGM` 의 `Assets.pick` | 개인 소장 곡이 있으면 쓰는 규칙은 코드다 |
 | 마을, 오두막 | 옮기지 않는다 | 전부 | `Assets.mapPath` 가 RTP 판과 기본 판 두 파일 중 하나를 연다. 이벤트를 옮기면 두 파일에 같은 이벤트를 두 벌 둬야 한다. 6단계 회귀 맵(`rpg_event_scene`)이기도 하다 |
 | (전부) | | 정의 파일 자체 (`rpg-game.json` 의 `def`) | 맵 등록은 이미 `rpg-game.json` 이지만 맵 속성이 Lua 에 있다. 새 맵을 에디터만으로 만드는 것은 나중 후보 |
 
@@ -391,6 +408,11 @@ E5 초안의 물음 열한 개는 저자가 자리에 없는 동안 리드가 �
 | 첫 auto 가 떠난 뒤 | 실행기의 `leaveCount()` 로 안다. 게임 쪽 호스트가 따로 알려 줄 필요가 없다 |
 | 검사 표에 더한 줄 | `events` 가 배열이 아니다, `charset.file`/`face.file` 이 빈 글이거나 글이 아니다, `wander`/`wander.area` 가 객체가 아니다, 하위 목록이 배열이 아니다. `minWait > maxWait` 는 없는 쪽을 기본값으로 보고, 경로는 있는 쪽(`maxWait` 먼저)이다 |
 | 인자 명세의 키 | 2.2 의 목록으로 닫는다. 새 키가 필요하면 이 문서와 테스트 [A] 를 함께 고친다 |
+| `rpg:event:` 를 찍는 자리 | 실행기의 `onStart` 훅. 게임이 실행기의 시작 규칙(도는 중이면 거절, 이미 도는 parallel)을 다시 적지 않는다 |
+| 환경 변수 해석 | `playenv.lua` 로 떼어 순수 함수로 둔다. 게임 씬은 부르기만 한다 |
+| ROUTE 와 AUTOPLAY | ROUTE 만으로 자동 재생이 된다. 빠뜨려서 안전망 프레임까지 멈춰 있는 실행을 막는다 |
+| `rpg:error` 의 경로 꼴 | 프로젝트 기준, `./` 없이 (3.3). 그 밖의 자리는 `rpg-game.json`, `state:<항목>`, `at:<값>`, `route:<걸음>`, 아이템 표 경로 |
+| RPG 맵의 저장 형식 | 항구 마을, 여관, 마을, 오두막(두 벌)과 `sample.json` 을 `mapfile.py format` 으로 맞췄다. 바뀐 값은 `version`(1 에서 2)뿐이다. 생성기 둘(`generate_port_maps.py`, `generate_demo_maps.py`)은 `write_map` 으로 쓰고 `events` 를 이어받으며, 다시 돌리면 커밋된 파일과 바이트가 같다. `crates` 는 이제 맵 파일에만 있다 |
 
 ## 8. 작업 항목
 
@@ -408,11 +430,13 @@ E5 초안의 물음 열한 개는 저자가 자리에 없는 동안 리드가 �
 - [x] `assets.lua`: `SETS`, `resolveRef`, `checkRef`. `assets.rb` 에 `SETS`
 - [x] `mapdata.lua`: `validateEvents`(3.2 표 전부), `resolveAssets`, `merge` 가 덮인 id 도 돌려준다
 - [x] 테스트: `rpg_event_schema_test.lua`(4절), `rpg_mapdata_test.lua`(3.2 표의 줄마다), `rpg_commands_test.lua`(새 검사와 계약 함수), `rpg_event_test.lua`, `rpg_assets_test.lua` 와 `.rb`, 규격 테스트 두 벌, `tests/fixtures/events/invalid_events.json` 과 `.paths.json`
-- [ ] `game.lua`: `MAPS` 를 `rpg-game.json` 에서(`Config.mapModules`), 맵 파일 이벤트를 검사하고 틀린 것은 건너뛰며 `rpg:error` 줄(정의 파일의 오류도 stdout 으로), `resolveAssets`, `transfer` 의 `dir`, `charset.file` 이 없으면 오류, `INITIAL2D_RPG_AT`, `INITIAL2D_RPG_STATE`, `INITIAL2D_RPG_ROUTE`, `INITIAL2D_RPG_TRACE` 와 trace 줄(`rpg:player` 포함)
-- [ ] 맵 형식: RPG 맵과 `sample.json` 을 `mapfile.py format` 으로, `tools/generate_port_maps.py` 와 `tools/generate_demo_maps.py` 를 `write_map` 으로 (이벤트를 이어받고 `crates` 를 코드에서 뺀다). 테스트 러너가 모든 맵에 `mapfile.py check`
-- [ ] `tests/run_engine_tests.py`: 진짜 허브로 띄우는 작업 폴더 함수 `make_game_workdir`, 그것을 쓰는 `test_rpg_play_here`, rpgdemo 검사에 "stdout 에 `rpg:error` 가 없다" 한 줄
-- [ ] 인수 시나리오와 골든 세 장과 벽 앞 픽셀 검사 무변경 (`game.lua` 까지 고친 뒤. `transfer` 방향 고치기로 시나리오가 달라지면 멈추고 보고한다)
-- [ ] README 의 환경 변수와 스키마
+- [x] `game.lua`: `MAPS` 를 `rpg-game.json` 에서(`Config.mapModules`), 맵 파일 이벤트를 검사하고 틀린 것은 건너뛰며 `rpg:error` 줄(정의 파일의 오류도 stdout 으로), `resolveAssets`, `transfer` 의 `dir`, `charset.file` 이 없으면 오류, `INITIAL2D_RPG_AT`, `INITIAL2D_RPG_STATE`, `INITIAL2D_RPG_ROUTE`, `INITIAL2D_RPG_TRACE` 와 trace 줄(`rpg:player` 포함). 해석은 `playenv.lua`(단위 테스트 `rpgdemo_playenv_test.lua`), `rpg:event:` 는 실행기의 `onStart`
+- [x] 맵 형식: RPG 맵과 `sample.json` 을 `mapfile.py format` 으로, `tools/generate_port_maps.py` 와 `tools/generate_demo_maps.py` 를 `write_map` 으로 (이벤트를 이어받고 `crates` 를 코드에서 뺀다). 테스트 러너가 모든 맵에 `mapfile.py check`
+- [x] `tests/run_engine_tests.py`: 진짜 허브로 띄우는 작업 폴더 함수 `make_game_workdir`, 그것을 쓰는 `test_rpg_play_here`, rpgdemo 검사에 "stdout 에 `rpg:error` 가 없다" 한 줄.
+  `test_rpg_play_here` 는 실행 변수를 `rpg-game.json` 의 `play.env` 와 `play.probe` 에서 만들고 다섯 판을 돈다: crates 옆에서 말 걸기, 시작 상태 `arrived`,
+  여관 출입구(`rpg:player:port_town,13,30,down`, transfer 의 방향), 틀린 맵 파일 이벤트 건너뛰기, 정의 파일의 `file` 없는 외형
+- [x] 인수 시나리오와 골든 세 장과 벽 앞 픽셀 검사 무변경 (`game.lua` 까지 고친 뒤. `transfer` 방향 고치기는 따로 커밋했고, 그 앞뒤로 시나리오의 stdout 이 바이트까지 같다)
+- [x] README 의 환경 변수와 스키마 (이벤트 절의 스키마와 맵 파일 검사, 아이템 표 `items.json`, 데모 절의 "맵 등록과 여기서 실행")
 
 ### 마일스톤 3: 이전 (PR 2)
 
@@ -426,8 +450,10 @@ E5 초안의 물음 열한 개는 저자가 자리에 없는 동안 리드가 �
 
 | 무엇 | 결과 |
 |---|---|
-| Lua 단위 (헤드리스, `INITIAL2D_NO_RTP=1`) | 전체 2242건 통과. `rpg_event_schema_test` 164건 새로, `rpg_mapdata_test`, `rpg_commands_test`, `rpg_event_test`, `rpg_assets_test`, `rpg_specs_test` 확장 |
+| Lua 단위 (헤드리스, `INITIAL2D_NO_RTP=1`) | 전체 2296건 통과. `rpg_event_schema_test` 164건 새로, `rpg_mapdata_test`, `rpg_commands_test`, `rpg_event_test`, `rpg_assets_test`, `rpg_specs_test` 확장. 게임 쪽에서 `rpgdemo_playenv_test`(환경 변수 해석) 새로, `rpg_interpreter_test` 에 `onStart` |
 | mruby 단위 | 전체 1926건 통과 (`rpg_assets_test.rb` 의 스키마 대조, `rpg_specs_test.rb` 의 `stand_pattern`) |
-| 깨지는 것을 보았다 | 커맨드를 하나 더하면 [B] 와 커맨드 집합 테스트가, 스키마의 필수 표시를 지우면 [C] 가, 목록 이름을 바꾸면 [D] 가, 후보 목록을 바꾸면 [G] 와 Ruby 대조가, 경로 하나를 픽스처에서 빼면 [I] 가, auto 를 첫 하나만 돌리게 되돌리면 `rpg_event_test` 가 깨진다 (확인하고 되돌렸다) |
-| 인수 시나리오와 `rpg_event_scene` | 프레임워크를 고친 뒤 그대로 통과 (골든 세 장, 벽 앞 픽셀 검사 포함). `game.lua` 를 고친 뒤 다시 본다 |
-| 전체 스위트 (`tests/run_all.sh`, 헤드리스, `INITIAL2D_NO_RTP=1`) | 통과. C++ 단위 18, 엔진 씬 446, 브리지 25 (이 기계는 오디오 장치가 없어 `SDL_AUDIODRIVER=dummy` 를 함께 준다. 없으면 mruby `audio_test` 셋이 master 에서도 실패한다) |
+| 깨지는 것을 보았다 | 커맨드를 하나 더하면 [B] 와 커맨드 집합 테스트가, 스키마의 필수 표시를 지우면 [C] 가, 목록 이름을 바꾸면 [D] 가, 후보 목록을 바꾸면 [G] 와 Ruby 대조가, 경로 하나를 픽스처에서 빼면 [I] 가, auto 를 첫 하나만 돌리게 되돌리면 `rpg_event_test` 가 깨진다. `transfer` 의 `dir` 을 다시 버리게 하면 `test_rpg_play_here` [C] 가, 외형의 `file` 이 없을 때 플레이어 그림으로 되돌리면 [E] 가, 항구 마을 맵 파일에 틀린 이벤트를 넣으면 rpgdemo 검사의 "stdout 에 `rpg:error` 가 없다" 가 깨진다 (전부 확인하고 되돌렸다) |
+| 인수 시나리오와 `rpg_event_scene` | `transfer` 방향 고치기(따로 커밋) 앞뒤로 두 씬의 stdout 이 바이트까지 같다 (`tickUntil` 의 프레임 수 포함). `game.lua` 를 다 고친 뒤에도 그대로 통과 (골든 세 장, 벽 앞 픽셀 검사 포함) |
+| `test_rpg_play_here` (진짜 허브) | 36건 통과. 실행 변수는 `rpg-game.json` 의 `play.env` 와 `play.probe` 에서 만든다. 판마다 `rpg:route:done` 으로 스스로 끝난다 |
+| 맵 형식 | 모든 맵이 `mapfile.py check` 를 통과하고 `tests/run_all.sh` 가 `resources/maps/*.json` 을 본다. 생성기 둘을 다시 돌리면 커밋된 맵과 바이트가 같다 |
+| 전체 스위트 (`tests/run_all.sh`, 헤드리스, `INITIAL2D_NO_RTP=1`) | 통과. C++ 단위 18, 엔진 씬 483, 브리지 25 (이 기계는 오디오 장치가 없어 `SDL_AUDIODRIVER=dummy` 를 함께 준다. 없으면 mruby `audio_test` 셋이 master 에서도 실패한다) |
