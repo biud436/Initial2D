@@ -471,6 +471,8 @@ mruby 4.0 에서 네이티브의 `MRB_FUNCALL_DEPTH_MAX` 에 해당하는 것은
     네이티브와 같은 다섯 줄과 `onExit(1)`. 15b: `reload()` 의 `init` 에서 나면 `false`, 스크립트는 멈추고 다음 `reload()` 는 `true`.
   - 16: `fatal: std::runtime_error: INITIAL2D_WEB_TEST_FATAL=frame`(엔진, 프레임 2 에서 멈춤)과 `...=main`(로더) 이 같은 형식,
     각각 `onExit(1)` 한 번, JS 예외 없음.
+- 기존 13b 의 render 조건을 `$n == 2` 에서 `$n >= 2` 로 바꾸었다. 부하가 큰 기계(load average 35)에서 고정 스텝이 한
+  프레임에 update 를 여러 번 돌려 `$n` 이 2 를 건너뛰고, 오류가 나지 않은 채 15 초를 넘겼다. 검사하는 오류 줄은 그대로다.
 - 검수가 원래 문제를 잡는지: 같은 오브젝트를 `STACK_SIZE=2097152` 로만 다시 링크한 사이트에서 14a 가
   `pageerror: memory access out of bounds` 로 실패했다. `Tilemap#initialize` 의 가드만 뺀 빌드에서는 15a 가
   `fatal: Json::LogicError: ...` 로 실패했다.

@@ -706,7 +706,8 @@ async function mrubyCases() {
 		await pg.close();
 	}
 
-	// 13b. render 에서 C++ 바인딩이 일으킨 TypeError (C++ 프레임을 지나는 raise 가 잡히지 않은 채 끝난다)
+	// 13b. render 에서 C++ 바인딩이 일으킨 TypeError (C++ 프레임을 지나는 raise 가 잡히지 않은 채 끝난다).
+	//      고정 스텝이라 느린 프레임에는 update 가 여러 번 돌므로 조건은 $n >= 2 다 ($n 이 2 를 건너뛸 수 있다)
 	{
 		const files = { "scripts/ruby/main.rb": [
 			"$n = 0",
@@ -716,7 +717,7 @@ async function mrubyCases() {
 			"  $n += 1",
 			"end",
 			"def render",
-			'  Graphics.set_color("red", 0, 0) if $n == 2',
+			'  Graphics.set_color("red", 0, 0) if $n >= 2',
 			"end",
 			"def destroy",
 			'  puts "render:destroy"',
