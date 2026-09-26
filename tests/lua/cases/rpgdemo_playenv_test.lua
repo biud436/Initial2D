@@ -79,6 +79,16 @@ function M.run(t)
 	t.check_eq(PlayEnv.escape(nil), "", "nil 은 빈 글")
 	t.check(PlayEnv.enabled("1") and PlayEnv.enabled("yes"), "켜짐")
 	t.check(not PlayEnv.enabled(nil) and not PlayEnv.enabled("") and not PlayEnv.enabled("0"), "꺼짐")
+
+	-- ---- [5] rpg:error 줄 -----------------------------------------------------
+	local jsonErr = "Json.Load: parse error in ./resources/data/rpg-game.json: * Line 1, Column 3\n"
+		.. "  Missing '}' or object member name\n"
+	local line = PlayEnv.errorLine("rpg-game.json", jsonErr)
+	t.check_eq(line, "rpg:error:rpg-game.json: Json.Load: parse error in ./resources/data/rpg-game.json: "
+		.. "* Line 1, Column 3 Missing '}' or object member name", "이유의 줄바꿈은 공백 하나, 끝 공백은 뗀다")
+	t.check(line:find("\n", 1, true) == nil, "한 줄이다")
+	t.check_eq(PlayEnv.errorLine("resources/data/items.json", "items 가 배열이 아니다"),
+		"rpg:error:resources/data/items.json: items 가 배열이 아니다", "자리와 이유")
 end
 
 return M

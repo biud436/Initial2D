@@ -108,13 +108,9 @@ local function env(name)
 	return (os.getenv ~= nil) and os.getenv(name) or nil
 end
 
-local function oneLine(text)
-	return (tostring(text):gsub("%s*\n%s*", " "))
-end
-
 --- rpg:error 줄. TRACE 와 상관없이 늘 찍는다.
 local function reportError(where, message)
-	print("rpg:error:" .. tostring(where) .. ": " .. oneLine(message))
+	print(PlayEnv.errorLine(where, message))
 end
 
 local function trace(line)
@@ -612,8 +608,8 @@ function RpgDemoScene.update(elapsed)
 				autoTimer = 0
 				input.confirm = true
 			end
-		elseif interp:isBusy() then
-			-- 스크립트가 도는 중이면 기다린다
+		elseif interp:isBusy() or events:hasPendingAuto() then
+			-- 스크립트가 돌거나 다음 auto 가 기다리면 기다린다
 		elseif autoTimer > 200 and not playerChar:isMoving() then
 			autoTimer = 0
 			local step = nextAutoStep()
@@ -632,7 +628,8 @@ function RpgDemoScene.update(elapsed)
 
 	-- 대화창이 결정키를 먼저 가져간다. 대화를 닫은 그 누름으로 같은 NPC에게 다시
 	-- 말을 걸지 않도록, 말 걸기는 "이번 프레임을 한가하게 시작했는가"로 판단한다.
-	local wasIdle = not dialogue:isBusy() and not interp:isBusy()
+	-- 기다리는 auto 가 있으면 한가하지 않다 (auto 와 auto 사이에도 조작이 잠긴다).
+	local wasIdle = not dialogue:isBusy() and not interp:isBusy() and not events:hasPendingAuto()
 	dialogue:update(input, interp:isBusy())
 
 	-- 취소키는 한가할 때 소지품 창을 연다. 선택지가 떠 있으면 대화창이 먼저
@@ -648,8 +645,8 @@ function RpgDemoScene.update(elapsed)
 	end
 
 	if player ~= nil and not autoplay then
-		-- 이벤트가 도는 동안 플레이어만 멈춘다. 맵과 병렬 이벤트는 계속 돈다.
-		player.enabled = not interp:isBusy() and not dialogue:isBusy()
+		-- 이벤트가 돌거나 다음 auto 가 기다리는 동안 플레이어만 멈춘다. 맵과 병렬 이벤트는 계속 돈다.
+		player.enabled = not interp:isBusy() and not dialogue:isBusy() and not events:hasPendingAuto()
 		player:update()
 	end
 

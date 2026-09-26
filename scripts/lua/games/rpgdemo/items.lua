@@ -8,18 +8,19 @@
 --   desc   창 아래 칸의 설명 (두 줄까지 보인다)
 --   order  목록에서의 순서. 작은 것이 위
 --
--- 읽지 못하면 빈 표를 돌려주고 rpg:error 줄을 찍는다.
+-- 아이템 표를 읽지 못하면 빈 표를 돌려주고 rpg:error 줄을 찍는다. rpg-game.json 을 읽지
+-- 못한 것은 맵 씬(game.lua)이 알리므로 여기서는 빈 표만 돌려준다.
 
 local Config = require("scripts/lua/games/rpgdemo/config")
+local PlayEnv = require("scripts/lua/games/rpgdemo/playenv")
 
-local config, err = Config.load()
+local config = Config.load()
 if config == nil then
-	print("rpg:error:rpg-game.json: " .. tostring(err))
 	return {}
 end
 
 local items, itemsErr, path = Config.loadItems(config)
 if itemsErr ~= nil then
-	print("rpg:error:" .. tostring(path) .. ": " .. itemsErr)
+	print(PlayEnv.errorLine(path, itemsErr))
 end
 return items

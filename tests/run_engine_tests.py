@@ -102,26 +102,34 @@ def make_workdir(scene, fixtures=False):
     return work
 
 
-def make_game_workdir(copy_maps=False):
+def link_resources(work, copy=()):
+    """work/resources 를 저장소의 resources 에 잇는다. copy 에 적은 폴더(maps, data)만 복사해
+    테스트가 고칠 수 있게 하고, 나머지는 폴더마다 심링크한다 (저장소의 파일은 건드리지 않는다)."""
+    res = os.path.join(REPO, "resources")
+    dst_root = os.path.join(work, "resources")
+    if os.path.islink(dst_root):
+        os.remove(dst_root)
+    if not copy:
+        os.symlink(res, dst_root)
+        return
+    os.makedirs(dst_root)
+    for name in os.listdir(res):
+        src = os.path.join(res, name)
+        dst = os.path.join(dst_root, name)
+        if name in copy:
+            shutil.copytree(src, dst)
+        else:
+            os.symlink(src, dst)
+
+
+def make_game_workdir(copy=()):
     """진짜 허브(scripts/lua/main.lua)로 게임을 띄우는 워크 디렉터리 (M2).
 
-    make_workdir 와 달리 main.lua 를 지우지 않고 scripts/ 를 그대로 복사한다. copy_maps 면
-    resources/maps 만 복사해 테스트가 맵 파일을 고칠 수 있게 하고, 나머지 resources 는
-    폴더마다 심링크한다 (저장소의 파일은 건드리지 않는다).
+    make_workdir 와 달리 main.lua 를 지우지 않고 scripts/ 를 그대로 복사한다. copy 에 적은
+    resources 폴더만 복사한다 (link_resources).
     """
     work = tempfile.mkdtemp(prefix="initial2d-game-")
-    res = os.path.join(REPO, "resources")
-    if copy_maps:
-        os.makedirs(os.path.join(work, "resources"))
-        for name in os.listdir(res):
-            src = os.path.join(res, name)
-            dst = os.path.join(work, "resources", name)
-            if name == "maps":
-                shutil.copytree(src, dst)
-            else:
-                os.symlink(src, dst)
-    else:
-        os.symlink(res, os.path.join(work, "resources"))
+    link_resources(work, copy)
     shutil.copytree(os.path.join(REPO, "scripts"), os.path.join(work, "scripts"))
     return work
 
@@ -1108,7 +1116,7 @@ def test_rpg_play_here():
           and index("rpg:message:선장|") > i_town, str(lines[-3:]))
 
     # [D] 틀린 맵 파일 이벤트: 그 이벤트만 건너뛰고 rpg:error 를 찍는다. 나머지는 돈다
-    work_d = make_game_workdir(copy_maps=True)
+    work_d = make_game_workdir(copy=("maps",))
     port = os.path.join(work_d, "resources", "maps", "port_town.json")
     with open(port, encoding="utf-8") as f:
         data = json.load(f)
@@ -1148,6 +1156,70 @@ def test_rpg_play_here():
     check("[E] 정상 종료", r.returncode == 0, f"rc={r.returncode}")
     check("[E] 정의 파일의 오류가 stdout 에 나온다",
           "rpg:error:scripts/lua/maps/inn.lua:innkeeper: 외형(charset)에 file 이 없다" in lines, str(lines))
+
+    # [F] 게임 설정과 아이템 표를 못 읽으면: 이유 글의 줄바꿈까지 한 줄로, 한 번만 찍는다
+    work_f = make_game_workdir(copy=("data",))
+    data_dir = os.path.join(work_f, "resources", "data")
+    with open(os.path.join(data_dir, "rpg-game.json"), "w", encoding="utf-8") as f:
+        f.write("{ broken")
+    r = run_game(work_f, rpg_play_env("port_town"), exit_after=60)
+    out = r.stdout.splitlines()
+    cfg = [ln for ln in out if ln.startswith("rpg:error:rpg-game.json:")]
+    check("[F] 정상 종료", r.returncode == 0, f"rc={r.returncode}")
+    check("[F] rpg-game.json 의 오류는 한 번", len(cfg) == 1, str(cfg))
+    check("[F] 파서의 이유가 그 한 줄에 다 있다 (줄바꿈은 공백)",
+          len(cfg) == 1 and [ln for ln in out if "Missing" in ln] == cfg
+          and not cfg[0].endswith(" "), str(out[:6]))
+    shutil.copy(os.path.join(REPO, "resources", "data", "rpg-game.json"), data_dir)
+    with open(os.path.join(data_dir, "items.json"), "w", encoding="utf-8") as f:
+        f.write("{ broken")
+    r = run_game(work_f, rpg_play_env("port_town"), exit_after=60)
+    out = r.stdout.splitlines()
+    bad_items = [ln for ln in out if ln.startswith("rpg:error:resources/data/items.json:")]
+    check("[F] 아이템 표의 오류도 한 번, 한 줄", len(bad_items) == 1
+          and [ln for ln in out if "Missing" in ln] == bad_items, str(out[:6]))
+    check("[F] 아이템 표가 없어도 맵은 열린다", "rpg:map:port_town events:17 skipped:0" in out, str(out[:6]))
+
+
+def test_rpg_auto_chain():
+    """auto 이벤트가 여럿이면 그 사이에도 조작이 잠겨 있다 (M2, docs/plans/m2-rpg-events.md 5.3절).
+
+    항구 마을 맵 파일에 auto 둘을 더하고, 위쪽을 누른 채 결정키로 대사를 넘긴다. 첫 auto 가
+    끝난 프레임에 플레이어가 걷기 시작하면 안 된다 (tests/engine/scenes/rpg_auto_chain_scene.lua).
+    """
+    print("\n[8a] rpg_auto_chain: auto 둘 사이에 걷지 않는다")
+    work = make_workdir("rpg_auto_chain_scene.lua")
+    link_resources(work, copy=("maps",))
+    port = os.path.join(work, "resources", "maps", "port_town.json")
+    with open(port, encoding="utf-8") as f:
+        data = json.load(f)
+    data["events"] += [
+        {"id": "auto1", "x": 1, "y": 1, "trigger": "auto",
+         "commands": [{"code": "message", "text": "AAA"}]},
+        {"id": "auto2", "x": 2, "y": 1, "trigger": "auto",
+         "commands": [{"code": "message", "text": "BBB"}]},
+    ]
+    with open(port, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+    env = dict(os.environ)
+    env.update({"INITIAL2D_NO_RTP": "1", "INITIAL2D_EXIT_AFTER": "30",
+                "INITIAL2D_MAP": "port_town", "INITIAL2D_RPG_STATE": "arrived"})
+    result = subprocess.run([GAME], cwd=work, env=env,
+                            capture_output=True, text=True, timeout=120)
+    log = result.stdout + result.stderr
+
+    def has(needle, name):
+        check(name, needle in log, f"'{needle}' 없음 | {log[-500:]}")
+
+    check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode}")
+    check("Lua 오류 없음", "PANIC" not in log and "attempt to" not in log, log[-300:])
+    check("stdout 에 rpg:error 가 없다", "rpg:error" not in result.stdout,
+          [ln for ln in result.stdout.splitlines() if "rpg:error" in ln][:3])
+    has("start:16,43", "배에서 막 내린 자리에서 시작")
+    has("autoA:true", "첫 auto 의 대사")
+    has("autoB:true", "둘째 auto 의 대사")
+    has("lockedUntilDone:true", "둘째 auto 가 끝날 때까지 한 칸도 걷지 않는다")
+    has("movedAfter:true", "auto 가 다 끝난 뒤에는 누르고 있던 방향으로 걷는다")
 
 
 # 알데바란 자산의 색 (tools/generate_aldebaran_assets.py)
@@ -1491,6 +1563,7 @@ def main():
         test_rpg_dialogue_scene,
         test_rpgdemo_scene,
         test_rpg_play_here,
+        test_rpg_auto_chain,
         test_aldebaran_scene,
         test_mruby_aldebaran_scene,
         test_resolution,

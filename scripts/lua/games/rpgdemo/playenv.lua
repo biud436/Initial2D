@@ -129,6 +129,12 @@ function M.escape(text)
 	return (tostring(text or ""):gsub("\r", ""):gsub("\n", "\\n"))
 end
 
+--- rpg:error 줄 하나. 이유 글의 줄바꿈은 공백 하나로 바꾸고 끝의 공백은 뗀다.
+function M.errorLine(where, message)
+	local reason = tostring(message):gsub("%s*\n%s*", " "):gsub("^%s+", ""):gsub("%s+$", "")
+	return "rpg:error:" .. tostring(where) .. ": " .. reason
+end
+
 --- 켜짐 값인가 (없음, 빈 글, "0" 은 꺼짐)
 function M.enabled(value)
 	return value ~= nil and value ~= "" and value ~= "0"
