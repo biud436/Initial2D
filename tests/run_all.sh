@@ -39,6 +39,9 @@ python3 tools/mapfile.py check resources/maps/*.json
 # 정의 파일의 이벤트를 맵 파일로 옮기는 도구가 2.6절의 키 순서로 쓰고, 옮길 수 없는 것은 남기는가 (M2).
 # 엔진 VM 에서 돌므로 [1/6] 의 빌드를 쓴다
 python3 tools/export_events.py selftest
+# 타일맵 템플릿이 규칙대로인가 (맵은 mapfile.py 의 형식, 씬은 새 프로젝트처럼 늘어놓고 엔진이 연다),
+# 템플릿 묶음의 목록과 tools/pack_templates.py (R4). [1/6] 의 빌드를 쓴다
+python3 tests/tools/templates_test.py
 
 echo ""
 echo "== [4/6] 엔진 씬 테스트 (Lua 단위 + 픽셀 검증 + 골든) =="
