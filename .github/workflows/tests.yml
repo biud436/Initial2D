@@ -20,8 +20,34 @@ jobs:
 
       - name: 의존성 설치
         run: |
-          brew install sdl2 sdl2_image sdl2_mixer mruby
+          brew install sdl2 sdl2_image sdl2_mixer
           python3 -m pip install --break-system-packages pillow
+
+      # Homebrew 의 mruby 는 병(bottle)에 따라 생성 헤더 mruby/presym/id.h 가 빠져 있을 수 있다
+      # (시스템 ruby 2.6 으로 만든 병). 그때는 4.0.0 을 Homebrew ruby 로 소스 빌드해 같은 자리에 둔다.
+      - name: mruby 4.0.0 (presym 헤더가 든 빌드)
+        run: |
+          set -e
+          brew install mruby || true
+          PREFIX="$(brew --prefix mruby)"
+          echo "Homebrew mruby: $PREFIX"
+          ls "$PREFIX/include/mruby/presym" || echo "(presym 폴더 없음)"
+          if [ ! -f "$PREFIX/include/mruby/presym/id.h" ]; then
+            echo "presym/id.h 가 없다. 소스 빌드로 대신한다"
+            brew install ruby bison
+            export PATH="$(brew --prefix ruby)/bin:$(brew --prefix bison)/bin:$PATH"
+            ruby --version
+            git clone --depth 1 --branch 4.0.0 https://github.com/mruby/mruby.git /tmp/mruby-src
+            cd /tmp/mruby-src
+            cp build_config/default.rb homebrew.rb
+            sed -i '' "s/conf.gembox 'default'/conf.gembox 'full-core'/" homebrew.rb
+            MRUBY_CONFIG="$PWD/homebrew.rb" rake
+            ls build/host/include/mruby/presym/
+            brew uninstall --ignore-dependencies mruby || true
+            rm -rf "$(brew --prefix)/opt/mruby"
+            ln -s /tmp/mruby-src/build/host "$(brew --prefix)/opt/mruby"
+            "$(brew --prefix)/opt/mruby/bin/mruby-config" --cflags
+          fi
 
       - name: 플레이스홀더 리소스 생성 (gitignore된 최상위 PNG)
         run: python3 tools/generate_placeholder_assets.py
