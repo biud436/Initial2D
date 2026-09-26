@@ -14,7 +14,9 @@
  *            initial2d_running()     루프가 걸려 있으면 1
  *
  *          루프가 내려가면 Module.initial2dOnExit(code) 를 부른다 (0 은 정상 종료, 1 은 스크립트
- *          오류나 fatal). 프레임 밖으로 빠지려는 C++ 예외는 "fatal: 메시지" 한 줄로 stderr 에 적는다.
+ *          오류나 fatal). 프레임 밖으로 빠지려는 C++ 예외는 "fatal: 타입: 메시지" 한 줄로 stderr 에 적는다
+ *          (로더가 callMain 밖으로 나온 예외에 적는 줄과 같은 형식). 검수는 INITIAL2D_WEB_TEST_FATAL 로
+ *          그 경로를 연다 (main 또는 frame, WebMain.cpp).
  */
 #pragma once
 

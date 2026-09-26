@@ -44,4 +44,12 @@ MRuby::CrossBuild.new("emscripten") do |conf|
   conf.compilers.each do |c|
     c.defines << "MRB_INT64" << "MRB_NO_BOXING"
   end
+
+  # 호출 깊이 한도. 네이티브(Homebrew)의 기본값과 같은 512 로 고정한다. C 를 거치는 재귀
+  # (문자열 보간 안의 to_s, Array#inspect 등)는 단계마다 wasm 스택을 최대 약 5.4 KB 쓰므로,
+  # 엔진 링크의 STACK_SIZE(8 MB, CMakeLists.txt)가 이 한도보다 먼저 바닥나지 않는다.
+  # 한도를 올리면 STACK_SIZE 도 같이 본다 (docs/plans/r3-emscripten.md 10절).
+  conf.compilers.each do |c|
+    c.defines << "MRB_CALL_LEVEL_MAX=512"
+  end
 end

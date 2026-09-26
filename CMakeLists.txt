@@ -278,11 +278,14 @@ if(INITIAL2D_SDL2_GAME)
     #   ALLOW_MEMORY_GROWTH:     디코딩된 PNG 와 OGG 가 wasm 메모리에 산다
     #   ASYNCIFY 는 쓰지 않는다: 루프가 emscripten_set_main_loop 이라 블로킹 호출이 없다
     #   getExceptionMessage:     모듈 밖으로 나온 C++ 예외의 메시지를 로더의 errorText() 가 읽는다
+    #   STACK_SIZE 8 MB:         C 를 거치는 mruby 재귀는 단계마다 wasm 스택을 최대 약 5.4 KB 쓴다. mruby 의 호출 깊이
+    #                            한도(MRB_CALL_LEVEL_MAX 512, tools/web/mruby_build_config.rb)에서 약 2.8 MB 라 한도가 먼저
+    #                            걸리고 SystemStackError 가 난다 (docs/plans/r3-emscripten.md 10절의 실측)
     set_target_properties(Initial2D PROPERTIES OUTPUT_NAME Initial2D SUFFIX ".js")
     target_link_options(Initial2D PRIVATE
       -sALLOW_MEMORY_GROWTH=1
       -sINITIAL_MEMORY=67108864
-      -sSTACK_SIZE=2097152
+      -sSTACK_SIZE=8388608
       -sMODULARIZE=1
       -sEXPORT_ES6=1
       -sEXPORT_NAME=createInitial2D

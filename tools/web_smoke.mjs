@@ -7,7 +7,9 @@
 //
 // 하는 일 (순서대로, 하나라도 실패하면 종료 코드 1):
 //   1. build-web/site 를 임의 포트의 정적 서버로 연다 (.wasm 은 application/wasm).
-//   2. 헤드리스 크로미움(InitialEditor 의 Playwright)으로 페이지를 열고 "실행" 을 누른다.
+//   2. 헤드리스 크로미움(Playwright)으로 페이지를 열고 "실행" 을 누른다. Playwright 는 PLAYWRIGHT_DIR(패키지 폴더),
+//      build-web/playwright(tools/web_ci.sh playwright), 이 저장소에서 찾히는 playwright, 옆 저장소
+//      ../InitialEditor 의 것 순서로 찾는다.
 //   3. 엔진 시작 줄("Initial2D web: renderer=...")과 20 프레임 캡처(INITIAL2D_SCREENSHOT 을 MEMFS 로)를 기다린다.
 //   4. canvas 를 build-web/smoke.png 로 찍고, MEMFS 의 BMP 를 build-web/smoke_frame20.bmp 로 꺼낸다.
 //      --golden 이 있으면 PIL 로 골든과 대조한다 (허용 오차는 네이티브 골든과 같은 식: 픽셀 차이 비율).
@@ -28,7 +30,7 @@
 //   네이티브 실행 파일(--native, 기본 build/Initial2D)이 있으면 8 과 9 의 파일을 헤드리스로 돌려
 //   오류 줄이 글자 그대로 같은지도 본다.
 //
-// mruby (12~13, docs/plans/r3-emscripten.md 9절). --lua-only 로 mruby 없이 빌드한 사이트를 검수할 때만 건너뛴다.
+// mruby (12~15, docs/plans/r3-emscripten.md 9절, 10절). --lua-only 로 mruby 없이 빌드한 사이트를 검수할 때만 건너뛴다.
 // 12 의 대조는 모두 네이티브 골든 검사와 같은 규칙이다 (채널당 24 넘게 다른 픽셀이 2% 이하).
 //  12a. Ruby 게임: 사이트의 프로젝트 파일에서 scripts/lua/ 를 빼고 game.json 에 "script": "mruby" 를 넣어 띄운다
 //       (Lua 로 떨어지면 main.lua 가 없어 오류가 난다). features() 가 "lua mruby wasm" 이고, 20 프레임 캡처
@@ -41,11 +43,21 @@
 //  13. Ruby 오류: rescue 와 C++ 바인딩이 일으킨 예외의 rescue, update 의 raise, render 에서 바인딩이 일으킨
 //      TypeError, 시작 때 문법 오류, reload() 의 고장 난 파일과 고친 파일. 오류 줄(역추적 포함)은 네이티브와
 //      글자 그대로 같고, 8~11 과 같이 JS 쪽 오류가 없어야 한다.
+//  14. C 를 거치는 재귀(문자열 보간 안의 to_s): update 에서 잡지 않으면 네이티브와 같은 SystemStackError 줄 묶음과
+//      onExit(1), init 에서는 rescue 로 잡히고, 깊이 500 은 끝까지 간다. reload() 의 무한 재귀는 false 다
+//      (docs/plans/r3-emscripten.md 10절).
+//  15. 바인딩 안의 C++ 예외(타입이 틀린 맵의 Tilemap.new): RuntimeError 로 rescue 되고, 잡지 않으면 네이티브와 같은
+//      줄 묶음. reload() 의 init 에서 나면 false 이고 스크립트는 멈춘다.
+//
+// fatal (16, docs/plans/r3-emscripten.md 8.5). --lua-only 에서도 돈다.
+//  16. INITIAL2D_WEB_TEST_FATAL=frame 과 =main 으로 엔진의 프레임 함수와 로더의 callMain 에서 C++ 예외를 낸다.
+//      둘 다 "fatal: std::runtime_error: ..." 같은 형식의 한 줄, onExit(1) 한 번, JS 예외 없음.
 import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -63,7 +75,7 @@ const OUT_HELP_PNG = path.resolve(repo, opt("--help-out", "build-web/smoke_help.
 const GOLDEN = args.includes("--golden") ? path.resolve(repo, opt("--golden", "tests/golden/aldebaran_title.png")) : null;
 const TIMEOUT = Number(opt("--timeout", "15000"));
 const HEADED = args.includes("--headed");
-const PLAYWRIGHT_DIR = process.env.PLAYWRIGHT_DIR || "/Users/u/InitialEditor/node_modules/playwright";
+const PLAYWRIGHT_DIR = resolvePlaywright();
 const NATIVE = path.resolve(repo, opt("--native", "build/Initial2D"));
 const SHOTS_DIR = path.dirname(OUT_PNG);
 const LUA_ONLY = args.includes("--lua-only");
@@ -71,6 +83,23 @@ const OUT_MRUBY_BMP = path.join(path.dirname(OUT_BMP), "smoke_mruby_frame20.bmp"
 // tests/run_engine_tests.py 의 GOLDEN_PIXEL_TOL, GOLDEN_DIFF_RATIO 와 같은 값
 const GOLDEN_PIXEL_TOL = 24;
 const GOLDEN_DIFF_RATIO = 0.02;
+
+// Playwright 패키지 폴더: PLAYWRIGHT_DIR, tools/web_ci.sh playwright 가 까는 build-web/playwright,
+// 이 저장소에서 찾히는 playwright, 옆 저장소 InitialEditor 의 것 순서
+function resolvePlaywright() {
+	if (process.env.PLAYWRIGHT_DIR) {
+		return path.resolve(process.env.PLAYWRIGHT_DIR);
+	}
+	const local = path.join(repo, "build-web", "playwright", "node_modules", "playwright");
+	if (fs.existsSync(path.join(local, "package.json"))) {
+		return local;
+	}
+	try {
+		return path.dirname(createRequire(import.meta.url).resolve("playwright/package.json"));
+	} catch (_) {
+		return path.resolve(repo, "..", "InitialEditor", "node_modules", "playwright");
+	}
+}
 
 const MIME = {
 	".html": "text/html; charset=utf-8",
@@ -164,7 +193,7 @@ print("size=%dx%d bad=%d/%d ratio=%.4f max=%d" % (b.size[0], b.size[1], bad, tot
 //   copyFrom     { root, rels }: root 아래의 rels 를 같은 상대 경로로 더 복사한다 (사이트의 프로젝트 폴더)
 //   env          더할 환경 변수
 //   frame        0 보다 크면 그 프레임을 캡처해 BMP 바이트로 돌려준다
-// 돌려주는 것: 종료 코드, stderr 의 줄, "Lua error" 줄, 캡처
+// 돌려주는 것: 종료 코드, stdout 과 stderr 의 줄, "Lua error" 줄, 캡처
 function runNative(files, { copyFrom = null, env = {}, frame = 0 } = {}) {
 	if (!fs.existsSync(NATIVE)) {
 		return null;
@@ -194,6 +223,7 @@ function runNative(files, { copyFrom = null, env = {}, frame = 0 } = {}) {
 		const errLines = (r.stderr || "").split("\n");
 		return {
 			code: r.status,
+			outLines,
 			errLines,
 			errorLines: [...outLines, ...errLines].filter((l) => l.startsWith("Lua error")),
 			shot: frame > 0 && fs.existsSync(shotPath) ? fs.readFileSync(shotPath) : null,
@@ -324,10 +354,11 @@ const state = (pg) => pg.evaluate(() => ({
 	frames: window.__game.frames(),
 }));
 
-async function until(pg, lines, predicate, what) {
+// allow: 기대한 줄이라 JS 쪽 오류로 치지 않을 콘솔 줄 (16 의 fatal 줄)
+async function until(pg, lines, predicate, what, allow = []) {
 	const start = Date.now();
 	for (;;) {
-		const bad = jsErrors(lines);
+		const bad = jsErrors(lines).filter((l) => !allow.includes(l));
 		expect(bad.length === 0, `${what}: JS 쪽 오류 ${bad[0]}`);
 		const st = await state(pg);
 		if (predicate(st)) return st;
@@ -812,6 +843,228 @@ async function mrubyCases() {
 		sameAsNative({ "scripts/ruby/main.rb": BROKEN }, BLOCK, "13d. (고장 난 파일로 시작)");
 		await pg.close();
 	}
+
+	// ---- 14. C 를 거치는 재귀는 SystemStackError (docs/plans/r3-emscripten.md 10절) ----
+	// 문자열 보간 안의 to_s 는 단계마다 VM 을 C 에서 다시 부르고 wasm 스택을 가장 많이 쓴다 (약 5.4 KB).
+	// mruby 의 호출 깊이 한도(512)가 wasm 스택(8 MB)보다 먼저 걸려야 네이티브처럼 SystemStackError 가 난다.
+	// 스택이 모자라면 메모리가 깨져 엉뚱한 오류나 "memory access out of bounds" 가 된다.
+	const LOOP = 'class Loop; def to_s; "#{self}x"; end; end';
+
+	// 네이티브를 같은 파일로 돌려 종료 코드와 stdout 을 본다 (성공하는 경우)
+	function nativeOk(files, wantLine, label) {
+		if (!nativeHasRuby) {
+			console.log(`web_smoke: ${label} 네이티브 대조 건너뜀 (${path.relative(repo, NATIVE)} 가 없거나 mruby 가 없습니다)`);
+			return;
+		}
+		const n = runNative(files, { env: { INITIAL2D_SCRIPT: "" } });
+		expect(n.code === 0, `${label}: 네이티브 종료 코드가 0 이 아닙니다 (${n.code}): ${JSON.stringify(n.errLines.slice(-4))}`);
+		expect(n.outLines.includes(wantLine), `${label}: 네이티브 stdout 에 "${wantLine}" 이 없습니다`);
+		console.log(`web_smoke: ${label} 네이티브도 같은 줄, 종료 코드 0`);
+	}
+
+	// 14a. update 에서 잡지 않은 무한 재귀: 역추적(511 단계)까지 네이티브와 같은 줄 묶음, onExit(1)
+	{
+		const files = { "scripts/ruby/main.rb": [
+			LOOP,
+			"$n = 0",
+			'def init; puts "stack:init"; end',
+			"def update(elapsed)",
+			"  $n += 1",
+			"  Loop.new.to_s if $n == 3",
+			"end",
+			'def destroy; puts "stack:destroy"; end',
+		].join("\n") + "\n" };
+		const { pg, lines } = await bootProject(files);
+		const st = await until(pg, lines, (s) => s.exits.length > 0, "14a. 무한 재귀 뒤 onExit");
+		const first = st.err.indexOf("mruby: uncaught exception in update");
+		const last = st.err.indexOf("scripts/ruby/main.rb:1:in to_s: SystemStackError");
+		expect(first >= 0 && last > first, `14a. SystemStackError 줄 묶음이 없습니다. stderr=${JSON.stringify(st.err.slice(0, 4))} ... ${JSON.stringify(st.err.slice(-4))}`);
+		const block = st.err.slice(first, last + 1);
+		expect(block[1] === "trace (most recent call last):" && block.length > 500,
+			`14a. 역추적이 한도 깊이가 아닙니다 (${block.length} 줄)`);
+		expect(st.exits[0] === 1, `14a. onExit 코드가 1 이 아닙니다: ${st.exits[0]}`);
+		expect(!st.out.includes("stack:destroy"), "14a. 오류 뒤에 destroy 가 불렸습니다");
+		await pg.waitForTimeout(300);
+		const later = await state(pg);
+		expect(later.frames === st.frames, `14a. 루프가 멈춘 뒤에도 frames() 가 늘었습니다 (${st.frames} -> ${later.frames})`);
+		expect(later.exits.length === 1, `14a. onExit 이 한 번이 아닙니다: ${JSON.stringify(later.exits)}`);
+		expect(jsErrors(lines).length === 0, `14a. JS 쪽 오류: ${jsErrors(lines)[0]}`);
+		console.log(`web_smoke: 14a. update 의 무한 to_s 재귀 -> "${block[block.length - 1]}" (역추적 ${block.length - 3} 줄), onExit(1)`);
+		sameAsNative(files, block, "14a.");
+		await pg.close();
+	}
+
+	// 14b. init 에서 rescue 하면 게임은 계속 돈다. 14c. 깊이 500 의 유한 재귀는 끝까지 간다 (네이티브와 같다)
+	{
+		const files = { "scripts/ruby/main.rb": [
+			LOOP,
+			"class Deep; def initialize(n); @n = n; end; def to_s; @n == 0 ? \".\" : \"#{Deep.new(@n - 1)}\"; end; end",
+			"def init",
+			"  begin",
+			"    Loop.new.to_s",
+			"  rescue SystemStackError => e",
+			'    puts "stack:rescued #{e.class}"',
+			"  end",
+			'  puts "stack:depth500 #{Deep.new(500).to_s}"',
+			"end",
+			"$n = 0",
+			'def update(elapsed); $n += 1; puts "stack:tick" if $n == 10; System.exit if $n == 20; end',
+		].join("\n") + "\n" };
+		const { pg, lines } = await bootProject(files);
+		const st = await until(pg, lines, (s) => s.exits.length > 0, "14b. rescue 뒤 System.exit");
+		expect(st.out.includes("stack:rescued SystemStackError"), `14b. SystemStackError 를 rescue 하지 못했습니다. stdout=${JSON.stringify(st.out)} stderr=${JSON.stringify(st.err.slice(-4))}`);
+		expect(st.out.includes("stack:depth500 ."), `14c. 깊이 500 의 to_s 가 끝나지 않았습니다. stdout=${JSON.stringify(st.out)}`);
+		expect(st.out.includes("stack:tick"), "14b. rescue 뒤 update 가 돌지 않았습니다");
+		expect(st.exits[0] === 0, `14b. onExit 코드가 0 이 아닙니다: ${st.exits[0]}`);
+		expect(jsErrors(lines).length === 0, `14b. JS 쪽 오류: ${jsErrors(lines)[0]}`);
+		console.log("web_smoke: 14b. init 의 무한 재귀를 rescue 하고 게임은 돈다. 14c. 깊이 500 의 to_s 가 끝까지 간다, onExit(0)");
+		nativeOk(files, "stack:depth500 .", "14b/14c.");
+		await pg.close();
+	}
+
+	// 14d. reload() 의 init 이 무한 재귀: false 와 SystemStackError 줄, 루프는 돌고 다음 reload 는 true
+	{
+		const good = (tag) => [
+			`def init; puts "${tag}:init"; end`,
+			"$n = 0",
+			`def update(elapsed); $n += 1; puts "${tag}:tick" if $n == 5; end`,
+		].join("\n") + "\n";
+		const RECUR = LOOP + "\ndef init; Loop.new.to_s; end\ndef update(elapsed); puts \"recur:update\"; end\n";
+		const { pg, lines } = await bootProject({ "scripts/ruby/main.rb": good("good") });
+		let st = await until(pg, lines, (s) => s.out.includes("good:tick"), "14d. 첫 스크립트가 돈다");
+		const r1 = await pg.evaluate((src) => window.__game.reload({ "scripts/ruby/main.rb": src }), RECUR);
+		expect(r1 === false, `14d. 무한 재귀 reload() 가 false 가 아닙니다: ${r1}`);
+		st = await state(pg);
+		expect(st.err.includes("scripts/ruby/main.rb:1:in to_s: SystemStackError"), `14d. SystemStackError 줄이 없습니다. stderr=${JSON.stringify(st.err.slice(-4))}`);
+		const f1 = st.frames;
+		st = await until(pg, lines, (s) => s.frames > f1 + 10, "14d. 실패한 reload 뒤에도 루프가 돈다");
+		expect(!st.out.includes("recur:update"), "14d. 실패한 reload 뒤에 스크립트가 멈추지 않았습니다");
+		const r2 = await pg.evaluate((src) => window.__game.reload({ "scripts/ruby/main.rb": src }), good("again"));
+		expect(r2 === true, `14d. 다음 reload() 가 true 가 아닙니다: ${r2}`);
+		st = await until(pg, lines, (s) => s.out.includes("again:tick"), "14d. 다음 reload 뒤 스크립트가 돈다");
+		expect(st.exits.length === 0, `14d. 루프가 멈췄습니다: ${JSON.stringify(st.exits)}`);
+		expect(jsErrors(lines).length === 0, `14d. JS 쪽 오류: ${jsErrors(lines)[0]}`);
+		console.log("web_smoke: 14d. reload(무한 재귀)=false 와 SystemStackError, 루프는 돈다. reload(정상)=true");
+		await pg.close();
+	}
+
+	// ---- 15. 바인딩 안의 C++ 예외는 Ruby 의 RuntimeError (docs/plans/r3-emscripten.md 10절) ----
+	// 타입이 틀린 맵의 Tilemap.new 는 jsoncpp 의 Json::LogicError 를 던진다. MRUBY_GUARD(mrb_prot.h)가 바인딩 경계에서
+	// "타입: 메시지" 의 RuntimeError 로 바꾸므로 fatal 이 아니라 스크립트 오류로 끝나고, reload 뒤의 VM 도 온전하다.
+	const BAD_MAP = { "maps/bad.json": '{"version": "x", "width": 1}\n' };
+	const CPP_MESSAGE = "Json::LogicError: Value is not convertible to Int.";
+
+	// 15a. rescue 와 Tilemap.load(nil), 잡지 않은 예외는 스크립트 오류와 같은 줄 묶음
+	{
+		const files = { ...BAD_MAP, "scripts/ruby/main.rb": [
+			"$n = 0",
+			"def init",
+			"  begin",
+			'    Tilemap.new("maps/bad.json")',
+			"  rescue => e",
+			'    puts "cpp:rescued #{e.class}: #{e.message}"',
+			"  end",
+			'  puts "cpp:load #{Tilemap.load("maps/bad.json").inspect}"',
+			"end",
+			"def update(elapsed)",
+			"  $n += 1",
+			'  Tilemap.new("maps/bad.json") if $n == 3',
+			"end",
+			'def destroy; puts "cpp:destroy"; end',
+		].join("\n") + "\n" };
+		const BLOCK = [
+			"mruby: uncaught exception in update",
+			"trace (most recent call last):",
+			"\t[2] scripts/ruby/main.rb:14",
+			"\t[1] scripts/ruby/main.rb:12:in update",
+			`scripts/ruby/main.rb:12:in initialize: ${CPP_MESSAGE} (RuntimeError)`,
+		];
+		const { pg, lines } = await bootProject(files);
+		const st = await until(pg, lines, (s) => s.exits.length > 0, "15a. 잡지 않은 C++ 예외 뒤 onExit");
+		expect(st.out.includes(`cpp:rescued RuntimeError: ${CPP_MESSAGE}`), `15a. rescue 가 C++ 예외를 잡지 못했습니다. stdout=${JSON.stringify(st.out)}`);
+		expect(st.out.includes("cpp:load nil"), `15a. Tilemap.load 가 nil 이 아닙니다. stdout=${JSON.stringify(st.out)}`);
+		expect(findBlock(st.err, BLOCK) >= 0, `15a. 오류 줄이 다릅니다. stderr=${JSON.stringify(st.err)}`);
+		expect(st.exits[0] === 1, `15a. onExit 코드가 1 이 아닙니다: ${st.exits[0]}`);
+		expect(!st.out.includes("cpp:destroy"), "15a. 오류 뒤에 destroy 가 불렸습니다");
+		expect(!st.err.some((l) => l.startsWith("fatal:")), "15a. fatal 로 끝났습니다 (C++ 예외가 VM 밖으로 나갔다)");
+		await pg.waitForTimeout(300);
+		expect(jsErrors(lines).length === 0, `15a. JS 쪽 오류: ${jsErrors(lines)[0]}`);
+		console.log(`web_smoke: 15a. C++ 예외를 rescue ("RuntimeError: ${CPP_MESSAGE}"), Tilemap.load=nil, 잡지 않으면 "${BLOCK[BLOCK.length - 1]}", onExit(1)`);
+		sameAsNative(files, BLOCK, "15a.");
+		await pg.close();
+	}
+
+	// 15b. reload() 의 init 이 C++ 예외: false 와 같은 줄, 스크립트는 멈추고(update 없음) 루프는 돈다. 다음 reload 는 true
+	{
+		const BROKEN = [
+			'def init; Tilemap.new("maps/bad.json"); puts "broken:after"; end',
+			'def update(elapsed); puts "broken:update"; end',
+			'def destroy; puts "broken:destroy"; end',
+		].join("\n") + "\n";
+		const good = (tag) => `def init; puts "${tag}:init"; end\n$n = 0\ndef update(elapsed); $n += 1; puts "${tag}:tick" if $n == 5; end\n`;
+		const { pg, lines } = await bootProject({ ...BAD_MAP, "scripts/ruby/main.rb": good("good") });
+		let st = await until(pg, lines, (s) => s.out.includes("good:tick"), "15b. 첫 스크립트가 돈다");
+		const r1 = await pg.evaluate((src) => window.__game.reload({ "scripts/ruby/main.rb": src }), BROKEN);
+		expect(r1 === false, `15b. C++ 예외 reload() 가 false 가 아닙니다: ${r1}`);
+		st = await state(pg);
+		expect(st.err.includes(`scripts/ruby/main.rb:1:in initialize: ${CPP_MESSAGE} (RuntimeError)`),
+			`15b. 오류 줄이 없습니다. stderr=${JSON.stringify(st.err.slice(-5))}`);
+		const f1 = st.frames;
+		st = await until(pg, lines, (s) => s.frames > f1 + 10, "15b. 실패한 reload 뒤에도 루프가 돈다");
+		expect(!st.out.some((l) => l.startsWith("broken:")), `15b. 실패한 reload 뒤에 스크립트가 멈추지 않았습니다. stdout=${JSON.stringify(st.out.slice(-4))}`);
+		const r2 = await pg.evaluate((src) => window.__game.reload({ "scripts/ruby/main.rb": src }), good("again"));
+		expect(r2 === true, `15b. 다음 reload() 가 true 가 아닙니다: ${r2}`);
+		st = await until(pg, lines, (s) => s.out.includes("again:tick"), "15b. 다음 reload 뒤 스크립트가 돈다");
+		await pg.evaluate(() => window.__game.quit());
+		st = await until(pg, lines, (s) => s.exits.length > 0, "15b. quit 뒤 onExit");
+		expect(st.exits[0] === 0, `15b. quit 뒤 onExit 코드가 0 이 아닙니다: ${st.exits[0]}`);
+		expect(jsErrors(lines).length === 0, `15b. JS 쪽 오류: ${jsErrors(lines)[0]}`);
+		console.log("web_smoke: 15b. reload(C++ 예외)=false, 스크립트는 멈추고 루프는 돈다. reload(정상)=true, quit -> onExit(0)");
+		await pg.close();
+	}
+}
+
+// ---- 16. fatal 경로 (docs/plans/r3-emscripten.md 8.5) ----
+// 스크립트로는 닿지 않는 두 자리를 INITIAL2D_WEB_TEST_FATAL 로 연다 (WebMain.cpp). 엔진(프레임 함수)과 로더(callMain)가
+// 같은 형식 "fatal: 타입: 메시지" 한 줄을 적고, 루프가 멈추며 onExit(1) 이 한 번 온다. JS 예외로 새지 않는다.
+async function fatalCases() {
+	const FORMAT = /^fatal: ([A-Za-z_][\w:]*): (.+)$/;
+	const files = { "scripts/lua/main.lua": [
+		'function Initialize() print("f16:init") end',
+		"function Update(elapsed) end",
+		"function Render() end",
+		'function Destroy() print("f16:destroy") end',
+	].join("\n") + "\n" };
+	const seen = {};
+	for (const where of ["frame", "main"]) {
+		const label = `16${where === "frame" ? "a" : "b"}.`;
+		const expected = `fatal: std::runtime_error: INITIAL2D_WEB_TEST_FATAL=${where}`;
+		const { pg, lines } = await bootProject(files, { INITIAL2D_WEB_TEST_FATAL: where });
+		const allow = [`[stderr] ${expected}`];
+		const st = await until(pg, lines, (s) => s.exits.length > 0, `${label} fatal 뒤 onExit`, allow);
+		const fatalLines = st.err.filter((l) => l.startsWith("fatal:"));
+		expect(fatalLines.length === 1 && fatalLines[0] === expected,
+			`${label} fatal 줄이 다릅니다: ${JSON.stringify(fatalLines)} (기대 ${expected})`);
+		expect(FORMAT.test(fatalLines[0]), `${label} fatal 줄이 "fatal: 타입: 메시지" 형식이 아닙니다: ${fatalLines[0]}`);
+		expect(st.exits[0] === 1, `${label} onExit 코드가 1 이 아닙니다: ${st.exits[0]}`);
+		if (where === "frame") {
+			expect(st.frames === 2, `${label} frames() 가 2 에서 멈추지 않았습니다: ${st.frames}`);
+			expect(st.err.some((l) => l.includes("Initial2D web: main loop stopped")), `${label} 루프가 멈춘 줄이 없습니다`);
+		} else {
+			expect(st.frames === 0, `${label} main 에서 던졌는데 프레임이 돌았습니다: ${st.frames}`);
+		}
+		await pg.waitForTimeout(300);
+		const later = await state(pg);
+		expect(later.exits.length === 1, `${label} onExit 이 한 번이 아닙니다: ${JSON.stringify(later.exits)}`);
+		expect(later.frames === st.frames, `${label} 멈춘 뒤에도 frames() 가 늘었습니다`);
+		const others = jsErrors(lines).filter((l) => !allow.includes(l));
+		expect(others.length === 0, `${label} JS 쪽 오류: ${others[0]}`);
+		seen[where] = FORMAT.exec(fatalLines[0])[1];
+		console.log(`web_smoke: ${label} ${where === "frame" ? "프레임 함수" : "로더(callMain)"} -> "${expected}", onExit(1), JS 예외 없음`);
+		await pg.close();
+	}
+	expect(seen.frame === seen.main, `16. 두 fatal 줄의 타입 표기가 다릅니다: ${seen.frame} / ${seen.main}`);
+	console.log("web_smoke: 16. 엔진과 로더의 fatal 줄이 같은 형식");
 }
 
 let allOk = true;
@@ -927,6 +1180,7 @@ try {
 	await page2.close();
 
 	await errorCases();
+	await fatalCases();
 	if (LUA_ONLY) {
 		console.log("web_smoke: 12~13 (mruby) 건너뜀 (--lua-only)");
 	} else {
