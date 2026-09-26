@@ -18,6 +18,26 @@
 #include <cstdio>
 #include <cstring>
 
+// CMake 가 빌드마다 만드는 판 헤더 (cmake/initial2d_version.cmake). 그 헤더가 없는 빌드는 "unknown" 이다.
+#if defined(__has_include)
+#if __has_include("initial2d_version.h")
+#include "initial2d_version.h"
+#endif
+#endif
+#ifndef INITIAL2D_VERSION_DESCRIBE
+#define INITIAL2D_VERSION_DESCRIBE "unknown"
+#define INITIAL2D_VERSION_COMMIT "unknown"
+#endif
+
+static void PrintUsage()
+{
+	std::fprintf(stderr,
+		"usage: Initial2D [--features | --version]\n"
+		"  (no option)  run the game in the current directory\n"
+		"  --features   print the script languages this build runs\n"
+		"  --version    print \"Initial2D <describe> <commit>\"\n");
+}
+
 int main(int argc, char* argv[])
 {
 	// 에디터가 stdout 을 파이프로 받을 때 print 줄이 4KB 마다 뭉쳐 오지 않게 줄 단위로 내보낸다
@@ -29,6 +49,21 @@ int main(int argc, char* argv[])
 	if (argc > 1 && std::strcmp(argv[1], "--features") == 0) {
 		std::printf("%s\n", Script_Features().c_str());
 		return 0;
+	}
+
+	// `Initial2D --version`: 판(git describe)과 커밋 40자를 한 줄로 찍고 끝난다
+	if (argc > 1 && std::strcmp(argv[1], "--version") == 0) {
+		std::printf("Initial2D %s %s\n", INITIAL2D_VERSION_DESCRIBE, INITIAL2D_VERSION_COMMIT);
+		return 0;
+	}
+
+	// 모르는 "--" 인자는 게임을 띄우지 않고 종료 코드 2 로 끝난다 (-psn_ 같은 한 줄표 인자는 무시한다)
+	for (int i = 1; i < argc; ++i) {
+		if (std::strncmp(argv[i], "--", 2) == 0) {
+			std::fprintf(stderr, "Initial2D: unknown option %s\n", argv[i]);
+			PrintUsage();
+			return 2;
+		}
 	}
 
 #ifdef __ANDROID__
