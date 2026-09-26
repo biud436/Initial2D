@@ -1497,6 +1497,51 @@ TCP 핫 리로드(`tools/hmr_push.py` 대신 `reload()` 를 씁니다)이고, `I
 쓰이므로 `game.module.FS.readFile` 로 꺼냅니다. `game.features()` 는 `lua mruby wasm` 입니다 (mruby 없이 빌드하면
 `lua wasm`).
 
+## 배포용 빌드
+
+다른 컴퓨터에 복사해도 뜨는 엔진 실행 파일 하나를 만듭니다. SDL2, SDL2_image, SDL2_mixer 와 mruby 를 소스에서
+받아 정적으로 넣기 때문에 Homebrew 가 없는 맥에서도 돕니다. 대상은 Apple Silicon 맥(macOS 11 이상)과 x86_64 Linux
+입니다. 에디터(InitialEditor)가 앱에 싣는 엔진이 이것입니다. 설계와 결정은
+[docs/plans/r4-dist-build.md](./docs/plans/r4-dist-build.md).
+
+```bash
+# 엔진: dist/Initial2D-aarch64-apple-darwin (Linux 는 dist/Initial2D-x86_64-unknown-linux-gnu)
+# 과 dist/engine-dist.json (커밋, 타깃별 sha256, 기능)
+tools/build_dist.sh
+
+# 검사: 의존 라이브러리가 시스템 것뿐인지, macOS 11.0, --features, --version 의 커밋, --bogus 의 종료 코드,
+# Lua 와 Ruby 로 PNG, WAV, OGG 를 읽는 헤드리스 유한 실행
+tools/check_dist.sh
+
+# 배포용 실행 파일로 전체 씬 검수 (골든까지)
+python3 tools/generate_placeholder_assets.py
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tests/run_engine_tests.py dist/Initial2D-aarch64-apple-darwin
+
+# 새 프로젝트 템플릿 묶음: dist/Initial2D-templates.zip (안의 MANIFEST.json 에 커밋, 크기, sha256)
+python3 tools/pack_templates.py
+```
+
+처음 한 번은 SDL 소스를 `external/sdl-src/` 에, mruby 소스를 `external/mruby-src/` 에 받습니다. macOS 는 Homebrew 의
+`ruby` 와 `bison` 이 있어야 하고(`brew install ruby bison`), Linux 는 SDL 을 빌드할 X11, Wayland, ALSA, PulseAudio 의 개발
+패키지가 필요합니다 (목록은 `.github/workflows/dist.yml`). SDL 의 판은 `tools/sdl_versions.sh` 한 곳에 있고 안드로이드
+빌드(`android/download_sdl.sh`)도 같은 판을 받습니다.
+
+엔진이 아는 인자는 둘입니다.
+
+```bash
+./Initial2D --features       # lua mruby
+./Initial2D --version        # Initial2D <git describe> <커밋 40자>
+./Initial2D --bogus          # 모르는 -- 인자는 사용법을 찍고 종료 코드 2 로 끝납니다 (게임을 띄우지 않습니다)
+```
+
+GitHub Actions 의 `dist` 워크플로가 같은 일을 macOS 와 Linux 에서 합니다. Actions 화면에서 직접 돌리거나(Run workflow)
+관련 파일을 고친 PR 에서 돌고, 결과는 워크플로 산출물 `initial2d-dist-<커밋>` 하나에 엔진 둘, 템플릿 묶음,
+`engine-dist.json`, `THIRD-PARTY.md`, `SHA256SUMS.txt` 로 모입니다. 산출물 zip 을 풀면 실행 권한이 빠지므로
+`chmod +x Initial2D-*` 를 해 줍니다. 릴리스는 만들지 않습니다.
+
+새 프로젝트의 타일맵 템플릿은 `resources/templates/tilemap/`(맵, 씬, 오브젝트 스키마)에 있고
+`python3 tests/tools/templates_test.py` 가 규칙대로인지 봅니다. 제3자 고지는 [THIRD-PARTY.md](./THIRD-PARTY.md) 입니다.
+
 ## 핫 리로드 (HMR)
 
 APK를 다시 빌드하거나 설치하지 않고, 수정한 `scripts/lua/*.lua`를 실행 중인 게임에 밀어 넣어 바로 반영합니다.
