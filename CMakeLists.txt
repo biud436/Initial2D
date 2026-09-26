@@ -45,6 +45,40 @@ add_library(vendored_tinyxml STATIC
 target_include_directories(vendored_tinyxml PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/tinyxml/include)
 
 # ---------------------------------------------------------------------------
+# mruby (선택), S1, docs/plans/s1-mruby-binding.md
+# Homebrew 의 mruby 를 찾는다 (brew install mruby). 없으면 Lua 만으로 빌드되고,
+# INITIAL2D_SCRIPT=mruby 로 고르면 실행 파일이 그 사실을 알리고 끝난다.
+# ---------------------------------------------------------------------------
+option(INITIAL2D_MRUBY "Build the mruby script backend when libmruby is found" ON)
+set(INITIAL2D_HAS_MRUBY OFF)
+if(INITIAL2D_MRUBY AND NOT WIN32)
+  set(_mruby_hints /opt/homebrew/opt/mruby /usr/local/opt/mruby)
+  find_path(MRUBY_INCLUDE_DIR mruby.h HINTS ${_mruby_hints} PATH_SUFFIXES include)
+  find_library(MRUBY_LIBRARY mruby HINTS ${_mruby_hints} PATH_SUFFIXES lib)
+  find_program(MRUBY_CONFIG mruby-config HINTS ${_mruby_hints} PATH_SUFFIXES bin)
+  if(MRUBY_INCLUDE_DIR AND MRUBY_LIBRARY)
+    set(INITIAL2D_HAS_MRUBY ON)
+    # libmruby 는 빌드 때의 -D 옵션(정수 폭, 박싱, 태스크 스케줄러 등)에 따라
+    # 구조체 배치가 달라진다. 같은 정의로 컴파일해야 하므로 mruby-config --cflags 의
+    # -D 항목을 그대로 가져온다.
+    set(MRUBY_DEFINITIONS "")
+    if(MRUBY_CONFIG)
+      execute_process(COMMAND ${MRUBY_CONFIG} --cflags
+        OUTPUT_VARIABLE _mruby_cflags OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+      separate_arguments(_mruby_cflags_list UNIX_COMMAND "${_mruby_cflags}")
+      foreach(_flag IN LISTS _mruby_cflags_list)
+        if(_flag MATCHES "^-D(.+)$")
+          list(APPEND MRUBY_DEFINITIONS "${CMAKE_MATCH_1}")
+        endif()
+      endforeach()
+    endif()
+    message(STATUS "mruby found: ${MRUBY_LIBRARY}")
+  else()
+    message(STATUS "mruby not found, Lua only (brew install mruby to enable the mruby backend)")
+  endif()
+endif()
+
+# ---------------------------------------------------------------------------
 # SDL2 (Phase 2부터 필수 — Phase 0에서는 존재 여부만 보고)
 # ---------------------------------------------------------------------------
 find_package(SDL2 QUIET CONFIG)
@@ -110,6 +144,7 @@ if(NOT WIN32 AND SDL2_FOUND AND SDL2_IMAGE_LIBRARY AND SDL2_MIXER_LIBRARY)
     # 게임 로직 (플랫폼 중립 — Win32 부분은 RS_WINDOWS 가드로 제외됨)
     ${CMAKE_CURRENT_SOURCE_DIR}/src/App.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ScriptRuntime.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/GameObject.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MenuState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MapState.cpp
@@ -143,6 +178,24 @@ if(NOT WIN32 AND SDL2_FOUND AND SDL2_IMAGE_LIBRARY AND SDL2_MIXER_LIBRARY)
   target_include_directories(Initial2D PRIVATE ${SDL2_IMAGE_INCLUDE_DIR})
   target_link_libraries(Initial2D PRIVATE initial2d_core vendored_tinyxml ${SDL2_IMAGE_LIBRARY})
   message(STATUS "Initial2D game executable enabled (SDL2 backend)")
+
+  # mruby 바인딩 (S1). 파일 하나에 모듈이나 클래스 하나, lua_*.cpp 와 같은 배치.
+  if(INITIAL2D_HAS_MRUBY)
+    target_sources(Initial2D PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/mrb_prot.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/mrb_input.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/mrb_audio.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/mrb_json.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/mrb_sprite.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/mrb_texture.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/mrb_tilemap.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/mrb_font.cpp
+    )
+    target_include_directories(Initial2D PRIVATE ${MRUBY_INCLUDE_DIR})
+    target_compile_definitions(Initial2D PRIVATE INITIAL2D_HAS_MRUBY ${MRUBY_DEFINITIONS})
+    target_link_libraries(Initial2D PRIVATE ${MRUBY_LIBRARY} m)
+    message(STATUS "mruby script backend enabled")
+  endif()
 else()
   message(STATUS "Initial2D game executable disabled (SDL2/SDL2_image/SDL2_mixer required)")
 endif()

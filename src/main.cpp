@@ -19,6 +19,7 @@
 #include "MenuState.h"
 
 #include "lua_tbl.h"
+#include "ScriptRuntime.h"
 
 #include "SoundManager.h"
 
@@ -116,8 +117,8 @@ void App::Initialize()
 	m_pGameStateMachine = new GameStateMachine();
 	m_pGameStateMachine->changeState(new MenuState());
 
-	// Lua Interpreter Initialization
-	Lua_Init();
+	// 스크립트 VM 초기화 (Lua 또는 mruby. 선택 규칙은 ScriptRuntime.h)
+	Script_Init();
 
 //	// 프로세스 정보 출력
 //	try {
@@ -138,7 +139,7 @@ void App::Initialize()
 */
 void App::ObjectUpdate(double elapsed)
 {
-	Lua_Update(elapsed);
+	Script_Update(elapsed);
 	m_pGameStateMachine->update(elapsed);
 }
 
@@ -147,7 +148,7 @@ void App::ObjectUpdate(double elapsed)
 */
 void App::Render()
 {
-	Lua_Render();
+	Script_Render();
 	m_pGameStateMachine->render();
 
 }
@@ -157,7 +158,7 @@ void App::Render()
 */
 void App::Destroy()
 {
-	Lua_Destory();
+	Script_Destroy();
 
 	// 입력 객체 삭제
 	DestroyFont();

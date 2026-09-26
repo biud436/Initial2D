@@ -6,12 +6,12 @@
 | :------------: | :-----------------------------------------: |
 |    Version     |                    Beta                     |
 |    Platform    |           Windows, macOS, Android           |
-|   사용 언어    |                  C++, Lua                   |
+|   사용 언어    |           C++, Lua, Ruby (mruby)            |
 |  Engine Type   |               자체 개발 엔진                |
 |    Graphics    | Windows GDI / SDL2 Renderer (macOS, Android) |
 |  이미지 포맷   |  PNG, BMP (GDI는 libpng, SDL2는 SDL2_image)  |
 |  오디오 재생   |        OGG, WAV 등 (SDL2_mixer 사용)        |
-| Script Engine  |                 Lua v5.3.5                  |
+| Script Engine  |        Lua v5.3.5, mruby 4.0 (선택)         |
 |  하드웨어 가속 |       SDL2 백엔드 지원 (GDI는 미지원)       |
 |  Bitmap Font   |        지원 (BMFont, 한글 렌더링 포함)        |
 | 동적 폰트 묘화 |       지원 (GetGlyphOutline, Windows 전용)       |
@@ -189,6 +189,7 @@ macOS 포팅을 기반으로 Android까지 확장하였습니다. 역시 AI와�
 - 세 번째 장르: 횡스크롤 액션 「알데바란」 (2026-08). 기획서 「스피카」를 게임으로 만들었고, 엔진 코드는 손대지 않았습니다. 스테이지 둘, 몬스터 여덟 ([기획서](./docs/design/aldebaran.md))
 - 알데바란을 데모에서 게임으로 (진행 중, 2026-08). 기획서에 있으나 아직 안 쓴 지도와 몬스터 규격서를 마저 꺼내고, 난이도와 마법을 다시 설계하는 장기 계획입니다. 1-2 황제의 무덤까지 만들었습니다 ([계획](./docs/prompts/aldebaran-game-meta-prompt.md))
 - 알데바란의 그림을 이미지 생성 모델에게 (진행 중, 2026-09). 코드로 찍던 도트를 GPT가 그리고, `tools/import_gpt_art.py`가 잘라서 시트로 굽습니다. 카르토와 숲 몬스터부터 바꿨고, 배경 원본은 `python3 tools/import_gpt_art.py pull far_entrance`로 `~/Downloads`에서 가져온 뒤 `python3 tools/import_gpt_art.py inspect-bg resources/aldebaran/src/gpt/far_entrance.png`로 확인하고 `python3 tools/import_gpt_art.py build-bg far_entrance --preview /tmp/far_entrance_preview.png`로 384x448 반복 배경을 굽습니다 ([메타 프롬프트](./docs/prompts/aldebaran-art-meta-prompt.md))
+- Ruby(mruby)로도 스크립트를 쓸 수 있게 (완료, 2026-09). Lua와 하나씩 짝이 되는 바인딩이고, Lua 검증 씬을 Ruby로 옮긴 것이 같은 골든 스크린샷을 통과합니다. 플래피를 Ruby로 다시 썼습니다 ([계획](./docs/plans/s1-mruby-binding.md))
 - 다음 로드맵: 에디터의 이벤트 편집기, 저장과 로드, 오토타일, 씬 스택 ([로드맵 v2](./docs/plans/roadmap-v2.md))
 
 # 스크립트 예제
@@ -545,6 +546,154 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 	-- 터치 조작 UI 표시 여부 등을 스크립트에서 결정할 때 씁니다.
 	GetPlatform()
 ```
+
+# mruby 스크립팅
+
+Lua 말고 Ruby(mruby 4.0)로도 같은 엔진을 쓸 수 있습니다. 바인딩은 Lua 함수와 하나씩 짝이 있고, Lua 검증 씬을 Ruby로 옮긴 `tests/engine/scenes/mruby_assert_scene.rb`가 Lua와 같은 골든 스크린샷을 통과합니다. 설계와 결정은 [docs/plans/s1-mruby-binding.md](./docs/plans/s1-mruby-binding.md)에 있습니다.
+
+폴더는 언어별로 나뉩니다. Lua는 `scripts/`(진입 `scripts/main.lua`), Ruby는 `scripts/ruby/`(진입 `scripts/ruby/main.rb`)입니다. 테스트도 `tests/lua/`와 `tests/ruby/`로 짝을 이룹니다.
+
+```bash
+# mruby는 Homebrew 것을 씁니다. CMake가 찾으면 자동으로 켜지고, 없으면 Lua만으로 빌드됩니다.
+brew install mruby
+cmake -B build && cmake --build build
+./build/Initial2D --features        # "lua mruby" 가 나오면 준비된 것입니다
+
+# Ruby로 쓴 플래피 (scripts/ruby/main.rb)
+INITIAL2D_SCRIPT=mruby ./build/Initial2D
+
+# 헤드리스로 몇 프레임만 돌려 확인
+INITIAL2D_SCRIPT=mruby INITIAL2D_EXIT_AFTER=60 SDL_VIDEODRIVER=dummy ./build/Initial2D
+```
+
+어느 언어로 돌릴지는 다음 순서로 정합니다. `INITIAL2D_SCRIPT=lua|mruby` 환경 변수, `game.json`의 `"script": "mruby"`, 그리고 둘 다 없으면 `scripts/main.lua`가 있는 한 Lua입니다 (`scripts/ruby/main.rb`만 있으면 mruby). mruby가 없는 빌드에서 mruby를 고르면 그 사실을 알리고 종료 코드 1로 끝납니다.
+
+## 씬 계약
+
+Lua의 `Initialize`, `Update`, `Render`, `Destroy`에 해당하는 최상위 메서드 넷입니다. 없는 것은 부르지 않습니다. 예외가 새어 나오면 메시지와 역추적을 stderr에 찍고 게임이 종료 코드 1로 끝납니다.
+
+```ruby
+def init; end             # 한 번
+def update(elapsed); end  # 고정 스텝, elapsed는 ms
+def render; end
+def destroy; end
+```
+
+```ruby
+# scripts/ruby/main.rb
+require "scripts/ruby/games/flappy"   # 한 번만 읽습니다 (.rb 자동). load 는 매번 읽습니다
+
+def init
+  $font_ready = Graphics.prepare_font("./resources/fonts/hangul.fnt")
+  # 텍스처를 읽고 스프라이트를 만듭니다 (Lua의 Image 에 해당)
+  @bird = Sprite.load("./resources/bird_276x64.png", "bird", 170, 400, 92, 64, 3)
+  @bird.loop = true
+  @bird.set_frames(0, 3)      # 둘째 인자는 끝의 다음입니다 (Lua와 같은 규칙)
+  @bird.frame_delay = 110.0
+  Audio.play_music("./resources/audio/bless.ogg", "bgm", true)
+end
+
+def update(elapsed)
+  @bird.y = @bird.y - 5 if Input.trigger?(:space) || Input.mouse_down?(:left)
+  @bird.update(elapsed)
+  System.exit if Input.trigger?(:escape)
+end
+
+def render
+  @bird.draw
+  Graphics.draw_text(30, 24, "점수 0") if $font_ready
+end
+
+def destroy
+  @bird.dispose                      # GC가 거두기도 하지만 바로 놓을 수 있습니다
+  TextureManager.remove("bird")      # 텍스처는 TextureManager 소유입니다
+end
+```
+
+## Lua 대응표
+
+이름은 Ruby 관례(snake_case, 술어는 `?`, 설정은 `=`)를 따르고, 전역 함수는 `Graphics`와 `System` 모듈로 들어갔습니다. 다른 점은 표 안에 적었습니다.
+
+| Lua | Ruby |
+| :--- | :--- |
+| `WindowWidth()`, `WindowHeight()` | `Graphics.width`, `Graphics.height` |
+| `SetRenderScale(n)`, `GetRenderScale()` | `Graphics.render_scale = n`, `Graphics.render_scale` |
+| `GetFrameCount()` | `Graphics.frame_count` |
+| `PreparaFont(path)` | `Graphics.prepare_font(path)` |
+| `DrawText(x, y, text)`, `GetTextWidth(text)` | `Graphics.draw_text(x, y, text)`, `Graphics.text_width(text)` |
+| `draw_set_color(r, g, b, a)`, `draw_point(x, y)` | `Graphics.set_color(r, g, b, a = 255)`, `Graphics.draw_point(x, y)` |
+| `GetPlatform()`, `GameExit()` | `System.platform`, `System.exit` |
+| `GetCurrentDirectory()`, `GetResourcesFiles()` | `System.current_directory`, `System.resource_files` |
+| `MessageBox(text, caption)`, `SetAppIcon(path)` | `System.message_box(text, caption = "")`, `System.app_icon = path` |
+| `os.getenv(name)` | `System.env(name)` (mruby에는 ENV가 없습니다) |
+| `LoadScript(path)`, `require(name)` | `load(path)`, `require(path)` (`.rb`를 붙이고 한 번만) |
+
+| Lua `Input` | Ruby `Input` |
+| :--- | :--- |
+| `IsKeyDown(vk)`, `IsKeyPress(vk)`, `IsKeyUp(vk)` | `key_down?(key)`, `key_press?(key)`, `key_up?(key)`. RGSS식 별명 `trigger?`, `press?`, `release?` |
+| `IsAnyKeyDown()` | `any_key_down?` |
+| `GetMouseX()`, `GetMouseY()` | `mouse_x`, `mouse_y` |
+| `IsMouseDown(0)`, `IsMouseUp`, `IsMousePress`, `IsAnyMouseDown` | `mouse_down?(:left)`, `mouse_up?`, `mouse_press?`, `any_mouse_down?` (0, 1, 2 또는 `:left`, `:right`, `:middle`) |
+| `GetMouseZ()`, `SetMouseZ(w)` | `mouse_z`, `mouse_z = w` |
+| `GetTouchCount()`, `GetTouch(i)` (1부터, 값 네 개) | `touch_count`, `touch(i)` (0부터, `[id, x, y, :down | :press | :up]`), `touches` |
+
+`key`는 가상 키 정수이거나 `Keys` 모듈의 상수 이름 Symbol입니다 (`:z`, `:space`, `:escape`, `:"0"`, `Keys::F1`). 이름을 잘못 쓰면 `ArgumentError`가 납니다.
+
+| Lua `Audio` | Ruby `Audio` |
+| :--- | :--- |
+| `PlayMusic(path, id, loop)`, `PlaySound`, `InsertNextMusic` | `play_music(path, id, loop = true)`, `play_sound(path, id, loop = false)`, `insert_next_music`. loop 규칙은 같습니다 (true 무한, false 한 번, 숫자는 SDL_mixer 값) |
+| `SetVolume(v)`, `GetVolume()` | `volume = v`, `volume` (0..255를 받고 SDL_mixer의 0..128로 읽힙니다. Lua와 같습니다) |
+| `PauseMusic`, `StopMusic`, `ResumeMusic`, `IsPlayingMusic` | `pause_music`, `stop_music`, `resume_music`, `playing_music?` |
+| `FadeOutMusic(ms)`, `SetMusicPosition(sec)`, `ReleaseMusic(id)` | `fade_out_music(ms)`, `music_position = sec`, `release_music(id)` |
+
+| Lua | Ruby |
+| :--- | :--- |
+| `TextureManager.Load(path, id)`, `Remove(id)`, `IsValid(id)` | `TextureManager.load(path, id)`, `remove(id)`, `valid?(id)` |
+| `Json.Load(path)` (실패하면 nil과 메시지) | `Json.load(path)` (실패하면 `RuntimeError`), `Json.parse(text)` |
+
+`Sprite`, `Tilemap`, `FontEx`는 Ruby에서 진짜 클래스입니다. Lua가 숫자 핸들을 넘기고 `Dispose`를 손으로 부르는 자리에서, Ruby 객체는 GC가 거두면 C++ 쪽도 함께 지워집니다. `dispose`는 그대로 있어 바로 놓을 수 있고, 놓은 뒤에 쓰면 `RuntimeError`입니다.
+
+| Lua `Sprite.*(id, ...)` | Ruby `sprite.*` |
+| :--- | :--- |
+| `Sprite.Create(x, y, w, h, frames, texId)` / `Image(path, x, y, w, h, frames, id)` | `Sprite.new(x, y, w, h, frames, tex_id)` / `Sprite.load(path, id, x, y, w, h, frames = 1)` |
+| `Update(id, e)`, `Draw(id)`, `Dispose(id)` | `update(e)`, `draw`, `dispose`, `disposed?` |
+| `GetPosition`, `SetPosition(x, y)` | `position`, `x`, `y`, `set_position(x, y)`, `x=`, `y=`, `position=` |
+| `GetScale/SetScale`, `GetAngle/SetAngle`, `GetRadians/SetRadians` | `scale`, `scale=`, `angle`, `angle=`, `radians`, `radians=` |
+| `GetWidth`, `GetHeight` | `width`, `height` |
+| `GetVisible/SetVisible`, `GetOpacity/SetOpacity` | `visible?`, `visible=`, `opacity`, `opacity=` |
+| `GetFrameDelay/SetFrameDelay`, `SetFrames(s, e)` | `frame_delay`, `frame_delay=`, `set_frames(first, last)` |
+| `GetStartFrame`, `GetEndFrame`, `GetCurrentFrame/SetCurrentFrame` | `start_frame`, `end_frame`, `current_frame`, `current_frame=` |
+| `SetLoop`, `GetAnimComplete/SetAnimComplete` | `loop=`, `anim_complete?`, `anim_complete=` |
+| `SetSheetGrid(cols, rows)` | `set_sheet_grid(cols, rows)` |
+| `GetRect()` (width 칸에 오른쪽 좌표) | `rect` (`{ x:, y:, right:, bottom:, width:, height: }`, 이름대로) |
+| `SetRect(x, y, w, h)` 또는 테이블 | `set_rect(x, y, w, h)` 또는 `set_rect(x:, y:, width:, height:)` |
+
+| Lua `Tilemap.*(handle, ...)` | Ruby `map.*` |
+| :--- | :--- |
+| `Tilemap.Load(path)` (실패하면 nil과 메시지) | `Tilemap.new(path)` (실패하면 `RuntimeError`), `Tilemap.load(path)` (nil) |
+| `Draw(h, from, to, camX, camY)` (레이어 1부터) | `draw(from, to, cam_x = 0, cam_y = 0)` (**레이어 0부터**) |
+| `GetSize(h)` (값 다섯) | `size`, 그리고 `width`, `height`, `tile_width`, `tile_height`, `layer_count` |
+| `GetTileId(h, x, y, layer)`, `SetTileId(h, x, y, layer, gid)` | `tile_id(x, y, layer)`, `set_tile_id(x, y, layer, gid)` |
+| `IsPassable(h, x, y)`, `Dispose(h)` | `passable?(x, y)`, `dispose`, `disposed?` |
+
+| Lua `FontEx.*(id, ...)` | Ruby `font.*` |
+| :--- | :--- |
+| `FontEx.Create(face, size, w, h)` | `FontEx.new(face, size, w, h)` |
+| `SetText`, `SetPosition`, `SetTextColor`, `SetOpacity`, `SetAngle` | `text=`, `set_position(x, y)`, `set_text_color(r, g, b)`, `opacity=`, `angle=` |
+| `GetTextWidth`, `Update`, `Draw`, `Dispose` | `text_width(text)`, `update(e)`, `draw`, `dispose` |
+
+동적 폰트(FontEx)는 Windows 전용이라 macOS와 Android에서는 Lua와 마찬가지로 무동작 스텁입니다.
+
+## 테스트
+
+mruby 단위 테스트는 `tests/ruby/cases/`에 두고 `tests/ruby/manifest.rb`에 명시합니다. 화면을 보는 씬은 `tests/engine/scenes/`에 `.rb`로 두면 러너가 `scripts/ruby/main.rb`로 넣어 줍니다. mruby가 없는 빌드에서는 이 테스트들이 눈에 띄게 건너뛰어지고, CI는 `brew install mruby`로 항상 켭니다.
+
+```bash
+# mruby 단위 테스트와 Ruby 씬만 빠르게 (전체는 tests/run_all.sh)
+python3 tests/run_engine_tests.py 2>&1 | grep -A3 "mruby"
+```
+
+Android 빌드에는 아직 mruby가 없습니다 (Lua만 그대로 돕니다). NDK로 libmruby를 교차 빌드해 얹는 것이 다음 일입니다.
 
 # 터치 조작 (가상 패드, 동작 버튼, 멀티터치)
 
@@ -1260,7 +1409,7 @@ actor.setPosition(100, 200)
 
 # 테스트
 
-전체 검수는 스크립트 하나로 실행합니다. C++ 단위 테스트, Lua 단위 테스트, 픽셀 검증, 골든 스크린샷 비교, 브리지 서버 테스트, RTP 변환 검증이 순서대로 수행됩니다.
+전체 검수는 스크립트 하나로 실행합니다. C++ 단위 테스트, Lua 단위 테스트, mruby 단위 테스트, 픽셀 검증, 골든 스크린샷 비교, 브리지 서버 테스트, RTP 변환 검증이 순서대로 수행됩니다.
 
 ```bash
 # 빌드부터 전체 테스트까지 한 번에 실행 (기본은 헤드리스라 창을 띄우지 않습니다. CI와 동일)
@@ -1278,6 +1427,7 @@ tests/run_all.sh --update-golden
 
 - C++ 단위 테스트는 `tests/unit/`에 파일을 만들고 `CMakeLists.txt`의 `engine_unit_tests` 목록에 추가합니다.
 - Lua 단위 테스트는 `tests/lua/cases/`에 파일을 만들고 `tests/lua/manifest.lua` 목록에 추가합니다. 엔진에 내장된 Lua VM에서 실행됩니다.
+- mruby 단위 테스트는 `tests/ruby/cases/`에 파일을 만들고 `tests/ruby/manifest.rb` 목록에 추가합니다. 화면을 보는 Ruby 씬은 `tests/engine/scenes/`에 `.rb`로 두면 `scripts/ruby/main.rb`로 들어갑니다. mruby가 없는 빌드에서는 건너뜁니다.
 - 화면을 보는 테스트는 `tests/engine/scenes/`에 씬을 만들고 `tests/run_engine_tests.py`에 검사를 추가합니다. 씬 테스트는 `scripts/`를 통째로 얹고 `main.lua`만 갈아 끼우므로, 게임이 실제로 여는 파일을 그대로 검사합니다.
 - 사람의 조작이 필요한 시나리오는 `tests/lua/input_replay.lua`로 재생합니다. 프레임 단위로 키를 예약하거나(`{ at = 10, press = "Z" }`), 화면 상태를 보고 그때그때 누를 수도 있습니다(`replay:tap("Z")`, `replay:press("LEFT")`). 고정 타임스텝이라 같은 시나리오는 항상 같은 결과를 냅니다.
 
