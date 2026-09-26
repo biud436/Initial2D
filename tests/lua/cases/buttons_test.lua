@@ -1,4 +1,4 @@
--- buttons_test.lua : 동작 버튼(scripts/ui/buttons.lua)의 판정 로직 검증 (T1)
+-- buttons_test.lua : 동작 버튼(scripts/lua/ui/buttons.lua)의 판정 로직 검증 (T1)
 --
 -- 히트 슬롭(판정 반경 1.25배), 슬롭 겹침의 승자 결정, 그리고 멀티터치로
 -- 두 버튼이 동시에 눌리는 것을 가짜 포인터와 가짜 Image로 검증한다.
@@ -24,7 +24,7 @@ local function pt(id, x, y, phase)
 end
 
 function M.run(t)
-    local Buttons = require("scripts/ui/buttons")
+    local Buttons = require("scripts/lua/ui/buttons")
     t.check_type(Buttons.hit, "function", "Buttons.hit 존재")
     t.check_type(Buttons.pick, "function", "Buttons.pick 존재")
 

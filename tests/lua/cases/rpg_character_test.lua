@@ -29,10 +29,10 @@ local function step(c, n)
 end
 
 function M.run(t)
-	local Character = require("scripts/rpg/character")
-	local Player = require("scripts/rpg/player")
-	local Rng = require("scripts/rpg/rng")
-	local replay = require("scripts/luatests/input_replay")
+	local Character = require("scripts/lua/rpg/character")
+	local Player = require("scripts/lua/rpg/player")
+	local Rng = require("scripts/lua/rpg/rng")
+	local replay = require("scripts/lua/luatests/input_replay")
 
 	-- ---- [1] 생성과 기본값 ------------------------------------------------
 	local c = Character.new{}

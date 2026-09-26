@@ -68,7 +68,7 @@ def stage_scripts(work):
     """
     scripts = os.path.join(work, "scripts")
     shutil.copytree(os.path.join(REPO, "scripts"), scripts)
-    os.remove(os.path.join(scripts, "main.lua"))   # 테스트 씬이 대신 들어온다
+    os.remove(os.path.join(scripts, "lua", "main.lua"))   # 테스트 씬이 대신 들어온다
     return scripts
 
 
@@ -77,13 +77,20 @@ def make_workdir(scene):
     os.symlink(os.path.join(REPO, "resources"), os.path.join(work, "resources"))
     scripts = stage_scripts(work)
     # 입력 재생기 (09-testing.md 3.4절) — 씬 테스트가 사람 대신 키를 누른다
-    luatests = os.path.join(scripts, "luatests")
+    luatests = os.path.join(scripts, "lua", "luatests")
     os.makedirs(luatests, exist_ok=True)
     shutil.copy(os.path.join(REPO, "tests", "lua", "input_replay.lua"), luatests)
-    # .rb 씬은 scripts/ruby/main.rb 로 들어간다 (Ruby 스크립트는 scripts/ruby/ 에 산다).
-    # main.lua 는 stage_scripts 가 지웠으므로 엔진이 스스로 mruby 를 고른다 (ScriptRuntime 의
-    # 3번 규칙). .lua 씬이면 저자의 scripts/ruby/main.rb 가 함께 복사되어 있어도 main.lua 가 이긴다.
-    entry = os.path.join("ruby", "main.rb") if scene.endswith(".rb") else "main.lua"
+    # Ruby 씬을 위한 재생기도 같은 자리에 (tests/ruby/input_replay.rb 가 있을 때)
+    rb_replay = os.path.join(REPO, "tests", "ruby", "input_replay.rb")
+    if os.path.exists(rb_replay):
+        rbtests = os.path.join(scripts, "ruby", "rbtests")
+        os.makedirs(rbtests, exist_ok=True)
+        shutil.copy(rb_replay, rbtests)
+    # 언어별 폴더: .lua 씬은 scripts/lua/main.lua 로, .rb 씬은 scripts/ruby/main.rb 로 들어간다.
+    # main.lua 는 stage_scripts 가 지웠으므로 .rb 씬이면 엔진이 스스로 mruby 를 고른다
+    # (ScriptRuntime 의 3번 규칙). .lua 씬이면 저자의 scripts/ruby/main.rb 가 함께 복사되어
+    # 있어도 main.lua 가 이긴다.
+    entry = os.path.join("ruby", "main.rb") if scene.endswith(".rb") else os.path.join("lua", "main.lua")
     shutil.copy(os.path.join(REPO, "tests", "engine", "scenes", scene),
                 os.path.join(scripts, entry))
     return work
@@ -310,10 +317,10 @@ def test_lua_units():
                     os.path.join(work, "fixtures"))
     # 테스트 대상은 저자의 scripts/ 전부다 (main.lua만 러너로 갈아 끼운다)
     scripts = stage_scripts(work)
-    luatests = os.path.join(scripts, "luatests")
+    luatests = os.path.join(scripts, "lua", "luatests")
     shutil.copytree(os.path.join(REPO, "tests", "lua"), luatests)
     shutil.move(os.path.join(luatests, "run_tests.lua"),
-                os.path.join(scripts, "main.lua"))
+                os.path.join(scripts, "lua", "main.lua"))
 
     env = dict(os.environ)
     env["INITIAL2D_EXIT_AFTER"] = "10"  # GameExit() 미동작 시의 안전망

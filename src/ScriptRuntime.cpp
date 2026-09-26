@@ -96,7 +96,7 @@ namespace
 		}
 
 		// 3. 진입 파일로 추정. main.lua 가 있으면 언제나 Lua 다 (기존 프로젝트를 깨지 않는다).
-		if (!FileExists("./scripts/main.lua") && FileExists("./scripts/ruby/main.rb"))
+		if (!FileExists("./scripts/lua/main.lua") && FileExists("./scripts/ruby/main.rb"))
 		{
 			return ScriptBackend::MRuby;
 		}

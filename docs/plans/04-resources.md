@@ -54,7 +54,7 @@
   - 기본값은 2안이다. MIDI 141개는 변환하지 않고 건너뛰며, 데모의 음악은 자작곡(`resources/audio/`)을 쓴다. 저작권이 깔끔하고 변환 품질에 좌우되지 않는다.
   - 원하면 1안을 쓴다: `--soundfont <sf2>`를 주면 fluidsynth로 렌더링하고 ffmpeg으로 OGG를 만든다. 엔진에는 MIDI 재생기를 넣지 않는다는 방침은 그대로다.
   - 동작 확인은 macOS가 갖고 있는 `gs_instruments.dls`로 했다 (fluidsynth 2.4.0이 DLS를 읽는다). 48초짜리 OGG가 정상적으로 나온다. 배포용 음원은 자유 라이선스 사운드폰트로 만들어야 한다.
-- [x] 규격 데이터 `scripts/rpg/specs.lua` 작성 (2026-08-16) — 엔진이 아니라 Lua가 아는 지식:
+- [x] 규격 데이터 `scripts/lua/rpg/specs.lua` 작성 (2026-08-16) — 엔진이 아니라 Lua가 아는 지식:
   ```lua
   return {
     charset = { sheetW = 288, sheetH = 256, perSheet = 8, blockW = 72, blockH = 128,

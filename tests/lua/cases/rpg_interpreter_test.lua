@@ -31,8 +31,8 @@ local function pump(interp, n)
 end
 
 function M.run(t)
-	local Interpreter = require("scripts/rpg/interpreter")
-	local Character = require("scripts/rpg/character")
+	local Interpreter = require("scripts/lua/rpg/interpreter")
+	local Character = require("scripts/lua/rpg/character")
 
 	-- ---- [1] 즉시 끝나는 스크립트는 조작을 잠그지 않는다 --------------------
 	local ran = false

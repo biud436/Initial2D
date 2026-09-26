@@ -60,7 +60,7 @@ graph LR
 **막히는 자리**: 잠긴 문이 영원히 잠겨 있고, 여관 주인이 말하는 은화 두 닢이 게임 안에
 없다. 선택지가 대사만 바꾼다.
 
-**만드는 것**: `scripts/rpg/inventory.lua`(소지품), `scripts/rpg/menu.lua`(소지품 창),
+**만드는 것**: `scripts/lua/rpg/inventory.lua`(소지품), `scripts/lua/rpg/menu.lua`(소지품 창),
 커맨드 `giveItem`/`takeItem`과 `{ item = ... }` 조건. 그 위에 심부름 사슬 하나.
 
 **크기**: 소. C++ 무수정.
@@ -148,7 +148,7 @@ graph LR
 | 후보 | 언제 필요해지는가 | 어디에 붙는가 | 크기 |
 |---|---|---|---|
 | 화면 효과 (색조, 픽처, 날씨) | 저녁이 오는 연출을 하고 싶을 때. 기획서 9절이 미룬 것 | C++ 렌더러 + Lua API | 중 |
-| ~~전투~~ → **앞당겨졌다** | 저자의 기획서 반입(2026-08-23)으로 **알데바란 트랙**(횡스크롤 액션, [aldebaran-1-core.md](aldebaran-1-core.md)~3)이 되었다. RPG 전투가 아니라 별도 게임이며, 전부 `scripts/games/aldebaran/` | Lua | 대 |
+| ~~전투~~ → **앞당겨졌다** | 저자의 기획서 반입(2026-08-23)으로 **알데바란 트랙**(횡스크롤 액션, [aldebaran-1-core.md](aldebaran-1-core.md)~3)이 되었다. RPG 전투가 아니라 별도 게임이며, 전부 `scripts/lua/games/aldebaran/` | Lua | 대 |
 | 데이터베이스 (아이템, 적, 스킬) | 아이템이 스무 개가 넘을 때. 지금은 Lua 표 하나로 충분하다 | 에디터 + JSON | 중 |
 | 오디오 채널 분리 (BGS, ME) | 파도 소리와 음악을 따로 다룰 때 | C++ 오디오 | 소 |
 | 다국어 | 이 게임에는 필요 없다. 다음 게임에서 | Lua | 중 |

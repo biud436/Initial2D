@@ -1,4 +1,4 @@
--- rpg_mapdata_test.lua : 맵 파일에 실려 온 이벤트(scripts/rpg/mapdata.lua) 검증
+-- rpg_mapdata_test.lua : 맵 파일에 실려 온 이벤트(scripts/lua/rpg/mapdata.lua) 검증
 -- (9단계 마일스톤 3).
 --
 -- 포맷 계약 픽스처(tests/fixtures/maps/sample_v2.json)를 진짜로 읽는다. 이 파일은
@@ -8,7 +8,7 @@
 local M = {}
 
 function M.run(t)
-	local MapData = require("scripts/rpg/mapdata")
+	local MapData = require("scripts/lua/rpg/mapdata")
 
 	-- ---- [1] v2 픽스처에서 이벤트를 읽는다 ---------------------------------
 	local events, version, err = MapData.loadEvents("./fixtures/maps/sample_v2.json")
@@ -22,11 +22,11 @@ function M.run(t)
 	t.check_eq(events[2].charset.index, 2, "외형 정보도 함께 온다")
 
 	-- JSON으로 온 커맨드도 커맨드 층이 그대로 받아들인다 (중첩 분기까지)
-	local Commands = require("scripts/rpg/commands")
+	local Commands = require("scripts/lua/rpg/commands")
 	local ok, errors = Commands.validate(events[2].commands)
 	t.check(ok, "맵에서 온 커맨드가 검증을 통과한다: " .. table.concat(errors or {}, ", "))
 
-	local Event = require("scripts/rpg/event")
+	local Event = require("scripts/lua/rpg/event")
 	local built = Event.new(events[1])
 	t.check(type(built.script) == "function", "맵에서 온 이벤트도 컴파일된다")
 

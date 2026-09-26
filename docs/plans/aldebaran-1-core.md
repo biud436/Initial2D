@@ -13,10 +13,10 @@
 
 ## 1. 원칙
 
-1. **C++ 무수정.** 횡스크롤 물리도 충돌도 전부 `scripts/games/aldebaran/` Lua다.
+1. **C++ 무수정.** 횡스크롤 물리도 충돌도 전부 `scripts/lua/games/aldebaran/` Lua다.
    엔진에는 이미 필요한 것이 다 있다: 스프라이트 시트, 타일맵과 `IsPassable`,
    카메라 오프셋 인자, 렌더 배율.
-2. **RPG 레이어를 쓰지 않는다.** `scripts/rpg/`는 그리드 이동과 이벤트의 세계다.
+2. **RPG 레이어를 쓰지 않는다.** `scripts/lua/rpg/`는 그리드 이동과 이벤트의 세계다.
    이 게임은 픽셀 단위 물리라 그 위에 얹을 것이 없다. 다만 **장르 중립 부품**은
    그대로 쓴다: `window.lua`와 `choice.lua`(창과 메뉴), `rng.lua`(시드 난수),
    `vpad.lua`와 `buttons.lua`(터치), `bgm.lua`.
@@ -86,7 +86,7 @@ RTP는 톱다운 규격(CharSet 보행 시트)이라 횡스크롤에 맞지 않�
 
 `tools/generate_aldebaran_maps.py`가 `resources/maps/aldebaran_forest.json`을 만든다.
 포맷은 v1 (이벤트를 싣지 않는다. 몬스터 배치는 씬의 스테이지 데이터
-`scripts/games/aldebaran/stage.lua`가 든다. 이벤트 커맨드는 RPG 레이어의 것이고,
+`scripts/lua/games/aldebaran/stage.lua`가 든다. 이벤트 커맨드는 RPG 레이어의 것이고,
 액션 게임의 배치는 코드에 더 가깝기 때문이다).
 
 지형은 **전부 손으로 정한 자리다. 난수로 뿌리지 않는다** (port_town과 같은 규칙).

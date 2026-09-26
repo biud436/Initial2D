@@ -1,4 +1,4 @@
--- rpg_map_scene_test.lua : 타일맵 + 캐릭터 + 카메라를 묶는 층(scripts/rpg/map_scene.lua) 검증.
+-- rpg_map_scene_test.lua : 타일맵 + 캐릭터 + 카메라를 묶는 층(scripts/lua/rpg/map_scene.lua) 검증.
 --
 -- character/camera와 달리 이 모듈은 엔진(Tilemap, Sprite)에 닿는다. Lua 단위
 -- 테스트가 엔진 바이너리 안에서 돌기 때문에 여기서도 진짜 타일맵을 쓴다.
@@ -25,7 +25,7 @@ local function fakeTilemap(layerCount)
 end
 
 function M.run(t)
-	local MapScene = require("scripts/rpg/map_scene")
+	local MapScene = require("scripts/lua/rpg/map_scene")
 
 	-- ---- [0] 그리는 순서: 하층 → 캐릭터 → 상층 ----------------------------
 	-- 캐릭터 프레임(24x32)이 타일(16x16)보다 커서 머리가 윗 칸으로 올라간다.

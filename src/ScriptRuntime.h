@@ -6,9 +6,9 @@
  * 어느 언어로 게임을 쓸지는 다음 순서로 정한다.
  *   1. INITIAL2D_SCRIPT 환경 변수 ("lua" | "mruby")
  *   2. 프로젝트 루트 game.json 의 "script" 키
- *   3. scripts/ruby/main.rb 만 있고 scripts/main.lua 가 없으면 mruby, 그 밖에는 lua
+ *   3. scripts/ruby/main.rb 만 있고 scripts/lua/main.lua 가 없으면 mruby, 그 밖에는 lua
  *
- * Lua 스크립트는 scripts/ 에, Ruby 스크립트는 scripts/ruby/ 에 둔다.
+ * Lua 스크립트는 scripts/lua/ 에, Ruby 스크립트는 scripts/ruby/ 에 둔다.
  *
  * mruby 는 빌드에 들어 있을 때만 쓸 수 있다 (CMake 가 libmruby 를 찾으면
  * INITIAL2D_HAS_MRUBY 를 정의한다). 없는데 고르면 오류를 내고 종료 코드 1로 끝난다.

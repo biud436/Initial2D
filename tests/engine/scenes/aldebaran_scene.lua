@@ -1,6 +1,6 @@
 -- 알데바란 인수 시나리오 — tests/run_engine_tests.py가 구동한다.
 --
--- 게임이 실제로 여는 파일(scripts/games/aldebaran/*.lua)을 얹고 입력 재생기로
+-- 게임이 실제로 여는 파일(scripts/lua/games/aldebaran/*.lua)을 얹고 입력 재생기로
 -- 처음부터 끝까지 통과한다:
 --
 --   타이틀 → 도입 컷씬 → (일부러 맞아 죽어) 게임 오버와 다시 하기
@@ -15,7 +15,7 @@
 --
 -- INITIAL2D_ALDEBARAN_STOP=start | title | touch 면 그 화면을 고정한다 (골든용).
 
-local replay = require("scripts/luatests/input_replay")
+local replay = require("scripts/lua/luatests/input_replay")
 
 local r = nil
 local stopMode = nil
@@ -132,7 +132,7 @@ end
 
 local function runTouch()
 	-- 좌표를 하드코딩하지 않는다. 배치는 화면 크기에서 계산되므로(T1,
-	-- scripts/ui/layout.lua) status()가 노출하는 계산된 중심을 누른다.
+	-- scripts/lua/ui/layout.lua) status()가 노출하는 계산된 중심을 누른다.
 	local c = st().touchControls
 	print("touchControls:" .. tostring(c ~= nil))
 	local function press(x, y)
@@ -407,8 +407,8 @@ end
 function Initialize()
 	stopMode = (os.getenv ~= nil) and os.getenv("INITIAL2D_ALDEBARAN_STOP") or nil
 
-	require("scripts/games/aldebaran/title")
-	require("scripts/games/aldebaran/game")
+	require("scripts/lua/games/aldebaran/title")
+	require("scripts/lua/games/aldebaran/game")
 	scenes = { aldebaran_title = AldebaranTitleScene, aldebaran = AldebaranScene }
 	FontReady = PreparaFont("./resources/fonts/hangul.fnt")
 
@@ -447,7 +447,7 @@ function Initialize()
 	-- 화면 폭 전체에 있는지 픽셀로 본다 (판정은 run_engine_tests.py).
 	-- 결정성을 위해 수위를 고정하고 배치를 비운다 — 그리기 경로는 실물 그대로다.
 	if stopMode == "flood" then
-		local Stages = require("scripts/games/aldebaran/stages/init")
+		local Stages = require("scripts/lua/games/aldebaran/stages/init")
 		local stage = Stages.get("tomb")
 		stage.CLIMATE.sun = { kind = "flood", period = 9.0, low = 356, high = 356,
 			moveMult = 0.55, jumpMult = 0.72 }

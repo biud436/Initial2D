@@ -1,4 +1,4 @@
--- rpg_message_test.lua : 대화창(scripts/rpg/message.lua) 검증.
+-- rpg_message_test.lua : 대화창(scripts/lua/rpg/message.lua) 검증.
 --
 -- 타자 효과, 쪽 나눔, 얼굴, 그리고 실행기(interpreter.lua)와의 연결을 본다.
 -- 폭 측정은 가짜(한 글자 10픽셀)라 줄바꿈 위치가 글자 수로 계산된다.
@@ -28,14 +28,14 @@ local function fakeImageFactory(log)
 end
 
 local function fakeMeasure(text)
-	local Text = require("scripts/rpg/text")
+	local Text = require("scripts/lua/rpg/text")
 	return Text.length(text) * CHAR_W
 end
 
 --- 창 폭 200 = 글자 18개 (여백 16을 빼면 184 → 18글자), 한 쪽에 두 줄인 대화창
 local function newDialogue(opts)
-	local Window = require("scripts/rpg/window")
-	local Dialogue = require("scripts/rpg/message")
+	local Window = require("scripts/lua/rpg/window")
+	local Dialogue = require("scripts/lua/rpg/message")
 	opts = opts or {}
 	local drawLog = opts.drawLog or {}
 	local skin = Window.newSkin{ path = "skin.png", scale = 1,
@@ -59,7 +59,7 @@ local function pump(dlg, n, input)
 end
 
 function M.run(t)
-	local Text = require("scripts/rpg/text")
+	local Text = require("scripts/lua/rpg/text")
 
 	-- ---- [1] 쪽 나눔: 폭에 맞춰 줄로, 줄 수에 맞춰 쪽으로 ------------------
 	local dlg = newDialogue()
@@ -163,7 +163,7 @@ function M.run(t)
 	t.check_eq(closing.page, 0, "닫힌 뒤에는 지난 대사를 버린다")
 
 	-- ---- [8.5] 다음을 기다릴 때 스킨의 화살표가 깜빡인다 --------------------
-	local Specs = require("scripts/rpg/specs")
+	local Specs = require("scripts/lua/rpg/specs")
 	local arrowLog = {}
 	local waiting = newDialogue{ drawLog = arrowLog, speed = 0 }
 	waiting:showMessage("가나다")
@@ -180,7 +180,7 @@ function M.run(t)
 	t.check(drewArrow(arrowLog), "다 나온 뒤에는 대기 화살표를 그린다")
 
 	-- 깜빡임의 꺼진 구간에서는 그리지 않는다
-	local Message = require("scripts/rpg/message")
+	local Message = require("scripts/lua/rpg/message")
 	for _ = 1, Message.ARROW_BLINK_FRAMES do waiting:update({}, true) end
 	local offLog = {}
 	waiting.skin.cache = {}                       -- 새 기록으로 갈아 끼운다
@@ -205,7 +205,7 @@ function M.run(t)
 	t.check_eq(beeps.decision, 1, "결정음은 대사를 넘길 때")
 
 	-- ---- [10] 실행기와 실제로 연결한다 --------------------------------------
-	local Interpreter = require("scripts/rpg/interpreter")
+	local Interpreter = require("scripts/lua/rpg/interpreter")
 	local dlg3 = newDialogue{ speed = 0 }     -- speed 0 = 즉시 전부 표시
 	local interp = Interpreter.new{ messagePort = dlg3:port() }
 	local picked = nil

@@ -10,8 +10,8 @@ Lua 스크립트로 게임을 만드는 범용 2D 엔진. Windows(GDI), macOS(SD
 
 ## 설계 원칙
 
-- **범용 엔진이다.** RPG Maker급 게임도, 플래피버드도 만들 수 있어야 한다. RPG 전용 개념(캐릭터, 이벤트, 대화창)은 C++ 코어에 넣지 않고 `scripts/rpg/` Lua 레이어에 둔다. 판단 기준: "이 기능이 플래피버드에도 말이 되는가?"
-- **게임 로직과 콘텐츠는 Lua**(`scripts/`), C++은 엔진과 플랫폼 어댑터만.
+- **범용 엔진이다.** RPG Maker급 게임도, 플래피버드도 만들 수 있어야 한다. RPG 전용 개념(캐릭터, 이벤트, 대화창)은 C++ 코어에 넣지 않고 `scripts/lua/rpg/` Lua 레이어에 둔다. 판단 기준: "이 기능이 플래피버드에도 말이 되는가?"
+- **게임 로직과 콘텐츠는 스크립트**(Lua는 `scripts/lua/`, Ruby(mruby)는 `scripts/ruby/`), C++은 엔진과 플랫폼 어댑터만. Lua가 기본이고 Ruby는 같은 엔진 API의 두 번째 언어다 (`docs/plans/s1-mruby-binding.md`).
 - Windows GDI 코드(`archive/windows-gdi` 브랜치와 `RS_WINDOWS` 경로)는 수정하지 않는다.
 - `resources/RTP.zip`과 그 변환 결과물은 라이선스상 git에 커밋 금지 (gitignore 유지).
 

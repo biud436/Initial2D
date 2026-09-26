@@ -24,7 +24,7 @@
 -- 누른 첫 틱은 "down", 이후 "press", 뗀 틱은 "up"으로 한 틱 보인 뒤 사라진다.
 --
 -- 사용법 (씬의 Update 첫 줄에서 tick을 호출한다):
---   local replay = require("scripts/luatests/input_replay")
+--   local replay = require("scripts/lua/luatests/input_replay")
 --   local r = replay.new(scenario)
 --   r:install()            -- _G.Input 을 교체
 --   function Update(e) r:tick() ... end

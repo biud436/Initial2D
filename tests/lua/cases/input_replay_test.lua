@@ -1,7 +1,7 @@
 -- input_replay_test.lua : 입력 시퀀스 재생기의 상태 전이 의미 검증.
 -- 엔진의 4-상태 머신(KB_DOWN, KB_PRESS, KB_UP)과 동일해야 한다.
 
-local replay = require("scripts/luatests/input_replay")
+local replay = require("scripts/lua/luatests/input_replay")
 
 local M = {}
 
@@ -60,7 +60,7 @@ function M.run(t)
     t.check(r:finished(), "프레임 7: 시나리오 종료 판정")
 
     -- ---- 대화형 예약 (8단계: 화면을 보고 다음 입력을 정하는 시나리오) ------
-    local live = require("scripts/luatests/input_replay").new({})
+    local live = require("scripts/lua/luatests/input_replay").new({})
     local Z = 90
 
     live:tap("Z")

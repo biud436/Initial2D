@@ -8,8 +8,8 @@
 -- 러너가 파일이 있을 때만 실행하며, 골든 스크린샷도 두지 않는다 (RTP 그림을
 -- 저장소에 남기지 않기 위해서다).
 
-local Image = require("scripts/image")
-local Specs = require("scripts/rpg/specs")
+local Image = require("scripts/lua/image")
+local Specs = require("scripts/lua/rpg/specs")
 
 local backdrop = nil
 local actor = nil

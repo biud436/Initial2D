@@ -1,11 +1,11 @@
--- rpg_inventory_test.lua : 소지품(scripts/rpg/inventory.lua) 검증 (10단계).
+-- rpg_inventory_test.lua : 소지품(scripts/lua/rpg/inventory.lua) 검증 (10단계).
 --
 -- 소지품은 상태 테이블 위의 순수 함수라 엔진 없이 전부 검사된다.
 
 local M = {}
 
 function M.run(t)
-	local Inventory = require("scripts/rpg/inventory")
+	local Inventory = require("scripts/lua/rpg/inventory")
 
 	-- ---- [1] 세기와 더하기 --------------------------------------------------
 	local state = {}

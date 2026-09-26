@@ -18,7 +18,7 @@
 - 원안 docx: 표 58개, 최상위 문단 237개(빈 문단 포함), 이미지 17장
   (png 7, jpeg 6, emf 4). `docs/design/.gitignore`가 docx를 이미 막고 있다.
 - 채굴 산출물 없음. `docs/design/spica-source/`도 `tools/spica_extract.py`도 없다.
-- 몬스터 데이터는 `scripts/games/aldebaran/stage.lua`의 `M.species` 표 하나이고
+- 몬스터 데이터는 `scripts/lua/games/aldebaran/stage.lua`의 `M.species` 표 하나이고
   종별 4종, 칸은 전투 8칸 + 스프라이트 7칸이다. `data/` 디렉터리는 아직 없다.
 - `M.species`를 읽는 곳은 `game.lua` 다섯 군데뿐이다
   (`game.lua:200,203,411,504,972`). 테스트는 표시 이름(`def.name`)으로만 본다.
@@ -36,7 +36,7 @@
       항목마다 `원안 절 / 내용 요약 / 게임성 가치(상중하) / 갈 Phase / 기각이면 이유`.
       **반드시 들어갈 항목**: 12 스테이지 구조, 적의 4가지 공격 방식, 몬스터 규격서의
       미사용 칸 전부, 상태 이상(마비와 독), 스킬 시스템, 상점 3화폐, 세계 지도.
-- [x] 6. **`scripts/games/aldebaran/data/monsters.lua`**: 원안 표 39와 40의 칸을 전부 가진
+- [x] 6. **`scripts/lua/games/aldebaran/data/monsters.lua`**: 원안 표 39와 40의 칸을 전부 가진
       스키마. 값이 없으면 `nil`. `stage.lua`의 종별 표를 그리로 옮기고 `stage.lua`는
       다시 내보내기만 한다(`game.lua`는 고치지 않는다).
 - [x] 7. **스키마 단위 테스트**: 모든 종이 필수 칸을 갖는지, 원안 칸 이름과 어긋나지 않는지.
@@ -80,7 +80,7 @@
 | 문단 | `docs/design/spica-source/text.md` (제목 77, 글자 있는 문단 53) |
 | 이미지 17장 | `docs/design/spica-source/media.md`. `.emf` 넷은 감싼 DIB를 꺼내 PNG로 변환 |
 | 미채택 목록 | `docs/design/spica-unused.md` |
-| 몬스터 규격서 | `scripts/games/aldebaran/data/monsters.lua` (평평한 칸 + `spec` 두 층, 검사기) |
+| 몬스터 규격서 | `scripts/lua/games/aldebaran/data/monsters.lua` (평평한 칸 + `spec` 두 층, 검사기) |
 | 단위 테스트 | `tests/lua/cases/aldebaran_monsters_data_test.lua` (64건) |
 | 문서 | README에 채굴 도구 절 추가 |
 

@@ -1,4 +1,4 @@
--- layout_test.lua : 터치 컨트롤 배치(scripts/ui/layout.lua)의 순수 로직 검증 (T1)
+-- layout_test.lua : 터치 컨트롤 배치(scripts/lua/ui/layout.lua)의 순수 로직 검증 (T1)
 --
 -- Android는 논리 높이가 고정(448)이고 가로만 기기 비율대로 늘어난다.
 -- 데스크톱 미리보기(384)부터 좁은 화면 방어(300), 태블릿(597), 16:9(796),
@@ -16,7 +16,7 @@ local DEFS = {
 }
 
 function M.run(t)
-    local Layout = require("scripts/ui/layout")
+    local Layout = require("scripts/lua/ui/layout")
     t.check_type(Layout.metrics, "function", "Layout.metrics 존재")
     t.check_type(Layout.controls, "function", "Layout.controls 존재")
 

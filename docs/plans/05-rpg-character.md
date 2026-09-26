@@ -3,12 +3,12 @@
 **권장 모델**: Claude Opus 5 — 명세가 상세한 Lua 구현이며, 이동의 손맛 같은 짧은 조정을 여러 번 반복하는 작업이다. 로드맵의 최소 기준선인 Opus 5로 진행한다.
 
 > 목표: CharSet 캐릭터가 타일맵 위를 걸어다닌다. 4방향 걷기 애니메이션, 그리드 이동, 충돌, 카메라 추적까지.
-> 여기서부터 RPG 프레임워크 레이어다. **전부 Lua**(`scripts/rpg/`)로 작성하며 C++ 수정은 원칙적으로 없다.
+> 여기서부터 RPG 프레임워크 레이어다. **전부 Lua**(`scripts/lua/rpg/`)로 작성하며 C++ 수정은 원칙적으로 없다.
 
 ## 구조
 
 ```
-scripts/rpg/
+scripts/lua/rpg/
   specs.lua       -- 리소스 규격 데이터 (4단계)
   character.lua   -- 맵 위의 움직이는 객체 (플레이어와 NPC 공용)
   player.lua      -- 입력을 character에 연결
@@ -43,8 +43,8 @@ scripts/rpg/
 - [x] `player.lua`: 방향키 입력 처리 (`Input.IsKeyDown`), 이동 큐
 - [x] `camera.lua`: 추적과 클램프
 - [x] `map_scene.lua`: 맵 로드, 캐릭터 등록, y정렬 그리기, 갱신 루프
-- [x] NPC 자동 이동(랜덤 걷기)을 `character.lua`의 이동 루틴으로 구현 — 6단계의 이동 루트 기능의 토대. 난수는 반드시 시드 주입이 가능한 `rpg.rng` 래퍼를 통해서만 쓴다 (결정적 재생을 위한 규칙, [09-testing.md](09-testing.md) 4절). — `scripts/rpg/rng.lua`, 배회는 `Character:setWander{ rng = ... }`로만 켤 수 있다 (rng 없이 부르면 오류)
-- [x] 데모 씬: 에디터로 만든 맵(3단계 산출물) 위에서 플레이어가 걸어다니고 NPC 두어 명이 배회 — `scripts/games/rpg_demo.lua`, 메뉴 허브에 "RPG 캐릭터"로 등록. 맵과 CharSet은 `INITIAL2D_MAP`, `INITIAL2D_CHARSET`으로 바꿀 수 있다
+- [x] NPC 자동 이동(랜덤 걷기)을 `character.lua`의 이동 루틴으로 구현 — 6단계의 이동 루트 기능의 토대. 난수는 반드시 시드 주입이 가능한 `rpg.rng` 래퍼를 통해서만 쓴다 (결정적 재생을 위한 규칙, [09-testing.md](09-testing.md) 4절). — `scripts/lua/rpg/rng.lua`, 배회는 `Character:setWander{ rng = ... }`로만 켤 수 있다 (rng 없이 부르면 오류)
+- [x] 데모 씬: 에디터로 만든 맵(3단계 산출물) 위에서 플레이어가 걸어다니고 NPC 두어 명이 배회 — `scripts/lua/games/rpg_demo.lua`, 메뉴 허브에 "RPG 캐릭터"로 등록. 맵과 CharSet은 `INITIAL2D_MAP`, `INITIAL2D_CHARSET`으로 바꿀 수 있다
 
 ## 완료 기준
 

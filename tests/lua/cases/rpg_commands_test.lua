@@ -1,4 +1,4 @@
--- rpg_commands_test.lua : 이벤트 커맨드(scripts/rpg/commands.lua) 검증 (9단계).
+-- rpg_commands_test.lua : 이벤트 커맨드(scripts/lua/rpg/commands.lua) 검증 (9단계).
 --
 -- 커맨드는 데이터라 실행기 없이도 검사할 수 있다. 여기서는 컴파일한 함수를
 -- 코루틴 없이 직접 부르고, ctx를 가짜로 주입해 "어떤 호출이 어떤 순서로
@@ -40,7 +40,7 @@ local function fakeCtx(picks)
 end
 
 function M.run(t)
-	local Commands = require("scripts/rpg/commands")
+	local Commands = require("scripts/lua/rpg/commands")
 
 	-- ---- [1] 커맨드 목록은 순서대로 실행된다 --------------------------------
 	local ctx = fakeCtx()
@@ -216,7 +216,7 @@ function M.run(t)
 		"등록되지 않은 스크립트 이름: " .. table.concat(badScript, ""))
 
 	-- ---- [9.5] 아이템 커맨드와 아이템 조건 (10단계) -------------------------
-	local Inventory = require("scripts/rpg/inventory")
+	local Inventory = require("scripts/lua/rpg/inventory")
 
 	local itemCtx = fakeCtx()
 	Commands.compile({
@@ -271,7 +271,7 @@ function M.run(t)
 		"목록이 문서(10-demo-v2.md 3.2 + 11-game-systems.md 4.2)와 같다")
 
 	-- ---- [11] event.lua 가 커맨드를 받아들인다 ------------------------------
-	local Event = require("scripts/rpg/event")
+	local Event = require("scripts/lua/rpg/event")
 	local ev = Event.new{ id = "sign", x = 1, y = 2, trigger = "action",
 		commands = { { code = "message", text = "간판이다" } } }
 	t.check(type(ev.script) == "function", "커맨드가 스크립트 함수로 컴파일된다")

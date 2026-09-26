@@ -58,7 +58,7 @@ INITIAL2D_SCENE=aldebaran INITIAL2D_ALDEBARAN_STAGE=tomb \
 
 폭주와 검기 방출은 처음에는 쓸 수 없고, 숲에서 흔적을 찾아야 얻습니다.
 
-터치는 멀티터치입니다. 왼손으로 패드를 잡아 달리면서 오른손으로 점프와 공격을 동시에 누를 수 있습니다. 패드는 조이스틱처럼 동작해서, 한 번 잡으면 손가락이 원 밖으로 미끄러져도 방향이 끊기지 않습니다. 컨트롤의 크기와 위치는 화면 크기에 비례해 계산되므로 어떤 해상도의 기기에서도 같은 손맛이 나옵니다 (`scripts/ui/layout.lua`). 한 손가락으로만 조작할 때를 위한 배려도 남아 있습니다. 공중에서는 관성이 유지되고, 패드에서 손을 뗀 뒤 0.18초 안의 점프는 직전 달리기 속도를 잇습니다.
+터치는 멀티터치입니다. 왼손으로 패드를 잡아 달리면서 오른손으로 점프와 공격을 동시에 누를 수 있습니다. 패드는 조이스틱처럼 동작해서, 한 번 잡으면 손가락이 원 밖으로 미끄러져도 방향이 끊기지 않습니다. 컨트롤의 크기와 위치는 화면 크기에 비례해 계산되므로 어떤 해상도의 기기에서도 같은 손맛이 나옵니다 (`scripts/lua/ui/layout.lua`). 한 손가락으로만 조작할 때를 위한 배려도 남아 있습니다. 공중에서는 관성이 유지되고, 패드에서 손을 뗀 뒤 0.18초 안의 점프는 직전 달리기 속도를 잇습니다.
 
 ## 스테이지 1-1 검은 안개의 숲
 
@@ -116,7 +116,7 @@ INITIAL2D_SCENE=aldebaran INITIAL2D_ALDEBARAN_STAGE=tomb \
 | `data/monsters.lua` | 종별 능력치, 기획서 규격서의 칸(`spec`), 공격 방식, 보스 페이즈 표 |
 | `hud.lua` | HP/MP/EXP 막대와 목숨, 골드 |
 
-경로는 전부 `scripts/games/aldebaran/` 아래입니다.
+경로는 전부 `scripts/lua/games/aldebaran/` 아래입니다.
 
 ```bash
 # 첫 화면을 헤드리스로 찍어 눈으로 확인
@@ -199,8 +199,8 @@ C++ 에선 내부적으로 WinMain을 Entry Point로 삼고 초기화를 거치�
 Initialize 함수가 유일한 Entry Point 입니다. 다음으로 중요한 함수는 Update 함수와 Render 함수로 매 프레임마다 호출되며 마지막으로 Destroy 함수에서 메모리 해제를 합니다.
 
 ```lua
-local Font = require("scripts/Font")
-local Image = require("scripts/image")
+local Font = require("scripts/lua/Font")
+local Image = require("scripts/lua/image")
 
 function Initialize()
 
@@ -462,7 +462,7 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 
 # Tilemap
 
-맵 포맷 v1(JSON)을 로드해 그리는 다층 타일맵입니다. 화면에 보이는 타일만 그리므로(컬링) 화면보다 큰 맵을 카메라 오프셋으로 스크롤할 수 있습니다. 포맷 명세는 `docs/plans/02-tilemap.md`, 샘플 맵은 `resources/maps/sample.json`에 있으며, 게임 메뉴의 **타일맵 데모**(`scripts/games/tilemap_demo.lua`)가 사용 예제입니다.
+맵 포맷 v1(JSON)을 로드해 그리는 다층 타일맵입니다. 화면에 보이는 타일만 그리므로(컬링) 화면보다 큰 맵을 카메라 오프셋으로 스크롤할 수 있습니다. 포맷 명세는 `docs/plans/02-tilemap.md`, 샘플 맵은 `resources/maps/sample.json`에 있으며, 게임 메뉴의 **타일맵 데모**(`scripts/lua/games/tilemap_demo.lua`)가 사용 예제입니다.
 
 좌표 규약: `x`, `y`는 0부터 시작하는 타일 좌표, `layer`는 1부터 시작하는 레이어 번호, `camX`, `camY`는 월드 픽셀 단위 카메라 좌상단입니다.
 
@@ -551,7 +551,7 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 
 Lua 말고 Ruby(mruby 4.0)로도 같은 엔진을 쓸 수 있습니다. 바인딩은 Lua 함수와 하나씩 짝이 있고, Lua 검증 씬을 Ruby로 옮긴 `tests/engine/scenes/mruby_assert_scene.rb`가 Lua와 같은 골든 스크린샷을 통과합니다. 설계와 결정은 [docs/plans/s1-mruby-binding.md](./docs/plans/s1-mruby-binding.md)에 있습니다.
 
-폴더는 언어별로 나뉩니다. Lua는 `scripts/`(진입 `scripts/main.lua`), Ruby는 `scripts/ruby/`(진입 `scripts/ruby/main.rb`)입니다. 테스트도 `tests/lua/`와 `tests/ruby/`로 짝을 이룹니다.
+폴더는 언어별로 나뉩니다. Lua는 `scripts/lua/`(진입 `scripts/lua/main.lua`), Ruby는 `scripts/ruby/`(진입 `scripts/ruby/main.rb`)입니다. 테스트도 `tests/lua/`와 `tests/ruby/`로 짝을 이룹니다. 에디터 브리지와 핫 리로드, 안드로이드 에셋 스테이징은 `scripts/` 전체를 다루므로 두 언어의 파일을 함께 나릅니다.
 
 ```bash
 # mruby는 Homebrew 것을 씁니다. CMake가 찾으면 자동으로 켜지고, 없으면 Lua만으로 빌드됩니다.
@@ -566,7 +566,7 @@ INITIAL2D_SCRIPT=mruby ./build/Initial2D
 INITIAL2D_SCRIPT=mruby INITIAL2D_EXIT_AFTER=60 SDL_VIDEODRIVER=dummy ./build/Initial2D
 ```
 
-어느 언어로 돌릴지는 다음 순서로 정합니다. `INITIAL2D_SCRIPT=lua|mruby` 환경 변수, `game.json`의 `"script": "mruby"`, 그리고 둘 다 없으면 `scripts/main.lua`가 있는 한 Lua입니다 (`scripts/ruby/main.rb`만 있으면 mruby). mruby가 없는 빌드에서 mruby를 고르면 그 사실을 알리고 종료 코드 1로 끝납니다.
+어느 언어로 돌릴지는 다음 순서로 정합니다. `INITIAL2D_SCRIPT=lua|mruby` 환경 변수, `game.json`의 `"script": "mruby"`, 그리고 둘 다 없으면 `scripts/lua/main.lua`가 있는 한 Lua입니다 (`scripts/ruby/main.rb`만 있으면 mruby). mruby가 없는 빌드에서 mruby를 고르면 그 사실을 알리고 종료 코드 1로 끝납니다.
 
 ## 씬 계약
 
@@ -701,15 +701,15 @@ Android 빌드에는 아직 mruby가 없습니다 (Lua만 그대로 돕니다). 
 
 | 모듈 | 역할 |
 | :--- | :--- |
-| `scripts/ui/vpad.lua` | 가상 패드. 조이스틱처럼 동작합니다. 패드 안에서 눌린 손가락을 잡고, 잡힌 동안에는 원 밖으로 끌어도 방향이 유지됩니다 |
-| `scripts/ui/buttons.lua` | 동작 버튼. 손가락마다 따로 판정하므로 두 버튼을 동시에 누를 수 있고, 판정 반경은 표시 반경의 1.25배입니다 (작은 버튼도 누르기 쉽게) |
-| `scripts/ui/layout.lua` | 화면 크기에서 패드와 버튼의 위치와 크기를 계산하는 순수 함수. 크기는 화면 높이에 비례하고 위치는 모서리 앵커입니다 |
-| `scripts/ui/touch.lua` | 터치와 마우스를 포인터 목록 하나로 합칩니다. 멀티터치 API가 없는 환경에서는 마우스만 남아 단일 터치처럼 동작합니다 |
+| `scripts/lua/ui/vpad.lua` | 가상 패드. 조이스틱처럼 동작합니다. 패드 안에서 눌린 손가락을 잡고, 잡힌 동안에는 원 밖으로 끌어도 방향이 유지됩니다 |
+| `scripts/lua/ui/buttons.lua` | 동작 버튼. 손가락마다 따로 판정하므로 두 버튼을 동시에 누를 수 있고, 판정 반경은 표시 반경의 1.25배입니다 (작은 버튼도 누르기 쉽게) |
+| `scripts/lua/ui/layout.lua` | 화면 크기에서 패드와 버튼의 위치와 크기를 계산하는 순수 함수. 크기는 화면 높이에 비례하고 위치는 모서리 앵커입니다 |
+| `scripts/lua/ui/touch.lua` | 터치와 마우스를 포인터 목록 하나로 합칩니다. 멀티터치 API가 없는 환경에서는 마우스만 남아 단일 터치처럼 동작합니다 |
 
 ```lua
-	local VirtualPad = require("scripts/ui/vpad")
-	local Buttons = require("scripts/ui/buttons")
-	local Layout = require("scripts/ui/layout")
+	local VirtualPad = require("scripts/lua/ui/vpad")
+	local Buttons = require("scripts/lua/ui/buttons")
+	local Layout = require("scripts/lua/ui/layout")
 
 	if VirtualPad.shouldShow() then
 		-- 화면 크기 비례 배치: 좌하단 패드, 우하단 주 버튼과 보조 버튼, 우상단 시스템 버튼
@@ -743,7 +743,7 @@ Android 빌드에는 아직 mruby가 없습니다 (Lua만 그대로 돕니다). 
 
 # RPG 프레임워크 (Lua)
 
-타일맵 위를 걸어다니는 캐릭터를 만드는 Lua 레이어입니다 (`scripts/rpg/`). 엔진은 장르 중립으로 두고 캐릭터, 이동, 카메라 같은 개념은 전부 스크립트에 두었습니다. 게임 메뉴의 **떠나기 전에**(`scripts/games/rpgdemo/`)가 사용 예제입니다.
+타일맵 위를 걸어다니는 캐릭터를 만드는 Lua 레이어입니다 (`scripts/lua/rpg/`). 엔진은 장르 중립으로 두고 캐릭터, 이동, 카메라 같은 개념은 전부 스크립트에 두었습니다. 게임 메뉴의 **떠나기 전에**(`scripts/lua/games/rpgdemo/`)가 사용 예제입니다.
 
 | 모듈 | 역할 |
 | :--- | :--- |
@@ -761,9 +761,9 @@ Android 빌드에는 아직 mruby가 없습니다 (Lua만 그대로 돕니다). 
 | `specs.lua` | CharSet, FaceSet, ChipSet의 규격 데이터 |
 
 ```lua
-	local MapScene = require("scripts/rpg/map_scene")
-	local Player = require("scripts/rpg/player")
-	local Rng = require("scripts/rpg/rng")
+	local MapScene = require("scripts/lua/rpg/map_scene")
+	local Player = require("scripts/lua/rpg/player")
+	local Rng = require("scripts/lua/rpg/rng")
 
 	local CHARSET = "./resources/charsets/placeholder.png"
 
@@ -788,7 +788,7 @@ Android 빌드에는 아직 mruby가 없습니다 (Lua만 그대로 돕니다). 
 **어디까지가 하층인지는 맵마다 정합니다.** 머리가 윗 칸으로 올라간다는 것은, 그 칸의 타일이 캐릭터보다 앞에 그려지면 머리를 덮는다는 뜻이기도 합니다. 집 벽처럼 **앞에 서는** 것은 하층이어야 하고, 빨래줄처럼 **밑을 지나가는** 것만 상층입니다.
 
 ```lua
-	-- scripts/maps/port_town.lua
+	-- scripts/lua/maps/port_town.lua
 	return {
 		map = "./resources/maps/port_town.json",   -- 레이어: ground, deco, over
 		groundLayers = 2,                          -- ground와 deco가 캐릭터 아래
@@ -800,7 +800,7 @@ Android 빌드에는 아직 mruby가 없습니다 (Lua만 그대로 돕니다). 
 
 데모는 렌더 배율 2로 돌아갑니다 (16픽셀 타일을 1:1로 그리면 캐릭터가 점처럼 보입니다). 배율은 `INITIAL2D_RPG_SCALE`로 바꿀 수 있고, 씬을 나갈 때 1로 되돌아갑니다. 조작 안내는 4초 뒤 사라지며, 좌표와 FPS는 `INITIAL2D_DEBUG=1`일 때만 표시됩니다.
 
-캐릭터 시트 규격(288x256 한 장에 8명, 한 명은 24x32 3프레임 4방향)은 `scripts/rpg/specs.lua`에 데이터로 있습니다. 커밋된 `resources/charsets/placeholder.png`는 `python3 tools/generate_charset.py`로 다시 만들 수 있습니다. RPG Maker 2003 정품 보유자가 `tools/rtp_import.py`로 변환해 두었다면 데모가 `resources/rtp/CharSet/Actor1.png`를 자동으로 쓰며, `INITIAL2D_CHARSET`으로 다른 시트를 지정할 수도 있습니다.
+캐릭터 시트 규격(288x256 한 장에 8명, 한 명은 24x32 3프레임 4방향)은 `scripts/lua/rpg/specs.lua`에 데이터로 있습니다. 커밋된 `resources/charsets/placeholder.png`는 `python3 tools/generate_charset.py`로 다시 만들 수 있습니다. RPG Maker 2003 정품 보유자가 `tools/rtp_import.py`로 변환해 두었다면 데모가 `resources/rtp/CharSet/Actor1.png`를 자동으로 쓰며, `INITIAL2D_CHARSET`으로 다른 시트를 지정할 수도 있습니다.
 
 난수는 반드시 `rng.lua`의 시드 주입 래퍼로 씁니다. 전역 `math.random`을 쓰면 누가 언제 몇 번 뽑았는지에 따라 결과가 달라져서, 같은 입력이 같은 화면을 내야 하는 시나리오 테스트가 성립하지 않습니다.
 
@@ -808,10 +808,10 @@ Android 빌드에는 아직 mruby가 없습니다 (Lua만 그대로 돕니다). 
 
 맵 위의 NPC나 문에 스크립트를 붙이는 방법입니다. 이벤트 커맨드 목록을 쌓는 대신 **Lua 함수를 그대로 씁니다.** 코루틴으로 실행되므로 "대화창이 닫힐 때까지 기다린다"를 콜백 없이 순서대로 적을 수 있고, 조건과 반복은 Lua 문법 그대로입니다.
 
-이벤트는 두 곳에서 옵니다. **맵 파일(JSON)의 `events` 배열**(맵 포맷 v2, 에디터가 놓는 자리)과 **`scripts/maps/<맵이름>.lua`**(사람이 쓰는 자리: 배회 설정, `script` 함수, BGM, 시작 위치)입니다. 둘은 `id`로 합쳐지며 같은 `id`면 Lua 쪽이 이깁니다 (`scripts/rpg/mapdata.lua`). v1 맵 파일(이벤트 없음)도 그대로 열립니다.
+이벤트는 두 곳에서 옵니다. **맵 파일(JSON)의 `events` 배열**(맵 포맷 v2, 에디터가 놓는 자리)과 **`scripts/lua/maps/<맵이름>.lua`**(사람이 쓰는 자리: 배회 설정, `script` 함수, BGM, 시작 위치)입니다. 둘은 `id`로 합쳐지며 같은 `id`면 Lua 쪽이 이깁니다 (`scripts/lua/rpg/mapdata.lua`). v1 맵 파일(이벤트 없음)도 그대로 열립니다.
 
 ```lua
-	-- scripts/maps/village.lua
+	-- scripts/lua/maps/village.lua
 	return {
 		map = "./resources/maps/village.json",
 		start = { x = 34, y = 21, dir = "down" },
@@ -840,7 +840,7 @@ Android 빌드에는 아직 mruby가 없습니다 (Lua만 그대로 돕니다). 
 	}
 ```
 
-이벤트의 본문은 **커맨드 목록**입니다. 순수 데이터라 맵 에디터가 만들고 읽을 수 있고, JSON으로 그대로 옮길 수 있습니다. 실행은 `scripts/rpg/commands.lua`가 맡아 6단계 실행기가 아는 함수 하나로 바꿔 줍니다.
+이벤트의 본문은 **커맨드 목록**입니다. 순수 데이터라 맵 에디터가 만들고 읽을 수 있고, JSON으로 그대로 옮길 수 있습니다. 실행은 `scripts/lua/rpg/commands.lua`가 맡아 6단계 실행기가 아는 함수 하나로 바꿔 줍니다.
 
 ```lua
 	commands = {
@@ -916,7 +916,7 @@ Android 빌드에는 아직 mruby가 없습니다 (Lua만 그대로 돕니다). 
 
 스크립트에서 오류가 나면 그 이벤트만 중단되고 기록에 남습니다. 게임이 멈추거나 조작이 잠긴 채로 남지 않습니다.
 
-예제는 `scripts/maps/village.lua`(대화, 분기, 문, 순찰)와 `scripts/maps/room.lua`(맵 진입 자동 실행, 되돌아가는 문)에 있습니다.
+예제는 `scripts/lua/maps/village.lua`(대화, 분기, 문, 순찰)와 `scripts/lua/maps/room.lua`(맵 진입 자동 실행, 되돌아가는 문)에 있습니다.
 
 데모 맵이 쓰는 타일셋 `resources/tiles/village16.png`는 기존 타일셋 뒤에 집 타일(지붕, 벽, 창문, 문, 마루, 실내벽)을 이어 붙인 것입니다. `python3 tools/generate_village_tileset.py`로 다시 만들 수 있습니다. 뒤에만 더하므로 기존 gid가 밀리지 않아, 먼저 만든 맵 데이터가 그대로 살아 있습니다.
 
@@ -927,15 +927,15 @@ Android 빌드에는 아직 mruby가 없습니다 (Lua만 그대로 돕니다). 
 | `village.json`, `room.json` | `village16.png` | 저장소에 포함, 어디서나 동작 |
 | `village_rtp.json`, `room_rtp.json` | RPG Maker 2003 RTP 칩셋 | 그림은 로컬 자산이라 저장소에 없음 |
 
-어느 쪽을 열지는 `scripts/rpg/assets.lua`가 정합니다. 칩셋과 CharSet, FaceSet, 창 스킨 모두 "RTP가 있으면 RTP, 없으면 저장소의 플레이스홀더"이며, `INITIAL2D_NO_RTP=1`로 RTP를 아예 보지 않게 할 수 있습니다. RTP 소재 자체는 재배포할 수 없으므로 저장소에 넣지 않습니다.
+어느 쪽을 열지는 `scripts/lua/rpg/assets.lua`가 정합니다. 칩셋과 CharSet, FaceSet, 창 스킨 모두 "RTP가 있으면 RTP, 없으면 저장소의 플레이스홀더"이며, `INITIAL2D_NO_RTP=1`로 RTP를 아예 보지 않게 할 수 있습니다. RTP 소재 자체는 재배포할 수 없으므로 저장소에 넣지 않습니다.
 
 # 대화창과 창 UI
 
-`ctx.message`와 `ctx.choice`가 실제로 그리는 창입니다. RPG Maker 2003의 System 스킨(160x80 한 장)을 조각내어 조립하며, 나인 슬라이스 같은 개념은 C++에 넣지 않고 Lua가 `Sprite.SetRect`로 잘라 찍습니다. 스킨의 분할 좌표는 `scripts/rpg/specs.lua`의 `M.window`에 있습니다.
+`ctx.message`와 `ctx.choice`가 실제로 그리는 창입니다. RPG Maker 2003의 System 스킨(160x80 한 장)을 조각내어 조립하며, 나인 슬라이스 같은 개념은 C++에 넣지 않고 Lua가 `Sprite.SetRect`로 잘라 찍습니다. 스킨의 분할 좌표는 `scripts/lua/rpg/specs.lua`의 `M.window`에 있습니다.
 
 ```lua
-	local Window = require("scripts/rpg/window")
-	local Dialogue = require("scripts/rpg/message")
+	local Window = require("scripts/lua/rpg/window")
+	local Dialogue = require("scripts/lua/rpg/message")
 
 	local skin = Window.newSkin{ path = "./resources/ui/window.png", scale = 1 }
 	local dialogue = Dialogue.new{
@@ -969,7 +969,7 @@ Android 빌드에는 아직 mruby가 없습니다 (Lua만 그대로 돕니다). 
 
 엔진의 스프라이트 배율은 가로세로 같은 값 하나뿐이라 조각을 늘일 수 없습니다. 그래서 변과 바탕은 반복해 채우고, 남는 자투리는 그 크기만큼 소스를 잘라 그립니다. 바탕은 원본을 세로로 4등분해 띠마다 해당 부분을 반복하므로, 그라데이션이 32픽셀마다 끊겨 보이지 않습니다.
 
-스킨과 얼굴 그림도 `scripts/rpg/assets.lua`가 고릅니다. RTP가 있으면 그쪽(`resources/rtp/System/System.png`, `resources/rtp/FaceSet/People1.png`)을, 없으면 저장소에 커밋된 플레이스홀더를 씁니다. 플레이스홀더는 다음 명령으로 다시 만듭니다.
+스킨과 얼굴 그림도 `scripts/lua/rpg/assets.lua`가 고릅니다. RTP가 있으면 그쪽(`resources/rtp/System/System.png`, `resources/rtp/FaceSet/People1.png`)을, 없으면 저장소에 커밋된 플레이스홀더를 씁니다. 플레이스홀더는 다음 명령으로 다시 만듭니다.
 
 ```bash
 # 대화창 스킨 (resources/ui/window.png, 160x80, System과 같은 배치)
@@ -986,10 +986,10 @@ python3 tools/generate_ui_assets.py
 
 열쇠와 증표를 들고 다니고, 가진 것에 따라 문이 열리거나 대사가 바뀌게 하는 층입니다. 소지품은 별도의 저장소가 아니라 이벤트가 공유하는 `ctx.state` 안의 표 하나(`state.items`)입니다. 맵을 넘는 상태 공유가 이미 그 테이블로 되고 있어서, 나중에 저장 기능이 붙으면 소지품도 함께 저장됩니다.
 
-아이템 목록은 **데이터**입니다. 프레임워크(`scripts/rpg/inventory.lua`)는 표를 주입받을 뿐 내용을 모르므로, 다른 게임은 다른 표를 넣으면 됩니다.
+아이템 목록은 **데이터**입니다. 프레임워크(`scripts/lua/rpg/inventory.lua`)는 표를 주입받을 뿐 내용을 모르므로, 다른 게임은 다른 표를 넣으면 됩니다.
 
 ```lua
-	-- scripts/games/rpgdemo/items.lua
+	-- scripts/lua/games/rpgdemo/items.lua
 	return {
 		warehouse_key = { name = "창고 열쇠", order = 10,
 			desc = "여관 주인이 삼 년째 맡아 둔 열쇠. 손잡이가 반들반들하다." },
@@ -1022,11 +1022,11 @@ python3 tools/generate_ui_assets.py
 
 `giveItem`은 `count`를 생략하면 하나, `takeItem`은 모자라면 **아무 일도 일으키지 않고** 넘어갑니다 (반쯤 빼고 실패하는 경우가 없어야 이벤트가 스스로를 되돌릴 필요가 없습니다). 조건 `{ item = ... }`은 `op`와 `value`가 없으면 "하나라도 가졌는가"입니다.
 
-소지품 창은 `scripts/rpg/menu.lua`이며, 목록과 설명 두 칸으로 되어 있습니다. 창과 커서와 스크롤은 대화창과 같은 `window.lua`를 씁니다.
+소지품 창은 `scripts/lua/rpg/menu.lua`이며, 목록과 설명 두 칸으로 되어 있습니다. 창과 커서와 스크롤은 대화창과 같은 `window.lua`를 씁니다.
 
 ```lua
-	local Inventory = require("scripts/rpg/inventory")
-	local Menu = require("scripts/rpg/menu")
+	local Inventory = require("scripts/lua/rpg/inventory")
+	local Menu = require("scripts/lua/rpg/menu")
 
 	local menu = Menu.new{ skin = skin, measure = GetTextWidth, drawText = DrawText,
 		screenW = W, screenH = H, maxVisible = 6 }
@@ -1079,13 +1079,13 @@ INITIAL2D_SCENE=rpg INITIAL2D_MAP=inn INITIAL2D_RPG_SCALE=3 ./build/Initial2D
 
 | 파일 | 역할 |
 | :--- | :--- |
-| `scripts/games/rpgdemo/title.lua` | 타이틀 씬. 배경 한 장과 커서 메뉴(시작, 조작 방법, 나가기) |
-| `scripts/games/rpgdemo/game.lua` | 맵 씬. 맵 적재, 페이드 전환, 대화창과 실행기 연결, 장소 이름 |
-| `scripts/maps/port_town.lua`, `inn.lua` | 이벤트 정의와 대사 (커맨드 목록) |
-| `scripts/games/rpgdemo/items.lua` | 아이템 표 (이름, 설명, 목록 순서) |
-| `scripts/rpg/assets.lua` | 그림 고르기 (RTP가 있으면 RTP, 없으면 저장소의 플레이스홀더) |
-| `scripts/bgm.lua` | 지금 걸린 곡을 기억해, 같은 곡이면 다시 틀지 않는 배경음 층 |
-| `scripts/ui/buttons.lua` | 터치용 결정과 취소 버튼 |
+| `scripts/lua/games/rpgdemo/title.lua` | 타이틀 씬. 배경 한 장과 커서 메뉴(시작, 조작 방법, 나가기) |
+| `scripts/lua/games/rpgdemo/game.lua` | 맵 씬. 맵 적재, 페이드 전환, 대화창과 실행기 연결, 장소 이름 |
+| `scripts/lua/maps/port_town.lua`, `inn.lua` | 이벤트 정의와 대사 (커맨드 목록) |
+| `scripts/lua/games/rpgdemo/items.lua` | 아이템 표 (이름, 설명, 목록 순서) |
+| `scripts/lua/rpg/assets.lua` | 그림 고르기 (RTP가 있으면 RTP, 없으면 저장소의 플레이스홀더) |
+| `scripts/lua/bgm.lua` | 지금 걸린 곡을 기억해, 같은 곡이면 다시 틀지 않는 배경음 층 |
+| `scripts/lua/ui/buttons.lua` | 터치용 결정과 취소 버튼 |
 
 ## 그림과 맵 다시 만들기
 
@@ -1107,7 +1107,7 @@ python3 tools/generate_title.py
 BGM은 씬과 맵이 각자 정합니다. 맵 정의 파일에 `bgm`을 적으면 그 맵에 들어설 때 곡이 바뀌고, 같은 곡이면 이어서 재생됩니다 (맵을 오갈 때 음악이 끊기지 않습니다).
 
 ```lua
-	-- scripts/maps/inn.lua
+	-- scripts/lua/maps/inn.lua
 	return {
 		map = "./resources/maps/inn.json",
 		bgm = { file = INN_BGM, volume = 80 },   -- 곡마다 음압이 달라 볼륨을 함께 줍니다
@@ -1229,7 +1229,7 @@ cmake --build build
 
 ```
 
-`scripts/main.lua`가 참조하는 일부 이미지 에셋은 저장소에 포함되어 있지 않습니다.
+`scripts/lua/main.lua`가 참조하는 일부 이미지 에셋은 저장소에 포함되어 있지 않습니다.
 로컬 테스트용 플레이스홀더는 `python3 tools/generate_placeholder_assets.py`로 생성할 수 있습니다.
 
 포팅 상세 내역은 `docs/porting/phase0-inventory.md`를 참조하십시오.
@@ -1279,14 +1279,14 @@ adb logcat -s SDL/APP                    # 엔진 로그만 보기
 
 ## 핫 리로드 (HMR)
 
-APK를 다시 빌드하거나 설치하지 않고, 수정한 `scripts/*.lua`를 실행 중인 게임에 밀어 넣어 바로 반영합니다.
+APK를 다시 빌드하거나 설치하지 않고, 수정한 `scripts/lua/*.lua`를 실행 중인 게임에 밀어 넣어 바로 반영합니다.
 HMR 서버는 게임에 내장되어 있습니다. **Android에서는 항상 켜져 있고**(루프백 127.0.0.1:5959),
 데스크톱(macOS)에서는 `INITIAL2D_HMR=1` 환경변수로 켭니다.
 
 ```bash
 # ── Android 기기 ──
 adb forward tcp:5959 tcp:5959      # 최초 1회 (기기 연결 후)
-python3 tools/hmr_push.py          # scripts/*.lua 전체를 1회 push
+python3 tools/hmr_push.py          # scripts/lua/*.lua 전체를 1회 push
 python3 tools/hmr_push.py --watch  # 저장할 때마다 자동 push (개발 중 권장)
 
 # ── macOS ──
@@ -1325,14 +1325,14 @@ yarn dev
 | `HEAD /api/files/<path>` | 파일 존재 여부와 크기 |
 | `PUT /api/files/<path>` | 파일 쓰기 (원자적 쓰기, 상위 폴더 자동 생성) |
 | `DELETE /api/files/<path>` | 파일 삭제 |
-| `POST /api/reload` | `scripts/**/*.lua`를 게임 HMR 서버로 push |
+| `POST /api/reload` | `scripts/lua/**/*.lua`를 게임 HMR 서버로 push |
 | WebSocket `/ws` | 파일 변경 알림 (`origin`이 `external`이면 다른 편집기가 고친 것) |
 
 에디터에서 할 수 있는 일은 다음과 같습니다.
 
 | 기능 | 조작 | 결과 |
 |---|---|---|
-| 스크립트 편집 | Tools → Script Editor | `scripts/**/*.lua`를 열고 Ctrl+S로 저장, 저장 직후 게임 리로드 |
+| 스크립트 편집 | Tools → Script Editor | `scripts/lua/**/*.lua`를 열고 Ctrl+S로 저장, 저장 직후 게임 리로드 |
 | 맵 내보내기 | Ctrl+E | 맵 포맷 v1로 `resources/maps/<이름>.json` 저장, 필요한 타일셋 이미지도 함께 복사 |
 | 맵 열기 | Ctrl+O | `resources/maps/*.json`을 에디터로 불러오기 |
 | 맵 저장 | Ctrl+S | 열려 있는 맵을 같은 경로에 다시 저장 (경로가 없으면 내보내기 대화상자) |
@@ -1350,7 +1350,7 @@ SDL_VIDEODRIVER=dummy INITIAL2D_SCENE=tilemap INITIAL2D_MAP=./resources/maps/my_
   INITIAL2D_SCREENSHOT=/tmp/shot_%04ld.bmp INITIAL2D_SCREENSHOT_FRAME=40 \
   INITIAL2D_EXIT_AFTER=60 ./build/Initial2D
 
-# 데모의 맵 씬으로 열려면 맵과 짝이 되는 이벤트 정의(scripts/maps/<이름>.lua)가
+# 데모의 맵 씬으로 열려면 맵과 짝이 되는 이벤트 정의(scripts/lua/maps/<이름>.lua)가
 # 필요합니다. INITIAL2D_MAP에는 파일 경로가 아니라 그 정의 이름을 줍니다.
 INITIAL2D_SCENE=rpg INITIAL2D_MAP=village ./build/Initial2D
 ```
@@ -1383,11 +1383,11 @@ python3 tests/verify_rtp.py
 - 파일명의 공백("Mountain Road.png")은 그대로 둡니다. 엔진 로더가 공백 경로를 문제없이 읽는 것을 확인했습니다.
 - 변환 결과의 명세는 `resources/rtp/manifest.json`에 남고, `tests/verify_rtp.py`가 이 파일을 계약 삼아 검증합니다. `resources/rtp/`가 없는 환경(CI 등)에서는 스스로 건너뜁니다.
 
-시트 분할과 방향 행 순서 같은 R2K3 규격은 엔진이 아니라 `scripts/rpg/specs.lua`에 Lua 데이터로 둡니다.
+시트 분할과 방향 행 순서 같은 R2K3 규격은 엔진이 아니라 `scripts/lua/rpg/specs.lua`에 Lua 데이터로 둡니다.
 엔진(C++)은 PNG와 OGG만 알면 되고, "CharSet 한 장에 8명이 들어 있다"는 지식은 스크립트 쪽 몫입니다.
 
 ```lua
-local Specs = require("scripts/rpg/specs")
+local Specs = require("scripts/lua/rpg/specs")
 local c = Specs.charset
 
 local actor = Image("./resources/rtp/CharSet/Actor1.png", 0, 0,

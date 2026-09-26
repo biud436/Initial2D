@@ -21,7 +21,7 @@
 - 미검증 항목: 키보드 입력 실기 검증 (스캔코드→VK 매핑 테이블은 구현됨, Lua Input API 호출은
   테스트로 확인 — 실제 키 눌림은 사용자 플레이로 확인 필요), C++ Tilemap 클래스 경로
   (MapState의 Tilemap 생성이 원본에서 주석 처리 상태, Lua 타일맵 모듈은 테스트됨)
-- 발견: `scripts/main.lua`가 참조하는 에셋 3종(background/object/bird PNG)은 저장소에 없음
+- 발견: `scripts/lua/main.lua`가 참조하는 에셋 3종(background/object/bird PNG)은 저장소에 없음
   (`resources/*.*`가 gitignore) — 검증은 로컬 생성 플레이스홀더로 수행, 커밋하지 않음
 - BMFont 텍스트는 fontSize(32) ≠ lineHeight(16)일 때 원본 GDI 알고리즘 그대로 아틀라스를
   2배 영역으로 샘플링해 글자가 겹침 — SDL2 어댑터는 이를 충실히 재현 (동작 보존 원칙)

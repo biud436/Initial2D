@@ -1,4 +1,4 @@
--- bgm_test.lua : 배경음 층(scripts/bgm.lua) 검증 (8단계).
+-- bgm_test.lua : 배경음 층(scripts/lua/bgm.lua) 검증 (8단계).
 -- 곡이 바뀔 때만 다시 걸리는가가 핵심이다 — 이게 깨지면 맵을 오갈 때마다
 -- 같은 곡이 처음부터 다시 시작한다.
 
@@ -24,7 +24,7 @@ local function fakeAudio()
 end
 
 function M.run(t)
-	local Bgm = require("scripts/bgm")
+	local Bgm = require("scripts/lua/bgm")
 
 	-- [1] 같은 곡을 여러 번 걸어도 한 번만 재생된다
 	local a = fakeAudio()

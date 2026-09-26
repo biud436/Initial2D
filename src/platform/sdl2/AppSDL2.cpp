@@ -182,7 +182,7 @@ int App::Run(int nCmdShow)
 
 #ifdef __ANDROID__
 	// 풀 화면: 논리 해상도의 가로를 실제 화면 비율에 맞춰 확장한다 (세로는 기존 값 고정).
-	// 게임 씬(scripts/*.lua)은 WindowWidth/Height 기준으로 배치되므로
+	// 게임 씬(scripts/lua/*.lua)은 WindowWidth/Height 기준으로 배치되므로
 	// 레터박스 없이 화면을 가득 채우고 게임 오브젝트 크기는 유지된다.
 	{
 		int dw = 0, dh = 0;

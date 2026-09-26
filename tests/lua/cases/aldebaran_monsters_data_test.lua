@@ -5,8 +5,8 @@
 -- stage.lua를 거쳐 게임에 그대로 닿는지를 본다. 원안 값(spec)은 사료라
 -- 바뀌면 안 되므로 몇 개를 못 박아 둔다.
 
-local Monsters = require("scripts/games/aldebaran/data/monsters")
-local Stages = require("scripts/games/aldebaran/stages/init")
+local Monsters = require("scripts/lua/games/aldebaran/data/monsters")
+local Stages = require("scripts/lua/games/aldebaran/stages/init")
 local Stage = Stages.get("forest")
 
 local M = {}

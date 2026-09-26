@@ -1,4 +1,4 @@
--- rpg_menu_test.lua : 소지품 창(scripts/rpg/menu.lua) 검증 (10단계).
+-- rpg_menu_test.lua : 소지품 창(scripts/lua/rpg/menu.lua) 검증 (10단계).
 --
 -- 선택지 창 테스트와 같은 방식이다 — 폭 측정과 Image를 가짜로 주입해 창의
 -- 크기와 그린 글자를 값으로 확인한다 (한 글자 = 10픽셀).
@@ -23,13 +23,13 @@ local function fakeImageFactory()
 end
 
 local function fakeMeasure(text)
-	local Text = require("scripts/rpg/text")
+	local Text = require("scripts/lua/rpg/text")
 	return Text.length(text) * CHAR_W
 end
 
 local function newMenu(opts)
-	local Window = require("scripts/rpg/window")
-	local Menu = require("scripts/rpg/menu")
+	local Window = require("scripts/lua/rpg/window")
+	local Menu = require("scripts/lua/rpg/menu")
 	opts = opts or {}
 	local skin = Window.newSkin{ path = "fake.png", scale = 1,
 		imageFactory = fakeImageFactory() }
@@ -54,7 +54,7 @@ local function drewText(drawn, text)
 end
 
 function M.run(t)
-	local Inventory = require("scripts/rpg/inventory")
+	local Inventory = require("scripts/lua/rpg/inventory")
 
 	local DB = {
 		key = { name = "창고 열쇠", desc = "여관 주인이 맡아 둔 열쇠.", order = 10 },
@@ -117,7 +117,7 @@ function M.run(t)
 	empty:update{ down = true }
 	t.check_eq(empty.index, 1, "빈 목록에서 커서를 움직여도 죽지 않는다")
 	empty:draw()
-	local Menu = require("scripts/rpg/menu")
+	local Menu = require("scripts/lua/rpg/menu")
 	t.check(drewText(emptyDrawn, Menu.EMPTY_TEXT), "가진 것이 없다고 알린다")
 
 	-- ---- [6] 스크롤: 보이는 만큼만 그린다 ----------------------------------
