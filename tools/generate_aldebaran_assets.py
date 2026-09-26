@@ -1143,17 +1143,8 @@ def paint_forest(img, star_x, star_y, star_r, seed=7):
         x, y = v % w, (v // w) % (h * 2 // 3)
         if (x - star_x) ** 2 + (y - star_y) ** 2 > (star_r * 4) ** 2:
             d.point((x, y), fill=STAR_DIM)
-    # 알데바란 — 붉은 별과 디더 광륜
-    for r, c in ((star_r * 3, lerp(SKY_TOP_C, STAR_RED, 0.25)),
-                 (star_r * 2, lerp(SKY_TOP_C, STAR_RED, 0.5))):
-        for yy in range(star_y - r, star_y + r):
-            for xx in range(star_x - r, star_x + r):
-                if 0 <= xx < w and 0 <= yy < h and (xx + yy) % 2 == 0 \
-                        and (xx - star_x) ** 2 + (yy - star_y) ** 2 <= r * r:
-                    d.point((xx, yy), fill=c)
-    d.ellipse([star_x - star_r, star_y - star_r, star_x + star_r, star_y + star_r], fill=STAR_RED)
-    d.line([star_x - star_r * 2, star_y, star_x + star_r * 2, star_y], fill=STAR_RED)
-    d.line([star_x, star_y - star_r * 2, star_x, star_y + star_r * 2], fill=STAR_RED)
+    # 알데바란, 붉은 별과 디더 광륜
+    aldebaran_star(d, star_x, star_y, star_r, w, h)
     # 나무 실루엣 두 겹 (가지가 있는 실루엣. 기둥 사각형이 아니다)
     v = seed * 3 + 1
     for color, top0 in (((30, 26, 42), int(h * 0.42)), ((20, 16, 30), int(h * 0.30))):
