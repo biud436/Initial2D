@@ -12,6 +12,15 @@
 # 사용법: cmake -B build && cmake --build build && ./build/phase0_sanity
 
 cmake_minimum_required(VERSION 3.16)
+
+# 배포용 빌드 (R4, docs/plans/r4-dist-build.md): SDL2, SDL2_image, SDL2_mixer 를 external/sdl-src/ 의 소스에서
+# 정적으로 빌드해 다른 컴퓨터에 옮겨도 뜨는 실행 파일 하나를 만든다. tools/build_dist.sh 가 켠다.
+# 배포 대상은 project() 전에 정해야 컴파일러 검사부터 적용된다.
+option(INITIAL2D_VENDORED_SDL "Build SDL2, SDL2_image and SDL2_mixer statically from external/sdl-src" OFF)
+if(INITIAL2D_VENDORED_SDL AND NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET)
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version of the distribution build")
+endif()
+
 project(Initial2D LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -57,14 +66,27 @@ target_include_directories(vendored_tinyxml PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/e
 # mruby (선택), S1, docs/plans/s1-mruby-binding.md
 # Homebrew 의 mruby 를 찾는다 (brew install mruby). 없으면 Lua 만으로 빌드되고,
 # INITIAL2D_SCRIPT=mruby 로 고르면 실행 파일이 그 사실을 알리고 끝난다.
+# MRUBY_ROOT 를 주면 그 폴더만 본다 (tools/build_mruby.sh 의 결과). 배포용 빌드는 Homebrew 를 보지 않는다.
 # ---------------------------------------------------------------------------
 option(INITIAL2D_MRUBY "Build the mruby script backend when libmruby is found" ON)
+set(MRUBY_ROOT "" CACHE PATH "mruby build to use (include/, lib/libmruby.a, bin/mruby-config); empty searches Homebrew")
 set(INITIAL2D_HAS_MRUBY OFF)
 if(INITIAL2D_MRUBY AND NOT WIN32 AND NOT EMSCRIPTEN)
-  set(_mruby_hints /opt/homebrew/opt/mruby /usr/local/opt/mruby)
-  find_path(MRUBY_INCLUDE_DIR mruby.h HINTS ${_mruby_hints} PATH_SUFFIXES include)
-  find_library(MRUBY_LIBRARY mruby HINTS ${_mruby_hints} PATH_SUFFIXES lib)
-  find_program(MRUBY_CONFIG mruby-config HINTS ${_mruby_hints} PATH_SUFFIXES bin)
+  set(_mruby_find_opts "")
+  if(MRUBY_ROOT)
+    set(_mruby_hints "${MRUBY_ROOT}")
+    set(_mruby_find_opts NO_DEFAULT_PATH)
+  elseif(INITIAL2D_VENDORED_SDL)
+    set(_mruby_hints "")
+    message(STATUS "mruby: INITIAL2D_VENDORED_SDL without MRUBY_ROOT, Lua only (tools/build_mruby.sh builds one)")
+  else()
+    set(_mruby_hints /opt/homebrew/opt/mruby /usr/local/opt/mruby)
+  endif()
+  if(_mruby_hints)
+    find_path(MRUBY_INCLUDE_DIR mruby.h HINTS ${_mruby_hints} PATH_SUFFIXES include ${_mruby_find_opts})
+    find_library(MRUBY_LIBRARY mruby HINTS ${_mruby_hints} PATH_SUFFIXES lib ${_mruby_find_opts})
+    find_program(MRUBY_CONFIG mruby-config HINTS ${_mruby_hints} PATH_SUFFIXES bin ${_mruby_find_opts})
+  endif()
   if(MRUBY_INCLUDE_DIR AND MRUBY_LIBRARY)
     set(INITIAL2D_HAS_MRUBY ON)
     # libmruby 는 빌드 때의 -D 옵션(정수 폭, 박싱, 태스크 스케줄러 등)에 따라
@@ -148,6 +170,58 @@ if(EMSCRIPTEN)
   set(INITIAL2D_SDL2_AUDIO ON)
   set(INITIAL2D_SDL2_GAME ON)
   message(STATUS "Emscripten: SDL2, SDL2_image, SDL2_mixer, ogg, vorbis from emscripten ports")
+elseif(INITIAL2D_VENDORED_SDL)
+  # 배포용 빌드 (R4). 소스는 tools/fetch_sdl_src.sh 가 받고 판은 tools/sdl_versions.sh 에 있다.
+  # 셋 다 정적 라이브러리로 만들어 실행 파일에 넣는다. Homebrew 는 찾지 않는다.
+  set(INITIAL2D_SDL_SRC "${CMAKE_CURRENT_SOURCE_DIR}/external/sdl-src" CACHE PATH "SDL2, SDL2_image, SDL2_mixer sources")
+  foreach(dep SDL2 SDL2_image SDL2_mixer)
+    if(NOT EXISTS "${INITIAL2D_SDL_SRC}/${dep}/CMakeLists.txt")
+      message(FATAL_ERROR "${dep} source not found in ${INITIAL2D_SDL_SRC} (run tools/fetch_sdl_src.sh)")
+    endif()
+  endforeach()
+  set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+  set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+  set(SDL_STATIC ON CACHE BOOL "" FORCE)
+  set(SDL_TEST OFF CACHE BOOL "" FORCE)
+  set(SDL2_DISABLE_SDL2MAIN ON CACHE BOOL "" FORCE)
+  set(SDL2_DISABLE_INSTALL ON CACHE BOOL "" FORCE)
+  set(SDL2_DISABLE_UNINSTALL ON CACHE BOOL "" FORCE)
+  # Linux 의 X11, Wayland, ALSA, PulseAudio 는 SDL 기본값(*_SHARED ON)대로 실행 중에 dlopen 한다
+  # PNG 와 JPG 는 stb_image 로 푼다. Apple 기본인 ImageIO 는 색 처리가 달라 골든을 움직일 수 있어 끈다
+  set(SDL2IMAGE_BACKEND_IMAGEIO OFF CACHE BOOL "" FORCE)
+  set(SDL2IMAGE_BACKEND_STB ON CACHE BOOL "" FORCE)
+  set(SDL2IMAGE_DEPS_SHARED OFF CACHE BOOL "" FORCE)
+  set(SDL2IMAGE_VENDORED OFF CACHE BOOL "" FORCE)
+  set(SDL2IMAGE_SAMPLES OFF CACHE BOOL "" FORCE)
+  set(SDL2IMAGE_INSTALL OFF CACHE BOOL "" FORCE)
+  set(SDL2MIXER_DEPS_SHARED OFF CACHE BOOL "" FORCE)
+  set(SDL2MIXER_VENDORED OFF CACHE BOOL "" FORCE)
+  set(SDL2MIXER_VORBIS STB CACHE STRING "" FORCE)
+  set(SDL2MIXER_SAMPLES OFF CACHE BOOL "" FORCE)
+  set(SDL2MIXER_INSTALL OFF CACHE BOOL "" FORCE)
+  # 포맷 스위치는 android/app/jni/CMakeLists.txt 와 같다 (디코더가 필요한 것 가운데 png, jpg, ogg, wav 만 남는다)
+  set(SDL2IMAGE_AVIF OFF CACHE BOOL "" FORCE)
+  set(SDL2IMAGE_JXL OFF CACHE BOOL "" FORCE)
+  set(SDL2IMAGE_TIF OFF CACHE BOOL "" FORCE)
+  set(SDL2IMAGE_WEBP OFF CACHE BOOL "" FORCE)
+  set(SDL2MIXER_FLAC OFF CACHE BOOL "" FORCE)
+  set(SDL2MIXER_MOD OFF CACHE BOOL "" FORCE)
+  set(SDL2MIXER_MP3 OFF CACHE BOOL "" FORCE)
+  set(SDL2MIXER_MIDI OFF CACHE BOOL "" FORCE)
+  set(SDL2MIXER_OPUS OFF CACHE BOOL "" FORCE)
+  set(SDL2MIXER_WAVPACK OFF CACHE BOOL "" FORCE)
+  add_subdirectory("${INITIAL2D_SDL_SRC}/SDL2" "${CMAKE_BINARY_DIR}/sdl/SDL2" EXCLUDE_FROM_ALL)
+  add_subdirectory("${INITIAL2D_SDL_SRC}/SDL2_image" "${CMAKE_BINARY_DIR}/sdl/SDL2_image" EXCLUDE_FROM_ALL)
+  add_subdirectory("${INITIAL2D_SDL_SRC}/SDL2_mixer" "${CMAKE_BINARY_DIR}/sdl/SDL2_mixer" EXCLUDE_FROM_ALL)
+  # SDL2 는 정적 빌드에서도 SDL2::SDL2 별칭을 만든다. 아래 코드가 쓰는 이름을 정적 대상으로 채운다
+  set(SDL2_FOUND ON)
+  set(SDL2_MIXER_LIBRARY SDL2_mixer::SDL2_mixer-static)
+  set(SDL2_MIXER_INCLUDE_DIR "")
+  set(SDL2_IMAGE_LIBRARY SDL2_image::SDL2_image-static)
+  set(SDL2_IMAGE_INCLUDE_DIR "")
+  set(INITIAL2D_SDL2_AUDIO ON)
+  set(INITIAL2D_SDL2_GAME ON)
+  message(STATUS "Vendored static SDL2, SDL2_image (stb), SDL2_mixer (stb_vorbis) from ${INITIAL2D_SDL_SRC}")
 else()
   find_package(SDL2 QUIET CONFIG)
   if(SDL2_FOUND)
@@ -268,6 +342,26 @@ if(INITIAL2D_SDL2_GAME)
   endif()
   target_link_libraries(Initial2D PRIVATE initial2d_core vendored_tinyxml ${SDL2_IMAGE_LIBRARY})
   message(STATUS "Initial2D game executable enabled (SDL2 backend)")
+
+  # libstdc++ 의 <codecvt> 는 std::wstring_convert 를 선언한 <locale> 을 들이지 않는다.
+  # lua_font.cpp 가 <locale> 을 직접 포함하기 전까지 Linux 에서는 컴파일러가 먼저 넣게 한다
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/src/lua_font.cpp" PROPERTIES COMPILE_OPTIONS "-include;locale")
+  endif()
+
+  # 판 헤더 (--version). 빌드마다 git describe 와 커밋을 다시 읽고, 바뀌었을 때만 헤더를 고친다
+  find_package(Git QUIET)
+  set(INITIAL2D_GENERATED_DIR "${CMAKE_BINARY_DIR}/generated")
+  add_custom_target(initial2d_version
+    COMMAND "${CMAKE_COMMAND}"
+      "-DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
+      "-DOUTPUT=${INITIAL2D_GENERATED_DIR}/initial2d_version.h"
+      "-DGIT_EXECUTABLE=${GIT_EXECUTABLE}"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/initial2d_version.cmake"
+    BYPRODUCTS "${INITIAL2D_GENERATED_DIR}/initial2d_version.h"
+    VERBATIM)
+  add_dependencies(Initial2D initial2d_version)
+  target_include_directories(Initial2D PRIVATE "${INITIAL2D_GENERATED_DIR}")
 
   if(EMSCRIPTEN)
     # 산출물은 build-web/Initial2D.js 와 Initial2D.wasm. 페이지는 ES 모듈로 createInitial2D 를 import 한다.

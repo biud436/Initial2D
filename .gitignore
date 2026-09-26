@@ -378,3 +378,9 @@ resources/aldebaran/src/gpt/
 
 # InitialEditor 가 프로젝트 폴더에 두는 편집 상태 (레이아웃 등). 게임 데이터가 아니다
 .initial-editor/
+
+# 배포용 빌드 (R4, tools/build_dist.sh): 받은 SDL 과 mruby 소스, 중간 산출물, 결과물
+external/sdl-src/
+external/mruby-src/
+build-dist/
+dist/
