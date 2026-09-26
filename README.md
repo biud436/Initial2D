@@ -936,6 +936,8 @@ Android 빌드에는 아직 mruby가 없습니다 (Lua만 그대로 돕니다). 
 rpg:error:resources/maps/port_town.json:events[2].charset.index: 외형: 0..7 의 정수가 아니다 (지금은 9)
 ```
 
+커맨드의 인자는 필수든 선택이든 스키마에 적힌 타입과 범위로 검사합니다. `transfer`의 `x`에 글을 넣으면 `...commands[1].x: 정수가 아니다 (지금은 string)`으로 그 이벤트만 빠지고, 게임은 멈추지 않습니다. `rpg:error:` 줄은 값에 줄바꿈이 들어 있어도 늘 한 줄입니다.
+
 정의 파일(Lua)의 이벤트가 틀리면 맵을 열지 않고 화면에 "맵 로드 실패"를 띄우며, 같은 글이 `rpg:error:scripts/lua/maps/inn.lua:innkeeper: ...` 꼴로 stdout에도 나옵니다.
 
 트리거는 네 가지입니다.
@@ -1173,6 +1175,8 @@ python3 tools/generate_title.py
 ```json
 { "name": "inn", "file": "resources/maps/inn.json", "def": "scripts/lua/maps/inn.lua" }
 ```
+
+`rpg-game.json`과 `items.json`도 맵 파일의 `events`와 같은 규칙으로 읽습니다. 틀린 항목(가운데의 `null` 포함)은 그것만 빼고 `rpg:error:rpg-game.json:maps[2]: 맵 항목이 객체가 아니다`처럼 자리와 함께 알리며, 나머지 맵과 아이템은 그대로 씁니다.
 
 같은 파일의 `play`는 에디터의 "여기서 실행"이 넘기는 환경 변수입니다. 손으로도 같은 것을 줄 수 있습니다.
 
