@@ -259,6 +259,17 @@ function M.run(t)
 	t.check(not okItem and #itemErrors == 1 and itemErrors[1]:find("item") ~= nil,
 		"giveItem에 item이 없으면 검증에서 걸린다: " .. table.concat(itemErrors, ""))
 
+	-- 검증: items 는 state 안의 소지품 자리라 깃발과 변수 이름으로 쓸 수 없다 (쓰기와 조건 모두)
+	local okReserved, reserved = Commands.validate({
+		{ code = "setFlag", key = "items" },
+		{ code = "setVar", key = "items", value = 1 },
+		{ code = "if", cond = { flag = "items" }, thenDo = {} },
+		{ code = "if", cond = { var = "items", op = ">", value = 1 }, thenDo = {} },
+		{ code = "setFlag", key = "itemsSeen" },
+	})
+	t.check(not okReserved and #reserved == 4, "items 를 쓰는 깃발과 변수 넷만 걸린다: "
+		.. table.concat(reserved, " | "))
+
 	-- ---- [10] 커맨드 집합은 못 박아 둔다 ------------------------------------
 	-- 9단계에서 15종으로 시작했고, 10단계에서 아이템 둘이 늘어 17종이다
 	-- (docs/plans/11-game-systems.md 4.2). 여기 숫자를 고치지 않고는 커맨드가

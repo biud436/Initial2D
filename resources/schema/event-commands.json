@@ -622,5 +622,10 @@
     ],
     "turnPrefix": "turn:",
     "waitPrefix": "wait:"
+  },
+  "state": {
+    "reserved": [
+      "items"
+    ]
   }
 }

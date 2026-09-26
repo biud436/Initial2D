@@ -102,6 +102,8 @@ function M.run(t)
 	t.check_eq(PlayEnv.oneLine("a \n\r\n  \r b" .. LS .. PS .. "c  \n"), "a b c",
 		"이어진 끊김과 그 앞뒤 공백은 공백 하나, 끝의 공백은 뗀다")
 	t.check_eq(PlayEnv.oneLine("a\tb  c"), "a\tb  c", "끊김이 아닌 공백은 그대로")
+	t.check_eq(PlayEnv.oneLine("a\vb\fc\28d\29e\30f\194\133g"), "a b c d e f g",
+		"VT, FF, FS, GS, RS, NEL 도 줄 끊김이다")
 	for i, sample in ipairs({ jsonErr, "x\ry", "x" .. LS .. "y", "x" .. PS .. "y", "x\r\n\r\ny" }) do
 		local one = PlayEnv.errorLine("w\r\nw", sample)
 		t.check(one:find("[\r\n]") == nil and one:find(LS, 1, true) == nil and one:find(PS, 1, true) == nil,

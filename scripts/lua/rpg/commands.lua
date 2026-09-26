@@ -551,6 +551,8 @@ checkArg = function(arg, value, here, add)
 		add(here, subject(TYPE_NAMES[arg.type]) .. " 아니다 (지금은 " .. shown .. ")")
 	elseif arg.type == "file" and value == "" then
 		add(here, "경로가 비었다")
+	elseif arg.type == "ref" and (arg.ref == "flag" or arg.ref == "var") and value == Inventory.KEY then
+		add(here, value .. " 는 소지품 자리라 깃발이나 변수 이름으로 쓸 수 없다")
 	elseif arg.values ~= nil and not contains(arg.values, value) then
 		add(here, table.concat(arg.values, ", ") .. " 중 하나가 아니다 (지금은 " .. tostring(value) .. ")")
 	elseif type(value) == "number" and arg.min ~= nil and value < arg.min then

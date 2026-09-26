@@ -129,15 +129,17 @@ function M.escape(text)
 	return (tostring(text or ""):gsub("\r", ""):gsub("\n", "\\n"))
 end
 
--- 줄을 끊는 글자: CR, LF (CRLF 는 둘이 이어진 것), U+2028, U+2029
+-- 줄을 끊는 글자: CR, LF (CRLF 는 둘이 이어진 것), VT, FF, FS, GS, RS, NEL, U+2028, U+2029
+-- (유니코드가 줄 끊김으로 치는 글자 전부. 파이썬 splitlines 도 이것들에서 끊는다)
 local LINE_SEPARATOR = "\226\128\168"
 local PARAGRAPH_SEPARATOR = "\226\128\169"
+local NEXT_LINE = "\194\133"
 
---- 글을 한 줄로 만든다. 줄 끊김(CR, LF, CRLF, U+2028, U+2029)은 앞뒤 공백과 함께
+--- 글을 한 줄로 만든다. 줄 끊김(위의 글자들)은 앞뒤 공백과 함께
 -- 공백 하나가 되고, 이어진 끊김도 공백 하나다. 앞뒤 끝의 공백은 뗀다.
 function M.oneLine(text)
-	local s = tostring(text):gsub("\r\n?", "\n")
-		:gsub(LINE_SEPARATOR, "\n"):gsub(PARAGRAPH_SEPARATOR, "\n")
+	local s = tostring(text):gsub("\r\n?", "\n"):gsub("[\v\f\28\29\30]", "\n")
+		:gsub(LINE_SEPARATOR, "\n"):gsub(PARAGRAPH_SEPARATOR, "\n"):gsub(NEXT_LINE, "\n")
 	s = s:gsub("%s*\n%s*", " "):gsub("^%s+", ""):gsub("%s+$", "")
 	return s
 end

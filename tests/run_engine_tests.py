@@ -1241,6 +1241,9 @@ def test_rpg_play_here():
         ("transfer.x/y", [{"code": "transfer", "map": "inn", "x": {"a": 1}, "y": [2]}], ["x", "y"]),
         ("playBgm.volume", [{"code": "playBgm", "file": door, "volume": "loud"}], ["volume"]),
         ("scene.text", [{"code": "scene", "name": "title", "text": ["x"]}], ["text"]),
+        # items 는 state 안의 소지품 자리다. 깃발이나 변수로 덮으면 아이템 커맨드와 소지품 창이 멈췄다
+        ("setFlag.key items", [{"code": "setFlag", "key": "items"}], ["key"]),
+        ("setVar.key items", [{"code": "setVar", "key": "items", "value": 5}], ["key"]),
     ]
     work_g = make_game_workdir(copy=("maps",))
     port = os.path.join(work_g, "resources", "maps", "port_town.json")
@@ -1263,6 +1266,19 @@ def test_rpg_play_here():
         check(f"[G] {name}: 멈추지 않고 끝까지 돈다 (rc 0, Lua 오류 없음)",
               r.returncode == 0 and "Lua error" not in log and bool(lines)
               and lines[-1] == "rpg:route:done", f"rc={r.returncode} {log[-300:]}")
+
+    # [G] 맵 파일 이벤트의 script 키는 모르는 키다. 전에는 Event.new 의 assert 로 맵 전체가 로드 실패였다
+    data = dict(port_data, events=port_data["events"] + [
+        {"id": "sign", "x": 15, "y": 39, "script": "not a function",
+         "commands": [{"code": "message", "text": "after"}]}])
+    with open(port, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+    r = run_game(work_g, rpg_play_env("port_town", at=(15, 40, "up"), state="arrived", route="talk"))
+    lines = rpg_lines(r.stdout)
+    check("[G] script 키가 있는 맵 파일 이벤트도 돈다",
+          r.returncode == 0 and "rpg:map:port_town events:18 skipped:0" in lines
+          and not any(ln.startswith("rpg:error") for ln in lines)
+          and "rpg:event:sign" in lines and lines[-1] == "rpg:route:done", str(lines[-6:]))
 
     # [H] rpg:error 는 늘 한 줄: 자리 글과 이유 글의 CR, LF, CRLF, U+2028, U+2029 가 공백 하나가 된다
     data = dict(port_data, events=port_data["events"] + [
@@ -1293,6 +1309,24 @@ def test_rpg_play_here():
             ("face.set 의 CR", where + "[2].face.set: 얼굴: 모르는 face 이름 n pc"),
             ("code 의 CRLF 와 U+2029", where + "[3]: 알 수 없는 code c d e")):
         check(f"[H] 한 줄: {label}", expect in by_lf, repr(by_lf))
+
+    # [H] 유니코드의 다른 줄 끊김(VT, FF, FS, GS, RS, NEL)도 한 줄로
+    data = dict(port_data, events=port_data["events"] + [
+        {"id": "cr", "x": 15, "y": 39, "commands": [{"code": "a\x1cb\x1dc\x1ed"}]}])
+    with open(port, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=True)
+    env = {"INITIAL2D_SCRIPT": "lua", "INITIAL2D_SCENE": "rpg", "INITIAL2D_MAP": "port_town",
+           "INITIAL2D_RPG_STATE": "arrived\x0bitem:shell=1", "INITIAL2D_RPG_AT": "15,40,left\x0cx",
+           "INITIAL2D_RPG_ROUTE": "up\x85talk"}
+    r = run_game(work_g, env, exit_after=60, raw=True)
+    out = r.stdout.decode("utf-8", "replace")
+    by_split = [ln for ln in out.splitlines() if "rpg:error" in ln]
+    for label, expect in (
+            ("시작 상태의 VT", "rpg:error:state:arrived item:shell=1: 모르는 접두사 (아이템은 item:<id>)"),
+            ("시작 칸의 FF", "rpg:error:at:15,40,left x: 모르는 방향 left x"),
+            ("경로의 NEL", "rpg:error:route:up talk: 모르는 걸음 (talk, up, down, left, right)"),
+            ("code 의 FS, GS, RS", where + "[1]: 알 수 없는 code a b c d")):
+        check(f"[H] splitlines 로도 한 줄: {label}", expect in by_split, repr(by_split))
 
 
 def test_rpg_auto_chain():

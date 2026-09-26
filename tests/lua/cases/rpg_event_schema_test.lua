@@ -643,6 +643,9 @@ function M.run(t)
 		end
 		t.check_eq(join(sortedCopy((schema.event or {}).reserved)), join(keysOf(MapData.RESERVED_IDS)),
 			"예약 id == MapData.RESERVED_IDS")
+		-- 깃발과 변수가 쓸 수 없는 state 자리 (소지품). 커맨드 검사와 시작 상태가 같은 이름을 막는다
+		t.check_eq(join(sortedCopy((schema.state or {}).reserved)),
+			require("scripts/lua/rpg/inventory").KEY, "state.reserved == Inventory.KEY")
 
 		-- 칸 이름과 순서 (1.4절의 키 순서가 이 순서다)
 		local names = {}

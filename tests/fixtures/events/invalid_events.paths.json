@@ -100,6 +100,10 @@
     "events[37].commands[4].cond.value",
     "events[37].commands[5].cond.value",
     "events[37].commands[6].cond",
-    "events[37].commands[7].thenDo[1].name"
+    "events[37].commands[7].thenDo[1].name",
+    "events[39].commands[1].key",
+    "events[39].commands[2].key",
+    "events[39].commands[3].cond.flag",
+    "events[39].commands[4].cond.var"
   ]
 }

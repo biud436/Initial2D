@@ -721,6 +721,38 @@
           "file": "./resources/audio/door.wav"
         }
       ]
+    },
+    {
+      "id": "reserved_keys",
+      "x": 0,
+      "y": 0,
+      "commands": [
+        {
+          "code": "setFlag",
+          "key": "items"
+        },
+        {
+          "code": "setVar",
+          "key": "items",
+          "value": 5
+        },
+        {
+          "code": "if",
+          "cond": {
+            "flag": "items"
+          },
+          "thenDo": []
+        },
+        {
+          "code": "if",
+          "cond": {
+            "var": "items",
+            "op": ">",
+            "value": 1
+          },
+          "thenDo": []
+        }
+      ]
     }
   ]
 }

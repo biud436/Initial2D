@@ -153,7 +153,9 @@ end
 local function spawnEvent(def)
 	local ev = Event.new{
 		id = def.id, x = def.x, y = def.y, dir = def.dir,
-		trigger = def.trigger, script = def.script,
+		trigger = def.trigger,
+		-- 함수 script 는 정의 파일만 준다. 맵 파일의 같은 이름 키는 모르는 키로 두고 쓰지 않는다
+		script = (type(def.script) == "function") and def.script or nil,
 		commands = def.commands, scripts = mapScripts,
 		charset = def.charset, through = def.through, solid = def.solid,
 		data = def.data,

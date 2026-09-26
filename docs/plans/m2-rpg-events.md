@@ -63,7 +63,9 @@ E5 의 마일스톤 2, 4, 5, 6 은 에디터 저장소의 일이다.
 - `lists` 의 `perOption` 은 그 목록이 그 인자(`options`)의 항목마다 하나라는 뜻이다. `branches[i]` 가 i 번째 항목의 가지다
 - `summary` 의 `{이름}` 은 그 커맨드의 인자 이름이다. 없으면 에디터가 label 과 첫 필수 인자로 요약한다
 - 스키마는 `commands.lua` 가 호스트에 넘기는 인자를 적는다. 데모 호스트가 버리는 인자(`playBgm.fade`, `Bgm.play` 가 쓰지 않는다)는 칸 이름에 "(지금 데모는 쓰지 않는다)"를 붙인다
-- 모르는 키는 어디서든 보존한다 (이벤트, 커맨드, 조건). 에디터는 "스키마에 없는 인자"로 보여 주되 지우지 않는다
+- 모르는 키는 어디서든 보존한다 (이벤트, 커맨드, 조건). 에디터는 "스키마에 없는 인자"로 보여 주되 지우지 않는다.
+  맵 파일 이벤트의 `script` 키도 모르는 키다. 함수 `script` 는 정의 파일만 줄 수 있고, 게임은 함수가 아닌 `script` 값을 쓰지 않는다
+- `state.reserved` 는 깃발과 변수 이름으로 쓸 수 없는 state 자리다 (`["items"]`, 소지품이 사는 `Inventory.KEY`). 스키마 테스트가 대조한다
 - `sheets.charset.standPattern` 은 서 있는 자세의 열(1)이다. `Specs.charset.standPattern` 과 Ruby `Rpg::Specs::CHARSET[:stand_pattern]` 이 같은 값을 갖고 규격 테스트가 못 박는다
 
 ### 2.3 인자 타입
@@ -257,6 +259,7 @@ events[3].commands[2].branches[1][3].text
 | `moveRoute.route` 의 걸음이 글이 아니다 (`null` 포함) | `.commands[j].route[k]` | 실행이 건너뛰어 루트가 조용히 짧아졌다 |
 | `if.cond` 가 객체가 아니다 (배열 포함) | `.commands[j].cond` | 배열은 통과해 조건이 늘 참이었다 |
 | 조건에서 판정하는 꼴(`item`, `flag`, `var` 중 먼저 있는 것)의 인자가 그 꼴의 타입이 아니다 (조건의 `args`, 위의 타입과 범위와 `values` 줄과 같다) | `.commands[j].cond.value` 꼴 | 수가 아닌 값은 조용히 0 이나 1 로 비교되었다 |
+| `setFlag.key`, `setVar.key`, 조건의 `flag`, `var` 가 `items` 다 (state 안의 소지품 자리, `Inventory.KEY`) | `.commands[j].key`, `.commands[j].cond.flag` 꼴 | 깃발이나 변수가 소지품 표를 덮어 뒤의 아이템 커맨드가 이벤트를 끊고 소지품 창을 열면 게임이 멈췄다 |
 | `script` 의 이름이 정의 파일의 `scripts` 에 없다 (이름이 글이 아니면 타입 줄이 한 번만 낸다) | `.commands[j].name` | `Commands.validate` (픽스처에는 넣지 않는다, 3.4) |
 | 하위 목록(`thenDo`, `elseDo`, `branches`)이 배열이 아니다 (객체 포함) | `.commands[j].thenDo`, `.commands[j].elseDo`, `.commands[j].branches` | 객체면 통과해 그 가지가 조용히 비었다 |
 | 가지 `branches[k]` 가 배열이 아니다 (`null` 포함) | `.commands[j].branches[k]` | `ipairs` 가 `null` 가지에서 멈춰 뒤의 가지를 검사하지 않았다 (그 안의 틀린 얼굴 번호로 게임이 멈췄다) |
@@ -279,7 +282,8 @@ events[3].commands[2].branches[1][3].text
 - `<맵 파일>` 과 `<정의 파일>` 은 프로젝트 기준 경로이고 `./` 을 붙이지 않는다 (`resources/maps/port_town.json`, `scripts/lua/maps/inn.lua`).
   `rpg-game.json` 의 `file`, `def` 와 같은 꼴이라 에디터가 문서 경로로 바로 쓴다
 - **`rpg:error` 는 늘 한 줄이다.** `PlayEnv.errorLine(자리, 이유)` 가 자리와 이유를 합친 줄 전체를 `PlayEnv.oneLine` 에 넣는다.
-  줄 끊김(CR, LF, CRLF, U+2028, U+2029)은 앞뒤 공백과 함께 공백 하나가 되고(이어진 끊김도 하나), 끝의 공백은 떨어진다.
+  줄 끊김(CR, LF, CRLF, VT, FF, FS, GS, RS, NEL, U+2028, U+2029: 유니코드가 줄 끊김으로 치고 파이썬 `splitlines` 가 끊는 글자 전부)은
+  앞뒤 공백과 함께 공백 하나가 되고(이어진 끊김도 하나), 끝의 공백은 떨어진다.
   이유 글만이 아니라 자리 글도 그렇다. 사용자가 쓴 값(시작 상태 항목, 시작 칸, 걸음, 맵 파일의 `code` 나 `face.set`)이 자리나 이유에
   들어가도 줄이 끊기지 않는다. `rpg:error` 를 찍는 곳은 `game.lua` 의 `reportError` 와 `items.lua` 둘이고 둘 다 이 함수만 쓴다
 - 정의 파일의 이벤트가 틀린 경우(`Event.new` 의 assert, `charset` 에 `file` 이 없음)는 맵 전체가 "맵 로드 실패"가 되고(씬을 비워 화면에 그 글이 뜬다),
@@ -481,7 +485,9 @@ E5 초안의 물음 열한 개는 저자가 자리에 없는 동안 리드가 �
 | 선택 인자의 타입 (검수 2 뒤) | 있는 인자는 필수든 선택이든 스키마의 타입, `min`, `max`, `values` 를 지킨다. 검사는 `commands.lua` 의 인자 명세 표 하나로 하고 [C], [E] 가 스키마와 양방향으로 대조한다. `file` 은 빈 글도 오류다(외형과 얼굴의 `file` 과 같다). 조건은 판정하는 꼴의 인자만 본다. `ref` 의 id 가 있는지, 파일이 있는지, 걸음 이름은 에디터만 본다 |
 | 조건의 비교 연산 (검수 2 뒤) | 스키마의 여섯(`==`, `~=`, `<`, `<=`, `>`, `>=`)만 받는다. `Commands.test` 가 실행에서 받는 별칭 `=`, `!=` 는 검사에서 오류다 |
 | 두 데이터 파일의 모양 (검수 2 뒤) | `rpg-game.json` 과 `items.json` 도 3.1 의 모양 규칙이다. 칸 수만큼 보고, 틀린 항목만 빼고 경로(`maps[2]`, `items[2]`)와 함께 한 줄씩 알린다 (2.4, 2.5) |
-| `rpg:error` 한 줄 (검수 2 뒤) | 자리와 이유를 합친 줄 전체에서 CR, LF, CRLF, U+2028, U+2029 를 공백 하나로 바꾼다 (`PlayEnv.oneLine`) |
+| `rpg:error` 한 줄 (검수 2 뒤) | 자리와 이유를 합친 줄 전체에서 줄 끊김 글자(CR, LF, CRLF, VT, FF, FS, GS, RS, NEL, U+2028, U+2029)를 공백 하나로 바꾼다 (`PlayEnv.oneLine`, 검수 3 뒤에 VT 부터 NEL 까지 더했다) |
+| 소지품 자리 (검수 3 뒤) | `items` 는 깃발과 변수 이름이 될 수 없다. 시작 상태(`INITIAL2D_RPG_STATE`)와 같은 규칙을 커맨드 검사도 따른다 |
+| 맵 파일 이벤트의 `script` 키 (검수 3 뒤) | 모르는 키로 두고 쓰지 않는다. 전에는 `Event.new` 의 assert 로 맵 전체가 로드 실패였다 |
 | `rpg-game.json` 오류 줄 (검수 뒤) | 맵 씬이 한 번만 찍는다. `items.lua` 는 아이템 표의 오류만 찍고, 두 파일 다 `PlayEnv.errorLine` 으로 한 줄을 만든다 |
 | 인자 명세의 키 | 2.2 의 목록으로 닫는다. 새 키가 필요하면 이 문서와 테스트 [A] 를 함께 고친다 |
 | `rpg:event:` 를 찍는 자리 | 실행기의 `onStart` 훅. 게임이 실행기의 시작 규칙(도는 중이면 거절, 이미 도는 parallel)을 다시 적지 않는다 |
