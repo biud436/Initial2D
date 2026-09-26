@@ -14,9 +14,9 @@ local function fakePort()
 end
 
 function M.run(t)
-	local Event = require("scripts/rpg/event")
-	local Interpreter = require("scripts/rpg/interpreter")
-	local Character = require("scripts/rpg/character")
+	local Event = require("scripts/lua/rpg/event")
+	local Interpreter = require("scripts/lua/rpg/interpreter")
+	local Character = require("scripts/lua/rpg/character")
 
 	-- ---- [1] 생성 계약 ------------------------------------------------------
 	local e = Event.new{ id = "a", x = 3, y = 4, trigger = "action" }

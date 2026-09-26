@@ -2,7 +2,7 @@
  * @file mrb_prot.cpp
  * @brief mruby VM 의 수명과 전역 모듈 (S1, docs/plans/s1-mruby-binding.md).
  *
- * lua_prot.cpp 에 대응한다. 진입 파일은 ./scripts/ruby/main.rb 이고 (Lua 는 scripts/,
+ * lua_prot.cpp 에 대응한다. 진입 파일은 ./scripts/ruby/main.rb 이고 (Lua 는 scripts/lua/,
  * Ruby 는 scripts/ruby/ 로 폴더를 나눈다), 씬 계약은
  * 최상위 메서드 넷이다.
  *
@@ -116,7 +116,7 @@ namespace
 	// Kernel#load(path) / Kernel#require(path)
 	// ------------------------------------------------------------------
 
-	/** load("scripts/foo.rb"). 매번 다시 읽는다. Lua 의 LoadScript 에 해당. */
+	/** load("scripts/lua/foo.rb"). 매번 다시 읽는다. Lua 의 LoadScript 에 해당. */
 	mrb_value kernel_load(mrb_state* mrb, mrb_value self)
 	{
 		const char* path = nullptr;
@@ -126,7 +126,7 @@ namespace
 	}
 
 	/**
-	 * require("scripts/games/flappy"). 한 번만 읽는다. ".rb" 가 없으면 붙인다.
+	 * require("scripts/lua/games/flappy"). 한 번만 읽는다. ".rb" 가 없으면 붙인다.
 	 * 경로는 작업 디렉터리 기준이며 (Lua 의 require("scripts/...") 와 같은 관례),
 	 * 절대 경로로 정규화해 같은 파일을 두 번 읽지 않는다. 새로 읽었으면 true.
 	 */
@@ -410,7 +410,7 @@ module Input
 end
 
 class Sprite
-  # 텍스처를 읽고 스프라이트를 만든다. Lua 의 scripts/image.lua 에 해당한다.
+  # 텍스처를 읽고 스프라이트를 만든다. Lua 의 scripts/lua/image.lua 에 해당한다.
   # 텍스처는 TextureManager 가 갖고 있으므로 다 쓴 뒤 TextureManager.remove(id) 로 놓는다.
   def self.load(path, id, x = 0, y = 0, width = 0, height = 0, frames = 1)
     raise "TextureManager.load failed: #{path}" unless TextureManager.load(path, id)

@@ -1,11 +1,11 @@
--- rpg_specs_test.lua : R2K3 리소스 규격 데이터(scripts/rpg/specs.lua) 검증.
+-- rpg_specs_test.lua : R2K3 리소스 규격 데이터(scripts/lua/rpg/specs.lua) 검증.
 -- 엔진 없이 도는 순수 로직이다. 규격 값이 서로 어긋나거나(시트 크기와 분할이
 -- 맞지 않는 등) 프레임 좌표 계산이 틀어지면 여기서 잡힌다.
 
 local M = {}
 
 function M.run(t)
-	local S = require("scripts/rpg/specs")
+	local S = require("scripts/lua/rpg/specs")
 
 	-- [1] 시트 크기와 분할의 정합성 — 하나만 바꿔도 여기서 깨진다
 	local c = S.charset

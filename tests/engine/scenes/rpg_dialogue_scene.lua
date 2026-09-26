@@ -10,8 +10,8 @@
 --     프레임에 따라 달라지면 골든 스크린샷이 흔들린다.
 -- 진행형 동작(타자 효과)은 Initialize에서 손으로 몇 프레임 굴려 stdout으로 남긴다.
 
-local Window = require("scripts/rpg/window")
-local Dialogue = require("scripts/rpg/message")
+local Window = require("scripts/lua/rpg/window")
+local Dialogue = require("scripts/lua/rpg/message")
 
 local SKIN = "./resources/ui/window.png"
 local FACES = "./resources/faces/placeholder.png"

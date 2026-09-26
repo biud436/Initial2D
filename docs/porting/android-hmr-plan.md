@@ -14,7 +14,7 @@ APK를 다시 빌드·설치하지 않고, 개발 머신에서 수정한 Lua 스
 
 ## 왜 가능한가
 
-- 게임 로직은 전부 `scripts/*.lua` — C++ 재빌드 없이 교체 가능 ([[game-logic-in-lua]] 원칙)
+- 게임 로직은 전부 `scripts/lua/*.lua` — C++ 재빌드 없이 교체 가능 ([[game-logic-in-lua]] 원칙)
 - Android는 이미 assets를 내부 저장소로 추출 후 `chdir` 하므로(Phase A1),
   **cwd의 스크립트 파일을 덮어쓰면 다음 로드부터 새 코드가 읽힌다**
 - 엔진의 Lua 수명주기가 단순: `Lua_Init()`(상태 생성→API 등록→main.lua→`Initialize()`),

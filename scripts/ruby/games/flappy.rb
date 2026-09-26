@@ -1,7 +1,7 @@
 # 엔진 데모: Flappy Bird 스타일, mruby 판 (S1, docs/plans/s1-mruby-binding.md)
 #
-# scripts/games/flappy.lua 를 Ruby 로 옮긴 것이다. 규칙과 수치는 같다.
-# (Lua 는 scripts/, Ruby 는 scripts/ruby/ 에 둔다)
+# scripts/lua/games/flappy.lua 를 Ruby 로 옮긴 것이다. 규칙과 수치는 같다.
+# (Lua 는 scripts/lua/, Ruby 는 scripts/ruby/ 에 둔다)
 # 조작: 마우스 클릭/터치 또는 스페이스 바로 날갯짓
 # 상태: :ready(대기) -> :play(플레이) -> :dead(게임 오버) -> :ready
 # 게임 오버 화면에서 화면 상단(1/3)을 누르면 게임을 끝낸다.

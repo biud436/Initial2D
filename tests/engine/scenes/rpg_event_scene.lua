@@ -1,15 +1,15 @@
 -- 이벤트 시스템 통합 검증 씬 (6단계) — tests/run_engine_tests.py가 구동한다.
 --
 -- 단위 테스트는 가짜 맵과 가짜 대화창으로 규칙을 본다. 여기서는 진짜 맵 파일
--- (resources/maps/village.json, room.json)과 진짜 이벤트 정의(scripts/maps/*.lua)를
+-- (resources/maps/village.json, room.json)과 진짜 이벤트 정의(scripts/lua/maps/*.lua)를
 -- 그대로 얹어, 좌표가 실제로 맞는지와 전환이 도는지를 확인한다.
 --
 -- 입력 없이 돌려야 하므로 결정키 대신 관리자 API를 직접 부른다. 결과는 stdout으로
 -- 남기고 러너가 문자열로 검사한다.
 
-local MapScene = require("scripts/rpg/map_scene")
-local Event = require("scripts/rpg/event")
-local Interpreter = require("scripts/rpg/interpreter")
+local MapScene = require("scripts/lua/rpg/map_scene")
+local Event = require("scripts/lua/rpg/event")
+local Interpreter = require("scripts/lua/rpg/interpreter")
 
 local scene, events, interp, playerChar
 local transferred = nil
@@ -30,7 +30,7 @@ function port.result() return port.value end
 local function loadMap(name, sx, sy)
 	if scene ~= nil then scene:dispose() end
 
-	local def = require("scripts/maps/" .. name)
+	local def = require("scripts/lua/maps/" .. name)
 	local err
 	scene, err = MapScene.new{ mapPath = def.map, viewW = 480, viewH = 448 }
 	if scene == nil then

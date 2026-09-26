@@ -1,6 +1,6 @@
 -- 엔진 검증 씬 (픽셀 검증용 — tests/run_engine_tests.py가 구동)
 -- 커밋된 리소스만 사용한다. 게임 코드는 Lua 원칙에 따라 씬 전체가 Lua로 작성됨.
-local Image = require("scripts/image")
+local Image = require("scripts/lua/image")
 
 function Initialize()
 	-- [A] BMFont 텍스트: 단색 배경판 위에 흰 글리프 (hangul.fnt: lineHeight=32 → scale=1)

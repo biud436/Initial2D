@@ -10,7 +10,7 @@
 > 작성일 2026-08-23. 근거는 셋이다. (1) 사용자 판정: "데모 수준이다, 난이도가 너무 쉽다,
 > 마법 등 게임성이 너무 낮다, 다른 게임에 대한 분석조차 없다, 기획서의 지도 데이터를 쓰지
 > 않았다." (2) 원안 기획서 `docs/design/Spica_v0.9.docx`(표 58개, 이미지 17장, 손그림 세계
-> 지도 포함). (3) 현재 구현 `scripts/games/aldebaran/`(Lua 2,377줄).
+> 지도 포함). (3) 현재 구현 `scripts/lua/games/aldebaran/`(Lua 2,377줄).
 
 ## 사람이 읽는 부분: 이 프롬프트를 쓰는 법
 
@@ -34,7 +34,7 @@ Lua로만 돌아가는 횡스크롤 액션 「알데바란」이며, 지금 상�
 
 ### 1. 지금 있는 것 (작성 시점의 사실, 각 Phase 시작 시 코드로 재확인할 것)
 
-**구현 (`scripts/games/aldebaran/`, Lua 2,377줄. C++ 엔진 수정 없음)**
+**구현 (`scripts/lua/games/aldebaran/`, Lua 2,377줄. C++ 엔진 수정 없음)**
 
 | 파일 | 줄 | 내용 |
 |---|---|---|
@@ -159,7 +159,7 @@ Lua로만 돌아가는 횡스크롤 액션 「알데바란」이며, 지금 상�
    `원안 절 / 내용 요약 / 게임성 가치(상중하) / 어느 Phase에서 쓸 것인가 / 쓰지 않기로 했다면 이유`.
    최소한 다음은 반드시 항목으로 들어간다: 12 스테이지 구조, 적의 4가지 공격 방식, 몬스터
    규격서의 미사용 칸 전부, 상태 이상(마비, 독), 스킬 시스템, 상점 3화폐, 세계 지도.
-4. **몬스터 데이터 스키마를 원안 표에 맞춰 굳힌다.** `scripts/games/aldebaran/data/monsters.lua`가
+4. **몬스터 데이터 스키마를 원안 표에 맞춰 굳힌다.** `scripts/lua/games/aldebaran/data/monsters.lua`가
    원안 표 39와 40의 칸을 전부 가지도록 하고(값이 없으면 `nil`), 지금의 `stage.lua` 종별 표를
    그리로 옮긴다. 이 스키마가 P5에서 적 열 종을 담을 그릇이다.
 5. 라이선스: **docx 자체는 커밋하지 않는다**(이미 gitignore). 채굴 산출물 중 원안 이미지를
@@ -387,7 +387,7 @@ Lua로만 돌아가는 횡스크롤 액션 「알데바란」이며, 지금 상�
 - 상점: 원안 7.4절의 3화폐(Credit, Gold, S Coin)는 **결제 구조라 채택하지 않는다.**
   오프라인 단일 게임에 맞게 **골드 상점 하나**로 줄인다. 이 결정을 문서에 남긴다.
 - 아이템: 원안의 보상 아이템(끈적거리는 거미줄, 검은 밀랍 인형)을 되살리고, 10단계에서 만든
-  `scripts/rpg/inventory.lua`를 재사용할 수 있는지 먼저 검토한다.
+  `scripts/lua/rpg/inventory.lua`를 재사용할 수 있는지 먼저 검토한다.
 
 ---
 
@@ -501,8 +501,8 @@ Lua로만 돌아가는 횡스크롤 액션 「알데바란」이며, 지금 상�
 | `docs/design/difficulty-audit.md` | P2의 진단 (신규) |
 | `docs/plans/index.md` | 진행 상황 표. 매번 갱신 |
 | `docs/plans/aldebaran-*.md` | Phase 계획 문서. A6부터 이어 붙인다 |
-| `scripts/games/aldebaran/` | 게임 전부 |
-| `scripts/games/aldebaran/data/` | 몬스터, 스킬, 프레임, 조우, 지도 표 (신규) |
-| `scripts/rpg/`, `scripts/ui/` | 재사용할 공용 부품(창, 선택지, 소지품, 가상 패드) |
+| `scripts/lua/games/aldebaran/` | 게임 전부 |
+| `scripts/lua/games/aldebaran/data/` | 몬스터, 스킬, 프레임, 조우, 지도 표 (신규) |
+| `scripts/lua/rpg/`, `scripts/lua/ui/` | 재사용할 공용 부품(창, 선택지, 소지품, 가상 패드) |
 | `tests/engine/scenes/aldebaran_scene.lua` | 인수 시나리오. 확장하되 약화시키지 않는다 |
 | `tools/generate_aldebaran_*.py` | 자산과 맵 생성기 |

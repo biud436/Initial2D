@@ -1,4 +1,4 @@
--- vpad_test.lua : 가상 D-패드 모듈(scripts/ui/vpad.lua)의 순수 로직 검증
+-- vpad_test.lua : 가상 D-패드 모듈(scripts/lua/ui/vpad.lua)의 순수 로직 검증
 -- 방향 판정은 순수 함수라 엔진 입력 없이 검증한다. 화면 표시는 데모 씬에서 눈으로 확인.
 
 local M = {}
@@ -8,7 +8,7 @@ function M.run(t)
     local p = GetPlatform()
     t.check(type(p) == "string" and p == p:lower() and #p > 0, "GetPlatform은 소문자 문자열", tostring(p))
 
-    local VirtualPad = require("scripts/ui/vpad")
+    local VirtualPad = require("scripts/lua/ui/vpad")
     t.check_type(VirtualPad.new, "function", "VirtualPad.new 존재")
     t.check_type(VirtualPad.direction, "function", "VirtualPad.direction 존재")
     t.check_type(VirtualPad.shouldShow, "function", "VirtualPad.shouldShow 존재")

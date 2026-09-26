@@ -1,11 +1,11 @@
--- rpg_assets_test.lua : 리소스 고르기(scripts/rpg/assets.lua) 검증 (8단계).
+-- rpg_assets_test.lua : 리소스 고르기(scripts/lua/rpg/assets.lua) 검증 (8단계).
 -- RTP는 재배포할 수 없어 CI에도 개발자 기계에도 없을 수 있다. 그래서 "있으면
 -- RTP, 없으면 플레이스홀더"가 두 경우 모두에서 옳아야 한다.
 
 local M = {}
 
 function M.run(t)
-	local Assets = require("scripts/rpg/assets")
+	local Assets = require("scripts/lua/rpg/assets")
 
 	-- [1] exists: 커밋된 파일과 없는 파일
 	t.check(Assets.exists("./resources/charsets/placeholder.png"),

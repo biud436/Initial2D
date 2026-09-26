@@ -1,4 +1,4 @@
--- rpg_window_test.lua : 스킨 창(scripts/rpg/window.lua) 검증.
+-- rpg_window_test.lua : 스킨 창(scripts/lua/rpg/window.lua) 검증.
 --
 -- 조각 계산은 순수 함수라 그대로 검사하고, 그리기는 가짜 Image 생성자를 넣어
 -- "무엇을 어디에 몇 번 찍었는가"를 기록으로 확인한다. 엔진 텍스처가 없어도 돈다.
@@ -48,8 +48,8 @@ local function coverage(pieces, w, h)
 end
 
 function M.run(t)
-	local Window = require("scripts/rpg/window")
-	local Specs = require("scripts/rpg/specs")
+	local Window = require("scripts/lua/rpg/window")
+	local Specs = require("scripts/lua/rpg/specs")
 	local spec = Specs.window
 
 	-- ---- [1] 반복 채우기: 자투리까지 정확히 --------------------------------

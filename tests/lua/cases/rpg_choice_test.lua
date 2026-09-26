@@ -1,4 +1,4 @@
--- rpg_choice_test.lua : 선택지 창(scripts/rpg/choice.lua) 검증.
+-- rpg_choice_test.lua : 선택지 창(scripts/lua/rpg/choice.lua) 검증.
 --
 -- 창 크기가 글자 폭에서 나오므로 폭 측정 함수를 가짜로 주입해 값을 통제한다
 -- (한 글자 = 10픽셀). 그리기는 가짜 Image로 기록만 남긴다.
@@ -24,13 +24,13 @@ end
 
 -- 한 글자 10픽셀 (UTF-8 글자 수로 센다 — 한글은 3바이트다)
 local function fakeMeasure(text)
-	local Text = require("scripts/rpg/text")
+	local Text = require("scripts/lua/rpg/text")
 	return Text.length(text) * CHAR_W
 end
 
 local function newChoice(opts)
-	local Window = require("scripts/rpg/window")
-	local Choice = require("scripts/rpg/choice")
+	local Window = require("scripts/lua/rpg/window")
+	local Choice = require("scripts/lua/rpg/choice")
 	opts = opts or {}
 	local skin = Window.newSkin{ path = "fake.png", scale = 1,
 		imageFactory = fakeImageFactory() }
@@ -116,8 +116,8 @@ function M.run(t)
 	t.check(drawn[2].y - drawn[1].y == 20, "항목 간격은 줄 높이")
 
 	-- ---- [8] 효과음은 있을 때만 부른다 --------------------------------------
-	local Window = require("scripts/rpg/window")
-	local Choice = require("scripts/rpg/choice")
+	local Window = require("scripts/lua/rpg/window")
+	local Choice = require("scripts/lua/rpg/choice")
 	local beeps = { cursor = 0, decision = 0 }
 	local se = {
 		cursor = function() beeps.cursor = beeps.cursor + 1 end,

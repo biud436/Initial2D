@@ -543,7 +543,7 @@ int Lua_Init()
 		//luaL_dostring(g_pLuaState,
 		//	"for dir in io.popen([[dir \"./scripts/\" /r /b]]) :lines() do LoadScript(\"./scripts/\"..dir) end");
 
-		luaL_dostring(g_pLuaState, "LoadScript(\"./scripts/main.lua\")");
+		luaL_dostring(g_pLuaState, "LoadScript(\"./scripts/lua/main.lua\")");
 
 		// 스크립트 파일 내에 선언된 초기화 함수를 호출합니다.
 		lua_getglobal(g_pLuaState, "Initialize");

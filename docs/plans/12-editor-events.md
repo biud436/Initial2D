@@ -14,9 +14,9 @@
 
 | 조각 | 상태 | 어디 |
 |---|---|---|
-| 이벤트 커맨드 (17종) | ✅ 데이터로 적고 실행하고 검증한다 | `scripts/rpg/commands.lua` |
+| 이벤트 커맨드 (17종) | ✅ 데이터로 적고 실행하고 검증한다 | `scripts/lua/rpg/commands.lua` |
 | 맵 포맷 v2의 `events` 배열 | ✅ 정의되고, 엔진이 읽고, 데모가 실제로 쓴다 | `resources/maps/port_town.json` |
-| 맵 이벤트와 정의 파일 이벤트의 병합 | ✅ `id`로 합친다 (정의 파일이 이긴다) | `scripts/rpg/mapdata.lua` |
+| 맵 이벤트와 정의 파일 이벤트의 병합 | ✅ `id`로 합친다 (정의 파일이 이긴다) | `scripts/lua/rpg/mapdata.lua` |
 | 브리지 서버의 파일 읽기와 쓰기 | ✅ `scripts/`, `resources/` 화이트리스트 | `tools/bridge/` |
 | **에디터가 v2를 여는 것** | ❌ `지원하지 않는 맵 버전` 예외 | `MapFormat.ts:253` |
 | **에디터가 `events`를 보존하는 것** | ❌ 저장하면 **사라진다** | `MapFormat.ts:217` |
@@ -35,7 +35,7 @@ v1으로 열어 저장하면 이벤트를 조용히 잃는다.
 
 커맨드가 17종이고 저마다 인자가 다르다. 지금 그 명세는 **세 곳**에 흩어져 있다.
 
-1. `scripts/rpg/commands.lua`의 `SPEC` 표 (실행과 검증의 진실)
+1. `scripts/lua/rpg/commands.lua`의 `SPEC` 표 (실행과 검증의 진실)
 2. [10-demo-v2.md 3.2절](10-demo-v2.md)의 표 (사람이 읽는 진실)
 3. 앞으로 만들 에디터의 폼 (편집의 진실)
 
@@ -154,7 +154,7 @@ GET /api/files/resources/schema/event-commands.json
 
 ### 마일스톤 4: 옮기기와 왕복 (엔진 저장소)
 
-지금 데모의 이벤트 17종은 `scripts/maps/*.lua`에 있다. 에디터로 편집하려면 맵 파일로
+지금 데모의 이벤트 17종은 `scripts/lua/maps/*.lua`에 있다. 에디터로 편집하려면 맵 파일로
 옮겨야 한다.
 
 - `tools/export_events.py` 또는 엔진 안의 덤프: 정의 파일의 이벤트를 맵 JSON의
@@ -179,7 +179,7 @@ Lua 필드다.
 
 `charset`의 RTP 문제가 유일하게 설계가 필요한 자리다. 제안: 맵 파일에는
 `"charset": { "set": "npc", "index": 3 }`처럼 **논리 이름**을 적고,
-`scripts/rpg/assets.lua`가 그것을 실제 경로로 푼다. 에디터는 논리 이름의 목록을
+`scripts/lua/rpg/assets.lua`가 그것을 실제 경로로 푼다. 에디터는 논리 이름의 목록을
 브리지에서 받는다 (`/api/project`에 한 줄 추가).
 
 ## 6. 위험

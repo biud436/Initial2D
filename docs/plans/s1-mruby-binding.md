@@ -23,7 +23,7 @@
 ### 2.1 범용 엔진의 원칙은 그대로
 
 C++ 은 엔진과 어댑터만이다. mruby 바인딩은 `src/mrb_*.cpp` 여덟 파일로, `lua_*.cpp` 와
-같은 배치(파일 하나에 모듈이나 클래스 하나)다. RPG 프레임워크(`scripts/rpg/`)는 Lua 그대로
+같은 배치(파일 하나에 모듈이나 클래스 하나)다. RPG 프레임워크(`scripts/lua/rpg/`)는 Lua 그대로
 두며 옮기지 않는다. 언어를 하나 더 얹는 것이지 게임 로직을 두 벌 관리하는 것이 아니다.
 
 ### 2.2 백엔드 선택 (`src/ScriptRuntime.h`)
@@ -32,7 +32,7 @@ C++ 은 엔진과 어댑터만이다. mruby 바인딩은 `src/mrb_*.cpp` 여덟 
 
 1. `INITIAL2D_SCRIPT=lua | mruby` 환경 변수
 2. `game.json` 의 `"script": "mruby"`
-3. `scripts/ruby/main.rb` 만 있고 `scripts/main.lua` 가 없으면 mruby, 그 밖에는 lua
+3. `scripts/ruby/main.rb` 만 있고 `scripts/lua/main.lua` 가 없으면 mruby, 그 밖에는 lua
 
 **`main.lua` 가 있으면 언제나 Lua 다.** 이 저장소에는 둘 다 있으므로 기본은 여전히 Lua
 (알데바란)이고, Ruby 플래피는 `INITIAL2D_SCRIPT=mruby` 로 연다. 기존 프로젝트가 깨지지
@@ -53,7 +53,7 @@ C++ 은 엔진과 어댑터만이다. mruby 바인딩은 `src/mrb_*.cpp` 여덟 
 | `Sprite#rect` 는 `{x, y, right, bottom, width, height}` | Lua 의 GetRect 는 width 칸에 오른쪽 좌표를 넣는 규칙이었다. Ruby 에서는 이름대로 돌려주고 둘 다 준다 |
 | `Kernel#load`, `Kernel#require` 를 엔진이 정의 | mruby 에는 파일 읽기가 없다. `require` 는 `.rb` 를 붙이고 절대 경로로 정규화해 한 번만 읽는다 |
 | **폴더는 언어별로**: Lua 는 `scripts/` 그대로, Ruby 는 `scripts/ruby/` (테스트는 `tests/lua/`, `tests/ruby/`) | 저자 요청 (2026-09-26, "루아하고 루비하고 폴더를 구분"). Lua 를 `scripts/lua/` 로 옮기는 대칭 배치는 `require("scripts/...")` 수백 곳과 에디터 브리지(다른 저장소), HMR 푸시, 안드로이드 에셋 스테이징이 `scripts/` 에 묶여 있어 미뤘다. Ruby 를 `scripts/` 아래에 두면 그 셋이 손대지 않아도 Ruby 파일을 함께 나른다 |
-| 편의 메서드는 **프렐류드**(Ruby 문자열을 C++ 에 내장) | `Sprite.load(path, id, ...)` 처럼 C 로 만들 이유가 없는 것. Lua 의 `scripts/image.lua` 에 해당 |
+| 편의 메서드는 **프렐류드**(Ruby 문자열을 C++ 에 내장) | `Sprite.load(path, id, ...)` 처럼 C 로 만들 이유가 없는 것. Lua 의 `scripts/lua/image.lua` 에 해당 |
 
 ### 2.4 오류 정책
 
@@ -146,4 +146,4 @@ CI 는 `brew install mruby` 로 항상 켠다.
 - **핫 리로드**는 `.rb` 도 같은 경로로 받아 VM 을 다시 만든다. `tools/hmr_push.py` 가
   확장자를 가리지 않는지는 실기에서 확인하지 않았다.
 - 다른 데모(알데바란, 마을)를 Ruby 로 옮기는 것은 이 단계의 목표가 아니다. 필요해지면
-  `scripts/rpg/` 를 Ruby 로 다시 쓰는 것이 아니라 어느 한 언어로 정하는 결정이 먼저다.
+  `scripts/lua/rpg/` 를 Ruby 로 다시 쓰는 것이 아니라 어느 한 언어로 정하는 결정이 먼저다.

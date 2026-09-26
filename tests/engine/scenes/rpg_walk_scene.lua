@@ -12,7 +12,7 @@
 -- ref와 hid는 같은 캐릭터를 같은 방향으로 세운 것이라, 머리색 픽셀 수의 차이가
 -- 곧 레이어 분할 그리기(캐릭터를 1층과 2층 사이에 그림)의 효과다.
 
-local MapScene = require("scripts/rpg/map_scene")
+local MapScene = require("scripts/lua/rpg/map_scene")
 
 local scene = nil
 local CHARSET = "./resources/charsets/placeholder.png"

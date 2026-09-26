@@ -1,6 +1,6 @@
 # Initial2D, mruby 게임 진입점 (S1, docs/plans/s1-mruby-binding.md)
 #
-# scripts/main.lua 에 대응한다. Lua 스크립트는 scripts/ 에, Ruby 스크립트는 이 폴더
+# scripts/lua/main.lua 에 대응한다. Lua 스크립트는 scripts/lua/ 에, Ruby 스크립트는 이 폴더
 # (scripts/ruby/) 에 둔다. 이 파일은 mruby 를 골랐을 때 읽힌다.
 #   INITIAL2D_SCRIPT=mruby ./build/Initial2D
 # (또는 game.json 의 "script": "mruby", 또는 main.lua 가 없을 때. ScriptRuntime.h)

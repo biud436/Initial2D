@@ -3,7 +3,7 @@
 **권장 모델**: Claude Opus 5 — 스킨 조립, 줄바꿈, 타자 효과 등 시각적 반복 조정이 중심이다. 코루틴 연동의 어려운 부분은 6단계 산출물을 그대로 사용한다.
 
 > 목표: System 윈도우 스킨으로 대화창을 그리고, 한 글자씩 출력되는 메시지, 얼굴 그래픽, 선택지를 만든다.
-> 전부 Lua(`scripts/rpg/window.lua`, `message.lua`)다. 나인 슬라이스 같은 개념을 C++에 넣지 않고, `Sprite.SetRect`로 스킨 조각을 잘라 Lua에서 조립한다.
+> 전부 Lua(`scripts/lua/rpg/window.lua`, `message.lua`)다. 나인 슬라이스 같은 개념을 C++에 넣지 않고, `Sprite.SetRect`로 스킨 조각을 잘라 Lua에서 조립한다.
 
 ## 재료 확인
 
@@ -37,9 +37,9 @@
 ## 작업 항목
 
 - [x] `specs.lua`에 System 스킨 분할 좌표 확정 (실물 검증)
-- [x] `scripts/rpg/window.lua`: 스킨 조립, 열기와 닫기
-- [x] `scripts/rpg/message.lua`: 타자 효과, 줄바꿈, 페이지, 얼굴, 코루틴 대기
-- [x] `scripts/rpg/choice.lua`: 선택지
+- [x] `scripts/lua/rpg/window.lua`: 스킨 조립, 열기와 닫기
+- [x] `scripts/lua/rpg/message.lua`: 타자 효과, 줄바꿈, 페이지, 얼굴, 코루틴 대기
+- [x] `scripts/lua/rpg/choice.lua`: 선택지
 - [x] 6단계 `ctx.message`와 `ctx.choice`의 print 스텁을 실물로 교체
 - [x] 대화 효과음 (글자 출력음, 커서음) — 자작 WAV (`tools/generate_ui_assets.py`)
 - [x] 데모: NPC 대화에 얼굴과 선택지가 나오는 장면
@@ -55,7 +55,7 @@
 ## 구현 메모 (2026-08-18)
 
 1. **스킨 분할은 실물로 확정했다.** `resources/rtp/System/System.png`의 알파 채널을 픽셀 단위로
-   떠서 확인했고, 결과는 `scripts/rpg/specs.lua`의 `M.window`에 있다. 계획 문서의 추측과 달리
+   떠서 확인했고, 결과는 `scripts/lua/rpg/specs.lua`의 `M.window`에 있다. 계획 문서의 추측과 달리
    스크롤 화살표는 (128,0) 블록이 아니라 **테두리 블록 한가운데**에 있다 (위 40,8,16,8 / 아래 40,16,16,8).
    (128,0) 32x32는 전투 UI용이라 대화창은 쓰지 않는다.
 2. **늘이기 대신 반복.** 엔진의 스프라이트 배율은 가로세로 같은 값 하나뿐이라(SDL2 어댑터의
@@ -65,7 +65,7 @@
 3. **여닫기 애니메이션도 배율이 아니라 기하로.** 창 높이를 openness만큼 줄여 위아래 가운데에서
    자라게 한다. 세로만 늘이는 배율이 없어서이기도 하고, 이쪽이 픽셀도 깨지지 않는다.
 4. **`Sprite.SetRect` 바인딩 수정 (C++).** 나인 슬라이스는 "텍스처의 임의 위치를 잘라 그리기"가
-   있어야 성립하는데, 이 바인딩은 테이블 인자만 받으면서(그래서 `scripts/image.lua`의 네 인자
+   있어야 성립하는데, 이 바인딩은 테이블 인자만 받으면서(그래서 `scripts/lua/image.lua`의 네 인자
    호출은 조용히 무시됐다) width와 height를 y 변수에 덮어써 읽고 있었다. 두 형태를 모두 받고
    좌표를 제대로 채우도록 고쳤다 (`src/lua_sprite.cpp`, 검증은 `tests/lua/cases/sprite_sheet_test.lua`).
    RPG 전용 기능이 아니라 범용 API의 버그다.

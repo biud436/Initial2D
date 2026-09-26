@@ -1,8 +1,8 @@
 -- aldebaran_combat_test.lua : 전투와 성장 수식의 단위 테스트
 -- (docs/plans/aldebaran-2-combat.md 3절, 8절)
 
-local Combat = require("scripts/games/aldebaran/combat")
-local Rng = require("scripts/rpg/rng")
+local Combat = require("scripts/lua/games/aldebaran/combat")
+local Rng = require("scripts/lua/rpg/rng")
 
 local M = {}
 

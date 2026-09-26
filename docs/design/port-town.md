@@ -120,7 +120,7 @@ graph TD
 
 좌표는 항구 마을 기준이며, 전부 손으로 정한 자리다. **난수로 뿌리지 않는다.**
 
-좌표는 실물(`scripts/maps/port_town.lua`와 `resources/maps/port_town.json`)과 같다.
+좌표는 실물(`scripts/lua/maps/port_town.lua`와 `resources/maps/port_town.json`)과 같다.
 
 | 좌표 | 오브젝트 | 트리거 | 반응 |
 |---|---|---|---|
@@ -147,7 +147,7 @@ graph TD
 (3) 인물을 드러낸다.** 셋 중 어느 것도 아니면 지운다.
 
 인물 다섯은 **하나의 심부름 사슬**로 이어져 있다 (3절의 흐름도). 아래 대사는 사슬의
-각 칸에서 실제로 나오는 것이며, 전문은 `scripts/maps/port_town.lua`와 `inn.lua`에 있다.
+각 칸에서 실제로 나오는 것이며, 전문은 `scripts/lua/maps/port_town.lua`와 `inn.lua`에 있다.
 
 | 아이템 | 어디서 | 무엇에 쓰는가 |
 |---|---|---|
@@ -316,7 +316,7 @@ graph TD
 
 곡은 전부 저자의 자작곡이며, 원본은 개인 라이브러리에 있다. 저장소에는 `bless.ogg`만
 있으므로 **파일이 있으면 그 곡, 없으면 `bless.ogg`** 로 내려앉는 규칙을 쓴다
-(리소스 고르기와 같은 방식, `scripts/rpg/assets.lua`).
+(리소스 고르기와 같은 방식, `scripts/lua/rpg/assets.lua`).
 
 | 자리 | 곡 | 파일 | 볼륨 |
 |---|---|---|---|
@@ -372,6 +372,6 @@ graph TD
    그 파일의 문자열을 고치고 다시 실행한다.
 2. **`inn.ogg`는 저장소에 넣지 않았다.** 슬롯만 만들어 두었으므로
    `resources/audio/inn.ogg`에 파일을 두면 여관에서 그 곡이 걸리고, 없으면
-   마을 곡(`bless.ogg`)을 볼륨 80으로 쓴다 (`scripts/maps/inn.lua`).
+   마을 곡(`bless.ogg`)을 볼륨 80으로 쓴다 (`scripts/lua/maps/inn.lua`).
 3. **에필로그와 등대지기의 대사는 5절의 초안을 그대로 썼다.** 세 갈래의 에필로그가
    실제로 갈리는지는 인수 시나리오가 확인한다 (`heardAltar` 갈래를 매번 통과시킨다).

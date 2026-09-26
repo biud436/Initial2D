@@ -10,7 +10,7 @@ Android 실행 환경(APK 에셋, 터치, 수명주기)에 연결하는 작업�
 
 - **게임 로직·Lua 스크립트 무수정** — 플랫폼 차이는 어댑터에서 흡수한다
 - Win32/GDI 원형 보존 (`RS_WINDOWS` 가드, `archive/windows-gdi` 브랜치)
-- 콘텐츠·씬은 `scripts/*.lua`, C++은 엔진/어댑터만
+- 콘텐츠·씬은 `scripts/lua/*.lua`, C++은 엔진/어댑터만
 
 ## Phase A0 — 빌드 스캐폴딩 (이 브랜치에서 완료)
 
@@ -58,7 +58,7 @@ APK의 assets는 파일 시스템이 아니므로 이대로는 아무것도 로�
   기존 `Input.GetMouseX/Y`, `IsMouseDown` Lua API가 무수정으로 동작
 - Android 백 버튼(`SDLK_AC_BACK`) → 종료 확인 또는 VK 매핑 결정
 - 하드웨어 키보드 없는 환경이 기본이므로 `Input.IsKeyDown` 의존 씬은 터치 UI 대응 필요
-  (콘텐츠 영역 — `scripts/*.lua`에서 처리)
+  (콘텐츠 영역 — `scripts/lua/*.lua`에서 처리)
 
 ## Phase A3 — 화면 — **구현됨 (풀 스크린 실기 확인)**
 

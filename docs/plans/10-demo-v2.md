@@ -31,7 +31,7 @@
 
 | 마일스톤 | 내용 | 산출물 |
 |---|---|---|
-| 1. 이벤트 커맨드 | 데이터 커맨드 목록과 실행기, 검증기, Lua 탈출구 | `scripts/rpg/commands.lua`, 단위 테스트 |
+| 1. 이벤트 커맨드 | 데이터 커맨드 목록과 실행기, 검증기, Lua 탈출구 | `scripts/lua/rpg/commands.lua`, 단위 테스트 |
 | 2. 기획서대로 재작업 | 항구 마을과 여관 맵, 오브젝트, 대사, PC/모바일 UI 배치 | 새 맵과 이벤트 정의, 모바일 조작 버튼, 장소 이름 표시 |
 | 3. 에디터 연동 | 맵 포맷 v2의 `events` 배열, 브리지 왕복, 에디터의 이벤트 배치 | 포맷 문서, 픽스처, InitialEditor 쪽 작업 |
 
@@ -128,7 +128,7 @@ JSON에서도 같은 이름을 쓴다.
 
 ### 마일스톤 1 — 이벤트 커맨드 (완료, 2026-08-19)
 
-- [x] `scripts/rpg/commands.lua`: 커맨드 15종, `compile`, `validate`
+- [x] `scripts/lua/rpg/commands.lua`: 커맨드 15종, `compile`, `validate`
 - [x] `ctx`에 없는 것 보강: `playSe`, `playBgm`, `showLocation`, `scene` (호스트 위임).
       씬 쪽 구현도 함께 (`game.lua`의 장소 이름 표시와 페이드 후 씬 전환)
 - [x] 맵 정의 로더가 `commands`와 `script`를 모두 받아들이게 — `Event.new`가 커맨드를
@@ -151,7 +151,7 @@ JSON에서도 같은 이름을 쓴다.
       창고 문, 여관 간판, 막힌 문, 난로, 탁자). 앞 타일의 gid는 건드리지 않는다
 - [x] 오브젝트와 인물 5명을 커맨드로 작성 (기획서 5절의 대사 전문, 이벤트 17종)
 - [x] 장소 이름 표시(맵 진입 2.5초) — `showLocation` 커맨드와 씬 쪽 구현
-- [x] 모바일 조작 재배치: `scripts/ui/buttons.lua`의 결정과 취소 버튼.
+- [x] 모바일 조작 재배치: `scripts/lua/ui/buttons.lua`의 결정과 취소 버튼.
       "패드 밖 아무 데나 탭 = 결정"을 걷어냈다
 - [x] PC 조작 정리: 안내 한 줄, 가상 패드 없음, 장소 이름과 겹치지 않게
 - [x] 최종 선택과 에필로그, 타이틀 복귀 (`scene` 커맨드 + 페이드)
@@ -173,7 +173,7 @@ JSON에서도 같은 이름을 쓴다.
 - [x] 맵 포맷 v2: `events` 배열 (v1 파일은 그대로 읽힌다) — 포맷 정의는
       [02-tilemap.md](02-tilemap.md)의 "맵 포맷 v2"
 - [x] C++ 타일맵 로더가 v1과 v2를 모두 받아들인다 (`src/Tilemap.cpp`). 이벤트는
-      읽지 않는다 — Lua가 `Json.Load`로 읽는다 (`scripts/rpg/mapdata.lua`).
+      읽지 않는다 — Lua가 `Json.Load`로 읽는다 (`scripts/lua/rpg/mapdata.lua`).
       엔진 바인딩을 늘리지 않았다
 - [x] 맵의 이벤트와 정의 파일의 이벤트를 `id`로 합친다 (같은 id면 정의 파일이 이긴다)
 - [x] 픽스처 `tests/fixtures/maps/sample_v2.json`과 단위 테스트 (합치기 규칙,

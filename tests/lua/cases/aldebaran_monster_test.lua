@@ -3,7 +3,7 @@
 --
 -- 가짜 지도 위에서 순찰, 추적, 공격, 돌격, 회복, 죽음을 프레임 단위로 재현한다.
 
-local Monster = require("scripts/games/aldebaran/monster")
+local Monster = require("scripts/lua/games/aldebaran/monster")
 
 local M = {}
 

@@ -1,4 +1,4 @@
--- rpg_text_test.lua : UTF-8 글자 분할과 자동 줄바꿈 검증 (scripts/rpg/text.lua)
+-- rpg_text_test.lua : UTF-8 글자 분할과 자동 줄바꿈 검증 (scripts/lua/rpg/text.lua)
 --
 -- 폭 측정을 주입받는 구조라 가짜 자로 잰다. 한글은 3바이트라 바이트 길이와
 -- 글자 수가 다르고, 그 차이에서 나오는 실수를 여기서 잡는다.
@@ -19,7 +19,7 @@ local function join(lines)
 end
 
 function M.run(t)
-	local Text = require("scripts/rpg/text")
+	local Text = require("scripts/lua/rpg/text")
 
 	-- ---- [1] 글자 분할 ------------------------------------------------------
 	t.check_eq(#Text.chars("가나다"), 3, "한글 3글자")

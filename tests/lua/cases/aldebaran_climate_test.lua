@@ -5,8 +5,8 @@
 -- 늦추는가, 빛은 언제 켜지는가, 우박은 예고 뒤에 떨어지는가, 물은 잠기게
 -- 하는가. 그림은 골든이 본다.
 
-local Climate = require("scripts/games/aldebaran/climate")
-local Stages = require("scripts/games/aldebaran/stages/init")
+local Climate = require("scripts/lua/games/aldebaran/climate")
+local Stages = require("scripts/lua/games/aldebaran/stages/init")
 
 local M = {}
 

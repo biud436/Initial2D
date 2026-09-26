@@ -25,11 +25,11 @@
 
 ## 2. 설계 원칙 (앞 단계와 같다)
 
-1. **C++ 코어는 건드리지 않는다.** 아이템도 소지품도 `scripts/rpg/` Lua 레이어다.
+1. **C++ 코어는 건드리지 않는다.** 아이템도 소지품도 `scripts/lua/rpg/` Lua 레이어다.
    판단 기준은 그대로 "이 기능이 플래피버드에도 말이 되는가"이며, 아이템은 말이 되지
    않으므로 코어에 넣지 않는다.
-2. **아이템 목록은 데이터다.** `scripts/games/rpgdemo/items.lua`는 표 하나이며 코드가
-   없다. 프레임워크(`scripts/rpg/inventory.lua`)는 그 표를 주입받는다. 다른 게임은
+2. **아이템 목록은 데이터다.** `scripts/lua/games/rpgdemo/items.lua`는 표 하나이며 코드가
+   없다. 프레임워크(`scripts/lua/rpg/inventory.lua`)는 그 표를 주입받는다. 다른 게임은
    다른 표를 넣는다.
 3. **소지품은 `ctx.state` 안에 산다.** 맵을 넘는 상태 공유는 6단계에 이미 있다.
    `state.items = { silver = 2 }` 하나를 더 쓰는 것뿐이고, 나중에 저장과 로드가
@@ -57,7 +57,7 @@
 	state.items = { silver = 2, warehouse_key = 1 }
 ```
 
-`scripts/rpg/inventory.lua`는 그 표를 다루는 순수 함수 묶음이며 엔진에 닿지 않는다.
+`scripts/lua/rpg/inventory.lua`는 그 표를 다루는 순수 함수 묶음이며 엔진에 닿지 않는다.
 
 | 함수 | 하는 일 |
 |---|---|
@@ -89,7 +89,7 @@
 
 ### 4.3 소지품 창
 
-`scripts/rpg/menu.lua`. 7단계의 `window.lua`와 `choice.lua`가 이미 창과 커서와
+`scripts/lua/rpg/menu.lua`. 7단계의 `window.lua`와 `choice.lua`가 이미 창과 커서와
 스크롤을 알고 있으므로, 그 위에 "목록 + 설명" 두 칸짜리 화면 하나를 얹는다.
 
 - 여는 것은 **취소키**(PC의 X, 모바일의 취소 버튼)다. 같은 키로 닫는다.

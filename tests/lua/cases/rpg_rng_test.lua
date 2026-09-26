@@ -1,11 +1,11 @@
--- rpg_rng_test.lua : 시드 주입 난수(scripts/rpg/rng.lua) 검증.
+-- rpg_rng_test.lua : 시드 주입 난수(scripts/lua/rpg/rng.lua) 검증.
 -- 결정적 재생의 토대라 "같은 시드는 같은 수열"이 여기서 깨지면 5단계 이후의
 -- 모든 시나리오 테스트가 흔들린다 (docs/plans/09-testing.md 4절).
 
 local M = {}
 
 function M.run(t)
-	local Rng = require("scripts/rpg/rng")
+	local Rng = require("scripts/lua/rpg/rng")
 
 	-- [1] 같은 시드는 같은 수열, 다른 시드는 다른 수열
 	local a, b = Rng.new(42), Rng.new(42)

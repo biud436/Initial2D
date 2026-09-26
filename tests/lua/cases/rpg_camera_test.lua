@@ -1,10 +1,10 @@
--- rpg_camera_test.lua : 카메라 추적과 경계 클램프(scripts/rpg/camera.lua) 검증.
+-- rpg_camera_test.lua : 카메라 추적과 경계 클램프(scripts/lua/rpg/camera.lua) 검증.
 -- 엔진 없이 도는 순수 계산이다.
 
 local M = {}
 
 function M.run(t)
-	local Camera = require("scripts/rpg/camera")
+	local Camera = require("scripts/lua/rpg/camera")
 
 	-- [1] clampAxis: 맵이 화면보다 클 때
 	local VIEW, WORLD = 100, 500

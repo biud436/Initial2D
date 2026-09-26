@@ -5,7 +5,7 @@
 > ([tables.md](spica-source/tables.md), [text.md](spica-source/text.md),
 > [media.md](spica-source/media.md)), 다시 뽑으려면 `python3 tools/spica_extract.py`.
 >
-> 작성일 2026-08-23. 기준 구현은 `scripts/games/aldebaran/` (A5까지).
+> 작성일 2026-08-23. 기준 구현은 `scripts/lua/games/aldebaran/` (A5까지).
 > 상위 계획은 [aldebaran-game-meta-prompt.md](../prompts/aldebaran-game-meta-prompt.md).
 
 ## 1. 한 표로 답하기
@@ -59,7 +59,7 @@
 
 ### 2.2 몬스터 규격서의 미사용 칸 (원안 6.3, 6.4절 / 표 39, 40)
 
-그릇은 A6에서 `scripts/games/aldebaran/data/monsters.lua`의 `spec`으로 팠다. 값을 게임이
+그릇은 A6에서 `scripts/lua/games/aldebaran/data/monsters.lua`의 `spec`으로 팠다. 값을 게임이
 읽게 만드는 것은 P5다.
 
 | 칸 | 거미 (표 39) | 늑대 인간 (표 40) | 가치 | 갈 곳 |

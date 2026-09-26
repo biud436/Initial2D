@@ -1,4 +1,4 @@
--- touch_test.lua : 포인터 통합(scripts/ui/touch.lua) 검증 (T1)
+-- touch_test.lua : 포인터 통합(scripts/lua/ui/touch.lua) 검증 (T1)
 --
 -- 터치 API가 있으면 손가락들을, 없으면 마우스를 포인터 목록으로 만든다.
 -- 가짜 Input 표면으로 두 경우를 다 검증한다.
@@ -16,7 +16,7 @@ local function mouseInput(down, press, up, x, y)
 end
 
 function M.run(t)
-    local Touch = require("scripts/ui/touch")
+    local Touch = require("scripts/lua/ui/touch")
     t.check_type(Touch.pointers, "function", "Touch.pointers 존재")
 
     -- 터치 API 없는 표면 (테스트의 가짜 Input, 옛 빌드): 마우스만

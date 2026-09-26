@@ -3,7 +3,7 @@
 --
 -- 가짜 충돌 지도를 주입해 물리를 프레임 단위로 재현한다. 엔진이 필요 없다.
 
-local Player = require("scripts/games/aldebaran/player")
+local Player = require("scripts/lua/games/aldebaran/player")
 
 local M = {}
 

@@ -1,7 +1,7 @@
 -- 데모 인수 테스트 씬 (9단계) — tests/run_engine_tests.py가 구동한다.
 --
 -- 로드맵 전체의 인수 테스트다. 가짜 씬이 아니라 **게임이 실제로 여는 파일**
--- (scripts/games/rpgdemo/title.lua, game.lua, scripts/maps/port_town.lua, inn.lua)을
+-- (scripts/lua/games/rpgdemo/title.lua, game.lua, scripts/lua/maps/port_town.lua, inn.lua)을
 -- 그대로 얹고, 입력 재생기(tests/lua/input_replay.lua)로 사람이 하듯 키를 눌러
 -- 기획서(docs/design/port-town.md)의 흐름을 한 번에 통과시킨다.
 --
@@ -23,10 +23,10 @@
 --   bag     소지품 창이 열린 채로         wall   여관 벽 앞에 선 채로
 --   (없음)  시나리오 전체를 끝까지
 
-local Replay = require("scripts/luatests/input_replay")
+local Replay = require("scripts/lua/luatests/input_replay")
 
-require("scripts/games/rpgdemo/title")
-require("scripts/games/rpgdemo/game")
+require("scripts/lua/games/rpgdemo/title")
+require("scripts/lua/games/rpgdemo/game")
 
 local STOP = (os.getenv ~= nil) and os.getenv("INITIAL2D_DEMO_STOP") or nil
 
@@ -35,7 +35,7 @@ local current, pending, currentName = nil, nil, nil
 local replay = nil
 local frozen = false
 
--- 허브(scripts/main.lua)와 같은 씬 전환 계약
+-- 허브(scripts/lua/main.lua)와 같은 씬 전환 계약
 function SwitchScene(name)
 	if scenes[name] ~= nil then pending = name end
 end
