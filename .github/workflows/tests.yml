@@ -21,7 +21,7 @@ jobs:
       - name: 의존성 설치
         run: |
           brew install sdl2 sdl2_image sdl2_mixer
-          python3 -m pip install --break-system-packages pillow
+          python3 -m pip install --break-system-packages pillow numpy
 
       # Homebrew 의 mruby 는 병(bottle)에 따라 생성 헤더 mruby/presym/id.h 가 빠져 있을 수 있다
       # (시스템 ruby 2.6 으로 만든 병). 그때는 4.0.0 을 Homebrew ruby 로 소스 빌드해 같은 자리에 둔다.
