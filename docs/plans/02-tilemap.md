@@ -72,6 +72,61 @@ v1의 "이벤트는 맵 파일에 넣지 않는다"를 뒤집은 이유는 하�
 
 계약 픽스처는 `tests/fixtures/maps/sample_v2.json`이며 두 저장소가 같은 파일을 검증한다 (09-testing.md 3.5절).
 
+### v2의 `objects` (2026-09-26, [M1](m1-map-objects.md))
+
+v2 파일은 `objects` 배열도 실을 수 있다. `events`가 RPG 이벤트(칸 좌표와 커맨드)라면 `objects`는 게임이 정하는
+배치 데이터다 (시작 지점, 적, 흔적, 구간). 좌표는 **픽셀**이고 순서는 보존된다.
+
+```json
+"objects": [
+  { "id": "start", "type": "start", "x": 56, "y": 384 },
+  { "id": "spawn_1", "type": "spawn", "x": 224, "y": 384,
+    "props": { "species": "spider", "minX": 180, "maxX": 280 } },
+  { "id": "tracks", "type": "landmark", "x": 300, "y": 0, "width": 48,
+    "props": { "title": "여러 갈래의 발자국", "text": "…", "skill": "edge" } }
+]
+```
+
+| 키 | 뜻 |
+|---|---|
+| `id` | 맵 안에서 겹치지 않는 문자열 |
+| `type` | 오브젝트 타입. 타입과 칸은 프로젝트의 `resources/schema/map-objects.json`이 정한다 |
+| `x`, `y` | 픽셀 좌표 (`y`가 없으면 0) |
+| `width`, `height` | 띠(band)와 사각형(rect) 모양일 때의 폭과 높이 (픽셀). 점이면 없다 |
+| `props` | 타입의 칸 (스키마의 `fields`) |
+
+모르는 키는 어디서든 보존한다. 엔진은 `objects`를 읽지 않는다. C++ 로더(`src/Tilemap.cpp`)는 크기, 레이어,
+collision, tilesets만 읽고 나머지 키를 무시하며, 게임 스크립트가 `Json.Load` / `Json.load`로 읽는다
+(알데바란은 `scripts/lua/games/aldebaran/stages/placement.lua`와 `.rb`).
+
+스키마(`version` 1)는 타입마다 `type`, `label`, `shape`(`point` | `band` | `rect`), `color`(`accent` |
+`danger` | `warning` | `success` | `muted`), `unique`, `defaultWidth`, `fields[]`(`name`, `type`: `string` |
+`text` | `number` | `integer` | `boolean` | `enum`, `values`, `default`, `required`, `role`: `rangeMin` |
+`rangeMax`, `min`, `max`, `label`)를 적고, `play.env`에 에디터의 실행 버튼이 넘길 환경 변수를 적는다
+(`{map.name}`, `{map.file}`, `{x}`, `{y}`를 채운다). 형식의 정본은 InitialEditor
+`packages/ext-tilemap/src/model/schema.ts`의 머리 주석이다.
+
+## 저장 형식 (2026-09-26, M1)
+
+맵 파일은 한 가지 형식으로 쓴다. 에디터(InitialEditor `format.ts`의 `serializeMap`)와 엔진의 맵 생성기
+(`tools/mapfile.py`의 `write_map`)가 바이트 단위로 같은 텍스트를 쓰므로, 생성기가 쓴 맵을 에디터로 열어
+저장해도 diff가 비고 에디터가 고친 칸만 diff에 나온다.
+
+- `JSON.stringify(value, null, 2)`와 같다. 2칸 들여쓰기, `"키": 값`, 한글은 이스케이프하지 않는다(UTF-8),
+  파일 끝에 줄바꿈 하나. 실수는 JavaScript 표기다 (`3.0`은 `3`).
+- 타일 배열(`layers[].data`, `collision`)은 맵 한 줄을 한 줄에 쓴다. 칸은 공백 없이 `,`로 잇고, 줄은 키가
+  있는 줄보다 두 칸 더 들여 쓰며, 닫는 `]`는 키와 같은 들여쓰기다.
+- 최상위 키 순서는 `version`, `name`, `id`, `width`, `height`, `tileWidth`, `tileHeight`, `layers`, `collision`,
+  `tilesets`, `events`, `objects`, 그 밖의 키. `version`은 늘 2다. `collision`과 `events`는 있을 때만,
+  `objects`는 비어 있지 않을 때만 쓴다.
+- 레이어는 `name`, `data`, 그 밖의 키. 타일셋은 `image`, `firstGid`, `columns`, 그 밖의 키. 오브젝트는
+  `id`, `type`, `x`, `y`, `width`, `height`, `props`, 그 밖의 키 (`width`와 `height`는 있을 때만, `props`는
+  비어 있지 않을 때만).
+- JavaScript 객체처럼 정수 모양의 키(`"0"`, `"12"`)는 다른 키보다 앞에 오름차순으로 온다.
+
+`python3 tools/mapfile.py check <파일>`이 형식을 확인하고 `format`이 고친다. `selftest`는 에디터의 출력과
+대조한다 (`tests/run_all.sh` [3/6]).
+
 ## 작업 항목
 
 - [x] 맵 포맷 v1을 위 명세로 확정하고, 샘플 맵 파일을 수작업으로 하나 만든다 (에디터보다 먼저, 엔진 개발용). — `resources/maps/sample.json` (80x70, ground+deco 2층, tileset16-8x13). 계약 픽스처는 `tests/fixtures/maps/sample_v1.json` (4x3, 09-testing.md 3.5절)

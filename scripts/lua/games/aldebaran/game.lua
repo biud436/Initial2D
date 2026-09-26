@@ -38,6 +38,7 @@ local Player = require("scripts/lua/games/aldebaran/player")
 local Monster = require("scripts/lua/games/aldebaran/monster")
 local Combat = require("scripts/lua/games/aldebaran/combat")
 local Stages = require("scripts/lua/games/aldebaran/stages/init")
+local Placement = require("scripts/lua/games/aldebaran/stages/placement")
 local Climate = require("scripts/lua/games/aldebaran/climate")
 local Monsters = require("scripts/lua/games/aldebaran/data/monsters")
 local Hud = require("scripts/lua/games/aldebaran/hud")
@@ -264,7 +265,12 @@ end
 --- 스테이지를 처음부터 (첫 진입, 그리고 다시 하기)
 local function resetStage()
 	rng = Rng.new(Stage.SEED)
-	player = Player.new(startAt or Stage.START.x, Stage.START.y)
+	if startAt ~= nil then
+		-- 옮긴 시작 x의 지면이 시작 지점보다 높으면 땅속에서 시작하지 않게 지면 위로 올린다
+		player = Player.new(startAt, Placement.standY(startAt, Stage.START.y, probe, tileH))
+	else
+		player = Player.new(Stage.START.x, Stage.START.y)
+	end
 	-- 앞 스테이지에서 이어 온 경험치와 골드. 첫 스테이지면 0이다.
 	-- 다시 하기에서도 유지된다 — 잃는 것은 이 판의 진행이지 지난 판이 아니다.
 	exp, gold = carriedExp, carriedGold
@@ -611,7 +617,8 @@ function AldebaranScene.init()
 	DEBUG_HUD = env("INITIAL2D_DEBUG") ~= nil
 	if FontReady then PreparaFont(UI_FONT) end
 
-	-- 검수용: 어느 스테이지를 열지 밖에서 지정한다 (INITIAL2D_ALDEBARAN_STAGE=tomb)
+	-- 검수용: 어느 스테이지를 열지 밖에서 지정한다 (INITIAL2D_ALDEBARAN_STAGE=tomb).
+	-- 맵 이름(aldebaran_tomb)이나 맵 파일 경로도 된다. 에디터의 실행 버튼이 그렇게 연다
 	local carry = AldebaranScene.carry
 	carriedExp = (carry ~= nil) and carry.exp or 0
 	carriedGold = (carry ~= nil) and carry.gold or 0

@@ -3,10 +3,12 @@
 # 원안 4.2.2절. 스핑크스 모양으로 깎은 무덤이며 가슴부로 들어간다 (표 17). 방 다섯 중
 # 넷과 입구를 쓰고, 파괴의 신 아포피스가 방마다 기후를 좌우한다 (표 19).
 #
-# 스테이지의 배치, 기후 수치, 이야기 글 데이터. 지형은 tools/generate_aldebaran_tomb_map.py,
+# 스테이지의 항목, 기후 수치, 이야기 글. 시작 지점, 체크포인트, 몬스터, 흔적, 구간, 빛기둥은
+# 맵 파일의 objects에서 읽는다 (stages/placement.rb). 지형은 tools/generate_aldebaran_tomb_map.py,
 # 자산은 generate_aldebaran_tomb.py가 만든다. 항목의 이름 규칙은 stages/forest.rb 위쪽에 있다.
 
 require "scripts/ruby/games/aldebaran/data/monsters"
+require "scripts/ruby/games/aldebaran/stages/placement"
 
 module Aldebaran
   module Stages
@@ -31,18 +33,15 @@ module Aldebaran
       def self.boss; BOSS; end
       def self.intro; INTRO_KIND; end
 
+      PLACED = Placement.build(MAP)
+
       def self.species; Aldebaran::Monsters::SPECIES; end
 
       # ---- 구간 다섯 (원안 표 19의 방 이름) -----------------------------------
-      # 경계는 맵 생성기의 ROOMS와 타일 단위로 같아야 한다.
+      # 맵의 section 띠다. 경계는 맵 생성기의 ROOMS와 타일 단위로 같아야 한다
+      # (chest 타일 0~55, moon 56~119, stars 120~183, ruin 184~251, sun 252~319).
 
-      SECTIONS = [
-        { name: :chest, x1: 895 },        # 타일 0~55    가슴부 입구와 첫 복도
-        { name: :moon, x1: 1919 },        # 56~119       달의 방
-        { name: :stars, x1: 2943 },       # 120~183      별들의 방
-        { name: :ruin, x1: 4031 },        # 184~251      파괴의 방
-        { name: :sun, x1: 5119 },         # 252~319      태양의 방
-      ]
+      SECTIONS = PLACED[:sections]
       SECTION_FADE = 96
 
       def self.sections; SECTIONS; end
@@ -51,35 +50,13 @@ module Aldebaran
       # 1-1과 같은 규칙. 구간 경계 앞뒤에서 두 구간의 배경을 겹친다.
       # [지금 구간, 다음 구간, 섞는 비율]을 돌려준다.
       def self.section_at(x)
-        SECTIONS.each_with_index do |s, i|
-          if x <= s[:x1]
-            blend = 0
-            if i < SECTIONS.size - 1
-              d = s[:x1] - x
-              if d < SECTION_FADE
-                blend = (SECTION_FADE - d).to_f / (SECTION_FADE * 2)
-              end
-            end
-            if i > 0
-              prev = SECTIONS[i - 1]
-              d = x - prev[:x1]
-              if d < SECTION_FADE
-                return [prev[:name], SECTIONS[i][:name], 0.5 + d.to_f / (SECTION_FADE * 2)]
-              end
-            end
-            next_name = i < SECTIONS.size - 1 ? SECTIONS[i + 1][:name] : s[:name]
-            return [s[:name], next_name, blend]
-          end
-        end
-        [:sun, :sun, 0]
+        Placement.section_at(SECTIONS, SECTION_FADE, x)
       end
 
-      START = { x: 56, y: 384 }            # 가슴부 입구 (타일 3.5, 바닥 24)
+      START = PLACED[:start]               # 가슴부 입구 (타일 3.5, 바닥 24)
+      # 별들의 방 앞 목 (타일 124, 바닥 25), 파괴의 방 초입 (타일 188, 바닥 24).
       # 씬이 지났다는 표시를 cp[:taken]에 기록하므로 freeze하지 않는다.
-      CHECKPOINTS = [
-        { x: 1984, y: 400 },               # 별들의 방 앞 목 (타일 124, 바닥 25)
-        { x: 3008, y: 384 },               # 파괴의 방 초입 (타일 188, 바닥 24)
-      ]
+      CHECKPOINTS = PLACED[:checkpoints]
       LIVES = 2
       SEED = 20260824
 
@@ -90,6 +67,8 @@ module Aldebaran
 
       # ---- 기후 (원안 표 19: 아포피스가 방마다 기후를 좌우한다) ----------------
       # 규칙은 코드(game.rb와 climate.rb)에, 수치는 여기에 있다. 방 이름(Symbol)으로 찾는다.
+      # 빛기둥의 x는 맵의 light 오브젝트 중 그 방 안의 것이다. 나머지는 방 전체에 걸리는
+      # 수치라 여기에 둔다.
 
       CLIMATE = {
         # chest(입구)는 기후가 없다. 기후가 없는 방은 키를 두지 않는다.
@@ -99,7 +78,7 @@ module Aldebaran
 
         # 별들의 방: 빛기둥 셋이 켜지고 꺼진다. 빛 안에 있는 영혼만 실체가 되어 공격이 통한다
         stars: { kind: :light, period: 4.0, lit: 2.2,
-                 pillars: [2180, 2420, 2660], half_w: 44 },
+                 pillars: Placement.lights_in(PLACED, :stars), half_w: 44 },
 
         # 파괴의 방: 우박. 떨어질 자리에 그림자가 먼저 표시된다 (예고 30프레임)
         ruin: { kind: :hail, interval: 1.6, warn: 0.5, damage: 9,
@@ -113,57 +92,21 @@ module Aldebaran
       def self.climate; CLIMATE; end
 
       # ---- 배치 ---------------------------------------------------------------
+      # 맵의 spawn 오브젝트다. 몬스터 id와 난수 소비가 이 순서를 따른다.
       # 새 적은 안전한 자리에서 혼자 처음 나오고, 그다음 조합, 그다음 지형과 결합한다.
-
-      SPAWNS = [
-        # 1구간 가슴부 입구: 무덤 번병 하나. 앞을 막는 적을 뒤로 돌아 공격하는 것을 배운다
-        { species: :sentinel, x: 640, y: 384, min_x: 600, max_x: 700 },
-
-        # 2구간 달의 방 (눈): 순장된 영혼이 처음 나온다. 미끄러운 바닥에서 2단 점프의 정점을 맞춘다
-        { species: :soul, x: 1040, y: 336, min_x: 990, max_x: 1120 },
-        { species: :soul, x: 1300, y: 300, min_x: 1250, max_x: 1380 },
-        { species: :sentinel, x: 1500, y: 400, min_x: 1450, max_x: 1560 },
-        { species: :soul, x: 1700, y: 288, min_x: 1640, max_x: 1780 },
-
-        # 3구간 별들의 방 (빛기둥): 영혼 셋. 그늘에서는 공격이 통하지 않으므로 빛이 켜질 때를 기다린다
-        { species: :soul, x: 2200, y: 300, min_x: 2140, max_x: 2280 },
-        { species: :soul, x: 2440, y: 268, min_x: 2380, max_x: 2520 },
-        { species: :soul, x: 2680, y: 300, min_x: 2620, max_x: 2760 },
-        { species: :sentinel, x: 2860, y: 384, min_x: 2800, max_x: 2920 },
-
-        # 4구간 파괴의 방 (우박): 파괴의 조각이 구덩이 앞 평지에서 혼자 처음 나온다
-        { species: :shard, x: 3120, y: 384, min_x: 3060, max_x: 3180 },
-        # 그다음은 조합이다: 번병이 길을 막고 조각이 뒤에서 접근한다
-        { species: :sentinel, x: 3440, y: 368, min_x: 3400, max_x: 3500 },
-        { species: :shard, x: 3560, y: 368, min_x: 3500, max_x: 3640 },
-        # 구덩이 위의 영혼 (착지할 자리를 확인하면서 싸운다)
-        { species: :soul, x: 3700, y: 300, min_x: 3650, max_x: 3800 },
-        { species: :shard, x: 3900, y: 384, min_x: 3840, max_x: 3980 },
-
-        # 5구간 태양의 방 (홍수): 삼각 조합 하나와 아포피스
-        { species: :sentinel, x: 4180, y: 400, min_x: 4130, max_x: 4240 },
-        { species: :soul, x: 4320, y: 300, min_x: 4260, max_x: 4400 },
-        { species: :shard, x: 4420, y: 400, min_x: 4360, max_x: 4480 },
-        { species: :apophis, x: 4720, y: 400, min_x: 4300, max_x: 5040, boss: true },
-      ]
+      #   1구간 가슴부 입구: 무덤 번병 하나. 앞을 막는 적을 뒤로 돌아 공격하는 것을 배운다
+      #   2구간 달의 방 (눈): 순장된 영혼이 처음 나온다. 미끄러운 바닥에서 2단 점프의 정점을 맞춘다
+      #   3구간 별들의 방 (빛기둥): 영혼 셋. 그늘에서는 공격이 통하지 않으므로 빛이 켜질 때를 기다린다
+      #   4구간 파괴의 방 (우박): 파괴의 조각이 구덩이 앞 평지에서 혼자 처음 나온다. 그다음은
+      #     번병이 길을 막고 조각이 뒤에서 접근하는 조합, 구덩이 위의 영혼
+      #   5구간 태양의 방 (홍수): 삼각 조합 하나와 아포피스
+      SPAWNS = PLACED[:spawns]
 
       def self.spawns; SPAWNS; end
 
       # ---- 흔적 (1-1과 같은 장치. 여기서는 무덤의 내력을 알려 준다) ------------
-      # 글은 원안의 서술을 따른다.
-
-      LANDMARKS = [
-        { id: :chest, x0: 300, x1: 348, title: "열려 있는 가슴",
-          text: "사자의 가슴이 문이다. 닫힌 적이 없다. 언제든 나올 수 있게 지었다." },
-        { id: :moon, x0: 1440, x1: 1488, title: "달의 방",
-          text: "달의 기운으로 태양의 방을 고른다고 했다. 눈이 내리는 이유다." },
-        { id: :stars, x0: 2360, x1: 2408, title: "별들의 노래",
-          text: "별들은 황제의 탄생을 칭송하며 노래를 부르고 빛의 축제를 여느니라." },
-        { id: :ruin, x0: 3260, x1: 3308, title: "파괴의 방",
-          text: "여기 수호자가 있다. 기후를 쥔 자다. 방마다 다른 하늘은 그의 것이다." },
-        { id: :sarc, x0: 4020, x1: 4068, title: "닫히지 않은 석관",
-          text: "신하와 자식들을 함께 묻었다. 그들이 아직 이 방을 지킨다." },
-      ]
+      # 맵의 landmark 띠다. 글은 원안의 서술을 따른다.
+      LANDMARKS = PLACED[:landmarks]
 
       EPILOGUE_FULL = "지도의 표시는 여기까지였다. 다음 표시는 카르토가 직접 그려야 한다."
 

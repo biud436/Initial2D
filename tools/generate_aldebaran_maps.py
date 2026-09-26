@@ -12,14 +12,17 @@
    72~ 99  늑대 인간의 숲 — 검은 나무가 빽빽한 내리막
   100~127  막다른 절벽 앞 공터 — 부서진 레굴루스 석상 (짐도둑의 자리)
 
-몬스터 배치는 맵이 아니라 scripts/games/aldebaran/stage.lua 에 있다 — 이벤트
-커맨드는 RPG 레이어의 것이고, 액션 게임의 배치는 코드에 더 가깝기 때문이다.
+시작 지점, 체크포인트, 몬스터, 흔적, 구간은 맵 파일의 objects에 있다 (에디터로 고친다,
+스키마는 resources/schema/map-objects.json). 이 생성기는 타일, collision, tilesets만
+새로 쓰고 기존 파일의 objects는 그대로 둔다 (tools/mapfile.py의 write_map).
+손으로 칠한 타일은 덮인다.
 
 Usage: python3 tools/generate_aldebaran_maps.py
 """
 
-import json
 import os
+
+from mapfile import write_map
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(REPO, "resources", "maps", "aldebaran_forest.json")
@@ -286,7 +289,7 @@ def main():
     d(STATUE_X + 1, STATUE_TOP + 1, STATUE_BR)
 
     data = {
-        "version": 1, "name": "aldebaran_forest", "id": 100,
+        "name": "aldebaran_forest", "id": 100,
         "width": W, "height": H,
         "tileWidth": 16, "tileHeight": 16,
         "layers": [
@@ -297,11 +300,9 @@ def main():
         "tilesets": [{"image": "resources/aldebaran/forest16.png",
                       "columns": 8, "firstGid": 1}],
     }
-    os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    with open(OUT, "w") as f:
-        json.dump(data, f, separators=(",", ":"))
+    merged = write_map(OUT, data)
     print("만듦:", os.path.relpath(OUT, REPO),
-          f"{W}x{H}, 충돌 {sum(collision)}칸")
+          f"{W}x{H}, 충돌 {sum(collision)}칸, 오브젝트 {len(merged.get('objects') or [])}개 유지")
 
 
 if __name__ == "__main__":

@@ -112,7 +112,8 @@ INITIAL2D_SCENE=aldebaran INITIAL2D_ALDEBARAN_STAGE=tomb \
 | `combat.lua` | 데미지, 명중 굴림, 레벨 표, 버서커 (순수 함수) |
 | `climate.lua` | 1-2의 기후 규칙 (눈, 빛기둥, 우박, 홍수). 순수 모듈입니다 |
 | `stages/init.lua` | 스테이지 목록과 순서 |
-| `stages/forest.lua`, `stages/tomb.lua` | 구간, 배치 좌표, 기후, 흔적과 이야기 글 |
+| `stages/forest.lua`, `stages/tomb.lua` | 스테이지의 칸, 기후 수치, 이야기 글 |
+| `stages/placement.lua` | 맵 파일의 `objects`에서 배치(시작 지점, 적, 흔적, 구간)를 읽습니다 |
 | `data/monsters.lua` | 종별 능력치, 기획서 규격서의 칸(`spec`), 공격 방식, 보스 페이즈 표 |
 | `hud.lua` | HP/MP/EXP 막대와 목숨, 골드 |
 
@@ -123,6 +124,39 @@ INITIAL2D_SCENE=aldebaran INITIAL2D_ALDEBARAN_STAGE=tomb \
 INITIAL2D_SCENE=aldebaran INITIAL2D_SKIP_INTRO=1 INITIAL2D_NO_RTP=1 \
   INITIAL2D_SCREENSHOT=/tmp/aldebaran_%04ld.bmp INITIAL2D_SCREENSHOT_FRAME=20 \
   INITIAL2D_EXIT_AFTER=30 ./build/Initial2D
+```
+
+## 맵 오브젝트
+
+시작 지점, 체크포인트, 몬스터, 흔적, 구간, 무덤의 빛기둥은 코드가 아니라 맵 파일(`resources/maps/aldebaran_forest.json`, `aldebaran_tomb.json`)의 `objects`에 있습니다. 에디터가 맵 위에 그대로 보여 주고 고칠 수 있고, Lua 판과 Ruby 판이 같은 파일을 읽습니다. 제목과 이야기 글, 보스, 시드, 기후의 수치는 스테이지 모듈에 있습니다.
+
+오브젝트의 타입과 칸은 `resources/schema/map-objects.json`이 정합니다.
+
+| 타입 | 모양 | 칸 |
+| :--- | :--- | :--- |
+| `start` | 점, 맵에 하나 | |
+| `checkpoint` | 점 | |
+| `spawn` | 점 | `species`, `minX`와 `maxX`(순찰 범위), `boss` |
+| `landmark` | 띠 (x부터 width만큼) | `title`, `text`, `skill`, `hallucination` |
+| `section` | 띠 | `name` (배경과 기후를 고르는 구간 이름) |
+| `light` | 점 | 1-2 별들의 방 빛기둥의 가운데 |
+
+스키마의 `play.env`는 에디터의 실행 버튼이 넘기는 환경 변수입니다. 편집 중인 맵을 고른 x에서 바로 엽니다. `INITIAL2D_ALDEBARAN_STAGE`는 스테이지 id(`tomb`), 맵 이름(`aldebaran_tomb`), 맵 파일 경로(`resources/maps/aldebaran_tomb.json`)를 모두 받고, 고른 x의 지면이 시작 지점보다 높으면 지면 위에 세웁니다.
+
+```bash
+INITIAL2D_SCENE=aldebaran INITIAL2D_SKIP_INTRO=1 \
+  INITIAL2D_ALDEBARAN_STAGE=aldebaran_tomb INITIAL2D_ALDEBARAN_AT=2480 ./build/Initial2D
+```
+
+맵 생성기를 다시 돌려도 `objects`는 남습니다. 타일과 collision은 생성기가 새로 쓰므로 손으로 칠한 타일은 덮입니다. 맵 파일은 에디터와 같은 형식(2칸 들여쓰기, 타일은 맵 한 줄을 한 줄에)으로 쓰므로 diff가 칸 단위로 보입니다 (`tools/mapfile.py`, 형식은 `docs/plans/02-tilemap.md`).
+
+```bash
+python3 tools/generate_aldebaran_maps.py       # 1-1 지형 (objects는 그대로)
+python3 tools/generate_aldebaran_tomb_map.py   # 1-2 지형
+
+python3 tools/mapfile.py check resources/maps/aldebaran_tomb.json    # 정해진 형식인가
+python3 tools/mapfile.py format resources/maps/aldebaran_tomb.json   # 손으로 고친 맵을 형식에 맞춥니다
+python3 tools/mapfile.py selftest                                    # 에디터와 같은 텍스트를 쓰는가
 ```
 
 # 개발 히스토리
@@ -464,6 +498,8 @@ JSON 파일을 읽어서 Lua 테이블로 변환합니다. 배열은 1부터 시
 # Tilemap
 
 맵 포맷 v1(JSON)을 로드해 그리는 다층 타일맵입니다. 화면에 보이는 타일만 그리므로(컬링) 화면보다 큰 맵을 카메라 오프셋으로 스크롤할 수 있습니다. 포맷 명세는 `docs/plans/02-tilemap.md`, 샘플 맵은 `resources/maps/sample.json`에 있으며, 게임 메뉴의 **타일맵 데모**(`scripts/lua/games/tilemap_demo.lua`)가 사용 예제입니다.
+
+v2 파일의 `events`(RPG 이벤트)와 `objects`(배치, 픽셀 좌표)는 엔진이 읽지 않고 스크립트가 `Json.Load`로 읽습니다. 알데바란의 배치가 그 예입니다 ([맵 오브젝트](#맵-오브젝트)).
 
 좌표 규약: `x`, `y`는 0부터 시작하는 타일 좌표, `layer`는 1부터 시작하는 레이어 번호, `camX`, `camY`는 월드 픽셀 단위 카메라 좌상단입니다.
 

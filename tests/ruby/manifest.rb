@@ -35,6 +35,8 @@ MRUBY_TEST_MANIFEST = [
   "scripts/ruby/rbtests/cases/aldebaran_monster_test.rb",
   "scripts/ruby/rbtests/cases/aldebaran_monsters_data_test.rb",
   "scripts/ruby/rbtests/cases/aldebaran_climate_test.rb",
+  # M1: 맵 오브젝트
+  "scripts/ruby/rbtests/cases/aldebaran_map_objects_test.rb",
   # R1: 씬 로더
   "scripts/ruby/rbtests/cases/scene_loader_test.rb",
 ]
