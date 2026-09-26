@@ -161,7 +161,14 @@ int Script_Init()
 	}
 
 	s_initialized = true;
-	return Lua_Init();
+	{
+		const int rc = Lua_Init();
+		if (Lua_Failed())
+		{
+			s_failed = true;
+		}
+		return rc;
+	}
 }
 
 int Script_Update(double elapsed)
@@ -181,7 +188,14 @@ int Script_Update(double elapsed)
 		return rc;
 	}
 #endif
-	return Lua_Update(elapsed);
+	{
+		const int rc = Lua_Update(elapsed);
+		if (Lua_Failed())
+		{
+			s_failed = true;
+		}
+		return rc;
+	}
 }
 
 int Script_Render()
@@ -201,7 +215,14 @@ int Script_Render()
 		return rc;
 	}
 #endif
-	return Lua_Render();
+	{
+		const int rc = Lua_Render();
+		if (Lua_Failed())
+		{
+			s_failed = true;
+		}
+		return rc;
+	}
 }
 
 int Script_Destroy()
@@ -222,7 +243,14 @@ int Script_Destroy()
 		return rc;
 	}
 #endif
-	return Lua_Destory();
+	{
+		const int rc = Lua_Destory();
+		if (Lua_Failed())
+		{
+			s_failed = true;
+		}
+		return rc;
+	}
 }
 
 bool Script_Failed()

@@ -192,23 +192,53 @@ int Lua_MessageBox(lua_State *g_pLuaSt)
 	return 0;
 }
 
+// 스크립트 오류는 PANIC(abort, 종료 코드 134) 대신 mruby 와 같은 무게로 다룬다:
+// 메시지(파일:줄: ...)를 stderr 에 적고 게임을 끝내며 종료 코드는 1 이다 (Script_Failed).
+// 에디터의 콘솔이 그 줄을 링크로 만든다 (InitialEditor E1).
+static bool s_luaFailed = false;
+
+static bool Lua_ReportIfError(int status, const char* where)
+{
+	if (status == LUA_OK)
+	{
+		return false;
+	}
+	const char* msg = lua_tostring(g_pLuaState, -1);
+	std::fprintf(stderr, "Lua error in %s: %s\n", where, msg ? msg : "(no message)");
+	std::fflush(stderr);
+	lua_pop(g_pLuaState, 1);
+	if (!s_luaFailed)
+	{
+		s_luaFailed = true;
+		App::GetInstance().Quit();
+	}
+	return true;
+}
+
+bool Lua_Failed()
+{
+	return s_luaFailed;
+}
+
 /**
 * Frame Update
 */
 int Lua_Update(double elapsed)
 {
+	if (s_luaFailed) return 0;
 	lua_getglobal(g_pLuaState, "Update");
 
 	lua_pushnumber(g_pLuaState, elapsed);
-	lua_call(g_pLuaState, 1, 0);
+	Lua_ReportIfError(lua_pcall(g_pLuaState, 1, 0, 0), "update");
 
 	return 0;
 }
 
 int Lua_Render()
 {
+	if (s_luaFailed) return 0;
 	lua_getglobal(g_pLuaState, "Render");
-	lua_call(g_pLuaState, 0, 0);
+	Lua_ReportIfError(lua_pcall(g_pLuaState, 0, 0, 0), "render");
 
 	return 0;
 
@@ -216,8 +246,11 @@ int Lua_Render()
 
 int Lua_Destory()
 {
-	lua_getglobal(g_pLuaState, "Destroy");
-	lua_call(g_pLuaState, 0, 0);
+	if (!s_luaFailed)
+	{
+		lua_getglobal(g_pLuaState, "Destroy");
+		Lua_ReportIfError(lua_pcall(g_pLuaState, 0, 0, 0), "destroy");
+	}
 
 	lua_close(g_pLuaState);
 	return 0;
@@ -233,7 +266,10 @@ int Lua_LoadScript(lua_State *pL)
 	}
 
 	const char *filename = luaL_checkstring(pL, 1);
-	luaL_dofile(pL, filename);
+	if (luaL_dofile(pL, filename) != LUA_OK)
+	{
+		return lua_error(pL); // 메시지(파일:줄: ...)가 스택 위에 있다
+	}
 
 	return 0;
 }
@@ -543,11 +579,12 @@ int Lua_Init()
 		//luaL_dostring(g_pLuaState,
 		//	"for dir in io.popen([[dir \"./scripts/\" /r /b]]) :lines() do LoadScript(\"./scripts/\"..dir) end");
 
-		luaL_dostring(g_pLuaState, "LoadScript(\"./scripts/lua/main.lua\")");
-
-		// 스크립트 파일 내에 선언된 초기화 함수를 호출합니다.
-		lua_getglobal(g_pLuaState, "Initialize");
-		lua_call(g_pLuaState, 0, 0);
+		if (!Lua_ReportIfError(luaL_dostring(g_pLuaState, "LoadScript(\"./scripts/lua/main.lua\")"), "scripts/lua/main.lua"))
+		{
+			// 스크립트 파일 내에 선언된 초기화 함수를 호출합니다.
+			lua_getglobal(g_pLuaState, "Initialize");
+			Lua_ReportIfError(lua_pcall(g_pLuaState, 0, 0, 0), "init");
+		}
 
 	}
 	catch (std::exception &e) {

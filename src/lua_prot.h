@@ -6,6 +6,8 @@
 #include "../lua/lauxlib.h"
 
 int Lua_MessageBox(lua_State *g_pLuaSt);
+/** 스크립트 오류로 끝났는가 (mruby 의 MRuby_Failed 와 같은 뜻) */
+bool Lua_Failed();
 int Lua_LoadScript(lua_State *pL);
 int Lua_PreparaFont(lua_State *pL);
 int Lua_DrawPoint(lua_State *pL);
