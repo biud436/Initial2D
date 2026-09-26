@@ -242,6 +242,8 @@ module AldebaranScene
                                                        @tile_w, @tile_h, @world_h, Player::BODY_H)
         if x != @start_at
           puts format("알데바란: 시작 x %g → %g (구덩이 위라 가까운 땅으로)", @start_at, x)
+        else
+          puts format("알데바란: 시작 x %g (y %g)", x, y)
         end
         @player = Player.new(x, y)
       else
