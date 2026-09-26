@@ -20,6 +20,10 @@
 
 int main(int argc, char* argv[])
 {
+	// 에디터가 stdout 을 파이프로 받을 때 print 줄이 4KB 마다 뭉쳐 오지 않게 줄 단위로 내보낸다
+	// (터미널에서는 원래 줄 단위다). SDL_Log 는 stderr 라 영향이 없다.
+	std::setvbuf(stdout, nullptr, _IOLBF, 0);
+
 	// `Initial2D --features` — 이 빌드가 실행할 수 있는 스크립트 언어를 찍고 끝난다
 	// ("lua" 또는 "lua mruby"). 검수 러너가 mruby 테스트를 돌릴지 정할 때 쓴다.
 	if (argc > 1 && std::strcmp(argv[1], "--features") == 0) {

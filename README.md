@@ -191,6 +191,7 @@ macOS 포팅을 기반으로 Android까지 확장하였습니다. 역시 AI와�
 - 알데바란의 그림을 이미지 생성 모델에게 (진행 중, 2026-09). 코드로 찍던 도트를 GPT가 그리고, `tools/import_gpt_art.py`가 잘라서 시트로 굽습니다. 카르토와 숲 몬스터부터 바꿨고, 배경 원본은 `python3 tools/import_gpt_art.py pull far_entrance`로 `~/Downloads`에서 가져온 뒤 `python3 tools/import_gpt_art.py inspect-bg resources/aldebaran/src/gpt/far_entrance.png`로 확인하고 `python3 tools/import_gpt_art.py build-bg far_entrance --preview /tmp/far_entrance_preview.png`로 384x448 반복 배경을 굽습니다 ([메타 프롬프트](./docs/prompts/aldebaran-art-meta-prompt.md))
 - Ruby(mruby)로도 스크립트를 쓸 수 있게 (완료, 2026-09). Lua와 하나씩 짝이 되는 바인딩이고, Lua 검증 씬을 Ruby로 옮긴 것이 같은 골든 스크린샷을 통과합니다. 플래피를 Ruby로 다시 썼습니다 ([계획](./docs/plans/s1-mruby-binding.md))
 - 다음 로드맵: 에디터의 이벤트 편집기, 저장과 로드, 오토타일, 씬 스택 ([로드맵 v2](./docs/plans/roadmap-v2.md))
+- 에디터를 다시 세우는 계획 (2026-09). Tauri 2 셸 위의 장르 중립 에디터로, 타일맵은 확장이고 실행 버튼이 이 엔진을 띄웁니다. 엔진 쪽 선행 작업(씬 로더, API 스텁, Emscripten 빌드)은 [docs/plans](./docs/plans/index.md)의 에디터 트랙에, 에디터 계획은 InitialEditor 저장소의 `docs/plans/`에 있습니다
 
 # 스크립트 예제
 
@@ -581,6 +582,8 @@ Ruby 알데바란은 `scripts/ruby/games/aldebaran/`에 있고 Lua 판(`scripts/
 ## 씬 계약
 
 Lua의 `Initialize`, `Update`, `Render`, `Destroy`에 해당하는 최상위 메서드 넷입니다. 없는 것은 부르지 않습니다. 예외가 새어 나오면 메시지와 역추적을 stderr에 찍고 게임이 종료 코드 1로 끝납니다.
+
+Lua도 같습니다 (2026-09). 스크립트 오류는 abort(PANIC, 종료 코드 134)가 아니라 `Lua error in update: ./scripts/lua/main.lua:15: attempt to index a nil value` 처럼 파일과 줄이 든 한 줄을 stderr에 찍고 종료 코드 1로 끝납니다. `LoadScript`의 실패(문법 오류, 없는 파일)도 삼키지 않고 Lua 오류로 올립니다. 에디터의 콘솔은 그 줄을 눌러 그 자리로 갑니다.
 
 ```ruby
 def init; end             # 한 번
@@ -1372,6 +1375,111 @@ SDL_VIDEODRIVER=dummy INITIAL2D_SCENE=tilemap INITIAL2D_MAP=./resources/maps/my_
 INITIAL2D_SCENE=rpg INITIAL2D_MAP=village ./build/Initial2D
 ```
 
+## 스크립트 API 명세 (에디터 자동완성)
+
+엔진이 Lua와 Ruby에 내놓는 함수를 `resources/api/initial2d-api.json` 한 장에 모두 적어 두었습니다. Lua 이름과 Ruby 이름의 짝, 인자와 타입, 반환 타입, 한 줄 설명이 들어 있고 에디터 자동완성의 원천이 됩니다. 이 파일은 손으로 고치며, 바인딩과 어긋나면 테스트가 깨집니다.
+
+```bash
+# 명세를 고친 뒤 에디터용 스텁 두 장을 다시 만듭니다
+python3 tools/gen_api_stubs.py
+
+# 스텁이 명세와 같은지만 확인합니다 (다르면 종료 코드 1. tests/run_all.sh가 부릅니다)
+python3 tools/gen_api_stubs.py --check
+
+# 명세와 바인딩의 대조는 Lua, mruby 단위 테스트의 api_surface 케이스가 합니다
+python3 tests/run_engine_tests.py --only=lua_units,mruby_units
+```
+
+| 파일 | 내용 |
+| :--- | :--- |
+| `resources/api/initial2d-api.json` | 명세 원본 (손으로 유지) |
+| `resources/api/initial2d.lua` | Lua 스텁. LuaLS(EmmyLua) 주석이라 VS Code의 Lua 확장이 그대로 읽습니다 |
+| `resources/api/initial2d.rb` | Ruby 스텁. YARD 주석이라 Solargraph가 읽습니다 |
+
+- 바인딩을 더하거나 바꾸면 명세도 고치고 스텁을 다시 만들어 함께 커밋합니다. 명세를 빠뜨리면 `api_surface_test`가 양쪽으로 잡습니다 (명세에 있는데 엔진에 없는 이름, 엔진에 있는데 명세에 없는 이름).
+- 에디터는 브리지의 `GET /api/files/resources/api/initial2d-api.json`으로 명세를 읽어 완성 목록을 만듭니다. 모듈 이름 뒤에 점을 찍으면 `functions`와 `methods`를, 괄호를 열면 `params`와 `doc`을 보여 주는 식입니다.
+- Lua 쪽 모듈 이름이 `null`이면 전역 함수입니다 (`DrawText`, `WindowWidth`). `Sprite`, `Tilemap`, `FontEx`는 Ruby에서는 클래스이고 Lua에서는 숫자 핸들을 첫 인자로 받는 함수 표입니다.
+- 명세의 규칙과 필드 설명은 [docs/plans/r2-api-stubs.md](./docs/plans/r2-api-stubs.md)에 있습니다.
+
+## 씬 파일과 씬 로더
+
+에디터가 저장한 씬 파일(`resources/scenes/<이름>.json`, 씬 포맷 v1)을 스크립트 레이어가 읽어 오브젝트를 만들고,
+오브젝트에 붙은 컴포넌트가 게임을 움직입니다. C++은 이 포맷을 모릅니다. Lua(`scripts/lua/scene_loader.lua`)와
+Ruby(`scripts/ruby/scene_loader.rb`)가 같은 파일을 같은 규칙으로 읽습니다. 계약의 정본은
+[docs/plans/r1-scene-loader.md](./docs/plans/r1-scene-loader.md)입니다.
+
+새 프로젝트는 `resources/templates/`의 세 파일을 복사하는 것으로 시작합니다.
+
+```bash
+mkdir -p ~/mygame/scripts/lua ~/mygame/resources/scenes
+cp resources/templates/main.lua  ~/mygame/scripts/lua/main.lua      # 진입점 (Ruby 는 main.rb 를 scripts/ruby/ 에)
+cp resources/templates/scene.json ~/mygame/resources/scenes/main.json  # "새 프로젝트" 글자 하나짜리 빈 씬
+echo '{ "startScene": "main" }' > ~/mygame/game.json               # Ruby 프로젝트는 "script": "mruby" 를 더합니다
+
+# 씬 하나를 골라 실행 (에디터의 "현재 씬부터 실행"). 없으면 game.json 의 startScene, 그것도 없으면 main
+INITIAL2D_SCENE=flappy ./build/Initial2D
+INITIAL2D_SCRIPT=mruby INITIAL2D_SCENE=flappy ./build/Initial2D
+```
+
+씬 파일은 오브젝트의 배열이고 순서가 그리기 순서입니다. 타입은 `node`(빈 자리), `sprite`, `text`와 확장 타입
+`tilemap`이며, `scripts`에 적은 논리 이름이 컴포넌트입니다. `"components/bird"`는 Lua에서
+`scripts/lua/components/bird.lua`, Ruby에서 `scripts/ruby/components/bird.rb`로 풀립니다.
+
+```json
+{ "version": 1, "name": "main", "objects": [
+  { "id": "bird", "type": "sprite", "x": 170, "y": 416,
+    "props": { "image": "resources/bird_276x64.png", "width": 92, "height": 64, "frames": 3,
+               "startFrame": 0, "endFrame": 2, "loop": true, "frameDelay": 110 },
+    "scripts": ["components/flappy/bird"] },
+  { "id": "score", "type": "text", "x": 30, "y": 24, "props": { "text": "점수 0", "font": "resources/fonts/hangul.fnt" } },
+  { "id": "map", "type": "tilemap", "props": { "map": "resources/maps/sample.json", "groundLayers": 1 } }
+] }
+```
+
+컴포넌트는 Lua에서는 훅 표를 돌려주는 모듈, Ruby에서는 파일 이름의 CamelCase 클래스(`components/pipe_spawner` →
+`PipeSpawner`)입니다. 훅은 전부 선택이고, 로더가 매 틱 `obj.x`, `obj.y`, `obj.visible`과 `props`의 `opacity`,
+`scale`, `angle`을 스프라이트에 옮기므로 **컴포넌트는 `obj.x`를 바꾸는 것으로 움직입니다.**
+
+```lua
+-- scripts/lua/components/flappy/bird.lua
+local M = {}
+function M.init(obj, scene) obj.y = 416 end
+function M.update(obj, scene, elapsed)          -- elapsed 는 ms
+	obj.y = obj.y + 100 * elapsed / 1000
+	if obj.y > 800 then scene:switch("title") end   -- 다음 틱에 resources/scenes/title.json 으로
+end
+function M.render(obj, scene) end               -- 로더가 스프라이트를 그린 뒤
+function M.destroy(obj, scene) end
+return M
+```
+
+```ruby
+# scripts/ruby/components/flappy/bird.rb
+class Bird
+  def init(obj, scene); obj.y = 416; end
+  def update(obj, scene, elapsed)
+    obj.y = obj.y + 100 * elapsed / 1000.0
+    scene.switch("title") if obj.y > 800
+  end
+end
+```
+
+컴포넌트가 쓰는 씬 API는 `scene:find(id)`, `scene:spawn(spec [, afterId])`(파일 항목과 같은 표로 오브젝트를 만들고
+`afterId` 뒤에 끼웁니다. id가 없으면 만들어 줍니다), `scene:remove(id)`, `scene:switch(name)`, `scene:objects()`,
+`scene.name`, `scene.state`(컴포넌트들이 나눠 쓰는 표)입니다. Ruby는 `scene.find(id)`처럼 같은 이름입니다.
+`obj.sprite`는 엔진 스프라이트 핸들이라 엔진 API를 직접 불러도 됩니다.
+
+플래피를 이 방식으로 다시 만든 것이 `resources/scenes/flappy.json`과 `scripts/lua/components/flappy/`
+(Ruby는 `scripts/ruby/components/flappy/`)입니다. 새, 파이프(spawn으로 만듭니다), 배경과 지면 스크롤, 상태 기계가
+컴포넌트 하나씩이고, 화면 글자는 전부 씬의 `text` 오브젝트입니다. 두 언어의 인수 씬이 이 씬을 `INITIAL2D_SCENE=flappy`로
+열어 자동 시연을 검사하고, 픽스처 `tests/fixtures/scenes/sample_v1.json`(타입 넷 전부)은 두 로더가 같은 골든
+`tests/golden/scene_loader.png`를 통과합니다. 씬 파일이 잘못되면(버전, 중복 id, 모르는 타입, 없는 컴포넌트) 게임을
+띄우자마자 이름을 말하는 오류로 끝납니다.
+
+```bash
+python3 tests/run_engine_tests.py --only=scene_loader,scene_flappy   # 씬 로더 씬 테스트 넷만
+```
+
 # RTP 리소스 변환 (RPG Maker 2003)
 
 RPG Maker 2003의 RTP 소재를 엔진이 바로 읽는 형태로 바꾸는 도구입니다 (`tools/rtp_import.py`, Pillow 필요).
@@ -1426,7 +1534,7 @@ actor.setPosition(100, 200)
 
 # 테스트
 
-전체 검수는 스크립트 하나로 실행합니다. C++ 단위 테스트, Lua 단위 테스트, mruby 단위 테스트, 픽셀 검증, 골든 스크린샷 비교, 브리지 서버 테스트, RTP 변환 검증이 순서대로 수행됩니다.
+전체 검수는 스크립트 하나로 실행합니다. C++ 단위 테스트, API 스텁 확인, Lua 단위 테스트, mruby 단위 테스트, 픽셀 검증, 골든 스크린샷 비교, 브리지 서버 테스트, RTP 변환 검증이 순서대로 수행됩니다.
 
 ```bash
 # 빌드부터 전체 테스트까지 한 번에 실행 (기본은 헤드리스라 창을 띄우지 않습니다. CI와 동일)
