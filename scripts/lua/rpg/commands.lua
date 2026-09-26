@@ -23,6 +23,8 @@
 -- 표현하지만, JSON과 웹 에디터에는 중첩 배열이 다루기 쉽고 라벨 관리가 없다.
 
 local Inventory = require("scripts/lua/rpg/inventory")
+local Assets = require("scripts/lua/rpg/assets")
+local Character = require("scripts/lua/rpg/character")
 
 local M = {}
 
@@ -39,6 +41,31 @@ local COMPARE = {
 	[">="] = function(a, b) return a >= b end,
 }
 
+-- 조건의 꼴. 키가 둘 이상인 조건은 이 순서의 앞 것으로 판정한다.
+M.CONDITIONS = { "item", "flag", "var" }
+
+local CONDITION_TESTS = {
+	item = function(cond, state)
+		local have = Inventory.count(state, cond.item)
+		if cond.op == nil and cond.value == nil then
+			return have >= 1
+		end
+		local op = COMPARE[cond.op or ">="]
+		if op == nil then return false end
+		return op(have, tonumber(cond.value) or 1)
+	end,
+	flag = function(cond, state)
+		local v = state[cond.flag]
+		if cond.equals ~= nil then return v == cond.equals end
+		return v ~= nil and v ~= false
+	end,
+	var = function(cond, state)
+		local op = COMPARE[cond.op or "=="]
+		if op == nil then return false end
+		return op(tonumber(state[cond.var]) or 0, tonumber(cond.value) or 0)
+	end,
+}
+
 --- 조건 하나를 판정한다. 조건이 없으면 참.
 --   { flag = "heardAltar" }                        깃발이 참인가
 --   { flag = "booked", equals = false }            값 비교
@@ -48,29 +75,11 @@ local COMPARE = {
 function M.test(cond, state)
 	if cond == nil then return true end
 	state = state or {}
-
-	if cond.item ~= nil then
-		local have = Inventory.count(state, cond.item)
-		if cond.op == nil and cond.value == nil then
-			return have >= 1
+	for _, kind in ipairs(M.CONDITIONS) do
+		if cond[kind] ~= nil then
+			return CONDITION_TESTS[kind](cond, state)
 		end
-		local op = COMPARE[cond.op or ">="]
-		if op == nil then return false end
-		return op(have, tonumber(cond.value) or 1)
 	end
-
-	if cond.flag ~= nil then
-		local v = state[cond.flag]
-		if cond.equals ~= nil then return v == cond.equals end
-		return v ~= nil and v ~= false
-	end
-
-	if cond.var ~= nil then
-		local op = COMPARE[cond.op or "=="]
-		if op == nil then return false end
-		return op(tonumber(state[cond.var]) or 0, tonumber(cond.value) or 0)
-	end
-
 	return true
 end
 
@@ -126,6 +135,9 @@ define("setFlag", { key = "string" }, function(cmd, _, ctx)
 	if value == nil then value = true end
 	ctx.state[cmd.key] = value
 end)
+
+-- setVar 의 op 값 (없으면 "=")
+M.SET_VAR_OPS = { "=", "+", "-" }
 
 define("setVar", { key = "string" }, function(cmd, _, ctx)
 	local now = tonumber(ctx.state[cmd.key]) or 0
@@ -193,22 +205,33 @@ end)
 
 define("comment", {}, function() end)
 
---- 하위 목록을 품는 커맨드와 그 자리 (검증이 따라 들어간다)
-local NESTED = {
-	choice = function(cmd)
-		local out = {}
-		for i, branch in ipairs(cmd.branches or {}) do
-			out[#out + 1] = { path = ".branches[" .. i .. "]", list = branch }
-		end
-		return out
-	end,
-	["if"] = function(cmd)
-		local out = {}
-		if cmd.thenDo ~= nil then out[#out + 1] = { path = ".thenDo", list = cmd.thenDo } end
-		if cmd.elseDo ~= nil then out[#out + 1] = { path = ".elseDo", list = cmd.elseDo } end
-		return out
-	end,
+-- 하위 목록을 품는 커맨드와 그 칸. perOption 이 있는 칸은 그 인자의 항목마다
+-- 목록이 하나씩 있는 배열이다 (branches[i] 가 options[i] 의 가지).
+local LISTS = {
+	choice = { { name = "branches", perOption = "options" } },
+	["if"] = { { name = "thenDo" }, { name = "elseDo" } },
 }
+
+-- 커맨드 하나가 품은 하위 목록들. { path = ".branches[1]", list = 값 } 의 배열이며
+-- 목록 자리에 배열이 아닌 값이 있으면 { path = ".branches", notArray = true } 로 알린다.
+local function childLists(cmd)
+	local out = {}
+	for _, spec in ipairs(LISTS[cmd.code] or {}) do
+		local value = cmd[spec.name]
+		if spec.perOption then
+			if type(value) == "table" then
+				for i, branch in ipairs(value) do
+					out[#out + 1] = { path = "." .. spec.name .. "[" .. i .. "]", list = branch }
+				end
+			elseif value ~= nil then
+				out[#out + 1] = { path = "." .. spec.name, notArray = true }
+			end
+		elseif value ~= nil then
+			out[#out + 1] = { path = "." .. spec.name, list = value }
+		end
+	end
+	return out
+end
 
 --- 알고 있는 커맨드 이름 목록 (문서와 테스트가 읽는다)
 function M.codes()
@@ -216,6 +239,42 @@ function M.codes()
 	for code in pairs(HANDLERS) do list[#list + 1] = code end
 	table.sort(list)
 	return list
+end
+
+--- 커맨드마다 검증이 보는 필수 인자와 하위 목록 (event-commands.json 과 대조된다).
+-- @return { [code] = { required = { 인자 = Lua 타입 }, lists = { 이름... },
+--                      perOption = { 목록 이름 = 인자 이름 } } }
+function M.describe()
+	local out = {}
+	for code, spec in pairs(SPEC) do
+		local required = {}
+		for field, kind in pairs(spec) do required[field] = kind end
+		local lists, perOption = {}, {}
+		for _, list in ipairs(LISTS[code] or {}) do
+			lists[#lists + 1] = list.name
+			if list.perOption ~= nil then perOption[list.name] = list.perOption end
+		end
+		out[code] = { required = required, lists = lists, perOption = perOption }
+	end
+	return out
+end
+
+--- 커맨드 목록을 하위 목록까지 적힌 순서대로 훑는다.
+-- @param visit  function(cmd, path). path 는 "[2].branches[1][3]" 꼴
+function M.walk(list, visit, path)
+	path = path or ""
+	if type(list) ~= "table" then return end
+	for i, cmd in ipairs(list) do
+		local here = path .. "[" .. i .. "]"
+		if type(cmd) == "table" then
+			visit(cmd, here)
+			for _, child in ipairs(childLists(cmd)) do
+				if not child.notArray then
+					M.walk(child.list, visit, here .. child.path)
+				end
+			end
+		end
+	end
 end
 
 -- ---- 실행 -----------------------------------------------------------------
@@ -243,52 +302,93 @@ end
 
 -- ---- 검증 -----------------------------------------------------------------
 
-local function checkList(list, path, errors, env)
+-- 방향을 받는 커맨드. turn 은 dir 이 필수라 타입은 SPEC 이 본다.
+local DIR_COMMANDS = { transfer = true, turn = true }
+
+local function sortedKeys(t)
+	local keys = {}
+	for k in pairs(t) do keys[#keys + 1] = k end
+	table.sort(keys)
+	return keys
+end
+
+local function checkList(list, path, problems, env)
+	local function add(where, message)
+		problems[#problems + 1] = { path = where, message = message }
+	end
+
 	if type(list) ~= "table" then
-		errors[#errors + 1] = path .. ": 커맨드 목록이 배열이 아니다"
+		add(path, "커맨드 목록이 배열이 아니다")
 		return
 	end
 
 	for i, cmd in ipairs(list) do
 		local here = path .. "[" .. i .. "]"
 		if type(cmd) ~= "table" then
-			errors[#errors + 1] = here .. ": 커맨드가 테이블이 아니다"
+			add(here, "커맨드가 테이블이 아니다")
 		elseif HANDLERS[cmd.code] == nil then
-			errors[#errors + 1] = here .. ": 알 수 없는 code " .. tostring(cmd.code)
+			add(here, "알 수 없는 code " .. tostring(cmd.code))
 		else
-			for field, kind in pairs(SPEC[cmd.code]) do
+			local spec = SPEC[cmd.code]
+			for _, field in ipairs(sortedKeys(spec)) do
+				local kind = spec[field]
 				if type(cmd[field]) ~= kind then
-					errors[#errors + 1] = here .. "." .. field .. ": " .. kind
-						.. "이(가) 필요하다 (지금은 " .. type(cmd[field]) .. ")"
+					add(here .. "." .. field, kind .. "이(가) 필요하다 (지금은 "
+						.. type(cmd[field]) .. ")")
 				end
 			end
-			if cmd.code == "choice" and #(cmd.options or {}) == 0 then
-				errors[#errors + 1] = here .. ".options: 항목이 하나 이상 필요하다"
+			if cmd.code == "choice" and type(cmd.options) == "table" and #cmd.options == 0 then
+				add(here .. ".options", "항목이 하나 이상 필요하다")
 			end
 			if cmd.code == "script" then
 				local hasRun = type(cmd.run) == "function"
 				local named = cmd.name ~= nil
 					and env ~= nil and env.scripts ~= nil and env.scripts[cmd.name] ~= nil
 				if not hasRun and not named then
-					errors[#errors + 1] = here
-						.. ".name: 등록되지 않은 스크립트 " .. tostring(cmd.name)
+					add(here .. ".name", "등록되지 않은 스크립트 " .. tostring(cmd.name))
 				end
 			end
-			local nested = NESTED[cmd.code]
-			if nested ~= nil then
-				for _, child in ipairs(nested(cmd)) do
-					checkList(child.list, here .. child.path, errors, env)
+			if cmd.code == "message" and cmd.face ~= nil then
+				for _, p in ipairs(Assets.checkRef("face", cmd.face)) do
+					add(here .. ".face" .. p.path, "얼굴: " .. p.message)
+				end
+			end
+			if DIR_COMMANDS[cmd.code] and cmd.dir ~= nil then
+				if type(cmd.dir) == "string" then
+					if Character.DIR_VECTORS[cmd.dir] == nil then
+						add(here .. ".dir", "모르는 방향 " .. cmd.dir)
+					end
+				elseif spec.dir == nil then
+					add(here .. ".dir", "방향이 글이 아니다 (지금은 " .. type(cmd.dir) .. ")")
+				end
+			end
+			for _, child in ipairs(childLists(cmd)) do
+				if child.notArray then
+					add(here .. child.path, "가지 목록이 배열이 아니다")
+				else
+					checkList(child.list, here .. child.path, problems, env)
 				end
 			end
 		end
 	end
 end
 
+--- 커맨드 목록의 문제를 경로와 이유로 모은다.
+-- @param prefix  경로 앞에 붙일 글 (맵 파일의 이벤트면 "events[3].commands")
+-- @return { { path = "events[3].commands[2].text", message = 이유 }, ... }
+function M.problems(list, env, prefix)
+	local problems = {}
+	checkList(list, prefix or "", problems, env)
+	return problems
+end
+
 --- 커맨드 목록을 검사한다. 실행 도중이 아니라 맵을 열 때 틀린 곳을 알기 위한 것이다.
 -- @return ok, errors  (errors는 "[2].branches[1][3]: 알 수 없는 code ..." 꼴의 배열)
 function M.validate(list, env)
 	local errors = {}
-	checkList(list, "", errors, env)
+	for _, p in ipairs(M.problems(list, env)) do
+		errors[#errors + 1] = p.path .. ": " .. p.message
+	end
 	return #errors == 0, errors
 end
 

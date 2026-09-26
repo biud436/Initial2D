@@ -55,6 +55,7 @@ function M.new(opts)
 	self.running = nil               -- 막는 이벤트 하나
 	self.parallels = {}              -- 병렬 이벤트들
 	self.errors = {}                 -- 스크립트 오류 기록 (테스트가 본다)
+	self.leaves = 0                  -- transfer 와 scene 요청 수 (맵이나 씬을 떠나는 요청)
 	self.ctx = M.makeCtx(self)
 	return self
 end
@@ -174,6 +175,11 @@ function Interp:isBusy()
 	return self.running ~= nil
 end
 
+--- 지금까지 받은 transfer 와 scene 요청 수. 이벤트 관리자가 맵을 떠나는 중인지 본다.
+function Interp:leaveCount()
+	return self.leaves
+end
+
 --- 전부 중단한다 (맵 전환).
 function Interp:clear()
 	self.running = nil
@@ -205,6 +211,7 @@ function Interp:beginWait(request)
 	end
 
 	if request.transfer ~= nil then
+		self.leaves = self.leaves + 1
 		local t = request.transfer
 		if self.host.transfer ~= nil then
 			self.host.transfer(t.map, t.x, t.y, t.dir)
@@ -255,6 +262,7 @@ function Interp:beginWait(request)
 	end
 
 	if request.scene ~= nil then
+		self.leaves = self.leaves + 1
 		if self.host.scene ~= nil then
 			self.host.scene(request.scene.name, request.scene.opts)
 		end

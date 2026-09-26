@@ -87,6 +87,10 @@ function M.run(t)
 	t.check_eq(S.walkPatternAt(3), 1, "걸음 3 (서기로 복귀)")
 	t.check_eq(S.walkPatternAt(4), 0, "걸음 4는 다시 처음")
 	t.check_eq(S.walkPatternAt(103), S.walkPatternAt(3), "큰 값도 주기가 같다")
+	-- 서기 열은 규격 표의 칸이다 (event-commands.json 의 sheets.charset.standPattern 과 대조된다)
+	t.check_eq(c.standPattern, 1, "서 있는 자세는 가운데 열")
+	t.check_eq(S.walkPatternAt(1), c.standPattern, "걷기 순서의 둘째 걸음이 서기 열")
+	t.check_eq(S.walkPatternAt(3), c.standPattern, "걷기 순서의 넷째 걸음이 서기 열")
 
 	-- [6] FaceSet과 ChipSet 좌표
 	local fx, fy, fw = S.facesetRect(0)

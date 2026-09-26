@@ -288,6 +288,103 @@ function M.run(t)
 		commands = { { code = "message", text = "무시된다" } } }
 	t.check(type(both.script) == "function" and both.commands ~= nil,
 		"둘 다 주면 함수를 쓰고 커맨드는 데이터로만 남는다")
+
+	-- ---- [12] 조건의 꼴과 판정 순서 ----------------------------------------
+	t.check_eq(table.concat(Commands.CONDITIONS, ","), "item,flag,var", "조건은 item, flag, var 순서")
+	local both2 = {}
+	Inventory.give(both2, "key")
+	t.check(Commands.test({ item = "key", flag = "none" }, both2),
+		"키가 둘이면 앞의 꼴(item)로 판정한다")
+	t.check(not Commands.test({ flag = "none", var = "n", op = "==", value = 0 }, {}),
+		"flag 와 var 가 함께 있으면 flag 로 판정한다")
+	t.check_eq(table.concat(Commands.SET_VAR_OPS, ","), "=,+,-", "setVar 의 계산은 셋")
+
+	-- ---- [13] describe: 필수 인자와 하위 목록 ------------------------------
+	local desc = Commands.describe()
+	local described = {}
+	for code in pairs(desc) do described[#described + 1] = code end
+	table.sort(described)
+	t.check_eq(table.concat(described, ","), table.concat(Commands.codes(), ","),
+		"describe 는 모든 커맨드를 적는다")
+	t.check_eq(desc.message.required.text, "string", "message 의 text 는 필수 글")
+	t.check_eq(desc.message.required.name, nil, "message 의 name 은 필수가 아니다")
+	t.check_eq(desc.moveRoute.required.route, "table", "moveRoute 의 route 는 필수 표")
+	t.check_eq(next(desc.script.required), nil, "script 의 name 은 validate 의 따로 규칙이 본다")
+	t.check_eq(table.concat(desc.choice.lists, ","), "branches", "choice 의 하위 목록은 branches")
+	t.check_eq(desc.choice.perOption.branches, "options", "branches 는 항목마다 하나")
+	t.check_eq(table.concat(desc["if"].lists, ","), "thenDo,elseDo", "if 의 하위 목록은 thenDo, elseDo")
+	t.check_eq(#desc.message.lists, 0, "message 에는 하위 목록이 없다")
+	desc.message.required.text = "number"
+	t.check_eq(Commands.describe().message.required.text, "string", "describe 는 사본을 돌려준다")
+
+	-- ---- [14] walk: 하위 목록까지 적힌 순서로 ------------------------------
+	local visited = {}
+	Commands.walk({
+		{ code = "message", text = "a" },
+		{ code = "choice", options = { "가", "나" }, branches = {
+			{ { code = "message", text = "b" } },
+			{ { code = "if", cond = { flag = "f" },
+			    thenDo = { { code = "message", text = "c" } },
+			    elseDo = { { code = "wait", ms = 1 } } } },
+		} },
+	}, function(cmd, path) visited[#visited + 1] = cmd.code .. path end)
+	t.check_eq(table.concat(visited, " "),
+		"message[1] choice[2] message[2].branches[1][1] if[2].branches[2][1] "
+		.. "message[2].branches[2][1].thenDo[1] wait[2].branches[2][1].elseDo[1]",
+		"walk 가 가지 안까지 경로와 함께 훑는다")
+
+	-- ---- [15] problems: 경로와 이유를 따로, 앞에 붙일 경로 -----------------
+	local probs = Commands.problems({ { code = "message" } }, nil, "events[2].commands")
+	t.check_eq(#probs, 1, "문제 하나")
+	t.check_eq(probs[1].path, "events[2].commands[1].text", "앞에 붙인 경로")
+	t.check(type(probs[1].message) == "string" and probs[1].message ~= "", "이유가 따로 온다")
+
+	-- ---- [16] 새 검사: 얼굴과 방향 ------------------------------------------
+	local function pathsOf(list)
+		local out = {}
+		for _, p in ipairs(Commands.problems(list)) do out[#out + 1] = p.path end
+		table.sort(out)
+		return table.concat(out, " ")
+	end
+	local face = "./resources/faces/placeholder.png"
+	t.check_eq(pathsOf({
+		{ code = "message", text = "a", face = { set = "npc", index = 3 } },
+		{ code = "message", text = "b", face = { file = face, index = 15 } },
+		{ code = "message", text = "c", face = { set = "npc" } },
+		{ code = "transfer", map = "inn", x = 1, y = 2, dir = "up" },
+		{ code = "turn", target = "player", dir = "left" },
+	}), "", "올바른 얼굴과 방향은 통과한다")
+	t.check_eq(pathsOf({ { code = "message", text = "a", face = 3 } }), "[1].face",
+		"얼굴이 객체가 아니다")
+	t.check_eq(pathsOf({ { code = "message", text = "a", face = { set = "npc", file = face } } }),
+		"[1].face", "set 과 file 이 둘 다 있다")
+	t.check_eq(pathsOf({ { code = "message", text = "a", face = { index = 1 } } }), "[1].face",
+		"set 도 file 도 없다")
+	t.check_eq(pathsOf({ { code = "message", text = "a", face = { set = "monster", index = 1 } } }),
+		"[1].face.set", "모르는 얼굴 이름")
+	t.check_eq(pathsOf({ { code = "message", text = "a", face = { set = "npc", index = 16 } } }),
+		"[1].face.index", "얼굴 번호는 0..15")
+	t.check_eq(pathsOf({ { code = "message", text = "a", face = { set = "npc", index = 1.5 } } }),
+		"[1].face.index", "얼굴 번호는 정수")
+	t.check_eq(pathsOf({ { code = "transfer", map = "inn", dir = "north" } }), "[1].dir",
+		"transfer 의 모르는 방향")
+	t.check_eq(pathsOf({ { code = "transfer", map = "inn", dir = 2 } }), "[1].dir",
+		"transfer 의 방향이 글이 아니다")
+	t.check_eq(pathsOf({ { code = "turn", target = "player", dir = "sideways" } }), "[1].dir",
+		"turn 의 모르는 방향")
+	t.check_eq(pathsOf({ { code = "turn", target = "player", dir = 2 } }), "[1].dir",
+		"turn 의 방향이 글이 아니면 한 번만 알린다")
+	t.check_eq(pathsOf({ { code = "if", cond = { flag = "a" }, thenDo = {
+		{ code = "message", text = "a", face = { set = "npc", index = 99 } } } } }),
+		"[1].thenDo[1].face.index", "가지 안의 얼굴도 본다")
+
+	-- 모양이 틀린 인자에도 검사가 죽지 않는다
+	t.check_eq(pathsOf({ { code = "choice", options = 5 } }), "[1].options",
+		"항목이 표가 아니면 타입 오류 하나")
+	t.check_eq(pathsOf({ { code = "choice", options = { "가" }, branches = "없다" } }),
+		"[1].branches", "가지 목록이 배열이 아니다")
+	t.check_eq(pathsOf({ { code = "if", cond = { flag = "a" }, elseDo = "없다" } }),
+		"[1].elseDo", "하위 목록이 배열이 아니다")
 end
 
 return M

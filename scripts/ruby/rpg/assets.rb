@@ -49,6 +49,13 @@ module Rpg
     FACESET = ["./resources/rtp/FaceSet/People1.png", "./resources/faces/placeholder.png"]
     WINDOWSKIN = ["./resources/rtp/System/System.png", "./resources/ui/window.png"]
 
+    # 맵 파일의 이벤트가 외형과 얼굴에 적는 논리 이름과 그 후보 목록.
+    # resources/schema/event-commands.json 의 assets 와 같다 (테스트가 대조한다).
+    SETS = {
+      charset: { player: PLAYER_CHARSET, npc: NPC_CHARSET },
+      face: { npc: FACESET },
+    }
+
     def self.player_charset
       pick(PLAYER_CHARSET)
     end

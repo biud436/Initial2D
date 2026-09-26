@@ -22,6 +22,7 @@ module Rpg
       block_w: 72, block_h: 128,
       frame_w: 24, frame_h: 32,
       patterns: 3,   # 한 방향의 가로 프레임 수 (왼발, 서기, 오른발)
+      stand_pattern: 1,   # 서 있는 자세의 열 (에디터가 이벤트 외형을 그릴 때 쓴다)
       dirs: 4,
       # 방향 이름 → 블록 안의 행 번호 (0부터)
       dir_rows: { up: 0, right: 1, down: 2, left: 3 },

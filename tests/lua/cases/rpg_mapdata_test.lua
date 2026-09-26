@@ -74,6 +74,156 @@ function M.run(t)
 	t.check_eq(#all, 2, "맵의 둘 중 하나를 정의 파일이 덮어썼다")
 	t.check_eq(all[1].trigger, "touch", "덮어쓴 쪽의 값")
 	t.check_eq(all[2].id, "guard", "맵에만 있던 이벤트는 그대로")
+
+	-- ---- [5] merge 는 정의 파일이 덮어쓴 id 도 돌려준다 ---------------------
+	local _, overridden = MapData.merge(fromMap, fromDef)
+	t.check_eq(table.concat(overridden, ","), "guard", "덮인 id 는 guard 하나")
+	local _, none2 = MapData.merge(fromMap, { { id = "other", x = 0, y = 0 } })
+	t.check_eq(#none2, 0, "겹치지 않으면 덮인 id 가 없다")
+	local _, twice = MapData.merge(
+		{ { id = "b", x = 0, y = 0 }, { id = "a", x = 0, y = 0 } },
+		{ { id = "a", x = 1, y = 1 }, { id = "b", x = 1, y = 1 }, { id = "a", x = 2, y = 2 } })
+	t.check_eq(table.concat(twice, ","), "b,a", "덮인 id 는 맵 파일 순서로 한 번씩")
+	local _, _, eventsOverridden = MapData.eventsFor(def)
+	t.check_eq(table.concat(eventsOverridden, ","), "sign", "eventsFor 도 덮인 id 를 돌려준다")
+
+	-- ---- [6] validateEvents: 계약 표의 줄마다 (m2-rpg-events.md 3절) --------
+	local function paths(events, env)
+		local ok, problems = MapData.validateEvents(events, env)
+		local out = {}
+		for _, p in ipairs(problems) do out[#out + 1] = p.path end
+		table.sort(out)
+		return table.concat(out, " "), ok
+	end
+	local function base(extra)
+		local ev = { id = "e", x = 1, y = 2 }
+		for k, v in pairs(extra or {}) do ev[k] = v end
+		return ev
+	end
+
+	local okPaths, okAll = paths({
+		base{ dir = "left", trigger = "touch", charset = { set = "npc", index = 7 },
+			through = false, solid = true, speed = 2.5,
+			wander = { minWait = 10, maxWait = 10, area = { x = 0, y = 0, w = 1, h = 1 } },
+			commands = { { code = "message", text = "a", face = { set = "npc", index = 0 } } } },
+		{ id = "f", x = 0, y = 0, charset = { file = "./resources/charsets/placeholder.png" } },
+		{ id = "g", x = 3, y = 3, wander = {} },
+	})
+	t.check(okAll and okPaths == "", "올바른 이벤트는 문제가 없다", okPaths)
+
+	t.check_eq(paths({ "글" }), "events[1]", "이벤트가 객체가 아니다")
+	t.check_eq(paths({ { x = 0, y = 0 } }), "events[1].id", "id 가 없다")
+	t.check_eq(paths({ base{ id = "" } }), "events[1].id", "id 가 빈 글")
+	t.check_eq(paths({ base{ id = 3 } }), "events[1].id", "id 가 글이 아니다")
+	t.check_eq(paths({ base{ id = "player" } }), "events[1].id", "id 가 player (예약)")
+	t.check_eq(paths({ base{ id = "a" }, base{ id = "b" }, base{ id = "a" } }), "events[3].id",
+		"같은 id 는 뒤의 것에 낸다")
+	t.check_eq(paths({ { id = "e", x = -1, y = 1.5 } }), "events[1].x events[1].y",
+		"x, y 가 0 이상의 정수가 아니다")
+	t.check_eq(paths({ { id = "e", x = "1" } }), "events[1].x events[1].y",
+		"x 가 글이고 y 가 없다")
+	t.check_eq(paths({ { id = "e", x = 2.0, y = 3.0 } }), "",
+		"정수 모양의 실수는 정수로 본다 (JSON 쓰기 도구가 2.0 을 2 로 쓴다)")
+	t.check_eq(paths({ base{ dir = "north" } }), "events[1].dir", "모르는 방향")
+	t.check_eq(paths({ base{ trigger = "click" } }), "events[1].trigger", "모르는 트리거")
+	t.check_eq(paths({ base{ charset = "npc" } }), "events[1].charset", "외형이 객체가 아니다")
+	t.check_eq(paths({ base{ charset = { set = "npc", file = "./a.png" } } }), "events[1].charset",
+		"외형에 set 과 file 이 둘 다")
+	t.check_eq(paths({ base{ charset = { index = 1 } } }), "events[1].charset",
+		"외형에 set 도 file 도 없다")
+	t.check_eq(paths({ base{ charset = { set = "monster" } } }), "events[1].charset.set",
+		"외형의 모르는 이름")
+	t.check_eq(paths({ base{ charset = { set = "npc", index = 8 } } }), "events[1].charset.index",
+		"외형 번호는 0..7")
+	t.check_eq(paths({ base{ charset = { file = "", index = 0 } } }), "events[1].charset.file",
+		"외형 파일이 빈 글")
+	t.check_eq(paths({ base{ through = "yes", solid = 1 } }), "events[1].solid events[1].through",
+		"through, solid 가 참거짓이 아니다")
+	t.check_eq(paths({ base{ speed = 0 } }), "events[1].speed", "속도 0")
+	t.check_eq(paths({ base{ speed = "fast" } }), "events[1].speed", "속도가 수가 아니다")
+	t.check_eq(paths({ base{ wander = 5 } }), "events[1].wander", "배회가 객체가 아니다")
+	t.check_eq(paths({ base{ wander = { minWait = -1, maxWait = 2.5 } } }),
+		"events[1].wander.maxWait events[1].wander.minWait", "대기 프레임이 0 이상의 정수가 아니다")
+	t.check_eq(paths({ base{ wander = { minWait = 50, maxWait = 10 } } }),
+		"events[1].wander.maxWait", "minWait 가 maxWait 보다 크다")
+	t.check_eq(paths({ base{ wander = { minWait = 200 } } }), "events[1].wander.minWait",
+		"maxWait 가 없으면 기본값 120 과 비교해 minWait 에 낸다")
+	t.check_eq(paths({ base{ wander = { area = { x = -1, y = 0, w = 0, h = 2 } } } }),
+		"events[1].wander.area.w events[1].wander.area.x", "구역의 칸마다")
+	t.check_eq(paths({ base{ wander = { area = "넓게" } } }), "events[1].wander.area",
+		"구역이 객체가 아니다")
+	t.check_eq(paths({ base{ commands = "안녕" } }), "events[1].commands", "커맨드가 배열이 아니다")
+	t.check_eq(paths({ base{ commands = {
+		{ code = "없는커맨드" },
+		{ code = "message" },
+		{ code = "choice", options = {} },
+		{ code = "choice", options = { "가" }, branches = { { { code = "message", name = "a" } } } },
+		{ code = "message", text = "a", face = { set = "npc", index = 16 } },
+		{ code = "transfer", map = "inn", dir = "north" },
+	} } }), table.concat({
+		"events[1].commands[1]",
+		"events[1].commands[2].text",
+		"events[1].commands[3].options",
+		"events[1].commands[4].branches[1][1].text",
+		"events[1].commands[5].face.index",
+		"events[1].commands[6].dir",
+	}, " "), "커맨드 검사는 events[i].commands 를 앞에 붙인다")
+	t.check_eq(paths({ base{ commands = { { code = "script", name = "greet" } } } },
+		{ scripts = { greet = function() end } }), "", "정의 파일의 scripts 로 이름을 확인한다")
+	t.check_eq(paths({ base{ commands = { { code = "script", name = "greet" } } } }),
+		"events[1].commands[1].name", "등록되지 않은 스크립트 이름")
+	t.check_eq(paths("글"), "events", "events 가 배열이 아니다")
+
+	-- 한 이벤트의 문제는 전부 내고, 문제가 있는 이벤트만 뺀다
+	local ok, problems, valid, skipped = MapData.validateEvents({
+		base{ id = "good" },
+		{ id = "player", x = -1, y = 0, dir = "north" },
+		base{ id = "also" },
+	})
+	t.check_eq(ok, false, "문제가 있으면 ok 가 거짓")
+	t.check_eq(#problems, 3, "한 이벤트의 문제 셋을 다 낸다")
+	t.check_eq(problems[1].index, 2, "문제에 이벤트 번호가 붙는다")
+	t.check_eq(skipped, 1, "뺀 이벤트는 하나")
+	t.check_eq(#valid, 2, "나머지 둘은 남는다")
+	t.check(valid[1].id == "good" and valid[2].id == "also", "남은 이벤트의 순서")
+
+	-- JSON 의 null 은 구멍이 된다. 그 자리도 이벤트로 센다.
+	local holes = { base{ id = "a" } }
+	holes[3] = base{ id = "c" }
+	local _, holeProblems, holeValid = MapData.validateEvents(holes)
+	t.check(#holeProblems == 1 and holeProblems[1].path == "events[2]", "null 자리는 객체가 아니다")
+	t.check_eq(#holeValid, 2, "구멍 뒤의 이벤트도 남는다")
+
+	-- ---- [7] resolveAssets: 논리 이름을 파일로 ------------------------------
+	local Assets = require("scripts/lua/rpg/assets")
+	local original = {
+		{ id = "npc", x = 1, y = 1, charset = { set = "npc", index = 4, note = "보존" },
+		  commands = {
+			{ code = "message", text = "a", face = { set = "npc", index = 2 } },
+			{ code = "if", cond = { flag = "f" }, thenDo = {
+				{ code = "choice", options = { "가" }, branches = {
+					{ { code = "message", text = "b", face = { set = "npc", index = 5 } } } } } } },
+		  } },
+		{ id = "file", x = 2, y = 2, charset = { file = "./resources/charsets/placeholder.png", index = 1 } },
+		{ id = "plain", x = 3, y = 3 },
+	}
+	local resolved = MapData.resolveAssets(original, Assets)
+	t.check_eq(#resolved, 3, "이벤트 수는 그대로")
+	t.check_eq(resolved[1].charset.file, Assets.npcCharset(), "외형 set 이 NPC CharSet 파일로")
+	t.check_eq(resolved[1].charset.set, nil, "풀린 외형에는 set 이 없다")
+	t.check_eq(resolved[1].charset.index, 4, "외형 번호는 그대로")
+	t.check_eq(resolved[1].charset.note, "보존", "모르는 칸은 보존한다")
+	t.check_eq(resolved[1].commands[1].face.file, Assets.faceset(), "대화의 얼굴도 푼다")
+	local inner = resolved[1].commands[2].thenDo[1].branches[1][1]
+	t.check_eq(inner.face.file, Assets.faceset(), "가지 안의 얼굴도 푼다")
+	t.check_eq(inner.face.index, 5, "얼굴 번호는 그대로")
+	t.check_eq(original[1].charset.set, "npc", "원본의 외형은 그대로")
+	t.check_eq(original[1].commands[1].face.set, "npc", "원본의 얼굴은 그대로")
+	t.check_eq(resolved[2].charset.file, "./resources/charsets/placeholder.png", "파일 외형은 그대로")
+	t.check_eq(resolved[3].charset, nil, "외형 없는 이벤트")
+	t.check(Commands.validate(resolved[1].commands), "풀린 커맨드도 검증을 통과한다")
+	local rebuilt = Event.new(resolved[1])
+	t.check(type(rebuilt.script) == "function", "풀린 이벤트로 Event.new 가 된다")
 end
 
 return M
