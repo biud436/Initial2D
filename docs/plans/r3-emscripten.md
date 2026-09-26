@@ -16,7 +16,7 @@
 |---|---|
 | **SDL2 는 Emscripten 포트로** (`-sUSE_SDL=2` 등. Homebrew 의 find_package 대신) | emcc 가 헤더 경로와 라이브러리를 스스로 준다. 첫 빌드에서 포트를 소스에서 컴파일하고 그 뒤로는 캐시된다. CMake 는 `if(EMSCRIPTEN)` 한 분기이고 네이티브 쪽 코드는 그대로다 |
 | **루프는 `emscripten_set_main_loop_arg`, ASYNCIFY 는 쓰지 않는다** | 브라우저는 블로킹 루프를 허락하지 않는다. `App::Run` 의 while 본문을 `App::StepFrame()` 으로 떼어 네이티브는 while 이, 브라우저는 requestAnimationFrame 이 같은 함수를 부른다. 엔진에 블로킹 호출(`SDL_Delay`, `SDL_WaitEvent`)이 없어 ASYNCIFY(코드 크기와 속도 손해)가 필요 없다. fps 는 -1 (디스플레이 주사율) |
-| **wasm 네이티브 예외** (`-fwasm-exceptions`) | vendored Lua 는 C++ 로 컴파일되어 오류를 `throw` 로 던지고 `pcall` 이 catch 한다. Emscripten 기본은 catch 를 끈 상태라 첫 Lua 오류에서 abort 했을 것이다. JS 기반 예외(`-fexceptions`)보다 빠르고 최근 브라우저는 전부 지원한다 |
+| **wasm 네이티브 예외** (`-fwasm-exceptions`, **모든 타깃**) | vendored Lua 는 C++ 로 컴파일되어 오류를 `throw` 로 던지고 `pcall` 이 catch 한다. Emscripten 기본은 catch 를 끈 상태라 첫 Lua 오류에서 abort 했을 것이다. JS 기반 예외(`-fexceptions`)보다 빠르고 최근 브라우저는 전부 지원한다. 타깃마다 방식이 다르면 Lua 오류가 `pcall` 을 지나쳐 모듈 밖으로 빠지므로 CMake 맨 위에서 모든 타깃에 준다 (8절) |
 | **환경 변수는 `Platform::GetEnv`** (`src/platform/Env.h`) | 브라우저에는 프로세스 환경이 없다. C++ 의 `INITIAL2D_*` 읽기를 전부 이 함수로 모으고, Emscripten 에서는 `Module.initial2dEnv[name]` 을 먼저 본 뒤 `getenv` 로 내려간다. 네이티브는 헤더 인라인의 `std::getenv` 라 동작이 같고 Windows 프로젝트 파일에 더할 소스도 없다 |
 | **Lua 의 `os.getenv` 는 `Module.ENV` 로** | 스크립트는 libc 를 거치므로 로더가 런타임이 뜨기 전(`preRun`)에 같은 값을 `Module.ENV` 에 넣는다. `INITIAL2D_SCENE`, `INITIAL2D_NO_RTP` 처럼 Lua 가 읽는 설정이 그대로 통한다 (검수 7 번이 확인) |
 | **핫 리로드는 TCP 대신 export** | 소켓이 없다. `HotReloadServer.cpp` 를 빌드에서 빼고, 번들을 받은 뒤 하던 일(`Script_Destroy` 뒤 `Script_Init`)을 `Script_Restart()` 로 묶어 서버와 `initial2d_reload()` 가 같은 길을 쓴다. 파일은 로더가 MEMFS 에 다시 쓴다 |
@@ -52,12 +52,17 @@ Lua 쪽 `os.getenv`(`INITIAL2D_SCENE`, `INITIAL2D_AUTOPLAY`, `INITIAL2D_NO_RTP`,
 
 ## 4. 플래그
 
-컴파일과 링크에 함께 (포트와 예외):
+모든 타깃의 컴파일과 링크에 (CMake 맨 위, vendored 라이브러리보다 먼저):
+
+```
+-fwasm-exceptions
+```
+
+엔진 코어와 실행 파일의 컴파일과 링크에 (포트):
 
 ```
 -sUSE_SDL=2 -sUSE_SDL_IMAGE=2 -sSDL2_IMAGE_FORMATS=png,jpg
 -sUSE_SDL_MIXER=2 -sSDL2_MIXER_FORMATS=ogg,wav -sUSE_OGG=1 -sUSE_VORBIS=1
--fwasm-exceptions
 ```
 
 링크에만 (`Initial2D` 타깃):
@@ -65,8 +70,8 @@ Lua 쪽 `os.getenv`(`INITIAL2D_SCENE`, `INITIAL2D_AUTOPLAY`, `INITIAL2D_NO_RTP`,
 ```
 -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=67108864 -sSTACK_SIZE=2097152
 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=createInitial2D -sENVIRONMENT=web
--sEXPORTED_RUNTIME_METHODS=FS,ccall,cwrap,callMain,ENV,UTF8ToString,stringToNewUTF8
--sEXPORTED_FUNCTIONS=_main,_initial2d_reload,_initial2d_quit,_initial2d_features,_malloc,_free
+-sEXPORTED_RUNTIME_METHODS=FS,ccall,cwrap,callMain,ENV,UTF8ToString,stringToNewUTF8,getExceptionMessage,decrementExceptionRefcount
+-sEXPORTED_FUNCTIONS=_main,_initial2d_reload,_initial2d_quit,_initial2d_features,_initial2d_frame_count,_initial2d_running,_malloc,_free
 -sFORCE_FILESYSTEM=1 -sEXIT_RUNTIME=0 -sINVOKE_RUN=0
 ```
 
@@ -85,13 +90,16 @@ const game = await bootInitial2D({
   files: { "game.json": "...", "scripts/lua/main.lua": "...", "resources/x.png": new Uint8Array(...) },
   env: { INITIAL2D_SCRIPT: "lua", INITIAL2D_SCENE: "flappy" },   // 네이티브의 환경 변수와 같은 이름
   print: (line) => console.log(line),        // Lua print (stdout)
-  printErr: (line) => console.error(line),   // SDL_Log, "Lua error in ..." (stderr)
+  printErr: (line) => console.error(line),   // SDL_Log, "Lua error in ...", "fatal: ..." (stderr)
+  onExit: (code) => {},                      // 루프가 멈추면 한 번. 0 은 quit() 이나 정상 종료, 1 은 오류 (8절)
   wasmUrl: "./Initial2D.wasm",               // 선택. 기본은 Initial2D.js 옆
 });
 
-game.reload({ "scripts/lua/main.lua": "..." });   // 바뀐 파일만 올리고 VM 재시작 (initial2d_reload)
+game.reload({ "scripts/lua/main.lua": "..." });   // 바뀐 파일만 올리고 VM 재시작 (initial2d_reload). 성공 true, 스크립트 오류 false
 game.quit();                                       // initial2d_quit. 다시 띄우려면 새로 boot
 game.features();                                   // "lua wasm"
+game.frames();                                     // 지금까지 돈 엔진 프레임 수 (initial2d_frame_count)
+game.errorText(e);                                 // 모듈 밖으로 나온 것을 읽을 수 있는 문자열로 (C++ 예외는 getExceptionMessage)
 game.module;                                       // Emscripten Module (FS, ccall ...)
 ```
 
@@ -127,6 +135,11 @@ node tools/web_smoke.mjs --golden tests/golden/aldebaran_title.png   # 헤드리
 6. `reload()` 와 `quit()` 이 콘솔에 자기 줄을 남기는지.
 7. 두 번째 페이지에서 `main.lua` 한 장짜리 프로젝트를 올려 `os.getenv` 가 설정 객체를 보고,
    `INITIAL2D_EXIT_AFTER` 로 루프가 끝나는지.
+8. ~ 11. 오류 처리 (8절의 표). 시작 때 문법 오류, `Update` 의 런타임 오류, `reload()` 의 고장 난 파일과
+   고친 파일, `quit()` 뒤의 `onExit(0)`, `frames()`, `errorText()`. 네이티브 실행 파일(`--native`, 기본
+   `build/Initial2D`)이 있으면 같은 파일을 헤드리스로 돌려 오류 줄이 글자 그대로 같은지도 본다.
+
+Playwright 는 `PLAYWRIGHT_DIR` 로 바꿀 수 있다 (기본은 InitialEditor 저장소의 `node_modules/playwright`).
 
 **2026-09-26 결과**: 전부 통과. 헤드리스 크로미움에서 WebGL(`renderer=opengles2`)이 잡혀 소프트웨어
 폴백은 쓰이지 않았다. 20 프레임 캡처는 골든 `aldebaran_title.png` 와 **차이 픽셀 0 / 688128** (평균
@@ -155,7 +168,95 @@ node tools/web_smoke.mjs --golden tests/golden/aldebaran_title.png   # 헤드리
 - Windows GDI 경로와 Android 는 손대지 않았다. Android 의 JNI 소스 목록에는 새 파일이 들어갈 필요가
   없다 (`Env.h` 는 헤더 인라인, `emscripten/` 은 브라우저 전용).
 
-## 8. 체크리스트
+## 8. 오류 처리: 네이티브와 같게 (2026-09-27)
+
+### 8.1 문제
+
+`CMakeLists.txt` 에서 `add_library(vendored_lua)` 가 `add_compile_options(... -fwasm-exceptions)` 보다 앞에 있어
+vendored Lua 만 예외 없이 컴파일되었다 (`add_compile_options` 는 그 뒤에 만든 타깃에만 붙는다). Lua 는 C++ 로
+컴파일되어 `pcall` 이 `try`/`catch` 인데, catch 가 빠진 채 링크되어 모든 Lua 오류가 `WebAssembly.Exception` 으로
+모듈 밖까지 빠졌다. 시작 때 문법 오류는 `callMain` 을, `Update` 의 `error("boom")` 은 메인 루프를, 리로드 때의 문법
+오류는 `initial2d_reload` 를 JS 예외로 깨뜨렸고, `print(pcall(error, "x"))` 조차 던졌다. R3 의 검수는 오류가 없는
+경로만 돌아서 드러나지 않았다.
+
+### 8.2 네이티브의 동작 (기준)
+
+`build/Initial2D` 를 `SDL_VIDEODRIVER=dummy`, `INITIAL2D_EXIT_AFTER` 로 작은 프로젝트(`main.lua` 한 장)에서 돌려
+확인했다. 웹은 이 표와 같게 동작한다.
+
+| 경우 | 오류 줄 (stderr, 웹은 printErr) | 네이티브 | 웹 |
+|---|---|---|---|
+| 시작 때 문법 오류 | `Lua error in scripts/lua/main.lua: ./scripts/lua/main.lua:3: <name> or '...' expected near 'end'` | 게임이 끝나고 종료 코드 1 | 같은 줄, `bootInitial2D` 는 정상으로 돌아오고 첫 프레임에 루프가 멈춘다. `onExit(1)` |
+| `Update` 의 `error("boom")` | `Lua error in update: ./scripts/lua/main.lua:5: boom` | destroy 훅 없이 끝나고 종료 코드 1 | 같은 줄, 루프가 멈추고 `onExit(1)` |
+| `pcall(error, "x")` | 없음 | Lua 가 잡는다 (`false`, `"x"`) | 같음 |
+| 핫 리로드의 문법 오류 | `Lua error in scripts/lua/main.lua: ./scripts/lua/main.lua:2: ...` | **바꿨다.** 이전에는 게임이 끝났다 (종료 코드 1). 이제 게임은 두고 스크립트만 멈춘다 (8.3) | `reload()` 가 `false`, 루프는 돈다. 고친 파일로 `reload()` 하면 `true` 이고 다시 그린다 |
+| `quit()`, `GameExit()`, `INITIAL2D_EXIT_AFTER` | 없음 | 종료 코드 0 | `onExit(0)` |
+| 프레임 밖으로 빠지는 C++ 예외 | | `std::terminate` (abort) | 프레임 함수가 받아 `fatal: 메시지` 한 줄, 루프가 멈추고 `onExit(1)` |
+
+오류 줄의 형식이 같으므로 에디터가 프로세스 실행(E1)에 쓰는 오류 링크 파서가 게임 뷰(E4)에도 그대로 통한다.
+
+### 8.3 핫 리로드의 스크립트 오류는 게임을 끝내지 않는다
+
+에디터의 게임 뷰는 파일을 저장할 때마다 `reload()` 를 부른다. 고장 난 파일 뒤에 고친 파일로 되살아나야 하고,
+"네이티브와 같다" 도 지켜야 하므로 네이티브 핫 리로드(`INITIAL2D_HMR=1`, 안드로이드 디버그)도 같이 바꿨다.
+
+- 게임을 끝낼지는 `ScriptRuntime` 한 곳이 정한다 (`MarkFailed`). `Lua_ReportIfError` 와 mruby 의 `ReportError` 는
+  오류 줄을 적고 VM 을 멈추기만 한다. 첫 오류에서 `App::Quit()` 을 부르는 것은 전과 같다.
+- `Script_Restart()` 가 도는 동안의 오류는 게임을 끝내지 않는다. 반환값은 `bool` 이 되었고(새 VM 이 오류 없이
+  올라왔는가), 성공하면 `Script_Failed()` 가 다시 false 가 된다. 멈춘 동안 `Update`, `Render` 는 건너뛰므로 화면은
+  비어 있다.
+- 네이티브 로그: 성공은 전과 같은 `HotReload: reloaded with N files`, 실패는
+  `HotReload: reload failed with N files (script error), scripts stopped until the next reload`.
+  웹은 `HotReload: reloaded (web)` 과 `HotReload: reload failed (web, script error), ...`.
+- mruby 도 같다 (`mruby: uncaught exception in scripts/ruby/main.rb` 뒤 스크립트만 멈춘다).
+- 시작 때의 오류와 `Update`, `Render` 의 오류는 전처럼 게임을 끝낸다 (`test_lua_error_scene` 무변경).
+
+### 8.4 바뀐 것
+
+| 파일 | 무엇 |
+|---|---|
+| `CMakeLists.txt` | `if(EMSCRIPTEN)` 의 `-fwasm-exceptions` 를 파일 맨 위(어느 `add_library` 보다 먼저)로. 링크에 `getExceptionMessage`, `decrementExceptionRefcount`, `_initial2d_frame_count`, `_initial2d_running` export |
+| `src/ScriptRuntime.h`, `.cpp` | `MarkFailed`, `Script_Restart()` 가 `bool` |
+| `src/lua_prot.cpp`, `src/mrb_prot.cpp` | 오류 보고에서 `App::Quit()` 을 뺐다 (결정은 ScriptRuntime). `Lua_Init` 이 실패 표시를 지운다 |
+| `src/platform/sdl2/AppSDL2.cpp` | 핫 리로드 로그가 성패를 나눈다 |
+| `src/platform/emscripten/WebMain.cpp`, `.h` | 프레임 함수의 `try`/`catch` (`fatal:`), 루프가 멈추면 `Module.initial2dOnExit(code)`, `initial2d_reload` 가 1/0, export `initial2d_frame_count`, `initial2d_running` |
+| `tools/web/initial2d-loader.js` | `onExit`, `reload()` 의 `true`/`false`, `frames()`, `errorText()`, `callMain` 밖으로 나온 예외와 abort 를 `fatal:` 로 |
+| `tools/web/index.html` | 멈추면 상태 줄에 알린다 |
+| `tools/web_smoke.mjs` | 검수 8 ~ 11 |
+| `tests/run_engine_tests.py` | `[1h] hot_reload_error` (네이티브 핫 리로드로 고장 난 파일과 고친 파일, Lua 와 mruby) |
+
+생성된 `flags.make` 로 확인한 컴파일 플래그: `vendored_lua`, `vendored_sqlite3`, `vendored_jsoncpp`,
+`vendored_tinyxml`, `initial2d_core`, `Initial2D`(그리고 빌드하지 않는 테스트 실행 파일들)가 전부 `-fwasm-exceptions`,
+실행 파일의 링크도 같다. mruby 타깃은 Emscripten 에서 만들지 않는다.
+
+### 8.5 로더 계약
+
+- `bootInitial2D({ ..., onExit })`: 엔진 루프가 멈추면 `onExit(code)` 를 **한 번** 부른다 (0 은 `quit()` 이나 정상
+  종료, 1 은 스크립트 오류나 fatal). 엔진의 호출 스택 밖(마이크로태스크)에서 부른다. `Initial2D web: main loop stopped`
+  줄은 전처럼 나온다. 창이나 렌더러를 만들지 못해 루프 없이 `main` 이 끝나도 부른다.
+- Lua 오류는 JS 예외로 나오지 않는다. 오류 줄은 네이티브와 글자 그대로 같다.
+- `reload(more, envPatch)`: 새 VM 이 오류 없이 올라오면 `true`, 스크립트 오류면 `false` (오류 줄은 이미 printErr 로
+  나갔다). 스크립트 오류로 던지지 않는다. 루프가 멈춘 뒤에는 `false`.
+- `frames()`: 지금까지 돈 엔진 프레임 수. 루프가 멈추면 마지막 값에 선다.
+- `errorText(e)`: 모듈 밖으로 나온 것을 문자열로. C++ 예외(`WebAssembly.Exception`)는 `getExceptionMessage` 로
+  `타입: 메시지` 를, 그 밖에는 `e.message` 나 `String(e)` 를 준다. `undefined` 를 돌려주지 않는다.
+- `fatal:` 줄: 프레임 밖으로 빠지려는 C++ 예외는 엔진(C++)이, `callMain` 밖으로 나온 예외와 abort 는 로더가 같은
+  형식으로 적는다. abort 는 C++ 가 잡을 수 없어 브라우저가 `RuntimeError` 를 잡히지 않은 오류로도 보고한다
+  (모듈은 더 쓸 수 없다).
+
+### 8.6 검수 결과 (2026-09-27)
+
+`tools/web_smoke.mjs --golden tests/golden/aldebaran_title.png` 전부 통과. 골든 차이 픽셀 0 / 688128 (골든 무변경).
+8 과 9 는 네이티브 실행 파일도 같은 줄과 종료 코드 1 을 냈다. 10 에서 첫 스크립트의 빨간 칸 107584 픽셀이 고장 난
+reload 뒤 0 이 되고, 고친 reload 뒤 초록 칸 107584 픽셀이 그려졌다. 예외 방식만 예전으로 되돌린 빌드에서는 8 이
+`fatal: lua_longjmp*` 로 실패해 이 검수가 원래의 문제를 잡는 것을 확인했다. 네이티브 전체 스위트(`tests/run_all.sh`,
+헤드리스)는 새 `[1h]`(Lua 와 mruby 18 항목)를 더해 463 PASS / 1 FAIL 이었다. 그 하나는 mruby 단위 테스트의 소리 재생
+세 항목(`play_music`, `play_sound`)으로, 이 변경 전의 master 를 따로 빌드해 돌려도 같은 세 항목이 같은 값으로 실패해
+이 작업 기계의 소리 장치 문제로 보았다 (Lua 단위 테스트는 소리를 흉내 내어 영향이 없다). 브리지 25 개와 RTP 검증도
+통과. CI(`.github/workflows/tests.yml`)는 네이티브 스위트만 돌리므로 `[1h]` 는 CI 에서 돌고, 웹 검수(emsdk 와 Playwright
+필요)는 로컬 절차다.
+
+## 9. 체크리스트
 
 - [x] CMake `EMSCRIPTEN` 분기 (포트, 예외, HotReloadServer 와 mruby 제외, 링크 플래그)
 - [x] `emscripten_set_main_loop_arg` 프레임 루프, `EXIT_RUNTIME=0`, ASYNCIFY 없음
@@ -165,6 +266,7 @@ node tools/web_smoke.mjs --golden tests/golden/aldebaran_title.png   # 헤드리
 - [x] `tools/web_smoke.mjs` (Playwright, 골든 대조, 키보드, export, os.getenv)
 - [x] 네이티브 스위트 무변경 통과
 - [x] README 「웹 빌드 (Emscripten)」, index.md 갱신
+- [x] 오류 처리를 네이티브와 같게 (8절): 모든 타깃 `-fwasm-exceptions`, `onExit`, `reload()` 의 성패, `frames()`, `errorText()`, `fatal:` 줄, 네이티브 핫 리로드의 오류가 게임을 끝내지 않음, 검수 8 ~ 11 과 `[1h]`
 - [ ] mruby (libmruby 교차 빌드)
 - [ ] 모바일 브라우저 터치 실기
 - [ ] 웹 데모 배포 (저자 결정, README 의 실행 링크 자리)

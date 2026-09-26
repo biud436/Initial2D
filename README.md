@@ -1344,9 +1344,12 @@ tools/build_web.sh
 # 보기
 python3 -m http.server -d build-web/site 8080     # http://localhost:8080 에서 "실행"
 
-# 검수: 헤드리스 크로미움으로 타이틀까지 띄워 골든과 대조하고 키보드, reload, quit 을 확인
+# 검수: 헤드리스 크로미움으로 타이틀까지 띄워 골든과 대조하고 키보드, reload, quit, 오류 처리를 확인
 node tools/web_smoke.mjs --golden tests/golden/aldebaran_title.png
 ```
+
+에디터는 이 웹 빌드를 InitialEditor 저장소에서 `INITIAL2D_DIR=<이 엔진 경로> yarn sync:engine-web` 으로 복사해 갑니다
+(`build-web/site/` 에서 가져가므로 먼저 `tools/build_web.sh`).
 
 브라우저에는 프로세스도 환경 변수도 파일 시스템도 없어서 페이지가 셋을 대신합니다. `tools/web_stage.py` 가
 `game.json`, `scripts/lua/**`, `resources/**` 를 `build-web/site/project/` 에 복사하고 목록을 `project.json` 으로
@@ -1362,10 +1365,16 @@ const game = await bootInitial2D({
   files: { "scripts/lua/main.lua": "...", "resources/bird.png": new Uint8Array(...) },
   env: { INITIAL2D_SCRIPT: "lua", INITIAL2D_SCENE: "flappy" },
   print: console.log, printErr: console.error,
+  onExit: (code) => {},                           // 루프가 멈추면 한 번. 0 은 정상 종료, 1 은 오류
 });
-game.reload({ "scripts/lua/main.lua": "..." });   // 바뀐 파일만 다시 올리고 VM 재시작 (핫 리로드)
+game.reload({ "scripts/lua/main.lua": "..." });   // 바뀐 파일만 다시 올리고 VM 재시작 (핫 리로드). 성공이면 true
+game.frames();                                     // 지금까지 돈 프레임 수
 game.quit();
 ```
+
+Lua 오류는 네이티브와 똑같이 다룹니다. 오류 줄(`Lua error in update: ./scripts/lua/main.lua:5: boom`)이 글자 그대로
+`printErr` 로 나오고 JS 예외로 새지 않습니다. 시작 때와 `Update`, `Render` 의 오류는 게임을 끝내고(`onExit(1)`),
+`reload()` 의 오류는 `false` 를 돌려준 채 스크립트만 멈춥니다. 고친 파일로 다시 `reload()` 하면 이어서 돕니다.
 
 키보드는 canvas 가 포커스를 가진 동안만 게임으로 갑니다. 소리는 브라우저 정책상 클릭 뒤에 납니다. 아직 없는 것은
 mruby(libmruby 교차 빌드가 필요합니다)와 TCP 핫 리로드(`tools/hmr_push.py` 대신 `reload()` 를 씁니다)이고,
@@ -1391,6 +1400,8 @@ python3 tools/hmr_push.py          # 다른 터미널에서 push
 
 push가 도착하면 게임이 Lua VM을 재시작하고 `main.lua`부터 다시 로드합니다
 (**풀 리스타트**이며 점수 등 게임 진행 상태는 초기화됩니다).
+push한 파일에 스크립트 오류가 있으면 시작 때와 같은 오류 줄을 찍고, 게임은 끝나지 않고 스크립트만 멈춘 채 기다립니다.
+고친 파일을 다시 push하면 이어서 돕니다.
 동작 로그는 `adb logcat -s SDL/APP`에서 `HotReload:` 태그로 확인할 수 있습니다.
 프로토콜과 설계 상세는 `docs/porting/android-hmr-plan.md`를 참조하십시오.
 
