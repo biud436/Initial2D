@@ -9,6 +9,7 @@
   --only=mruby_units      mruby 단위 테스트만 (이름 조각은 test_ 함수 이름에 부분 일치)
 """
 
+import json
 import os
 import re
 import shutil
@@ -98,6 +99,30 @@ def make_workdir(scene, fixtures=False):
     entry = os.path.join("ruby", "main.rb") if scene.endswith(".rb") else os.path.join("lua", "main.lua")
     shutil.copy(os.path.join(REPO, "tests", "engine", "scenes", scene),
                 os.path.join(scripts, entry))
+    return work
+
+
+def make_game_workdir(copy_maps=False):
+    """진짜 허브(scripts/lua/main.lua)로 게임을 띄우는 워크 디렉터리 (M2).
+
+    make_workdir 와 달리 main.lua 를 지우지 않고 scripts/ 를 그대로 복사한다. copy_maps 면
+    resources/maps 만 복사해 테스트가 맵 파일을 고칠 수 있게 하고, 나머지 resources 는
+    폴더마다 심링크한다 (저장소의 파일은 건드리지 않는다).
+    """
+    work = tempfile.mkdtemp(prefix="initial2d-game-")
+    res = os.path.join(REPO, "resources")
+    if copy_maps:
+        os.makedirs(os.path.join(work, "resources"))
+        for name in os.listdir(res):
+            src = os.path.join(res, name)
+            dst = os.path.join(work, "resources", name)
+            if name == "maps":
+                shutil.copytree(src, dst)
+            else:
+                os.symlink(src, dst)
+    else:
+        os.symlink(res, os.path.join(work, "resources"))
+    shutil.copytree(os.path.join(REPO, "scripts"), os.path.join(work, "scripts"))
     return work
 
 
@@ -831,6 +856,9 @@ def test_rpgdemo_scene():
 
     check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode}")
     check("Lua 오류 없음", "PANIC" not in log and "attempt to" not in log, log[-300:])
+    # 틀린 맵 파일 이벤트는 건너뛰고 rpg:error 만 남는다 (M2). 조용히 지나가지 않게 여기서 본다
+    check("stdout 에 rpg:error 가 없다", "rpg:error" not in result.stdout,
+          [ln for ln in result.stdout.splitlines() if "rpg:error" in ln][:3])
 
     def has(needle, name):
         check(name, needle in log, f"'{needle}' 없음 | {log[-500:]}")
@@ -970,6 +998,156 @@ def test_rpgdemo_scene():
         # 처음 넣었을 때 실제로 통과해 버렸다.
         hair = count_color_in(img, scale, 184, 201, 199, 213, HAIR_BROWN, 8)
         check("집 벽이 캐릭터의 머리를 덮지 않는다", hair > 40, f"머리색 px={hair}")
+
+
+def rpg_play_env(rpg_map, at=None, state=None, route=None):
+    """resources/data/rpg-game.json 의 play.env (route 가 있으면 play.probe 까지)를 채운다.
+
+    에디터의 실행 명령과 같은 규칙이다 (docs/plans/m2-rpg-events.md 2.4절): 자리표시자에
+    채울 값이 없는 변수는 넣지 않는다. route 의 빈 글은 값이다 (걸음 없이 auto 만 기다린다).
+    """
+    with open(os.path.join(REPO, "resources", "data", "rpg-game.json"), encoding="utf-8") as f:
+        play = json.load(f)["play"]
+    values = {"rpg.map": rpg_map, "state": state or None, "route": route}
+    if at is not None:
+        values.update({"cx": str(at[0]), "cy": str(at[1]), "dir": at[2]})
+    wanted = dict(play["env"])
+    if route is not None:
+        wanted.update(play["probe"])
+    env = {}
+    for key, template in wanted.items():
+        names = re.findall(r"\{([^}]+)\}", template)
+        if any(values.get(n) is None for n in names):
+            continue
+        env[key] = re.sub(r"\{([^}]+)\}", lambda m: str(values[m.group(1)]), template)
+    return env
+
+
+def run_game(work, extra_env, exit_after=6000):
+    """진짜 허브로 게임을 띄운다. INITIAL2D_RPG_ROUTE 가 있으면 게임이 스스로 끝나고,
+    exit_after 는 끝나지 않았을 때의 안전망이다."""
+    env = dict(os.environ)
+    env["INITIAL2D_NO_RTP"] = "1"
+    env["INITIAL2D_EXIT_AFTER"] = str(exit_after)
+    env.update(extra_env)
+    return subprocess.run([GAME], cwd=work, env=env,
+                          capture_output=True, text=True, timeout=300)
+
+
+def rpg_lines(stdout):
+    return [ln for ln in stdout.splitlines() if ln.startswith("rpg:")]
+
+
+def test_rpg_play_here():
+    """"여기서 실행"과 자동 재생의 장치를 진짜 허브로 확인한다 (M2, docs/plans/m2-rpg-events.md 5.2절).
+
+    테스트 씬이 아니라 scripts/lua/main.lua 가 INITIAL2D_SCENE=rpg 로 데모 맵 씬을 연다.
+    환경 변수는 rpg-game.json 의 play.env 와 play.probe 에서 만든다 (에디터가 넘기는 것과 같다).
+    """
+    print("\n[8p] rpg_play_here: 여기서 실행, 자동 재생, 시작 상태, 틀린 이벤트 건너뛰기")
+    work = make_game_workdir()
+
+    # [A] 맵 파일의 crates(14,40) 옆 15,40 에서 왼쪽을 보고 선다. 아래와 왼쪽 칸은 막혀 있다
+    env = rpg_play_env("port_town", at=(15, 40, "left"), route="talk")
+    check("실행 변수: SCRIPT, SCENE, MAP, AT, TRACE, AUTOPLAY, ROUTE",
+          env.get("INITIAL2D_SCRIPT") == "lua" and env.get("INITIAL2D_SCENE") == "rpg"
+          and env.get("INITIAL2D_MAP") == "port_town" and env.get("INITIAL2D_RPG_AT") == "15,40,left"
+          and env.get("INITIAL2D_RPG_TRACE") == "1" and env.get("INITIAL2D_AUTOPLAY") == "1"
+          and env.get("INITIAL2D_RPG_ROUTE") == "talk" and "INITIAL2D_RPG_STATE" not in env, str(env))
+    r = run_game(work, env)
+    lines = rpg_lines(r.stdout)
+    log = r.stdout + r.stderr
+    check("[A] 정상 종료", r.returncode == 0, f"rc={r.returncode}")
+    check("[A] Lua 오류 없음", "PANIC" not in log and "attempt to" not in log, log[-300:])
+    check("[A] rpg:error 가 없다", not any(ln.startswith("rpg:error") for ln in lines), str(lines[:5]))
+
+    def index(needle, where=None):
+        where = lines if where is None else where
+        for i, ln in enumerate(where):
+            if ln.startswith(needle):
+                return i
+        return -1
+
+    check("[A] 맵을 열었다 (이벤트 17개, 건너뜀 없음)", "rpg:map:port_town events:17 skipped:0" in lines,
+          str(lines[:4]))
+    i_player = index("rpg:player:port_town,15,40,left")
+    check("[A] 고른 칸에 고른 방향으로 선다", i_player >= 0, str(lines[:4]))
+    check("[A] 새 게임이라 선장의 인사가 먼저 나온다", index("rpg:message:선장|짐은 다 내렸네.") > i_player,
+          str(lines[:8]))
+    i_event = index("rpg:event:crates")
+    i_crate = index("rpg:message:|누군가의 짐이다.")
+    check("[A] talk 한 번으로 맵 파일의 crates 가 돈다", i_player < i_event < i_crate, str(lines))
+    check("[A] 경로를 다 걷고 스스로 끝난다", bool(lines) and lines[-1] == "rpg:route:done", str(lines[-3:]))
+
+    # [B] 시작 상태 arrived 면 선장의 첫 인사를 건너뛴다
+    env = rpg_play_env("port_town", at=(15, 40, "left"), state="arrived", route="talk")
+    check("실행 변수: 시작 상태", env.get("INITIAL2D_RPG_STATE") == "arrived", str(env))
+    r = run_game(work, env)
+    lines = rpg_lines(r.stdout)
+    check("[B] 정상 종료", r.returncode == 0, f"rc={r.returncode}")
+    check("[B] rpg:error 가 없다", not any(ln.startswith("rpg:error") for ln in lines), str(lines[:5]))
+    check("[B] arrival 은 돌지만", "rpg:event:arrival" in lines, str(lines))
+    check("[B] 선장의 인사가 없다", not any(ln.startswith("rpg:message:선장|") for ln in lines), str(lines))
+    check("[B] crates 의 대사는 그대로", index("rpg:message:|누군가의 짐이다.") >= 0, str(lines))
+    check("[B] 스스로 끝난다", bool(lines) and lines[-1] == "rpg:route:done", str(lines[-3:]))
+
+    # [C] 위치 없이 여관을 열고 아래 출입구를 밟는다: 정의 파일의 시작, 그리고 transfer 의 dir.
+    # 항구 마을의 start.dir 은 up 이라, down 으로 서면 transfer 의 dir 이 적용된 것이다
+    env = rpg_play_env("inn", route="down")
+    check("실행 변수: 위치가 없으면 AT 를 넣지 않는다", "INITIAL2D_RPG_AT" not in env, str(env))
+    r = run_game(work, env)
+    lines = rpg_lines(r.stdout)
+    check("[C] 정상 종료", r.returncode == 0, f"rc={r.returncode}")
+    check("[C] rpg:error 가 없다", not any(ln.startswith("rpg:error") for ln in lines), str(lines[:5]))
+    check("[C] 정의 파일의 시작에 선다", "rpg:player:inn,10,12,up" in lines, str(lines[:4]))
+    check("[C] 출입구의 transfer", "rpg:transfer:port_town,13,30,down" in lines, str(lines))
+    i_town = index("rpg:map:port_town")
+    check("[C] 항구 마을에서 transfer 의 방향으로 선다",
+          i_town >= 0 and index("rpg:player:port_town,13,30,down") > i_town, str(lines))
+    check("[C] 도착한 맵의 auto 까지 기다렸다 끝난다", bool(lines) and lines[-1] == "rpg:route:done"
+          and index("rpg:message:선장|") > i_town, str(lines[-3:]))
+
+    # [D] 틀린 맵 파일 이벤트: 그 이벤트만 건너뛰고 rpg:error 를 찍는다. 나머지는 돈다
+    work_d = make_game_workdir(copy_maps=True)
+    port = os.path.join(work_d, "resources", "maps", "port_town.json")
+    with open(port, encoding="utf-8") as f:
+        data = json.load(f)
+    base = len(data["events"])
+    data["events"].append({"id": "broken", "x": -1, "y": 3, "dir": "north",
+                           "charset": {"set": "nobody", "index": 9},
+                           "commands": [{"code": "message"},
+                                        {"code": "transfer", "map": "inn", "dir": "sideways"}]})
+    data["events"].append({"id": "sign", "x": 15, "y": 39, "trigger": "action",
+                           "commands": [{"code": "message", "text": "첫 줄\n\"둘째\" 줄"}]})
+    with open(port, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+    env = rpg_play_env("port_town", at=(15, 40, "up"), state="arrived,item:lamp_oill=1", route="talk")
+    r = run_game(work_d, env)
+    lines = rpg_lines(r.stdout)
+    check("[D] 정상 종료", r.returncode == 0, f"rc={r.returncode}")
+    bad = "rpg:error:resources/maps/port_town.json:events[%d]" % (base + 1)
+    for suffix in (".x:", ".dir:", ".charset.set:", ".charset.index:",
+                   ".commands[1].text:", ".commands[2].dir:"):
+        check(f"[D] 문제마다 rpg:error 한 줄 ({suffix[:-1]})",
+              any(ln.startswith(bad + suffix) for ln in lines), str(lines[:8]))
+    check("[D] 건너뛴 수가 남는다", "rpg:map:port_town events:18 skipped:1" in lines, str(lines[:10]))
+    check("[D] 틀린 시작 상태 항목도 rpg:error", any(ln.startswith("rpg:error:state:item:lamp_oill=1:")
+                                              for ln in lines), str(lines[:3]))
+    check("[D] 나머지 맵 파일 이벤트는 돈다 (대사의 줄바꿈은 \\n)",
+          'rpg:message:|첫 줄\\n"둘째" 줄' in lines, str(lines[-4:]))
+    check("[D] 스스로 끝난다", bool(lines) and lines[-1] == "rpg:route:done", str(lines[-3:]))
+
+    # [E] 정의 파일의 외형에 file 이 없으면 플레이어 그림으로 조용히 그리지 않고 오류다
+    innfile = os.path.join(work_d, "scripts", "lua", "maps", "inn.lua")
+    with open(innfile, encoding="utf-8") as f:
+        text = f.read()
+    with open(innfile, "w", encoding="utf-8") as f:
+        f.write(text.replace("charset = { file = CHARSET, index = 1 },", "charset = { index = 1 },"))
+    r = run_game(work_d, rpg_play_env("inn"), exit_after=60)
+    lines = rpg_lines(r.stdout)
+    check("[E] 정상 종료", r.returncode == 0, f"rc={r.returncode}")
+    check("[E] 정의 파일의 오류가 stdout 에 나온다",
+          "rpg:error:scripts/lua/maps/inn.lua:innkeeper: 외형(charset)에 file 이 없다" in lines, str(lines))
 
 
 # 알데바란 자산의 색 (tools/generate_aldebaran_assets.py)
@@ -1312,6 +1490,7 @@ def main():
         test_rpg_event_scene,
         test_rpg_dialogue_scene,
         test_rpgdemo_scene,
+        test_rpg_play_here,
         test_aldebaran_scene,
         test_mruby_aldebaran_scene,
         test_resolution,
