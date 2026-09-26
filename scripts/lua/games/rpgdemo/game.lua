@@ -481,12 +481,15 @@ function RpgDemoScene.init()
 		},
 	}
 
-	local configErr
-	config, configErr = Config.load()
+	-- 틀린 maps 항목은 빠져 있고 나머지 맵은 그대로 열린다. 문제마다 한 줄
+	local configProblems
+	config, configProblems = Config.load()
+	for _, p in ipairs(configProblems) do
+		reportError(Config.where("rpg-game.json", p.path), p.message)
+	end
 	if config == nil then
 		MAPS = {}
-		sceneError = "rpg-game.json: " .. tostring(configErr)
-		reportError("rpg-game.json", configErr)
+		sceneError = "rpg-game.json: " .. tostring(configProblems[1].message)
 		return
 	end
 	MAPS = Config.mapModules(config)

@@ -1031,15 +1031,16 @@ def rpg_play_env(rpg_map, at=None, state=None, route=None):
     return env
 
 
-def run_game(work, extra_env, exit_after=6000):
+def run_game(work, extra_env, exit_after=6000, raw=False):
     """진짜 허브로 게임을 띄운다. INITIAL2D_RPG_ROUTE 가 있으면 게임이 스스로 끝나고,
-    exit_after 는 끝나지 않았을 때의 안전망이다."""
+    exit_after 는 끝나지 않았을 때의 안전망이다. raw 면 stdout 을 바이트 그대로 돌려준다
+    (text 모드는 CR 을 줄바꿈으로 바꾸므로 줄 끊김 검사에 쓸 수 없다)."""
     env = dict(os.environ)
     env["INITIAL2D_NO_RTP"] = "1"
     env["INITIAL2D_EXIT_AFTER"] = str(exit_after)
     env.update(extra_env)
     return subprocess.run([GAME], cwd=work, env=env,
-                          capture_output=True, text=True, timeout=300)
+                          capture_output=True, text=not raw, timeout=300)
 
 
 def rpg_lines(stdout):
@@ -1179,6 +1180,119 @@ def test_rpg_play_here():
     check("[F] 아이템 표의 오류도 한 번, 한 줄", len(bad_items) == 1
           and [ln for ln in out if "Missing" in ln] == bad_items, str(out[:6]))
     check("[F] 아이템 표가 없어도 맵은 열린다", "rpg:map:port_town events:17 skipped:0" in out, str(out[:6]))
+
+    # [F] 두 파일의 모양: null 칸과 배열 자리의 객체는 경로와 함께 한 줄, 그 항목만 빼고 나머지는 쓴다
+    with open(os.path.join(REPO, "resources", "data", "items.json"), encoding="utf-8") as f:
+        items_json = json.load(f)
+    holey = dict(items_json, items=[items_json["items"][0], None] + items_json["items"][1:])
+    with open(os.path.join(data_dir, "items.json"), "w", encoding="utf-8") as f:
+        json.dump(holey, f, ensure_ascii=False)
+    r = run_game(work_f, rpg_play_env("port_town", state="arrived,item:silver=2,item:shell=1", route=""))
+    lines = rpg_lines(r.stdout)
+    errors = [ln for ln in lines if ln.startswith("rpg:error")]
+    check("[F] items[2] 의 null 은 경로와 함께 한 줄", errors == [
+        "rpg:error:resources/data/items.json:items[2]: 아이템이 객체가 아니다"], str(errors))
+    check("[F] null 뒤의 아이템도 표에 있다 (시작 상태의 silver, shell 이 받아들여진다)",
+          r.returncode == 0 and bool(lines) and lines[-1] == "rpg:route:done", str(lines[-3:]))
+    as_object = dict(items_json, items={it["id"]: it for it in items_json["items"]})
+    with open(os.path.join(data_dir, "items.json"), "w", encoding="utf-8") as f:
+        json.dump(as_object, f, ensure_ascii=False)
+    r = run_game(work_f, rpg_play_env("port_town", route=""))
+    lines = rpg_lines(r.stdout)
+    check("[F] 객체로 쓴 items 는 items 자리의 한 줄",
+          [ln for ln in lines if ln.startswith("rpg:error")]
+          == ["rpg:error:resources/data/items.json:items: 아이템 목록이 배열이 아니다"], str(lines[:4]))
+    shutil.copy(os.path.join(REPO, "resources", "data", "items.json"), data_dir)
+
+    work_m = make_game_workdir(copy=("data", "maps"))
+    game_json = os.path.join(work_m, "resources", "data", "rpg-game.json")
+    with open(game_json, encoding="utf-8") as f:
+        game = json.load(f)
+    with open(game_json, "w", encoding="utf-8") as f:
+        json.dump(dict(game, maps=[game["maps"][0], None] + game["maps"][1:]), f, ensure_ascii=False)
+    port = os.path.join(work_m, "resources", "maps", "port_town.json")
+    with open(port, encoding="utf-8") as f:
+        data = json.load(f)
+    data["events"].append({"id": "sign", "x": 15, "y": 39,
+                           "commands": [{"code": "transfer", "map": "inn", "x": 10, "y": 12}]})
+    with open(port, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+    r = run_game(work_m, rpg_play_env("port_town", at=(15, 40, "up"), state="arrived", route="talk"))
+    lines = rpg_lines(r.stdout)
+    check("[F] maps[2] 의 null 은 경로와 함께 한 줄",
+          [ln for ln in lines if ln.startswith("rpg:error")]
+          == ["rpg:error:rpg-game.json:maps[2]: 맵 항목이 객체가 아니다"], str(lines[:4]))
+    check("[F] null 뒤에 등록된 여관으로 옮겨 간다", "rpg:map:inn events:6 skipped:0" in lines
+          and r.returncode == 0 and lines[-1] == "rpg:route:done", str(lines[-4:]))
+    with open(game_json, "w", encoding="utf-8") as f:
+        json.dump(dict(game, maps={m["name"]: m for m in game["maps"]}), f, ensure_ascii=False)
+    r = run_game(work_m, rpg_play_env("port_town"), exit_after=60)
+    lines = rpg_lines(r.stdout)
+    check("[F] 객체로 쓴 maps 는 maps 자리의 한 줄",
+          r.returncode == 0 and [ln for ln in lines if ln.startswith("rpg:error")]
+          == ["rpg:error:rpg-game.json:maps: 맵 목록이 배열이 아니다"], str(lines[:4]))
+
+    # [G] 선택 인자의 타입: 검수에서 게임을 멈추게 한 값들. 말을 걸 자리의 이벤트가 검사에서 빠지고
+    # rpg:error 로 알린 뒤 끝까지 돈다 (playSe.id 는 전에 SIGSEGV, 나머지는 Lua 오류였다)
+    door = "./resources/audio/door.wav"
+    crash_cases = [
+        ("playSe.id", [{"code": "playSe", "file": door, "id": True}], ["id"]),
+        ("message.name", [{"code": "message", "text": "hi", "name": {"a": 1}}], ["name"]),
+        ("transfer.x/y", [{"code": "transfer", "map": "inn", "x": {"a": 1}, "y": [2]}], ["x", "y"]),
+        ("playBgm.volume", [{"code": "playBgm", "file": door, "volume": "loud"}], ["volume"]),
+        ("scene.text", [{"code": "scene", "name": "title", "text": ["x"]}], ["text"]),
+    ]
+    work_g = make_game_workdir(copy=("maps",))
+    port = os.path.join(work_g, "resources", "maps", "port_town.json")
+    with open(os.path.join(REPO, "resources", "maps", "port_town.json"), encoding="utf-8") as f:
+        port_data = json.load(f)
+    at_index = len(port_data["events"]) + 1
+    for name, commands, args in crash_cases:
+        data = dict(port_data, events=port_data["events"] + [
+            {"id": "sign", "x": 15, "y": 39, "commands": commands + [{"code": "message", "text": "after"}]}])
+        with open(port, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+        r = run_game(work_g, rpg_play_env("port_town", at=(15, 40, "up"), state="arrived", route="talk"))
+        lines = rpg_lines(r.stdout)
+        log = r.stdout + r.stderr
+        where = "rpg:error:resources/maps/port_town.json:events[%d].commands[1]." % at_index
+        got = sorted(ln[len(where):].split(":")[0] for ln in lines if ln.startswith(where))
+        check(f"[G] {name}: 그 인자마다 rpg:error 한 줄", got == sorted(args), str(lines[:4]))
+        check(f"[G] {name}: 그 이벤트만 건너뛴다", "rpg:map:port_town events:17 skipped:1" in lines,
+              str(lines[:6]))
+        check(f"[G] {name}: 멈추지 않고 끝까지 돈다 (rc 0, Lua 오류 없음)",
+              r.returncode == 0 and "Lua error" not in log and bool(lines)
+              and lines[-1] == "rpg:route:done", f"rc={r.returncode} {log[-300:]}")
+
+    # [H] rpg:error 는 늘 한 줄: 자리 글과 이유 글의 CR, LF, CRLF, U+2028, U+2029 가 공백 하나가 된다
+    data = dict(port_data, events=port_data["events"] + [
+        {"id": "cr", "x": 15, "y": 39, "commands": [
+            {"code": "a\rb\u2028c"},
+            {"code": "message", "text": "x", "face": {"set": "n\rpc"}},
+            {"code": "c\r\nd\u2029e"}]}])
+    with open(port, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=True)
+    env = {"INITIAL2D_SCRIPT": "lua", "INITIAL2D_SCENE": "rpg", "INITIAL2D_MAP": "port_town",
+           "INITIAL2D_RPG_STATE": "arrived\nitem:shell=1", "INITIAL2D_RPG_AT": "15,40,left\nx",
+           "INITIAL2D_RPG_ROUTE": "up\ntalk"}
+    r = run_game(work_g, env, exit_after=60, raw=True)
+    out = r.stdout.decode("utf-8", "replace")
+    by_lf = [ln for ln in out.split("\n") if "rpg:error" in ln]
+    where = "rpg:error:resources/maps/port_town.json:events[%d].commands" % at_index
+    check("[H] 정상 종료", r.returncode == 0, f"rc={r.returncode}")
+    check("[H] 줄 끊는 글자가 든 rpg:error 가 없다",
+          len(by_lf) == 6 and not any(ch in ln for ln in by_lf for ch in ("\r", "\u2028", "\u2029")),
+          repr(by_lf))
+    check("[H] 파이썬 splitlines 로 갈라도 줄 수가 같다 (러너가 stdout 을 가르는 방식)",
+          len([ln for ln in out.splitlines() if "rpg:error" in ln]) == len(by_lf), repr(by_lf))
+    for label, expect in (
+            ("시작 상태의 LF", "rpg:error:state:arrived item:shell=1: 모르는 접두사 (아이템은 item:<id>)"),
+            ("시작 칸의 LF (자리와 이유)", "rpg:error:at:15,40,left x: 모르는 방향 left x"),
+            ("경로의 LF", "rpg:error:route:up talk: 모르는 걸음 (talk, up, down, left, right)"),
+            ("code 의 CR 과 U+2028", where + "[1]: 알 수 없는 code a b c"),
+            ("face.set 의 CR", where + "[2].face.set: 얼굴: 모르는 face 이름 n pc"),
+            ("code 의 CRLF 와 U+2029", where + "[3]: 알 수 없는 code c d e")):
+        check(f"[H] 한 줄: {label}", expect in by_lf, repr(by_lf))
 
 
 def test_rpg_auto_chain():

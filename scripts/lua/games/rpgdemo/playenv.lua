@@ -129,10 +129,22 @@ function M.escape(text)
 	return (tostring(text or ""):gsub("\r", ""):gsub("\n", "\\n"))
 end
 
---- rpg:error 줄 하나. 이유 글의 줄바꿈은 공백 하나로 바꾸고 끝의 공백은 뗀다.
+-- 줄을 끊는 글자: CR, LF (CRLF 는 둘이 이어진 것), U+2028, U+2029
+local LINE_SEPARATOR = "\226\128\168"
+local PARAGRAPH_SEPARATOR = "\226\128\169"
+
+--- 글을 한 줄로 만든다. 줄 끊김(CR, LF, CRLF, U+2028, U+2029)은 앞뒤 공백과 함께
+-- 공백 하나가 되고, 이어진 끊김도 공백 하나다. 앞뒤 끝의 공백은 뗀다.
+function M.oneLine(text)
+	local s = tostring(text):gsub("\r\n?", "\n")
+		:gsub(LINE_SEPARATOR, "\n"):gsub(PARAGRAPH_SEPARATOR, "\n")
+	s = s:gsub("%s*\n%s*", " "):gsub("^%s+", ""):gsub("%s+$", "")
+	return s
+end
+
+--- rpg:error 줄 하나. 자리와 이유를 합친 줄 전체를 oneLine 으로 한 줄로 만든다.
 function M.errorLine(where, message)
-	local reason = tostring(message):gsub("%s*\n%s*", " "):gsub("^%s+", ""):gsub("%s+$", "")
-	return "rpg:error:" .. tostring(where) .. ": " .. reason
+	return M.oneLine("rpg:error:" .. tostring(where) .. ": " .. tostring(message))
 end
 
 --- 켜짐 값인가 (없음, 빈 글, "0" 은 꺼짐)

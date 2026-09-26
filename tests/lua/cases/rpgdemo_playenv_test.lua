@@ -89,6 +89,24 @@ function M.run(t)
 	t.check(line:find("\n", 1, true) == nil, "한 줄이다")
 	t.check_eq(PlayEnv.errorLine("resources/data/items.json", "items 가 배열이 아니다"),
 		"rpg:error:resources/data/items.json: items 가 배열이 아니다", "자리와 이유")
+
+	-- 자리 글도 한 줄이다 (시작 상태를 한 줄에 하나씩 적은 경우)
+	t.check_eq(PlayEnv.errorLine("state:arrived\nitem:shell=1", "모르는 접두사"),
+		"rpg:error:state:arrived item:shell=1: 모르는 접두사", "자리 글의 LF 도 공백 하나")
+	t.check_eq(PlayEnv.errorLine("at:15,40,left\r\nx", "모르는 방향 left\r\nx"),
+		"rpg:error:at:15,40,left x: 모르는 방향 left x", "CRLF 는 공백 하나 (둘이 아니다)")
+	local LS, PS = "\226\128\168", "\226\128\169"
+	local crLine = PlayEnv.errorLine("m.json:events[1].commands[1]", "알 수 없는 code a\rb" .. LS .. "c" .. PS .. "d")
+	t.check_eq(crLine, "rpg:error:m.json:events[1].commands[1]: 알 수 없는 code a b c d",
+		"CR, U+2028, U+2029 도 공백 하나")
+	t.check_eq(PlayEnv.oneLine("a \n\r\n  \r b" .. LS .. PS .. "c  \n"), "a b c",
+		"이어진 끊김과 그 앞뒤 공백은 공백 하나, 끝의 공백은 뗀다")
+	t.check_eq(PlayEnv.oneLine("a\tb  c"), "a\tb  c", "끊김이 아닌 공백은 그대로")
+	for i, sample in ipairs({ jsonErr, "x\ry", "x" .. LS .. "y", "x" .. PS .. "y", "x\r\n\r\ny" }) do
+		local one = PlayEnv.errorLine("w\r\nw", sample)
+		t.check(one:find("[\r\n]") == nil and one:find(LS, 1, true) == nil and one:find(PS, 1, true) == nil,
+			"줄 끊는 글자가 남지 않는다 (표본 " .. i .. ")")
+	end
 end
 
 return M
