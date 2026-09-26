@@ -73,9 +73,13 @@ def stage_scripts(work):
     return scripts
 
 
-def make_workdir(scene):
+def make_workdir(scene, fixtures=False):
     work = tempfile.mkdtemp(prefix="initial2d-test-")
     os.symlink(os.path.join(REPO, "resources"), os.path.join(work, "resources"))
+    if fixtures:
+        # 포맷 계약 픽스처 (09-testing.md 3.5절). 씬 로더 씬이 tests/fixtures/scenes/ 를 연다
+        shutil.copytree(os.path.join(REPO, "tests", "fixtures"),
+                        os.path.join(work, "fixtures"))
     scripts = stage_scripts(work)
     # 입력 재생기 (09-testing.md 3.4절) — 씬 테스트가 사람 대신 키를 누른다
     luatests = os.path.join(scripts, "lua", "luatests")
@@ -97,8 +101,8 @@ def make_workdir(scene):
     return work
 
 
-def run_scene(scene, frames, exit_after, extra_env=None):
-    work = make_workdir(scene)
+def run_scene(scene, frames, exit_after, extra_env=None, fixtures=False):
+    work = make_workdir(scene, fixtures)
     env = dict(os.environ)
     if extra_env:
         env.update(extra_env)
@@ -321,6 +325,102 @@ def test_lua_error_scene():
           log[-400:])
     check("init 은 돌았다", "lua_error:init" in log, log[-300:])
     shutil.rmtree(work, ignore_errors=True)
+def check_flappy_run(work, result, shots, keep_as):
+    """플래피 자동 시연 한 판의 검사. test_mruby_flappy_scene 과 같은 항목이다 (R1 의 씬 판이
+    같은 검사를 그대로 통과해야 하므로 여기 한 벌 더 두었다. 원래 테스트는 손대지 않는다)."""
+    log = result.stdout + result.stderr
+    check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode} | {log[-300:]}")
+    check("스크립트 오류 없음", "error" not in log.lower().replace("iccp", ""), log[-300:])
+    check("대기에서 시작한다", "flappy:state:ready" in log, log[-300:])
+    check("자동 시연이 플레이로 들어간다", "flappy:state:play" in log, log[-300:])
+    m = re.search(r"flappyFinal state=(\w+) score=(\d+) best=(\d+) ticks=(\d+)", log)
+    check("최종 요약 존재 (씬이 스스로 끝냈다)", m is not None, log[-300:])
+    if m:
+        check("파이프를 하나 이상 지난다 (best >= 1)", int(m.group(3)) >= 1, m.group(0))
+        check("900틱에 끝낸다", int(m.group(4)) == 900, m.group(0))
+    check("부딪히면 게임 오버", "flappy:state:dead" in log, log[-300:])
+    check("게임 오버 뒤 자동으로 다시 대기", log.count("flappy:state:ready") >= 2, log[-300:])
+    check("프레임 덤프 생성", 150 in shots)
+    if 150 in shots:
+        img = shots[150]
+        scale = img.width / 768.0
+        ground = count_color_in(img, scale, 0, 896 - 64, 768, 896, WHITE, 12, invert=True)
+        check("지면이 그려져 있다 (아래 띠가 비어 있지 않다)", ground > 500, f"px={ground}")
+        sky = count_color_in(img, scale, 0, 0, 768, 200, WHITE, 12, invert=True)
+        check("배경이 그려져 있다", sky > 500, f"px={sky}")
+        shutil.copy(os.path.join(work, "shot_0150.bmp"), keep_as)
+
+
+def test_scene_flappy_lua():
+    """플래피를 씬 파일과 컴포넌트로 다시 만든 것(resources/scenes/flappy.json + scripts/lua/components/flappy/)
+    이 씬 로더로 부팅해 자동 시연으로 돈다 (R1). 검사는 mruby_flappy_scene 과 같다."""
+    print("\n[1s] scene_flappy_lua: 씬 로더로 연 플래피(Lua 컴포넌트)가 자동 시연으로 돈다")
+    work, result, shots = run_scene("scene_flappy_scene.lua", [150], 60000,
+                                    {"INITIAL2D_AUTOPLAY": "1", "INITIAL2D_SCENE": "flappy"})
+    check_flappy_run(work, result, shots, "/tmp/initial2d_scene_flappy_lua.bmp")
+
+
+def test_scene_flappy_mruby():
+    """같은 씬 파일을 Ruby 컴포넌트(scripts/ruby/components/flappy/)로 (R1)."""
+    print("\n[1s-m] scene_flappy_mruby: 씬 로더로 연 플래피(Ruby 컴포넌트)가 자동 시연으로 돈다")
+    if not HAS_MRUBY:
+        print("  SKIP: 이 빌드에는 mruby 가 없습니다 (brew install mruby 후 cmake 다시 실행)")
+        return
+    work, result, shots = run_scene("mruby_scene_flappy_scene.rb", [150], 60000,
+                                    {"INITIAL2D_AUTOPLAY": "1", "INITIAL2D_SCENE": "flappy"})
+    check_flappy_run(work, result, shots, "/tmp/initial2d_scene_flappy_mruby.bmp")
+
+
+# 씬 로더 픽스처의 label 위치 (tests/fixtures/scenes/sample_v1.json). 샘플 맵의 장식 레이어가
+# 비어 있는 띠(y 816..880)라 글자가 가려지지 않는다.
+LABEL_X, LABEL_Y = 96, 816
+
+
+def check_scene_loader_run(work, result, shots, keep_as):
+    """씬 로더 픽스처 씬의 검사. 두 언어가 같은 stdout 형식과 같은 골든(scene_loader)을 쓴다."""
+    log = result.stdout + result.stderr
+    check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode} | {log[-300:]}")
+    check("스크립트 오류 없음", "error" not in log.lower().replace("iccp", ""), log[-300:])
+    check("픽스처의 name", "scene:name:sample" in log, log[-300:])
+    check("오브젝트 순서 = 파일 순서", "scene:order:map,tile,anim,mover,label" in log, log[-300:])
+    check("루트의 모르는 키를 보존한다", "scene:editorOnly:보존" in log, log[-300:])
+    check("오브젝트의 모르는 키를 보존한다", "scene:tileEditorOnly:true" in log, log[-300:])
+    check("width 0 은 이미지 전체 (tile1.png 48x48)", "scene:tile:96,400 frame 48x48" in log, log[-300:])
+    check("tilemap 이 두 레이어로 열렸다", "scene:map:layers 2" in log, log[-300:])
+    check("anim 은 startFrame 1 (눌린 버튼) 에 멈춰 있다", "scene:anim:frame 1" in log, log[-300:])
+    check("첫 틱에 mover 가 tile 을 102 옮겼다", "scene:tick1:tile.x=198" in log, log[-300:])
+    check("둘째 틱에 limit 300 에서 멈춘다", "scene:tick2:tile.x=300" in log, log[-300:])
+    check("끝까지 300 에 머문다", "scene:final:tile.x=300" in log, log[-300:])
+    check("close 뒤 닫힘", "scene:closed:true" in log, log[-300:])
+    check("프레임 덤프 생성", 150 in shots)
+    if 150 in shots:
+        img = shots[150]
+        scale = img.width / 768.0
+        # 맵(잔디)이 화면을 채운다: 왼쪽 위 구역에 흰색 아닌 픽셀이 대부분 (count_color_in 은 2px 걸러 센다)
+        grass = count_color_in(img, scale, 0, 0, 200, 150, WHITE, 12, invert=True)
+        check("타일맵이 그려져 있다", grass > 200 * 150 / 4 * 0.9, f"px={grass}")
+        # 글자(흰 글리프)가 label 자리에 있다 (두 줄이면 표본 150개 이상, 한 줄이면 그 절반쯤)
+        glyphs = count_color_in(img, scale, LABEL_X, LABEL_Y, LABEL_X + 400, LABEL_Y + 70, WHITE, 40)
+        check("글자가 그려져 있다 (두 줄)", glyphs > 150, f"px={glyphs}")
+        check_golden("scene_loader", img)
+        shutil.copy(os.path.join(work, "shot_0150.bmp"), keep_as)
+
+
+def test_scene_loader_lua():
+    """씬 포맷 v1 픽스처(tests/fixtures/scenes/sample_v1.json)를 Lua 씬 로더로 열어 그린다 (R1)."""
+    print("\n[1r] scene_loader_lua: 픽스처 씬을 Lua 씬 로더로 열어 타입 넷을 그린다")
+    work, result, shots = run_scene("scene_loader_scene.lua", [150], 240, fixtures=True)
+    check_scene_loader_run(work, result, shots, "/tmp/initial2d_scene_loader_lua.bmp")
+
+
+def test_scene_loader_mruby():
+    """같은 픽스처를 Ruby 씬 로더로. 같은 골든에 견준다 (R1)."""
+    print("\n[1r-m] scene_loader_mruby: 픽스처 씬을 Ruby 씬 로더로 열어 같은 골든에 견준다")
+    if not HAS_MRUBY:
+        print("  SKIP: 이 빌드에는 mruby 가 없습니다 (brew install mruby 후 cmake 다시 실행)")
+        return
+    work, result, shots = run_scene("mruby_scene_loader_scene.rb", [150], 240, fixtures=True)
+    check_scene_loader_run(work, result, shots, "/tmp/initial2d_scene_loader_mruby.bmp")
 
 
 def test_lua_units():
@@ -1203,6 +1303,10 @@ def main():
         test_mruby_assert_scene,
         test_mruby_flappy_scene,
         test_lua_error_scene,
+        test_scene_flappy_lua,
+        test_scene_flappy_mruby,
+        test_scene_loader_lua,
+        test_scene_loader_mruby,
         test_tilemap_scene,
         test_rpg_walk_scene,
         test_rpg_event_scene,

@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "name": "sample",
+  "editorOnly": { "note": "보존" },
+  "objects": [
+    { "id": "map", "type": "tilemap", "x": 0, "y": 0, "visible": true,
+      "props": { "map": "resources/maps/sample.json", "groundLayers": 1 },
+      "scripts": [] },
+    { "id": "tile", "type": "sprite", "x": 96, "y": 400, "visible": true,
+      "props": { "image": "resources/tiles/tile1.png", "width": 0, "height": 0, "frames": 1,
+                 "scale": 4, "angle": 0, "opacity": 255, "loop": true, "startFrame": 0, "endFrame": 0 },
+      "scripts": [],
+      "editorOnly": { "locked": true } },
+    { "id": "anim", "type": "sprite", "x": 500, "y": 200, "visible": true,
+      "props": { "image": "resources/ui/actionbtn.png", "width": 96, "height": 96, "frames": 2,
+                 "scale": 1.5, "angle": 0, "opacity": 255, "loop": true, "startFrame": 1, "endFrame": 0 },
+      "scripts": [] },
+    { "id": "mover", "type": "node", "x": 0, "y": 0, "visible": true,
+      "props": { "target": "tile", "dx": 102, "dy": 0, "limit": 300 },
+      "scripts": ["components/sample/mover"] },
+    { "id": "label", "type": "text", "x": 96, "y": 816, "visible": true,
+      "props": { "text": "씬 로더 픽스처\n둘째 줄", "font": "resources/fonts/hangul.fnt", "color": [255, 255, 0, 255] },
+      "scripts": [] }
+  ]
+}
