@@ -1215,6 +1215,27 @@ rpg:route:done
 
 `rpg:message:`는 `이름|대사` 꼴이고 대사 안의 줄바꿈은 `\n` 두 글자로 찍습니다. `rpg:player:`는 맵을 열 때마다 실제로 선 칸과 방향이라, 문으로 옮겨 간 뒤의 방향도 이 줄로 확인합니다. 틀린 값은 건너뛰고 `rpg:error:state:item:lamp_oill=1: 아이템 표에 없는 id lamp_oill`처럼 알립니다. `rpg:error:` 줄은 `INITIAL2D_RPG_TRACE` 없이도 늘 나옵니다. 엔진 테스트(`test_rpg_play_here`)가 같은 변수를 `rpg-game.json`에서 만들어 진짜 게임으로 확인합니다.
 
+## 이벤트를 맵 파일로 옮기기
+
+에디터는 맵 파일의 `events`만 고칩니다. 정의 파일(`scripts/lua/maps/<이름>.lua`)에 커맨드로 적은 이벤트는 `tools/export_events.py`로 맵 파일에 한 번 옮겨 두면, 그 뒤로는 에디터에서 고칠 수 있습니다.
+
+```bash
+# 쓰지 않고 무엇을 옮기는지만 봅니다
+python3 tools/export_events.py --dry-run port_town inn
+
+# 옮깁니다. 맵 파일의 events만 바뀌고 원래 있던 이벤트는 바이트 그대로입니다
+python3 tools/export_events.py port_town inn
+
+# 도구 자체의 검사 (tests/run_all.sh가 돌립니다)
+python3 tools/export_events.py selftest
+```
+
+정의 파일은 엔진으로 읽습니다. `build/Initial2D`가 있어야 하고, 다른 곳에 있으면 `--engine`으로 알려 줍니다. 게임과 같은 Lua가 정의 파일을 돌리므로 지역 함수로 만든 커맨드 묶음도 게임이 받던 모양 그대로 펼쳐져 옮겨집니다. `Assets.npcCharset()`, `Assets.faceset()` 자리의 외형과 얼굴은 `{ "set": "npc", "index": 6 }`처럼 이름으로 바뀌어서 RTP가 있든 없든 게임이 그때 고릅니다. 이벤트 순서는 게임이 합치는 순서(맵 파일에 있던 것이 먼저)이고, 키 순서는 에디터가 쓰는 순서와 같아 옮긴 맵을 에디터로 열어 저장해도 diff가 없습니다.
+
+함수(`script` 함수, `run`)나 스키마에 없는 칸이 든 이벤트, 게임의 검사에 걸리는 이벤트는 옮기지 않고 이유를 찍습니다. 그런 이벤트는 정의 파일에 그대로 두면 됩니다. RTP 판이 따로 있는 맵(`alt`가 있는 마을과 오두막)은 두 파일에 같은 이벤트를 둬야 해서 옮기지 않습니다.
+
+옮긴 뒤에는 정의 파일에서 옮긴 이벤트와 그것만 쓰던 지역 값을 손으로 지웁니다. 남겨 두면 같은 `id`의 Lua 쪽이 이겨서 에디터에서 고친 것이 게임에 보이지 않습니다. 다시 돌려도 결과는 같고, 맵 생성기를 다시 돌려도 옮긴 이벤트는 남습니다.
+
 ## 음악과 효과음
 
 BGM은 씬과 맵이 각자 정합니다. 맵 정의 파일에 `bgm`을 적으면 그 맵에 들어설 때 곡이 바뀌고, 같은 곡이면 이어서 재생됩니다 (맵을 오갈 때 음악이 끊기지 않습니다).
