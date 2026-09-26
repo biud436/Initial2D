@@ -145,8 +145,8 @@ E5 의 마일스톤 2, 4, 5, 6 은 에디터 저장소의 일이다.
 
 - 칸은 `id`(겹치지 않는 글), `name`(소지품 창의 이름), `desc`(설명, 두 줄까지 보인다), `order`(목록 순서, 작은 것이 위)
 - 게임의 `scripts/lua/games/rpgdemo/items.lua` 는 `rpg-game.json` 의 `items` 가 가리키는 이 파일을 읽어 id 로 찾는 표를
-  돌려준다. 읽지 못하면 빈 표를 돌려주고 `rpg:error:<경로>: <이유>` 를 찍는다 (`rpg-game.json` 을 못 읽으면
-  `rpg:error:rpg-game.json: <이유>`)
+  돌려준다. 읽지 못하면 빈 표를 돌려주고 `rpg:error:<경로>: <이유>` 를 한 줄 찍는다. `rpg-game.json` 을 못 읽은 것은
+  맵 씬(`game.lua`)이 `rpg:error:rpg-game.json: <이유>` 로 한 번만 알리고, `items.lua` 는 빈 표만 돌려준다
 - 데이터베이스 패널은 두지 않는다 (E5 6절). 표는 JSON 편집으로 고치고, 에디터는 아이템 칸에서 목록으로 고르고 없는 id 를 경고한다
 
 ### 2.6 키 순서와 저장 형식
@@ -182,7 +182,18 @@ E5 의 마일스톤 2, 4, 5, 6 은 에디터 저장소의 일이다.
 events[3].commands[2].branches[1][3].text
 ```
 
-- 1부터 센다 (Lua). `events[i]` 는 맵 파일 `events` 배열의 i 번째다 (병합 전). JSON 의 `null` 도 한 칸으로 센다
+- 1부터 센다 (Lua). `events[i]` 는 맵 파일 `events` 배열의 i 번째다 (병합 전). JSON 의 `null` 도 한 칸으로 센다.
+  이벤트 목록, 커맨드 목록, 하위 목록(`thenDo`, `elseDo`, `branches` 와 그 안의 가지), `choice.options` 가 모두 그렇다.
+  `null` 자리는 그 자리가 요구하는 모양(객체, 배열, 글)이 아니므로 그 경로에 문제를 낸다
+- JSON 모양은 `scripts/lua/rpg/jsonshape.lua` 가 가린다. `Json.Load` 는 배열을 정수 키 표로, 객체를 글 키 표로 만들고
+  `null` 은 `nil` 로 둔다 (표에 표식이 없다). 그래서 규칙은 이렇다
+  - 배열 자리(`events`, `commands`, 하위 목록, 가지, `options`)는 정수 키만 있는 표다. 글 키가 하나라도 있으면(`{"1": []}` 의
+    `"1"` 도 글이다) 배열이 아니다
+  - 객체 자리(이벤트, 커맨드, `charset`, `face`, `wander`, `wander.area`)는 글 키만 있는 표다. 정수 키가 있으면(`[1, 2]`) 객체가 아니다
+  - **빈 `{}` 와 빈 `[]` 는 엔진이 가릴 수 없다.** 배열 자리의 `{}` 는 빈 배열, 객체 자리의 `[]` 는 빈 객체로 보고 오류가 아니다.
+    에디터도 같게 보고(문제 목록에 내지 않는다), 저장할 때는 제 모양(`[]`, `{}`)으로 고쳐 쓴다
+  - 배열 **끝의** `null` 은 `Json.Load` 가 남기지 않아 엔진이 볼 수 없다 (`[{...}, null]` 은 칸이 하나, `[null]` 은 빈 배열).
+    그 뒤에 도는 것이 없어 실행에는 해가 없다. 에디터는 이것을 에디터만의 오류로 보이되 대조 픽스처에는 넣지 않는다
 - 엔진은 `MapData.validateEvents(events, env)` 가 이 꼴을 내고, 게임은 맵을 열 때 `rpg:error:<맵 파일>:<경로>: <이유>` 를 찍는다
 - M1 의 오브젝트 경로(`objects[3].props.species`)는 0부터 센다. 오브젝트 경로는 에디터만 쓰고 이벤트 경로는 엔진이 내므로 엔진을 따른다
 - **대조하는 것은 경로의 집합이다.** 이유 글은 대조하지 않는다. 같은 경로에 문제가 둘 이상일 수 있다
@@ -197,7 +208,7 @@ events[3].commands[2].branches[1][3].text
 | 검사 | 경로 | 이 검사 전에 일어나던 일 |
 |---|---|---|
 | `events` 가 배열이 아니다 | `events` (앞에 붙는 것 없음) | 이벤트 읽기에서 오류 |
-| 이벤트가 객체가 아니다 (`null` 포함) | `events[i]` | `spawnEvent` 에서 오류, 맵 전체 실패 |
+| 이벤트가 객체가 아니다 (`null` 과 배열 포함) | `events[i]` | `spawnEvent` 에서 오류, 맵 전체 실패 |
 | `id` 가 없거나 빈 글이거나 글이 아니다 | `.id` | `Event.new` assert |
 | `id` 가 `player` 다 (예약) | `.id` | `characterById` 가 플레이어를 돌려줘 그 이벤트를 향한 `moveRoute` 가 플레이어를 움직인다 |
 | `id` 가 같은 맵 파일의 앞 이벤트와 같다 (뒤의 것에 낸다) | `.id` | `MapData.merge` 가 앞의 것을 조용히 덮는다 |
@@ -210,19 +221,27 @@ events[3].commands[2].branches[1][3].text
 | `charset.index` 가 0~7 의 정수가 아니다 (있을 때. 없으면 엔진이 0 으로 본다) | `.charset.index` | 첫 프레임의 `Specs.charsetFrameIndex` assert, 게임이 멈춘다 |
 | `through`, `solid` 가 참거짓이 아니다 (있을 때) | `.through`, `.solid` | 참 같은 값으로 읽힌다 |
 | `speed` 가 0 보다 큰 수가 아니다 (있을 때) | `.speed` | 0 이하면 첫 걸음을 끝내지 못하고, 수가 아니면 첫 걸음에서 산술 오류 |
-| `wander` 가 객체가 아니다 | `.wander` | 배회 설정에서 오류 |
+| `wander` 가 객체가 아니다 (배열 포함) | `.wander` | 배회 설정에서 오류 |
 | `wander.minWait`, `wander.maxWait` 가 0 이상의 정수가 아니다 (있을 때) | `.wander.minWait`, `.wander.maxWait` | `rng:int` 가 틀린 범위를 받는다 |
 | `minWait > maxWait`. 없는 쪽은 기본값(`minWait` 30, `maxWait` 120)으로 본다 | `maxWait` 가 있으면 `.wander.maxWait`, 없으면 `.wander.minWait` | 같다 |
-| `wander.area` 가 객체가 아니다 (있을 때) | `.wander.area` | 구역 판정에서 오류 |
+| `wander.area` 가 객체가 아니다 (있을 때, 배열 포함) | `.wander.area` | 구역 판정에서 오류 |
 | `wander.area` 의 `x`, `y` 가 0 이상의 정수, `w`, `h` 가 1 이상의 정수가 아니다 | `.wander.area.x` (칸마다) | 구역 판정이 틀린다 |
-| `commands` 가 배열이 아니다 (있을 때) | `.commands` | `Commands.validate` 가 이미 낸다 |
-| 커맨드 검사: 커맨드가 객체가 아니다, 모르는 `code`, 필수 인자의 Lua 타입, `choice` 항목 0개, `script` 이름, 하위 목록(`thenDo`, `elseDo`, `branches`, `branches[k]`)이 배열이 아니다 | `.commands[j]`, `.commands[j].text`, `.commands[j].options`, `.commands[j].name`, `.commands[j].elseDo`, `.commands[j].branches[k][l].text` 꼴 | `Commands.validate` 그대로 (앞에 `events[i].commands` 를 붙인다) |
+| `commands` 가 배열이 아니다 (있을 때, 객체 포함) | `.commands` | 글이면 `Commands.validate` 가 냈지만 객체는 통과해 그 이벤트가 커맨드 없이 돌았다 |
+| 커맨드가 객체가 아니다 (`null` 과 배열 포함) | `.commands[j]` | `ipairs` 가 `null` 에서 멈춰 그 뒤의 커맨드를 검사하지도 돌리지도 않았다 |
+| 모르는 `code` | `.commands[j]` | `Commands.validate` |
+| 필수 인자의 Lua 타입 (인자마다) | `.commands[j].text` 꼴 | `Commands.validate` |
+| `choice.options` 가 배열이 아니거나 항목이 0개다 | `.commands[j].options` | 선택지 창의 assert, 게임이 멈춘다 |
+| `choice.options` 의 항목이 글이 아니다 (`null` 포함) | `.commands[j].options[k]` | `#options` 가 구멍에서 흔들려 선택지 창의 assert 로 멈추거나 항목이 빠진다 |
+| `script` 의 이름이 정의 파일의 `scripts` 에 없다 | `.commands[j].name` | `Commands.validate` (픽스처에는 넣지 않는다, 3.4) |
+| 하위 목록(`thenDo`, `elseDo`, `branches`)이 배열이 아니다 (객체 포함) | `.commands[j].thenDo`, `.commands[j].elseDo`, `.commands[j].branches` | 객체면 통과해 그 가지가 조용히 비었다 |
+| 가지 `branches[k]` 가 배열이 아니다 (`null` 포함) | `.commands[j].branches[k]` | `ipairs` 가 `null` 가지에서 멈춰 뒤의 가지를 검사하지 않았다 (그 안의 틀린 얼굴 번호로 게임이 멈췄다) |
+| 하위 목록 안의 커맨드는 위의 커맨드 검사를 모두 받는다 | `.commands[j].elseDo[l]`, `.commands[j].branches[k][l].text` 꼴 | 같다 |
 | `message.face` 가 객체가 아니거나 `set` 과 `file` 이 둘 다 없거나 둘 다 있다 | `.commands[j].face` | 얼굴이 안 나오거나 오류 |
 | `face.set` 이 `assets.face` 의 이름이 아니다, `face.file` 이 빈 글이거나 글이 아니다 | `.commands[j].face.set`, `.commands[j].face.file` | 같다 |
 | `message.face.index` 가 0~15 의 정수가 아니다 (있을 때. 없으면 0) | `.commands[j].face.index` | 대화 도중 `Specs.facesetRect` assert, 게임이 멈춘다 |
 | `transfer.dir`, `turn.dir` 이 네 방향이 아니다 (있을 때). 글이 아닌 `turn.dir` 는 필수 인자의 타입 검사가 한 번만 낸다 | `.commands[j].dir` | transfer 는 다음 맵의 `Character.new` assert, turn 은 아무것도 안 한다 |
 
-- 커맨드 쪽 검사(얼굴, 방향 포함)는 `Commands.validate` 에 있다. 그래서 정의 파일(Lua)의 이벤트도 같은 검사를 받는다.
+- 커맨드 쪽 검사(얼굴, 방향, 선택지 항목 포함)는 `Commands.validate` 에 있다. 그래서 정의 파일(Lua)의 이벤트도 같은 검사를 받는다.
   이벤트 칸의 검사는 `validateEvents` 가 맵 파일 이벤트에만 한다 (정의 파일은 `Event.new` 가 지금처럼 본다)
 - 외형과 얼굴의 모양 검사는 `Assets.checkRef(kind, ref)` 하나를 두 쪽이 함께 쓴다. `set` 은 파일로 풀기 전의 값이고,
   검사는 풀기 전에 한다 (`MapData.resolveAssets` 는 검사 뒤에 부른다)
@@ -233,7 +252,8 @@ events[3].commands[2].branches[1][3].text
 - 맵 파일의 그 이벤트만 건너뛰고(스폰하지 않는다), 문제마다 `rpg:error:<맵 파일>:<경로>: <이유>` 를 TRACE 와 상관없이 찍는다.
   맵은 나머지 이벤트로 열리고 `rpg:map:<이름> events:<n> skipped:<k>` 에 건너뛴 수가 남는다
 - `<맵 파일>` 과 `<정의 파일>` 은 프로젝트 기준 경로이고 `./` 을 붙이지 않는다 (`resources/maps/port_town.json`, `scripts/lua/maps/inn.lua`).
-  `rpg-game.json` 의 `file`, `def` 와 같은 꼴이라 에디터가 문서 경로로 바로 쓴다. 이유 글 안의 줄바꿈은 공백 하나로 바꿔 한 줄로 찍는다
+  `rpg-game.json` 의 `file`, `def` 와 같은 꼴이라 에디터가 문서 경로로 바로 쓴다. 이유 글 안의 줄바꿈은 공백 하나로 바꾸고 끝의 공백은 떼어
+  한 줄로 찍는다. 이 줄은 `PlayEnv.errorLine(자리, 이유)` 하나가 만들고 `game.lua` 와 `items.lua` 가 함께 쓴다
 - 정의 파일의 이벤트가 틀린 경우(`Event.new` 의 assert, `charset` 에 `file` 이 없음)는 맵 전체가 "맵 로드 실패"가 되고(씬을 비워 화면에 그 글이 뜬다),
   그 글도 `rpg:error:<정의 파일>:<id>: <이유>` 로 stdout 에 찍는다
 - 건너뛰는 쪽을 고른 까닭: 에디터가 저장 전에 이미 오류를 보였으므로 게임에서는 나머지를 돌려 보는 편이 쓸모 있다.
@@ -244,8 +264,14 @@ events[3].commands[2].branches[1][3].text
 
 ### 3.4 대조 픽스처
 
-엔진 `tests/fixtures/events/invalid_events.json`(일부러 틀린 이벤트들, 3.2 표의 줄마다 하나 이상, 그리고 올바른 이벤트 둘 `ok` 와 `tail`)과
-`invalid_events.paths.json`(기대하는 경로 목록 43개). 엔진 테스트와 에디터 테스트가 같은 경로 집합을 내야 한다.
+엔진 `tests/fixtures/events/invalid_events.json`(`events` 35칸: 일부러 틀린 것 33칸과 올바른 이벤트 둘 `ok`, `tail`)과
+`invalid_events.paths.json`(기대하는 경로 목록 63개). 엔진 테스트와 에디터 테스트가 같은 경로 집합을 내야 한다.
+
+- 3.2 표의 줄마다 하나 이상 있다. 빠지는 줄은 둘이다: "`events` 가 배열이 아니다"(픽스처의 `events` 가 배열이라 넣을 수 없다)와
+  `script` 이름(아래)
+- 3.1 의 모양 규칙도 들어 있다: `events` 가운데의 `null` 과 배열 이벤트(`[1, 2]`), 커맨드 목록과 하위 목록과 가지와 `options` 안의 `null`,
+  배열 자리의 객체(`{"first": ...}`, `{"k": []}`, `{"1": []}`), 그리고 오류가 아닌 빈 표(`empty_shapes` 이벤트의 `"wander": []` 와
+  `"commands": {}`, `command_shapes` 의 `"thenDo": {}`). 끝의 `null` 은 넣지 않는다
 
 - **픽스처에는 `script` 커맨드를 넣지 않는다.** 엔진은 정의 파일의 `scripts` 표로 이름을 확인하는데 에디터는 그 표를 볼 수 없어 `.name` 경로를 낼 수 없다
 - 올바른 이벤트의 대사에는 줄바꿈과 따옴표와 한글이 들어 있다 (왕복 확인용)
@@ -265,7 +291,7 @@ events[3].commands[2].branches[1][3].text
 | [F] 이벤트 칸 | 트리거 == `Event.TRIGGERS`(기본값 action), 방향(이벤트, transfer, turn) == `Character.DIR_VECTORS` 의 키, 예약 id == `MapData.RESERVED_IDS`, 칸 이름과 순서, `route.moves` == 방향, `turnPrefix` 와 `waitPrefix` 로 진짜 캐릭터의 이동 루트를 돌려 본다 |
 | [G] 자산과 시트 | `assets` == `Assets.SETS` (후보 순서까지). `sheets.charset` 의 `frameW`, `frameH`, `sheetCols`, `perSheet`, `patterns`, `standPattern`, `dirRows` == `Specs.charset`, `sheets.face` 의 `size`, `cols`, `perSheet` == `Specs.faceset` |
 | [H] 맵 파일 | `resources/maps/` 의 모든 맵 파일(이름을 적은 목록)의 이벤트가 `validateEvents` 를 통과한다. 정의 파일의 커맨드도 `Commands.validate` 를 통과한다. 스키마 쪽 확인(에디터가 여는 모든 이벤트가 폼으로 열린다)은 에디터의 "엔진의 모든 맵 읽고 쓰기" 테스트가 맡고, Lua 에 세 번째 스키마 검사기를 두지 않는다 |
-| [I] 경로 픽스처 | `validateEvents(invalid_events)` 의 경로 집합 == `invalid_events.paths.json`, 남는 이벤트는 `ok` 와 `tail`, 픽스처에 `script` 커맨드가 없다 |
+| [I] 경로 픽스처 | `validateEvents(invalid_events)` 의 경로 집합 == `invalid_events.paths.json`, 남는 이벤트는 `ok` 와 `tail`, 픽스처에 `script` 커맨드가 없다, `events` 가운데에 `null` 칸이 있다 |
 | [J] 게임 설정 | `rpg-game.json` 의 `def` 가 전부 `require` 되고, 정의 파일의 `map`(`./` 을 떼고)이 그 항목의 `file` 과 같다 (RTP 가 켜져 있으면 `alt` 중 하나여도 된다). `alt` 파일이 있고 `file` 과 크기가 같다. 등록된 파일이 [H] 의 목록에 다 있다. rpgdemo 의 시작 맵(`game.lua` 의 `START_MAP`)이 `maps` 에 있다. 맵 파일과 정의 파일의 커맨드가 쓰는 아이템 id 가 아이템 표에 다 있고 `transfer` 가 가리키는 맵이 다 등록되어 있다. 아이템 표가 Lua 에서 옮기기 전과 같은 값이다. `play.env` 와 `play.probe` 의 값, `map-objects.json` 의 `play.maps` 가 등록된 RPG 맵에 걸리지 않는다 |
 
 Ruby 에는 이벤트 레이어가 없어 커맨드 대조는 Lua 만 한다. 대신 `tests/ruby/cases/rpg_assets_test.rb` 가 [G] 의 자산 목록 대조
@@ -280,13 +306,14 @@ Ruby 에는 이벤트 레이어가 없어 커맨드 대조는 Lua 만 한다. �
 | `scripts/lua/rpg/specs.lua`, `scripts/ruby/rpg/specs.rb` | `charset.standPattern = 1` / `stand_pattern: 1` |
 | `scripts/lua/rpg/assets.lua` | `SETS`(charset 의 player, npc, face 의 npc), `resolveRef(kind, ref)`(논리 이름이나 파일을 경로로), `checkRef(kind, ref)`(모양 검사, 3.2 의 외형과 얼굴 줄) |
 | `scripts/ruby/rpg/assets.rb` | `SETS` (Symbol 키) |
-| `scripts/lua/rpg/commands.lua` | `describe()`(필수 인자와 Lua 타입, 하위 목록과 `perOption`), `CONDITIONS`(판정 순서이자 `test` 가 도는 순서), `SET_VAR_OPS`, `walk(list, visit)`(하위 목록까지 경로와 함께), `problems(list, env, prefix)`(경로와 이유를 따로). `validate` 에 얼굴과 방향 검사. 실행 동작은 그대로다 |
+| `scripts/lua/rpg/jsonshape.lua` | `length(t)`(가장 큰 정수 키, 가운데의 `null` 도 칸), `isArray(v)`, `isObject(v)`. 3.1 의 모양 규칙이고 `commands.lua`, `mapdata.lua`, `assets.lua` 가 함께 쓴다. `rpg_jsonshape_test.lua` 가 진짜 `Json.Load` 의 결과로 규칙을 확인한다 |
+| `scripts/lua/rpg/commands.lua` | `describe()`(필수 인자와 Lua 타입, 하위 목록과 `perOption`), `CONDITIONS`(판정 순서이자 `test` 가 도는 순서), `SET_VAR_OPS`, `walk(list, visit)`(하위 목록까지 경로와 함께), `problems(list, env, prefix)`(경로와 이유를 따로). `validate` 에 얼굴과 방향, 선택지 항목 검사. 목록은 칸 수만큼 본다(`null` 뒤까지). 실행 동작은 그대로다 |
 | `scripts/lua/rpg/event.lua` | auto 를 병합 순서대로 전부 돌리는 기다림 목록, `hasPendingAuto()` (5.3) |
 | `scripts/lua/rpg/interpreter.lua` | `leaveCount()`: 받은 `transfer` 와 `scene` 요청의 수. `opts.onStart(event)`: 시작이 받아들여졌을 때 첫 재개 전에 부른다 (`rpg:event:` 줄이 그 이벤트의 첫 대사보다 먼저 나온다) |
 | `scripts/lua/rpg/mapdata.lua` | `RESERVED_IDS`, `validateEvents(events, env)`(3.3), `resolveAssets(events, assets)`(외형과 `message.face` 의 `set` 을 `file` 로, 하위 목록 안까지, 사본을 돌려준다), `merge` 와 `eventsFor` 가 정의 파일이 덮어쓴 id 배열도 돌려준다 |
 | `scripts/lua/games/rpgdemo/config.lua` | `rpg-game.json` 읽기 (`load`, `mapModules`, `mapEntry`, `loadItems`, `projectPath`, `bare`) |
-| `scripts/lua/games/rpgdemo/items.lua` | `items.json` 을 읽는다 (2.5) |
-| `scripts/lua/games/rpgdemo/playenv.lua` | `INITIAL2D_RPG_AT`, `INITIAL2D_RPG_STATE`, `INITIAL2D_RPG_ROUTE` 의 해석 (`parseAt`, `parseState`, `parseRoute`)과 trace 글(`escape`). 엔진에 닿지 않는 순수 함수라 `rpgdemo_playenv_test.lua` 가 꼴마다 본다 |
+| `scripts/lua/games/rpgdemo/items.lua` | `items.json` 을 읽는다 (2.5). 오류 줄은 `PlayEnv.errorLine` |
+| `scripts/lua/games/rpgdemo/playenv.lua` | `INITIAL2D_RPG_AT`, `INITIAL2D_RPG_STATE`, `INITIAL2D_RPG_ROUTE` 의 해석 (`parseAt`, `parseState`, `parseRoute`)과 trace 글(`escape`), `rpg:error` 한 줄(`errorLine`). 엔진에 닿지 않는 순수 함수라 `rpgdemo_playenv_test.lua` 가 꼴마다 본다 |
 | `scripts/lua/games/rpgdemo/game.lua` | 아래 순서로 맵을 열고, 5.2 의 환경 변수와 trace 줄 |
 
 게임(`game.lua` 의 `loadMap`)이 맵을 여는 순서는 이렇다: 정의 파일을 `require` 하고 → 맵을 세우고 → 맵 파일의 `events` 를 읽어
@@ -344,6 +371,12 @@ rpg:route:done
 전에는 병합 순서의 첫 auto 하나만 돌았다 (주석의 "나머지는 다음 진입에"도 실제로는 다음 진입에도 첫 것만 돌았다).
 에디터로 더한 auto 이벤트가 영영 돌지 않는 문제였다. R2K3 의 자동 실행 이벤트도 여럿이면 차례로 돈다.
 지금 모든 맵에 auto 가 하나씩뿐이라 인수 시나리오와 `rpg_event_scene` 은 달라지지 않는다 (확인함).
+
+**auto 와 auto 사이에도 조작이 잠겨 있다.** 한 auto 가 끝나 실행기가 한가해진 다음 프레임에, 게임 씬은 플레이어를 먼저 움직이고
+그 뒤에 `events:update()` 가 다음 auto 를 시작한다. 그래서 씬(`game.lua`)은 `hasPendingAuto()` 가 참인 동안 실행기가 바쁠 때와
+똑같이 막는다: 플레이어 이동(`player.enabled`), 결정키로 말 걸기와 취소키로 소지품 창(`wasIdle`), 자동 재생의 다음 걸음.
+엔진 테스트 `test_rpg_auto_chain`(`tests/engine/scenes/rpg_auto_chain_scene.lua`)이 항구 마을에 auto 둘을 더하고 위쪽을 누른 채
+결정키로 대사를 넘겨, 둘째 auto 가 끝날 때까지 시작 칸에서 움직이지 않고 그 뒤에는 걷는 것을 본다.
 
 ## 6. 데모 이벤트의 이전 (마일스톤 3, PR 2)
 
@@ -407,6 +440,10 @@ E5 초안의 물음 열한 개는 저자가 자리에 없는 동안 리드가 �
 | 맵 등록을 읽는 코드 | `scripts/lua/games/rpgdemo/config.lua` 하나. `items.lua` 와 `game.lua` 가 함께 쓴다 |
 | 첫 auto 가 떠난 뒤 | 실행기의 `leaveCount()` 로 안다. 게임 쪽 호스트가 따로 알려 줄 필요가 없다 |
 | 검사 표에 더한 줄 | `events` 가 배열이 아니다, `charset.file`/`face.file` 이 빈 글이거나 글이 아니다, `wander`/`wander.area` 가 객체가 아니다, 하위 목록이 배열이 아니다. `minWait > maxWait` 는 없는 쪽을 기본값으로 보고, 경로는 있는 쪽(`maxWait` 먼저)이다 |
+| JSON 모양 (검수 뒤) | 배열 자리는 정수 키만, 객체 자리는 글 키만 있는 표다 (`jsonshape.lua`). 빈 `{}` 와 `[]` 는 가릴 수 없어 그 자리의 빈 값으로 본다. 목록은 `ipairs` 가 아니라 칸 수(가장 큰 정수 키)만큼 보고, `null` 칸은 그 경로의 오류다. 배열 끝의 `null` 은 엔진이 볼 수 없어 계약 밖이다 |
+| 선택지 항목 (검수 뒤) | `options[k]` 가 글이 아니면(`null` 포함) 오류다. 구멍 난 `options` 는 선택지 창의 assert 로 게임을 멈출 수 있다 |
+| auto 사이의 조작 (검수 뒤) | 게임 씬이 `hasPendingAuto()` 동안 실행기가 바쁠 때와 같은 세 자리(이동, 결정키와 취소키, 자동 재생)를 막는다. 이벤트 관리자와 씬의 update 순서는 바꾸지 않는다 |
+| `rpg-game.json` 오류 줄 (검수 뒤) | 맵 씬이 한 번만 찍는다. `items.lua` 는 아이템 표의 오류만 찍고, 두 파일 다 `PlayEnv.errorLine` 으로 한 줄을 만든다 |
 | 인자 명세의 키 | 2.2 의 목록으로 닫는다. 새 키가 필요하면 이 문서와 테스트 [A] 를 함께 고친다 |
 | `rpg:event:` 를 찍는 자리 | 실행기의 `onStart` 훅. 게임이 실행기의 시작 규칙(도는 중이면 거절, 이미 도는 parallel)을 다시 적지 않는다 |
 | 환경 변수 해석 | `playenv.lua` 로 떼어 순수 함수로 둔다. 게임 씬은 부르기만 한다 |
@@ -437,6 +474,10 @@ E5 초안의 물음 열한 개는 저자가 자리에 없는 동안 리드가 �
   여관 출입구(`rpg:player:port_town,13,30,down`, transfer 의 방향), 틀린 맵 파일 이벤트 건너뛰기, 정의 파일의 `file` 없는 외형
 - [x] 인수 시나리오와 골든 세 장과 벽 앞 픽셀 검사 무변경 (`game.lua` 까지 고친 뒤. `transfer` 방향 고치기는 따로 커밋했고, 그 앞뒤로 시나리오의 stdout 이 바이트까지 같다)
 - [x] README 의 환경 변수와 스키마 (이벤트 절의 스키마와 맵 파일 검사, 아이템 표 `items.json`, 데모 절의 "맵 등록과 여기서 실행")
+- [x] 검수 뒤 고친 것: 목록, 하위 목록, 가지, `options` 를 칸 수만큼 보고 `null` 칸을 그 경로에 낸다(`resolveAssets` 도 칸 수만큼).
+  배열 자리의 객체와 객체 자리의 배열(`jsonshape.lua`, 3.1 의 빈 `{}` 와 `[]` 규칙). auto 와 auto 사이의 조작 잠금(`test_rpg_auto_chain`).
+  `items.lua` 도 `PlayEnv.errorLine` 으로 한 줄을 찍고 `rpg-game.json` 오류는 한 번(`test_rpg_play_here` [F]). 경로 픽스처가 3.2 표의 줄을
+  전부 덮는다(63개). README 예시에 `INITIAL2D_SCRIPT=lua`
 
 ### 마일스톤 3: 이전 (PR 2)
 
@@ -450,10 +491,12 @@ E5 초안의 물음 열한 개는 저자가 자리에 없는 동안 리드가 �
 
 | 무엇 | 결과 |
 |---|---|
-| Lua 단위 (헤드리스, `INITIAL2D_NO_RTP=1`) | 전체 2296건 통과. `rpg_event_schema_test` 164건 새로, `rpg_mapdata_test`, `rpg_commands_test`, `rpg_event_test`, `rpg_assets_test`, `rpg_specs_test` 확장. 게임 쪽에서 `rpgdemo_playenv_test`(환경 변수 해석) 새로, `rpg_interpreter_test` 에 `onStart` |
+| Lua 단위 (헤드리스, `INITIAL2D_NO_RTP=1`) | 전체 2347건 통과. `rpg_event_schema_test` 165건 새로, `rpg_jsonshape_test`(진짜 `Json.Load` 결과로 모양 규칙) 새로, `rpg_mapdata_test`, `rpg_commands_test`(`null` 칸과 배열 자리의 객체), `rpg_event_test`, `rpg_assets_test`, `rpg_specs_test` 확장. 게임 쪽에서 `rpgdemo_playenv_test`(환경 변수 해석과 `errorLine`) 새로, `rpg_interpreter_test` 에 `onStart` |
 | mruby 단위 | 전체 1926건 통과 (`rpg_assets_test.rb` 의 스키마 대조, `rpg_specs_test.rb` 의 `stand_pattern`) |
-| 깨지는 것을 보았다 | 커맨드를 하나 더하면 [B] 와 커맨드 집합 테스트가, 스키마의 필수 표시를 지우면 [C] 가, 목록 이름을 바꾸면 [D] 가, 후보 목록을 바꾸면 [G] 와 Ruby 대조가, 경로 하나를 픽스처에서 빼면 [I] 가, auto 를 첫 하나만 돌리게 되돌리면 `rpg_event_test` 가 깨진다. `transfer` 의 `dir` 을 다시 버리게 하면 `test_rpg_play_here` [C] 가, 외형의 `file` 이 없을 때 플레이어 그림으로 되돌리면 [E] 가, 항구 마을 맵 파일에 틀린 이벤트를 넣으면 rpgdemo 검사의 "stdout 에 `rpg:error` 가 없다" 가 깨진다 (전부 확인하고 되돌렸다) |
+| 깨지는 것을 보았다 | 커맨드를 하나 더하면 [B] 와 커맨드 집합 테스트가, 스키마의 필수 표시를 지우면 [C] 가, 목록 이름을 바꾸면 [D] 가, 후보 목록을 바꾸면 [G] 와 Ruby 대조가, 경로 하나를 픽스처에서 빼면 [I] 가, auto 를 첫 하나만 돌리게 되돌리면 `rpg_event_test` 가 깨진다. `transfer` 의 `dir` 을 다시 버리게 하면 `test_rpg_play_here` [C] 가, 외형의 `file` 이 없을 때 플레이어 그림으로 되돌리면 [E] 가, 항구 마을 맵 파일에 틀린 이벤트를 넣으면 rpgdemo 검사의 "stdout 에 `rpg:error` 가 없다" 가 깨진다. 검수 뒤: `commands.lua` 를 `ipairs` 판으로 되돌리면 `null` 칸과 객체 검사 13건과 [I] 의 경로 집합(모자람 13개)이 깨지고, 게임 씬의 `player.enabled` 에서 `hasPendingAuto()` 를 빼면 `test_rpg_auto_chain` 이 `f41 tile=16,42 moving=true busy=true` 로 깨진다 (전부 확인하고 되돌렸다) |
 | 인수 시나리오와 `rpg_event_scene` | `transfer` 방향 고치기(따로 커밋) 앞뒤로 두 씬의 stdout 이 바이트까지 같다 (`tickUntil` 의 프레임 수 포함). `game.lua` 를 다 고친 뒤에도 그대로 통과 (골든 세 장, 벽 앞 픽셀 검사 포함) |
-| `test_rpg_play_here` (진짜 허브) | 36건 통과. 실행 변수는 `rpg-game.json` 의 `play.env` 와 `play.probe` 에서 만든다. 판마다 `rpg:route:done` 으로 스스로 끝난다 |
+| `test_rpg_play_here` (진짜 허브) | 41건 통과. 실행 변수는 `rpg-game.json` 의 `play.env` 와 `play.probe` 에서 만든다. 판마다 `rpg:route:done` 으로 스스로 끝난다. [F] 는 깨진 `rpg-game.json` 과 `items.json` 에서 오류 줄이 한 번, 한 줄인지 본다 |
+| `test_rpg_auto_chain` | 8건 통과. auto 둘 사이에 걷지 않고, 다 끝난 뒤에는 걷는다 |
+| 검수의 재현 스크립트 | 검수가 게임을 멈추게 한 경우(`null` 가지 뒤의 얼굴 번호 99)가 이제 `rpg:error` 두 줄과 `skipped:1` 로 그 이벤트만 건너뛰고 끝까지 돈다. `events` 를 객체로 쓴 맵은 `rpg:error:...:events: 이벤트 목록이 배열이 아니다` 를 찍는다 |
 | 맵 형식 | 모든 맵이 `mapfile.py check` 를 통과하고 `tests/run_all.sh` 가 `resources/maps/*.json` 을 본다. 생성기 둘을 다시 돌리면 커밋된 맵과 바이트가 같다 |
-| 전체 스위트 (`tests/run_all.sh`, 헤드리스, `INITIAL2D_NO_RTP=1`) | 통과. C++ 단위 18, 엔진 씬 483, 브리지 25 (이 기계는 오디오 장치가 없어 `SDL_AUDIODRIVER=dummy` 를 함께 준다. 없으면 mruby `audio_test` 셋이 master 에서도 실패한다) |
+| 전체 스위트 (`tests/run_all.sh`, 헤드리스, `INITIAL2D_NO_RTP=1`) | 통과. C++ 단위 18, 엔진 씬 496, 브리지 25 (이 기계는 오디오 장치가 없어 `SDL_AUDIODRIVER=dummy` 를 함께 준다. 없으면 mruby `audio_test` 셋이 master 에서도 실패한다) |

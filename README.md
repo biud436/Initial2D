@@ -1183,9 +1183,11 @@ python3 tools/generate_title.py
 | `INITIAL2D_RPG_ROUTE=talk,up,left` | 자동 재생 경로. 한 번만 걷고, 대화는 알아서 넘기며(선택지는 첫 항목), 다 걸은 뒤 도는 이벤트가 없으면 `rpg:route:done`을 찍고 끝납니다. 빈 값이면 걷지 않고 맵에 들어설 때의 auto 이벤트만 기다립니다 |
 | `INITIAL2D_RPG_TRACE=1` | 맵, 플레이어가 선 자리, 이벤트, 대사, 선택지, 이동을 `rpg:` 줄로 찍습니다 |
 
+`INITIAL2D_SCRIPT=lua`도 함께 줍니다. RPG 이벤트 층은 Lua에만 있어서, `game.json`이 mruby를 고른 체크아웃에서는 이것이 없으면 아무 줄도 나오지 않습니다.
+
 ```bash
 # 짐 상자 옆에서 왼쪽을 보고 서서 말을 한 번 걸고 끝냅니다. 선장의 첫 인사는 건너뜁니다
-SDL_VIDEODRIVER=dummy INITIAL2D_NO_RTP=1 INITIAL2D_SCENE=rpg INITIAL2D_MAP=port_town \
+SDL_VIDEODRIVER=dummy INITIAL2D_NO_RTP=1 INITIAL2D_SCRIPT=lua INITIAL2D_SCENE=rpg INITIAL2D_MAP=port_town \
   INITIAL2D_RPG_AT=15,40,left INITIAL2D_RPG_STATE=arrived \
   INITIAL2D_RPG_ROUTE=talk INITIAL2D_RPG_TRACE=1 INITIAL2D_EXIT_AFTER=6000 ./build/Initial2D
 ```
