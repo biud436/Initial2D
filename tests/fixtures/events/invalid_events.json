@@ -1,0 +1,379 @@
+{
+  "version": 1,
+  "events": [
+    {
+      "id": "ok",
+      "x": 1,
+      "y": 1,
+      "dir": "down",
+      "trigger": "action",
+      "charset": {
+        "set": "npc",
+        "index": 2
+      },
+      "commands": [
+        {
+          "code": "message",
+          "text": "첫 줄\n\"둘째\" 줄",
+          "name": "주민",
+          "face": {
+            "set": "npc",
+            "index": 3
+          }
+        },
+        {
+          "code": "choice",
+          "options": [
+            "예",
+            "아니요"
+          ],
+          "cancel": 2,
+          "branches": [
+            [
+              {
+                "code": "setFlag",
+                "key": "yes"
+              }
+            ],
+            []
+          ]
+        },
+        {
+          "code": "if",
+          "cond": {
+            "item": "shell",
+            "op": ">=",
+            "value": 1
+          },
+          "thenDo": [
+            {
+              "code": "turn",
+              "target": "player",
+              "dir": "up"
+            }
+          ],
+          "elseDo": [
+            {
+              "code": "transfer",
+              "map": "inn",
+              "x": 10,
+              "y": 12,
+              "dir": "up"
+            }
+          ]
+        }
+      ]
+    },
+    "이벤트가 아니다",
+    {
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": 7,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "player",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "ok",
+      "x": 2,
+      "y": 2
+    },
+    {
+      "id": "pos",
+      "x": -1,
+      "y": 1.5
+    },
+    {
+      "id": "pos_missing",
+      "x": "3"
+    },
+    {
+      "id": "dir",
+      "x": 0,
+      "y": 0,
+      "dir": "north"
+    },
+    {
+      "id": "trigger",
+      "x": 0,
+      "y": 0,
+      "trigger": "click"
+    },
+    {
+      "id": "charset_type",
+      "x": 0,
+      "y": 0,
+      "charset": "npc"
+    },
+    {
+      "id": "charset_both",
+      "x": 0,
+      "y": 0,
+      "charset": {
+        "set": "npc",
+        "file": "./resources/charsets/placeholder.png",
+        "index": 0
+      }
+    },
+    {
+      "id": "charset_none",
+      "x": 0,
+      "y": 0,
+      "charset": {
+        "index": 1
+      }
+    },
+    {
+      "id": "charset_set",
+      "x": 0,
+      "y": 0,
+      "charset": {
+        "set": "monster",
+        "index": 0
+      }
+    },
+    {
+      "id": "charset_index",
+      "x": 0,
+      "y": 0,
+      "charset": {
+        "file": "",
+        "index": 8
+      }
+    },
+    {
+      "id": "flags",
+      "x": 0,
+      "y": 0,
+      "through": "yes",
+      "solid": 1
+    },
+    {
+      "id": "speed_zero",
+      "x": 0,
+      "y": 0,
+      "speed": 0
+    },
+    {
+      "id": "speed_text",
+      "x": 0,
+      "y": 0,
+      "speed": "fast"
+    },
+    {
+      "id": "wander_wait",
+      "x": 0,
+      "y": 0,
+      "charset": {
+        "set": "npc",
+        "index": 0
+      },
+      "wander": {
+        "minWait": -1,
+        "maxWait": 2.5
+      }
+    },
+    {
+      "id": "wander_order",
+      "x": 0,
+      "y": 0,
+      "charset": {
+        "set": "npc",
+        "index": 0
+      },
+      "wander": {
+        "minWait": 50,
+        "maxWait": 10
+      }
+    },
+    {
+      "id": "wander_area",
+      "x": 0,
+      "y": 0,
+      "charset": {
+        "set": "npc",
+        "index": 0
+      },
+      "wander": {
+        "minWait": 10,
+        "maxWait": 20,
+        "area": {
+          "x": -1,
+          "y": 0,
+          "w": 0,
+          "h": 2
+        }
+      }
+    },
+    {
+      "id": "wander_type",
+      "x": 0,
+      "y": 0,
+      "wander": 5
+    },
+    {
+      "id": "commands_type",
+      "x": 0,
+      "y": 0,
+      "commands": "안녕"
+    },
+    {
+      "id": "commands",
+      "x": 0,
+      "y": 0,
+      "commands": [
+        {
+          "code": "없는커맨드"
+        },
+        {
+          "code": "message",
+          "name": "대사 없음"
+        },
+        {
+          "code": "choice",
+          "options": []
+        },
+        {
+          "code": "choice",
+          "options": [
+            "가"
+          ],
+          "branches": [
+            [
+              {
+                "code": "wait"
+              }
+            ]
+          ]
+        },
+        {
+          "code": "if",
+          "thenDo": [
+            {
+              "code": "message",
+              "text": "조건이 없다"
+            }
+          ]
+        },
+        {
+          "code": "if",
+          "cond": {
+            "flag": "a"
+          },
+          "elseDo": [
+            {
+              "code": "giveItem",
+              "count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "faces",
+      "x": 0,
+      "y": 0,
+      "commands": [
+        {
+          "code": "message",
+          "text": "a",
+          "face": 3
+        },
+        {
+          "code": "message",
+          "text": "b",
+          "face": {
+            "set": "npc",
+            "file": "./resources/faces/placeholder.png",
+            "index": 0
+          }
+        },
+        {
+          "code": "message",
+          "text": "c",
+          "face": {
+            "index": 1
+          }
+        },
+        {
+          "code": "message",
+          "text": "d",
+          "face": {
+            "set": "player",
+            "index": 0
+          }
+        },
+        {
+          "code": "message",
+          "text": "e",
+          "face": {
+            "set": "npc",
+            "index": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": "dirs",
+      "x": 0,
+      "y": 0,
+      "commands": [
+        {
+          "code": "transfer",
+          "map": "inn",
+          "x": 1,
+          "y": 1,
+          "dir": "north"
+        },
+        {
+          "code": "turn",
+          "target": "player",
+          "dir": "sideways"
+        },
+        {
+          "code": "turn",
+          "target": "player"
+        }
+      ]
+    },
+    {
+      "id": "tail",
+      "x": 3,
+      "y": 3,
+      "trigger": "touch",
+      "charset": {
+        "file": "./resources/charsets/placeholder.png",
+        "index": 7
+      },
+      "through": true,
+      "speed": 2.5,
+      "wander": {
+        "minWait": 30,
+        "maxWait": 30,
+        "area": {
+          "x": 0,
+          "y": 0,
+          "w": 4,
+          "h": 4
+        }
+      },
+      "commands": [
+        {
+          "code": "playSe",
+          "file": "./resources/audio/door.wav"
+        }
+      ]
+    }
+  ]
+}

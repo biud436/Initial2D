@@ -85,4 +85,27 @@ T.run_case("rpg_assets") do |t|
   t.check_eq(assets.map_path("room"), "./resources/maps/room.json",
              "칩셋 인자를 생략해도 기본 판")
   t.check(assets.exists?(assets.map_path("room", "Interior")), "오두막 맵도 실재한다")
+
+  # [6] 논리 이름의 후보 목록이 resources/schema/event-commands.json 의 assets 와 같다
+  schema = Json.load("./resources/schema/event-commands.json")
+  expected = {}
+  (schema["assets"] || {}).each do |kind, sets|
+    expected[kind] = {}
+    sets.each { |name, list| expected[kind][name] = list }
+  end
+  actual = {}
+  assets::SETS.each do |kind, sets|
+    actual[kind.to_s] = {}
+    sets.each { |name, list| actual[kind.to_s][name.to_s] = list }
+  end
+  t.check_eq(actual.keys.sort, expected.keys.sort, "자산 종류가 스키마와 같다")
+  expected.each do |kind, sets|
+    got = actual[kind] || {}
+    t.check_eq(got.keys.sort, sets.keys.sort, "#{kind} 이름이 스키마와 같다")
+    sets.each do |name, list|
+      t.check_eq(got[name], list, "#{kind}.#{name} 후보 목록이 스키마와 같다 (순서까지)")
+    end
+  end
+  t.check(assets::SETS[:charset][:npc].equal?(assets::NPC_CHARSET), "charset.npc 는 NPC 후보 목록 그 자체")
+  t.check(assets::SETS[:face][:npc].equal?(assets::FACESET), "face.npc 는 FaceSet 후보 목록 그 자체")
 end

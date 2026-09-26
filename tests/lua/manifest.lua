@@ -25,6 +25,7 @@ return {
     "scripts/lua/luatests/cases/rpg_event_test",
     "scripts/lua/luatests/cases/rpg_commands_test",
     "scripts/lua/luatests/cases/rpg_mapdata_test",
+    "scripts/lua/luatests/cases/rpg_event_schema_test",
     "scripts/lua/luatests/cases/rpg_text_test",
     "scripts/lua/luatests/cases/rpg_window_test",
     "scripts/lua/luatests/cases/rpg_choice_test",
