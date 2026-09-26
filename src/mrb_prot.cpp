@@ -55,7 +55,7 @@ mrb_state* g_pMrbState = nullptr;
 
 namespace
 {
-	bool s_failed = false;   // 예외로 게임을 끝냈다
+	bool s_failed = false;   // 예외로 VM 이 멈췄다 (게임을 끝낼지는 ScriptRuntime 이 정한다)
 	bool s_halted = false;   // 그 뒤로는 훅을 부르지 않는다
 	std::set<std::string> s_required;
 
@@ -64,7 +64,8 @@ namespace
 	mrb_sym s_symRender = 0;
 	mrb_sym s_symDestroy = 0;
 
-	// 스크립트 예외를 보고하고 게임을 끝낸다. mrb->exc 는 비운다.
+	// 스크립트 예외를 보고하고 VM 을 멈춘다. mrb->exc 는 비운다.
+	// 게임을 끝낼지(종료 코드 1)는 ScriptRuntime 이 MRuby_Failed 를 보고 정한다.
 	void ReportError(mrb_state* mrb, const char* where)
 	{
 		if (mrb->exc == nullptr)
@@ -78,7 +79,6 @@ namespace
 		mrb->exc = nullptr;
 		s_failed = true;
 		s_halted = true;
-		App::GetInstance().Quit();
 	}
 
 	// 파일을 읽어 실행한다. 실패하면 Ruby 예외를 일으킨다 (호출자가 Ruby 안이면
@@ -532,7 +532,6 @@ int MRuby_Init()
 	{
 		std::fprintf(stderr, "mruby: mrb_open failed\n");
 		s_failed = true;
-		App::GetInstance().Quit();
 		return 1;
 	}
 	mrb_state* mrb = g_pMrbState;
@@ -543,32 +542,32 @@ int MRuby_Init()
 	s_symDestroy = mrb_intern_lit(mrb, "destroy");
 
 	// Kernel
-	mrb_define_method(mrb, mrb->kernel_module, "load", kernel_load, MRB_ARGS_REQ(1));
-	mrb_define_method(mrb, mrb->kernel_module, "require", kernel_require, MRB_ARGS_REQ(1));
+	mrb_define_method(mrb, mrb->kernel_module, "load", MRUBY_GUARD(kernel_load), MRB_ARGS_REQ(1));
+	mrb_define_method(mrb, mrb->kernel_module, "require", MRUBY_GUARD(kernel_require), MRB_ARGS_REQ(1));
 
 	// Graphics
 	struct RClass* graphics = mrb_define_module(mrb, "Graphics");
-	mrb_define_module_function(mrb, graphics, "width", gfx_width, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, graphics, "height", gfx_height, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, graphics, "render_scale", gfx_render_scale, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, graphics, "render_scale=", gfx_set_render_scale, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, graphics, "frame_count", gfx_frame_count, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, graphics, "prepare_font", gfx_prepare_font, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, graphics, "draw_text", gfx_draw_text, MRB_ARGS_REQ(3));
-	mrb_define_module_function(mrb, graphics, "text_width", gfx_text_width, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, graphics, "set_color", gfx_set_color, MRB_ARGS_ARG(3, 1));
-	mrb_define_module_function(mrb, graphics, "draw_point", gfx_draw_point, MRB_ARGS_REQ(2));
+	mrb_define_module_function(mrb, graphics, "width", MRUBY_GUARD(gfx_width), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, graphics, "height", MRUBY_GUARD(gfx_height), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, graphics, "render_scale", MRUBY_GUARD(gfx_render_scale), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, graphics, "render_scale=", MRUBY_GUARD(gfx_set_render_scale), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, graphics, "frame_count", MRUBY_GUARD(gfx_frame_count), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, graphics, "prepare_font", MRUBY_GUARD(gfx_prepare_font), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, graphics, "draw_text", MRUBY_GUARD(gfx_draw_text), MRB_ARGS_REQ(3));
+	mrb_define_module_function(mrb, graphics, "text_width", MRUBY_GUARD(gfx_text_width), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, graphics, "set_color", MRUBY_GUARD(gfx_set_color), MRB_ARGS_ARG(3, 1));
+	mrb_define_module_function(mrb, graphics, "draw_point", MRUBY_GUARD(gfx_draw_point), MRB_ARGS_REQ(2));
 
 	// System
 	struct RClass* system = mrb_define_module(mrb, "System");
-	mrb_define_module_function(mrb, system, "platform", sys_platform, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, system, "exit", sys_exit, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, system, "current_directory", sys_current_directory, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, system, "resource_files", sys_resource_files, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, system, "message_box", sys_message_box, MRB_ARGS_ARG(1, 1));
-	mrb_define_module_function(mrb, system, "app_icon=", sys_set_app_icon, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, system, "env", sys_env, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, system, "script", sys_script, MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, system, "platform", MRUBY_GUARD(sys_platform), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, system, "exit", MRUBY_GUARD(sys_exit), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, system, "current_directory", MRUBY_GUARD(sys_current_directory), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, system, "resource_files", MRUBY_GUARD(sys_resource_files), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, system, "message_box", MRUBY_GUARD(sys_message_box), MRB_ARGS_ARG(1, 1));
+	mrb_define_module_function(mrb, system, "app_icon=", MRUBY_GUARD(sys_set_app_icon), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, system, "env", MRUBY_GUARD(sys_env), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, system, "script", MRUBY_GUARD(sys_script), MRB_ARGS_NONE());
 
 	DefineKeys(mrb);
 	MRuby_DefineInput(mrb);
@@ -601,7 +600,6 @@ int MRuby_Init()
 			std::fprintf(stderr, "mruby: cannot open ./scripts/ruby/main.rb\n");
 			s_failed = true;
 			s_halted = true;
-			App::GetInstance().Quit();
 			return 1;
 		}
 		mrb_ccontext* cxt = mrb_ccontext_new(mrb);

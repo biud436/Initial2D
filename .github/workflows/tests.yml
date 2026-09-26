@@ -62,3 +62,81 @@ jobs:
           name: frame-dumps
           path: /tmp/initial2d_*.bmp
           if-no-files-found: ignore
+
+  # 웹 빌드 검수 (docs/plans/r3-emscripten.md 10.5). 엔진을 Emscripten 으로 빌드하고 헤드리스 크로미움에서
+  # tools/web_smoke.mjs 를 돌린다. 골든(tests/golden/aldebaran_title.png)을 만든 engine-macos 와 같은 러너 계열이라
+  # 대조 기준이 같다. 각 단계는 tools/web_ci.sh 의 같은 이름 명령이며 로컬에서도 그대로 돈다.
+  # 버전(emsdk 6.0.10, Playwright 1.63.0)은 tools/web_ci.sh 가 고정한다.
+  engine-web:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 의존성 설치
+        run: |
+          brew install sdl2 sdl2_image sdl2_mixer ruby
+          python3 -m pip install --break-system-packages pillow numpy
+
+      # 웹 검수가 같은 파일을 네이티브로도 돌려 오류 줄과 화면을 대조한다 (mruby 포함).
+      # engine-macos 의 같은 이름 단계와 같은 절차다.
+      - name: mruby 4.0.0 (presym 헤더가 든 빌드)
+        run: |
+          set -e
+          brew install mruby || true
+          PREFIX="$(brew --prefix mruby)"
+          echo "Homebrew mruby: $PREFIX"
+          if [ ! -f "$PREFIX/include/mruby/presym/id.h" ]; then
+            echo "presym/id.h 가 없다. 소스 빌드로 대신한다"
+            brew install bison
+            PATH="$(brew --prefix ruby)/bin:$(brew --prefix bison)/bin:$PATH"
+            export PATH
+            git clone --depth 1 --branch 4.0.0 https://github.com/mruby/mruby.git /tmp/mruby-src
+            cd /tmp/mruby-src
+            cp build_config/default.rb homebrew.rb
+            sed -i '' "s/conf.gembox 'default'/conf.gembox 'full-core'/" homebrew.rb
+            MRUBY_CONFIG="$PWD/homebrew.rb" rake
+            brew uninstall --ignore-dependencies mruby || true
+            rm -rf "$(brew --prefix)/opt/mruby"
+            ln -s /tmp/mruby-src/build/host "$(brew --prefix)/opt/mruby"
+          fi
+
+      - name: 플레이스홀더 리소스 생성 (gitignore된 최상위 PNG)
+        run: python3 tools/generate_placeholder_assets.py
+
+      # emsdk 와 그 포트 캐시(SDL2 등을 처음 한 번 컴파일한 결과)를 둔다
+      - name: emsdk 캐시
+        uses: actions/cache@v4
+        with:
+          path: ~/emsdk
+          key: emsdk-${{ runner.os }}-${{ runner.arch }}-6.0.10
+
+      - name: emsdk
+        run: tools/web_ci.sh emsdk
+
+      - name: Playwright (크로미움)
+        run: tools/web_ci.sh playwright
+
+      - name: 네이티브 엔진 (대조용)
+        run: tools/web_ci.sh native
+
+      - name: 웹 빌드
+        run: tools/web_ci.sh build
+
+      - name: 웹 검수 (헤드리스)
+        run: tools/web_ci.sh smoke
+
+      - name: 실패 시 캡처 수집
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-smoke
+          path: |
+            build-web/smoke*.png
+            build-web/smoke*.bmp
+            build-web/mruby-build.log
+          if-no-files-found: ignore

@@ -115,8 +115,8 @@ namespace
 void MRuby_DefineJson(mrb_state* mrb)
 {
 	struct RClass* json = mrb_define_module(mrb, "Json");
-	mrb_define_module_function(mrb, json, "load", json_load, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, json, "parse", json_parse, MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, json, "load", MRUBY_GUARD(json_load), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, json, "parse", MRUBY_GUARD(json_parse), MRB_ARGS_REQ(1));
 }
 
 #endif // INITIAL2D_HAS_MRUBY

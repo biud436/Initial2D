@@ -31,14 +31,41 @@
 
 #include <string>
 
+#include "ExceptionText.h"
+
 extern mrb_state* g_pMrbState;
+
+/**
+ * 바인딩 함수에서 나온 C++ 예외를 Ruby 의 RuntimeError("타입: 메시지")로 바꾼다.
+ * 그래서 rescue 로 잡히고, C++ 예외가 VM 의 C 프레임을 지나가지 않는다.
+ * 바인딩을 등록하는 mrb_define_* 는 전부 함수 대신 MRUBY_GUARD(함수) 를 넘긴다
+ * (tests/run_engine_tests.py 의 test_mruby_binding_guard 가 확인한다).
+ */
+template <mrb_func_t F>
+mrb_value MRuby_Guarded(mrb_state* mrb, mrb_value self)
+{
+	char message[512];
+	try
+	{
+		return F(mrb, self);
+	}
+	catch (...)
+	{
+		Initial2D::DescribeCurrentException(message, sizeof(message));
+	}
+	// raise(longjmp)는 catch 블록을 벗어난 뒤에 한다. C++ 예외 객체는 이미 정리되었다
+	mrb_raise(mrb, E_RUNTIME_ERROR, message);
+	return mrb_nil_value();
+}
+
+#define MRUBY_GUARD(fn) (&MRuby_Guarded<fn>)
 
 int MRuby_Init();
 int MRuby_Update(double elapsed);
 int MRuby_Render();
 int MRuby_Destroy();
 
-/** 스크립트 예외로 게임을 끝냈는가 (ScriptRuntime 이 종료 코드로 옮긴다). */
+/** 스크립트 예외로 VM 이 멈췄는가 (ScriptRuntime 이 게임 종료와 종료 코드로 옮긴다). */
 bool MRuby_Failed();
 
 // 하위 바인딩. 각 mrb_*.cpp 가 자기 모듈이나 클래스를 정의한다

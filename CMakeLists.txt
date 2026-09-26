@@ -23,6 +23,15 @@ if(MSVC)
   add_compile_options(/source-charset:utf-8)
 endif()
 
+# Emscripten 예외 방식 (R3, docs/plans/r3-emscripten.md): 모든 타깃을 wasm 네이티브 예외로
+# 컴파일하고 링크한다. vendored Lua 는 C++ 로 컴파일되어 오류를 throw 로 던지고 pcall 이 catch 한다.
+# 타깃마다 방식이 다르면 Lua 오류가 pcall 을 지나쳐 모듈 밖으로 빠진다. add_compile_options 는
+# 그 뒤에 만든 타깃에만 붙으므로 어느 add_library 보다 먼저 둔다.
+if(EMSCRIPTEN)
+  add_compile_options(-fwasm-exceptions)
+  add_link_options(-fwasm-exceptions)
+endif()
+
 # ---------------------------------------------------------------------------
 # Vendored 서드파티
 # ---------------------------------------------------------------------------
@@ -78,6 +87,36 @@ if(INITIAL2D_MRUBY AND NOT WIN32 AND NOT EMSCRIPTEN)
   endif()
 endif()
 
+# 브라우저 빌드의 mruby (R3, docs/plans/r3-emscripten.md 9절). Homebrew 대신 tools/build_web.sh 가
+# emcc 로 만든 libmruby 를 쓴다 (설정은 tools/web/mruby_build_config.rb). Emscripten 의 find_* 는
+# sysroot 안만 보므로 경로를 직접 확인한다. 정의(-D)는 libmruby.flags.mak 의 MRUBY_CFLAGS 에서 가져온다.
+if(INITIAL2D_MRUBY AND EMSCRIPTEN)
+  set(INITIAL2D_MRUBY_WEB_DIR "${CMAKE_BINARY_DIR}/mruby/emscripten" CACHE PATH
+    "mruby Emscripten build output (lib/libmruby.a, include/, lib/libmruby.flags.mak)")
+  set(_mruby_web_flags "${INITIAL2D_MRUBY_WEB_DIR}/lib/libmruby.flags.mak")
+  if(EXISTS "${INITIAL2D_MRUBY_WEB_DIR}/lib/libmruby.a"
+      AND EXISTS "${INITIAL2D_MRUBY_WEB_DIR}/include/mruby.h"
+      AND EXISTS "${_mruby_web_flags}")
+    set(INITIAL2D_HAS_MRUBY ON)
+    set(MRUBY_INCLUDE_DIR "${INITIAL2D_MRUBY_WEB_DIR}/include")
+    set(MRUBY_LIBRARY "${INITIAL2D_MRUBY_WEB_DIR}/lib/libmruby.a")
+    set(MRUBY_DEFINITIONS "")
+    file(STRINGS "${_mruby_web_flags}" _mruby_cflags_line REGEX "^MRUBY_CFLAGS = ")
+    string(REGEX REPLACE "^MRUBY_CFLAGS = " "" _mruby_cflags "${_mruby_cflags_line}")
+    separate_arguments(_mruby_cflags_list UNIX_COMMAND "${_mruby_cflags}")
+    foreach(_flag IN LISTS _mruby_cflags_list)
+      if(_flag MATCHES "^-D(.+)$")
+        list(APPEND MRUBY_DEFINITIONS "${CMAKE_MATCH_1}")
+      endif()
+    endforeach()
+    # mruby 를 다시 빌드해 정의가 바뀌면 cmake 가 다시 돈다
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_mruby_web_flags}")
+    message(STATUS "mruby (emscripten) found: ${MRUBY_LIBRARY}")
+  else()
+    message(STATUS "mruby (emscripten) not found in ${INITIAL2D_MRUBY_WEB_DIR}, Lua only (tools/build_web.sh builds it)")
+  endif()
+endif()
+
 # ---------------------------------------------------------------------------
 # SDL2 (Phase 2부터 필수 — Phase 0에서는 존재 여부만 보고)
 #
@@ -96,10 +135,9 @@ if(EMSCRIPTEN)
     -sUSE_SDL_IMAGE=2 "-sSDL2_IMAGE_FORMATS=png,jpg"
     -sUSE_SDL_MIXER=2 "-sSDL2_MIXER_FORMATS=ogg,wav"
     -sUSE_OGG=1 -sUSE_VORBIS=1)
-  # 예외: vendored Lua 는 C++ 로 컴파일되어 오류를 throw 로 던지고 pcall 이 catch 한다.
-  # Emscripten 기본은 catch 를 끈 상태라 첫 Lua 오류에서 abort 하므로 wasm 네이티브 예외를 켠다.
-  add_compile_options(${INITIAL2D_EM_PORTS} -fwasm-exceptions)
-  add_link_options(${INITIAL2D_EM_PORTS} -fwasm-exceptions)
+  # 예외 방식(-fwasm-exceptions)은 파일 맨 위에서 모든 타깃에 준다.
+  add_compile_options(${INITIAL2D_EM_PORTS})
+  add_link_options(${INITIAL2D_EM_PORTS})
   # 아래 코드가 쓰는 이름을 그대로 채운다. 라이브러리 경로는 비워 둔다 (포트가 링크한다).
   add_library(SDL2::SDL2 INTERFACE IMPORTED)
   set(SDL2_FOUND ON)
@@ -239,17 +277,21 @@ if(INITIAL2D_SDL2_GAME)
     #   FORCE_FILESYSTEM:        게임이 game.json, scripts/, resources/ 를 fopen 으로 읽는다 (MEMFS)
     #   ALLOW_MEMORY_GROWTH:     디코딩된 PNG 와 OGG 가 wasm 메모리에 산다
     #   ASYNCIFY 는 쓰지 않는다: 루프가 emscripten_set_main_loop 이라 블로킹 호출이 없다
+    #   getExceptionMessage:     모듈 밖으로 나온 C++ 예외의 메시지를 로더의 errorText() 가 읽는다
+    #   STACK_SIZE 8 MB:         C 를 거치는 mruby 재귀는 단계마다 wasm 스택을 최대 약 5.4 KB 쓴다. mruby 의 호출 깊이
+    #                            한도(MRB_CALL_LEVEL_MAX 512, tools/web/mruby_build_config.rb)에서 약 2.8 MB 라 한도가 먼저
+    #                            걸리고 SystemStackError 가 난다 (docs/plans/r3-emscripten.md 10절의 실측)
     set_target_properties(Initial2D PROPERTIES OUTPUT_NAME Initial2D SUFFIX ".js")
     target_link_options(Initial2D PRIVATE
       -sALLOW_MEMORY_GROWTH=1
       -sINITIAL_MEMORY=67108864
-      -sSTACK_SIZE=2097152
+      -sSTACK_SIZE=8388608
       -sMODULARIZE=1
       -sEXPORT_ES6=1
       -sEXPORT_NAME=createInitial2D
       -sENVIRONMENT=web
-      "-sEXPORTED_RUNTIME_METHODS=FS,ccall,cwrap,callMain,ENV,UTF8ToString,stringToNewUTF8"
-      "-sEXPORTED_FUNCTIONS=_main,_initial2d_reload,_initial2d_quit,_initial2d_features,_malloc,_free"
+      "-sEXPORTED_RUNTIME_METHODS=FS,ccall,cwrap,callMain,ENV,UTF8ToString,stringToNewUTF8,getExceptionMessage,decrementExceptionRefcount"
+      "-sEXPORTED_FUNCTIONS=_main,_initial2d_reload,_initial2d_quit,_initial2d_features,_initial2d_frame_count,_initial2d_running,_malloc,_free"
       -sFORCE_FILESYSTEM=1
       -sEXIT_RUNTIME=0
       -sINVOKE_RUN=0
@@ -271,6 +313,10 @@ if(INITIAL2D_SDL2_GAME)
     target_include_directories(Initial2D PRIVATE ${MRUBY_INCLUDE_DIR})
     target_compile_definitions(Initial2D PRIVATE INITIAL2D_HAS_MRUBY ${MRUBY_DEFINITIONS})
     target_link_libraries(Initial2D PRIVATE ${MRUBY_LIBRARY} m)
+    if(EMSCRIPTEN)
+      # libmruby 의 raise 는 setjmp/longjmp 다. -fwasm-exceptions 에서의 기본값(wasm)을 명시한다
+      target_link_options(Initial2D PRIVATE -sSUPPORT_LONGJMP=wasm)
+    endif()
     message(STATUS "mruby script backend enabled")
   endif()
 else()

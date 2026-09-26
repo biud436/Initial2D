@@ -751,6 +751,7 @@ python3 tests/run_engine_tests.py 2>&1 | grep -A3 "mruby"
 ```
 
 Android 빌드에는 아직 mruby가 없습니다 (Lua만 그대로 돕니다). NDK로 libmruby를 교차 빌드해 얹는 것이 다음 일입니다.
+웹 빌드에는 들어 있습니다 (emcc 로 교차 빌드, 아래 [웹 빌드](#웹-빌드-emscripten) 절).
 
 # 터치 조작 (가상 패드, 동작 버튼, 멀티터치)
 
@@ -1420,26 +1421,42 @@ canvas 에 올리고, 부산물로 정적 페이지 하나짜리 웹 데모가 �
 [docs/plans/r3-emscripten.md](./docs/plans/r3-emscripten.md).
 
 ```bash
-# emsdk (한 번만. 첫 빌드는 포트를 소스에서 컴파일하므로 몇 분 걸립니다)
-git clone https://github.com/emscripten-core/emsdk.git ~/emsdk
-cd ~/emsdk && ./emsdk install latest && ./emsdk activate latest
+# emsdk (한 번만. CI 와 같은 6.0.10 을 ~/emsdk 에 받아 활성화합니다. 첫 빌드는 포트를 소스에서 컴파일하므로 몇 분 걸립니다)
+tools/web_ci.sh emsdk
 
 # 빌드: build-web/Initial2D.js 와 .wasm, 그리고 build-web/site/ (페이지 + 로더 + 프로젝트 파일)
+# mruby 4.0.0 소스를 build-web/mruby-src 에 받아 emcc 로 libmruby 를 먼저 만듭니다 (rake 가 필요합니다)
 tools/build_web.sh
+INITIAL2D_WEB_MRUBY=0 tools/build_web.sh          # mruby 없이 Lua 만 (소스를 받지 않습니다)
+MRUBY_SRC=~/src/mruby tools/build_web.sh          # 받아 둔 mruby 4.0.0 소스를 쓸 때
 
 # 보기
-python3 -m http.server -d build-web/site 8080     # http://localhost:8080 에서 "실행"
+python3 -m http.server -d build-web/site 8080     # http://localhost:8080 에서 언어(Lua, Ruby)를 고르고 "실행"
 
-# 검수: 헤드리스 크로미움으로 타이틀까지 띄워 골든과 대조하고 키보드, reload, quit 을 확인
+# 검수: 헤드리스 크로미움으로 타이틀까지 띄워 골든과 대조하고 키보드, reload, quit, 오류 처리를 확인.
+# Ruby 판도 같은 타이틀을 그리는지(네이티브 mruby 와 대조), Ruby 예외가 네이티브와 같은 줄로 나오는지 봅니다
 node tools/web_smoke.mjs --golden tests/golden/aldebaran_title.png
+node tools/web_smoke.mjs --lua-only               # INITIAL2D_WEB_MRUBY=0 으로 만든 사이트
+
+# CI 의 웹 작업(engine-web)과 같은 순서를 한 번에: emsdk, Playwright(build-web/playwright 에 1.63.0 과 크로미움),
+# 네이티브 엔진(대조용), 웹 빌드, 검수. 단계 하나만은 tools/web_ci.sh emsdk|playwright|native|build|smoke
+tools/web_ci.sh all
 ```
 
+검수 스크립트는 Playwright 를 `PLAYWRIGHT_DIR`, `build-web/playwright`, 이 저장소의 `node_modules`, 옆 저장소
+`../InitialEditor` 순서로 찾습니다.
+
+에디터는 이 웹 빌드를 InitialEditor 저장소에서 `INITIAL2D_DIR=<이 엔진 경로> yarn sync:engine-web` 으로 복사해 갑니다
+(`build-web/site/` 에서 가져가므로 먼저 `tools/build_web.sh`).
+
 브라우저에는 프로세스도 환경 변수도 파일 시스템도 없어서 페이지가 셋을 대신합니다. `tools/web_stage.py` 가
-`game.json`, `scripts/lua/**`, `resources/**` 를 `build-web/site/project/` 에 복사하고 목록을 `project.json` 으로
+`game.json`, `scripts/lua/**`, `scripts/ruby/**`, `resources/**` 를 `build-web/site/project/` 에 복사하고 목록을 `project.json` 으로
 씁니다 (`RTP.zip`, `rtp/`, `*.psd` 는 뺍니다). 페이지는 그 목록을 fetch 해 wasm 의 메모리 파일 시스템 `/project`
-에 쓰고 거기로 `chdir` 한 뒤 엔진을 시작합니다. 그래서 엔진은 네이티브와 똑같이 `./scripts/lua/main.lua` 를 엽니다.
-환경 변수 `INITIAL2D_*` 는 같은 이름의 설정 객체로 넘기며, C++ 의 `Platform::GetEnv` 와 Lua 의 `os.getenv` 가
-둘 다 그 값을 봅니다. 로더는 번들러 없는 ES 모듈 하나입니다.
+에 쓰고 거기로 `chdir` 한 뒤 엔진을 시작합니다. 그래서 엔진은 네이티브와 똑같이 `./scripts/lua/main.lua` 나
+`./scripts/ruby/main.rb` 를 엽니다. 언어도 네이티브와 같은 순서로 고릅니다 (`INITIAL2D_SCRIPT`, `game.json` 의
+`"script": "mruby"`, `main.rb` 만 있으면 mruby). 환경 변수 `INITIAL2D_*` 는 같은 이름의 설정 객체로 넘기며,
+C++ 의 `Platform::GetEnv`, Lua 의 `os.getenv`, Ruby 의 `System.env` 가 모두 그 값을 봅니다. 로더는 번들러 없는
+ES 모듈 하나입니다.
 
 ```js
 import { bootInitial2D } from "./initial2d-loader.js";
@@ -1448,15 +1465,37 @@ const game = await bootInitial2D({
   files: { "scripts/lua/main.lua": "...", "resources/bird.png": new Uint8Array(...) },
   env: { INITIAL2D_SCRIPT: "lua", INITIAL2D_SCENE: "flappy" },
   print: console.log, printErr: console.error,
+  onExit: (code) => {},                           // 루프가 멈추면 한 번. 0 은 정상 종료, 1 은 오류
 });
-game.reload({ "scripts/lua/main.lua": "..." });   // 바뀐 파일만 다시 올리고 VM 재시작 (핫 리로드)
+game.reload({ "scripts/lua/main.lua": "..." });   // 바뀐 파일만 다시 올리고 VM 재시작 (핫 리로드). 성공이면 true
+game.frames();                                     // 지금까지 돈 프레임 수
 game.quit();
 ```
 
+스크립트 오류는 네이티브와 똑같이 다룹니다. 오류 줄(`Lua error in update: ./scripts/lua/main.lua:5: boom`, Ruby 는
+`mruby: uncaught exception in update` 와 역추적)이 글자 그대로 `printErr` 로 나오고 JS 예외로 새지 않습니다.
+시작 때와 `Update`, `Render` 의 오류는 게임을 끝내고(`onExit(1)`), `reload()` 의 오류는 `false` 를 돌려준 채
+스크립트만 멈춥니다. 고친 파일로 다시 `reload()` 하면 이어서 돕니다.
+
+바인딩 안에서 난 C++ 예외(타입이 틀린 맵의 `Tilemap.new` 같은)는 바인딩 경계에서 Ruby 의 `RuntimeError` 가 되어
+`rescue` 로 잡힙니다. 메시지는 `Json::LogicError: Value is not convertible to Int.` 처럼 타입과 메시지이고, 네이티브도
+같습니다. C 를 거치는 Ruby 재귀(문자열 보간 안의 `to_s` 등)는 네이티브처럼 호출 깊이 512 에서 `SystemStackError` 가
+납니다. 엔진 밖으로 빠지는 C++ 예외는 `fatal: 타입: 메시지` 한 줄과 `onExit(1)` 로 끝납니다.
+
+브라우저에서 Lua 의 `os.exit(code)` 와 Ruby 의 `exit!(code)` 는 **게임을 끝내지 않습니다.** 그 프레임의 남은 스크립트만
+건너뛰고(`pcall` 과 `rescue` 로 잡히지 않는 것은 네이티브와 같습니다) 루프는 계속 돌며, `onExit` 이 오지 않고 종료 코드는
+버려집니다. 게임을 끝낼 때는 Lua 는 `GameExit()`, Ruby 는 `System.exit` 이나 `exit` 를 씁니다. 이유는
+[r3-emscripten.md](./docs/plans/r3-emscripten.md) 10.4 절에 있습니다.
+
+mruby 는 네이티브 CI 와 같은 4.0.0 을 `MRuby::CrossBuild` 로 굽습니다 (설정 `tools/web/mruby_build_config.rb`).
+gem 은 네이티브(Homebrew 의 full-core)에서 브라우저에 맞지 않는 소켓과 태스크 스케줄러, 실행 파일만 뺐고,
+`File` 과 `Dir` 은 메모리 파일 시스템 위에서 돕니다. 예외는 엔진의 나머지와 같은 wasm 예외(`-fwasm-exceptions`)이며,
+정수는 네이티브처럼 64비트입니다. Ruby 판 알데바란도 브라우저에서 60 프레임으로 돕니다.
+
 키보드는 canvas 가 포커스를 가진 동안만 게임으로 갑니다. 소리는 브라우저 정책상 클릭 뒤에 납니다. 아직 없는 것은
-mruby(libmruby 교차 빌드가 필요합니다)와 TCP 핫 리로드(`tools/hmr_push.py` 대신 `reload()` 를 씁니다)이고,
-`INITIAL2D_SCREENSHOT` 은 메모리 파일 시스템에 쓰이므로 `game.module.FS.readFile` 로 꺼냅니다. `--features` 는
-`lua wasm` 을 찍습니다.
+TCP 핫 리로드(`tools/hmr_push.py` 대신 `reload()` 를 씁니다)이고, `INITIAL2D_SCREENSHOT` 은 메모리 파일 시스템에
+쓰이므로 `game.module.FS.readFile` 로 꺼냅니다. `game.features()` 는 `lua mruby wasm` 입니다 (mruby 없이 빌드하면
+`lua wasm`).
 
 ## 핫 리로드 (HMR)
 
@@ -1477,6 +1516,8 @@ python3 tools/hmr_push.py          # 다른 터미널에서 push
 
 push가 도착하면 게임이 Lua VM을 재시작하고 `main.lua`부터 다시 로드합니다
 (**풀 리스타트**이며 점수 등 게임 진행 상태는 초기화됩니다).
+push한 파일에 스크립트 오류가 있으면 시작 때와 같은 오류 줄을 찍고, 게임은 끝나지 않고 스크립트만 멈춘 채 기다립니다.
+고친 파일을 다시 push하면 이어서 돕니다.
 동작 로그는 `adb logcat -s SDL/APP`에서 `HotReload:` 태그로 확인할 수 있습니다.
 프로토콜과 설계 상세는 `docs/porting/android-hmr-plan.md`를 참조하십시오.
 
@@ -1724,7 +1765,8 @@ tests/run_all.sh --update-golden
 - 화면을 보는 테스트는 `tests/engine/scenes/`에 씬을 만들고 `tests/run_engine_tests.py`에 검사를 추가합니다. 씬 테스트는 `scripts/`를 통째로 얹고 `main.lua`만 갈아 끼우므로, 게임이 실제로 여는 파일을 그대로 검사합니다.
 - 사람의 조작이 필요한 시나리오는 `tests/lua/input_replay.lua`로 재생합니다. 프레임 단위로 키를 예약하거나(`{ at = 10, press = "Z" }`), 화면 상태를 보고 그때그때 누를 수도 있습니다(`replay:tap("Z")`, `replay:press("LEFT")`). 고정 타임스텝이라 같은 시나리오는 항상 같은 결과를 냅니다.
 
-푸시할 때마다 GitHub Actions(macOS 러너)가 같은 검수를 헤드리스로 실행합니다.
+푸시할 때마다 GitHub Actions(macOS 러너)가 같은 검수를 헤드리스로 실행합니다. 웹 빌드 검수(`tools/web_ci.sh`,
+[웹 빌드](#웹-빌드-emscripten) 절)는 같은 러너 계열의 두 번째 작업이 돌립니다.
 
 # 코딩 스타일
 

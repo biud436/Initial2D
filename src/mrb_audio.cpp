@@ -135,18 +135,18 @@ namespace
 void MRuby_DefineAudio(mrb_state* mrb)
 {
 	struct RClass* audio = mrb_define_module(mrb, "Audio");
-	mrb_define_module_function(mrb, audio, "play_music", audio_play_music, MRB_ARGS_ARG(2, 1));
-	mrb_define_module_function(mrb, audio, "play_sound", audio_play_sound, MRB_ARGS_ARG(2, 1));
-	mrb_define_module_function(mrb, audio, "insert_next_music", audio_insert_next_music, MRB_ARGS_ARG(2, 1));
-	mrb_define_module_function(mrb, audio, "volume", audio_volume, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, audio, "volume=", audio_set_volume, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, audio, "pause_music", audio_pause_music, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, audio, "stop_music", audio_stop_music, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, audio, "resume_music", audio_resume_music, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, audio, "playing_music?", audio_playing_music, MRB_ARGS_NONE());
-	mrb_define_module_function(mrb, audio, "fade_out_music", audio_fade_out_music, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, audio, "music_position=", audio_set_music_position, MRB_ARGS_REQ(1));
-	mrb_define_module_function(mrb, audio, "release_music", audio_release_music, MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, audio, "play_music", MRUBY_GUARD(audio_play_music), MRB_ARGS_ARG(2, 1));
+	mrb_define_module_function(mrb, audio, "play_sound", MRUBY_GUARD(audio_play_sound), MRB_ARGS_ARG(2, 1));
+	mrb_define_module_function(mrb, audio, "insert_next_music", MRUBY_GUARD(audio_insert_next_music), MRB_ARGS_ARG(2, 1));
+	mrb_define_module_function(mrb, audio, "volume", MRUBY_GUARD(audio_volume), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, audio, "volume=", MRUBY_GUARD(audio_set_volume), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, audio, "pause_music", MRUBY_GUARD(audio_pause_music), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, audio, "stop_music", MRUBY_GUARD(audio_stop_music), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, audio, "resume_music", MRUBY_GUARD(audio_resume_music), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, audio, "playing_music?", MRUBY_GUARD(audio_playing_music), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, audio, "fade_out_music", MRUBY_GUARD(audio_fade_out_music), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, audio, "music_position=", MRUBY_GUARD(audio_set_music_position), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, audio, "release_music", MRUBY_GUARD(audio_release_music), MRB_ARGS_REQ(1));
 }
 
 #endif // INITIAL2D_HAS_MRUBY
