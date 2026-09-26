@@ -19,6 +19,7 @@ local Character = require("scripts/lua/rpg/character")
 local Specs = require("scripts/lua/rpg/specs")
 local Assets = require("scripts/lua/rpg/assets")
 local MapData = require("scripts/lua/rpg/mapdata")
+local Shape = require("scripts/lua/rpg/jsonshape")
 local Config = require("scripts/lua/games/rpgdemo/config")
 
 local M = {}
@@ -587,8 +588,10 @@ function M.run(t)
 			local ids = {}
 			for _, ev in ipairs(valid) do ids[#ids + 1] = ev.id end
 			t.check_eq(join(ids), "ok,tail", "픽스처의 올바른 이벤트 둘만 남는다")
-			local hasScript = false
-			for _, ev in ipairs(fixture.events) do
+			local hasScript, nullSlots = false, 0
+			for i = 1, Shape.length(fixture.events) do
+				local ev = fixture.events[i]
+				if ev == nil then nullSlots = nullSlots + 1 end
 				if type(ev) == "table" and type(ev.commands) == "table" then
 					Commands.walk(ev.commands, function(cmd)
 						if cmd.code == "script" then hasScript = true end
@@ -596,6 +599,7 @@ function M.run(t)
 				end
 			end
 			t.check(not hasScript, "픽스처에는 script 커맨드가 없다 (에디터가 이름을 확인할 수 없다)")
+			t.check(nullSlots > 0, "픽스처의 events 가운데에 null 이 있다 (null 도 한 칸으로 센다)")
 		end
 	end
 

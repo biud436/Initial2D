@@ -100,6 +100,8 @@ function M.run(t)
 	t.check_eq(tails("charset", {}), "@", "둘 다 없어도 참조 자체")
 	t.check_eq(tails("charset", 3), "@", "객체가 아니면 참조 자체 하나")
 	t.check_eq(tails("charset", { file = 5 }), ".file", "파일이 글이 아니다")
+	t.check_eq(tails("face", { file = "", index = 0 }), ".file", "얼굴 파일이 빈 글")
+	t.check_eq(tails("charset", { "npc", 1 }), "@", "배열은 객체가 아니다 (참조 자체 하나)")
 end
 
 return M

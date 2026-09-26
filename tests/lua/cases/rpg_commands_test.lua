@@ -385,6 +385,48 @@ function M.run(t)
 		"[1].branches", "가지 목록이 배열이 아니다")
 	t.check_eq(pathsOf({ { code = "if", cond = { flag = "a" }, elseDo = "없다" } }),
 		"[1].elseDo", "하위 목록이 배열이 아니다")
+
+	-- ---- [17] JSON 의 null 과 객체: 목록은 칸 수만큼 본다 --------------------
+	-- Json.Load 는 null 을 nil 로 둔다. 구멍 뒤의 커맨드도 검사해야 한다.
+	local holey = { { code = "message", text = "first" } }
+	holey[3] = { code = "message" }
+	holey[4] = { code = "nosuch" }
+	t.check_eq(pathsOf(holey), "[2] [3].text [4]", "null 커맨드와 그 뒤의 커맨드까지 본다")
+	local branches = {}
+	branches[2] = { { code = "message", text = "t", face = { file = face, index = 99 } } }
+	t.check_eq(pathsOf({ { code = "choice", options = { "a", "b" }, branches = branches } }),
+		"[1].branches[1] [1].branches[2][1].face.index", "null 가지는 배열이 아니고, 그 뒤의 가지도 본다")
+	local thenList = { { code = "wait", ms = 1 } }
+	thenList[3] = { code = "wait" }
+	t.check_eq(pathsOf({ { code = "if", cond = { flag = "a" }, thenDo = thenList } }),
+		"[1].thenDo[2] [1].thenDo[3].ms", "하위 목록 안의 null 도 칸이다")
+	local options = { "가" }
+	options[3] = 3
+	t.check_eq(pathsOf({ { code = "choice", options = options } }),
+		"[1].options[2] [1].options[3]", "선택지 항목은 글이다 (null 포함)")
+	t.check_eq(pathsOf({ "글", { 1, 2 } }), "[1] [2]", "커맨드가 객체가 아니다 (배열 포함)")
+
+	-- 배열 자리의 JSON 객체 (글 키가 있는 표)
+	local listObject = Commands.problems({ first = { code = "message", text = "a" } }, nil,
+		"events[1].commands")
+	t.check(#listObject == 1 and listObject[1].path == "events[1].commands",
+		"커맨드 목록 자리의 객체는 배열이 아니다")
+	t.check_eq(pathsOf({ { code = "if", cond = { flag = "a" },
+		thenDo = { k = { code = "wait", ms = 1 } } } }), "[1].thenDo", "thenDo 자리의 객체")
+	t.check_eq(pathsOf({ { code = "choice", options = { "가" },
+		branches = { ["1"] = {} } } }), "[1].branches", "branches 자리의 객체 (\"1\" 키도 글 키)")
+	t.check_eq(pathsOf({ { code = "choice", options = { a = "가" } } }), "[1].options",
+		"options 자리의 객체")
+	t.check_eq(pathsOf({ { code = "if", cond = { flag = "a" }, thenDo = {}, elseDo = {} } }), "",
+		"빈 표는 빈 목록이다 ({} 와 [] 를 가릴 수 없다)")
+
+	-- walk 도 구멍 뒤까지 훑는다 (resolveAssets 가 쓴다)
+	local walked = {}
+	local walkList = { { code = "message", text = "a" } }
+	walkList[3] = { code = "choice", options = { "가", "나" }, branches = branches }
+	Commands.walk(walkList, function(cmd, path) walked[#walked + 1] = cmd.code .. path end)
+	t.check_eq(table.concat(walked, " "), "message[1] choice[3] message[3].branches[2][1]",
+		"walk 가 null 칸을 건너뛰고 뒤를 훑는다")
 end
 
 return M

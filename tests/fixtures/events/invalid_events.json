@@ -321,6 +321,14 @@
             "set": "npc",
             "index": 16
           }
+        },
+        {
+          "code": "message",
+          "text": "f",
+          "face": {
+            "file": "",
+            "index": 0
+          }
         }
       ]
     },
@@ -346,6 +354,129 @@
           "target": "player"
         }
       ]
+    },
+    null,
+    [
+      1,
+      2
+    ],
+    {
+      "id": "wander_area_type",
+      "x": 0,
+      "y": 0,
+      "wander": {
+        "area": "넓게"
+      }
+    },
+    {
+      "id": "commands_object",
+      "x": 0,
+      "y": 0,
+      "commands": {
+        "first": {
+          "code": "message",
+          "text": "a"
+        }
+      }
+    },
+    {
+      "id": "command_shapes",
+      "x": 0,
+      "y": 0,
+      "commands": [
+        "글",
+        null,
+        {
+          "code": "message"
+        },
+        {
+          "code": "if",
+          "cond": {
+            "flag": "a"
+          },
+          "thenDo": "없다",
+          "elseDo": [
+            {
+              "code": "wait",
+              "ms": 1
+            },
+            null,
+            {
+              "code": "wait"
+            }
+          ]
+        },
+        {
+          "code": "if",
+          "cond": {
+            "flag": "a"
+          },
+          "thenDo": {},
+          "elseDo": {
+            "k": []
+          }
+        },
+        {
+          "code": "choice",
+          "options": [
+            "가"
+          ],
+          "branches": {
+            "1": []
+          }
+        },
+        {
+          "code": "choice",
+          "options": [
+            "가",
+            "나",
+            "다"
+          ],
+          "branches": [
+            null,
+            "없다",
+            [
+              {
+                "code": "message",
+                "text": "b",
+                "face": {
+                  "set": "npc",
+                  "index": 99
+                }
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "option_shapes",
+      "x": 0,
+      "y": 0,
+      "commands": [
+        {
+          "code": "choice",
+          "options": {
+            "a": "가"
+          }
+        },
+        {
+          "code": "choice",
+          "options": [
+            "가",
+            null,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "id": "empty_shapes",
+      "x": 0,
+      "y": 0,
+      "through": "yes",
+      "wander": [],
+      "commands": {}
     },
     {
       "id": "tail",

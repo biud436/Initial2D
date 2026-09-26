@@ -174,6 +174,37 @@ function M.run(t)
 		"events[1].commands[1].name", "등록되지 않은 스크립트 이름")
 	t.check_eq(paths("글"), "events", "events 가 배열이 아니다")
 
+	-- JSON 모양: 배열 자리의 객체, 객체 자리의 배열, null 칸 (3.1 의 규칙)
+	t.check_eq(paths({ crates = base{} }), "events", "events 자리의 객체")
+	t.check_eq(paths({}), "", "빈 표는 빈 events 다")
+	t.check_eq(paths({ { 1, 2 } }), "events[1]", "이벤트 자리의 배열")
+	t.check_eq(paths({ base{ wander = { 5 } } }), "events[1].wander", "배회 자리의 배열")
+	t.check_eq(paths({ base{ wander = { area = { 1, 2, 3, 4 } } } }), "events[1].wander.area",
+		"구역 자리의 배열")
+	t.check_eq(paths({ base{ wander = {}, commands = {} } }), "", "빈 표는 빈 객체이자 빈 목록이다")
+	t.check_eq(paths({ base{ commands = { first = { code = "message", text = "a" } } } }),
+		"events[1].commands", "commands 자리의 객체")
+	local nullCommands = { { code = "message", text = "first" } }
+	nullCommands[3] = { code = "message" }
+	nullCommands[4] = { code = "nosuch" }
+	t.check_eq(paths({ base{ commands = nullCommands } }),
+		"events[1].commands[2] events[1].commands[3].text events[1].commands[4]",
+		"null 커맨드는 그 자리에 내고 뒤의 커맨드도 본다")
+	local nullBranches = {}
+	nullBranches[2] = { { code = "message", text = "t", face = { set = "npc", index = 99 } } }
+	local okBranch, branchProblems, branchValid, branchSkipped = MapData.validateEvents({
+		base{ id = "sign", commands = { { code = "choice", options = { "a", "b" }, branches = nullBranches } } },
+		base{ id = "next" },
+	})
+	local branchPaths = {}
+	for _, p in ipairs(branchProblems) do branchPaths[#branchPaths + 1] = p.path end
+	table.sort(branchPaths)
+	t.check_eq(table.concat(branchPaths, " "),
+		"events[1].commands[1].branches[1] events[1].commands[1].branches[2][1].face.index",
+		"null 가지 뒤의 얼굴 번호까지 본다")
+	t.check(not okBranch and branchSkipped == 1 and #branchValid == 1 and branchValid[1].id == "next",
+		"그 이벤트는 건너뛰고 나머지는 남는다")
+
 	-- 한 이벤트의 문제는 전부 내고, 문제가 있는 이벤트만 뺀다
 	local ok, problems, valid, skipped = MapData.validateEvents({
 		base{ id = "good" },
@@ -224,6 +255,18 @@ function M.run(t)
 	t.check(Commands.validate(resolved[1].commands), "풀린 커맨드도 검증을 통과한다")
 	local rebuilt = Event.new(resolved[1])
 	t.check(type(rebuilt.script) == "function", "풀린 이벤트로 Event.new 가 된다")
+
+	-- null 칸 뒤의 이벤트와 커맨드도 푼다
+	local holeCommands = { { code = "message", text = "a" } }
+	holeCommands[3] = { code = "message", text = "b", face = { set = "npc", index = 1 } }
+	local holeEvents = { { id = "a", x = 1, y = 1 } }
+	holeEvents[3] = { id = "c", x = 2, y = 2, charset = { set = "npc", index = 0 }, commands = holeCommands }
+	local holeResolved = MapData.resolveAssets(holeEvents, Assets)
+	t.check_eq(holeResolved[2], nil, "null 칸은 그대로 비어 있다")
+	t.check(holeResolved[3] ~= nil and holeResolved[3].charset.file == Assets.npcCharset(),
+		"null 뒤의 이벤트도 푼다")
+	t.check(holeResolved[3] ~= nil and holeResolved[3].commands[3].face.file == Assets.faceset(),
+		"null 뒤의 커맨드의 얼굴도 푼다")
 end
 
 return M

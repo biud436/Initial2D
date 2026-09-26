@@ -25,6 +25,7 @@
 local Inventory = require("scripts/lua/rpg/inventory")
 local Assets = require("scripts/lua/rpg/assets")
 local Character = require("scripts/lua/rpg/character")
+local Shape = require("scripts/lua/rpg/jsonshape")
 
 local M = {}
 
@@ -213,21 +214,26 @@ local LISTS = {
 }
 
 -- 커맨드 하나가 품은 하위 목록들. { path = ".branches[1]", list = 값 } 의 배열이며
--- 목록 자리에 배열이 아닌 값이 있으면 { path = ".branches", notArray = true } 로 알린다.
+-- 목록 자리에 배열이 아닌 값(가지 자리의 null 포함)이 있으면 { path, notArray = true } 로 알린다.
 local function childLists(cmd)
 	local out = {}
 	for _, spec in ipairs(LISTS[cmd.code] or {}) do
 		local value = cmd[spec.name]
-		if spec.perOption then
-			if type(value) == "table" then
-				for i, branch in ipairs(value) do
-					out[#out + 1] = { path = "." .. spec.name .. "[" .. i .. "]", list = branch }
+		local here = "." .. spec.name
+		if value ~= nil and not Shape.isArray(value) then
+			out[#out + 1] = { path = here, notArray = true }
+		elseif value ~= nil and spec.perOption then
+			for i = 1, Shape.length(value) do
+				local branch = value[i]
+				local at = here .. "[" .. i .. "]"
+				if Shape.isArray(branch) then
+					out[#out + 1] = { path = at, list = branch }
+				else
+					out[#out + 1] = { path = at, notArray = true }
 				end
-			elseif value ~= nil then
-				out[#out + 1] = { path = "." .. spec.name, notArray = true }
 			end
 		elseif value ~= nil then
-			out[#out + 1] = { path = "." .. spec.name, list = value }
+			out[#out + 1] = { path = here, list = value }
 		end
 	end
 	return out
@@ -263,8 +269,9 @@ end
 -- @param visit  function(cmd, path). path 는 "[2].branches[1][3]" 꼴
 function M.walk(list, visit, path)
 	path = path or ""
-	if type(list) ~= "table" then return end
-	for i, cmd in ipairs(list) do
+	if not Shape.isArray(list) then return end
+	for i = 1, Shape.length(list) do
+		local cmd = list[i]
 		local here = path .. "[" .. i .. "]"
 		if type(cmd) == "table" then
 			visit(cmd, here)
@@ -317,15 +324,16 @@ local function checkList(list, path, problems, env)
 		problems[#problems + 1] = { path = where, message = message }
 	end
 
-	if type(list) ~= "table" then
+	if not Shape.isArray(list) then
 		add(path, "커맨드 목록이 배열이 아니다")
 		return
 	end
 
-	for i, cmd in ipairs(list) do
+	for i = 1, Shape.length(list) do
+		local cmd = list[i]
 		local here = path .. "[" .. i .. "]"
-		if type(cmd) ~= "table" then
-			add(here, "커맨드가 테이블이 아니다")
+		if not Shape.isObject(cmd) then
+			add(here, "커맨드가 객체가 아니다")
 		elseif HANDLERS[cmd.code] == nil then
 			add(here, "알 수 없는 code " .. tostring(cmd.code))
 		else
@@ -337,8 +345,19 @@ local function checkList(list, path, problems, env)
 						.. type(cmd[field]) .. ")")
 				end
 			end
-			if cmd.code == "choice" and type(cmd.options) == "table" and #cmd.options == 0 then
-				add(here .. ".options", "항목이 하나 이상 필요하다")
+			if cmd.code == "choice" and type(cmd.options) == "table" then
+				local count = Shape.length(cmd.options)
+				if not Shape.isArray(cmd.options) then
+					add(here .. ".options", "항목 목록이 배열이 아니다")
+				elseif count == 0 then
+					add(here .. ".options", "항목이 하나 이상 필요하다")
+				end
+				for k = 1, count do
+					if type(cmd.options[k]) ~= "string" then
+						add(here .. ".options[" .. k .. "]", "항목이 글이 아니다 (지금은 "
+							.. type(cmd.options[k]) .. ")")
+					end
+				end
 			end
 			if cmd.code == "script" then
 				local hasRun = type(cmd.run) == "function"

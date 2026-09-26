@@ -13,6 +13,7 @@
 --   local map = Assets.mapPath("village", "Exterior") -- 칩셋에 맞는 맵 파일
 
 local Specs = require("scripts/lua/rpg/specs")
+local Shape = require("scripts/lua/rpg/jsonshape")
 
 local M = {}
 
@@ -111,7 +112,7 @@ function M.checkRef(kind, ref)
 		problems[#problems + 1] = { path = path, message = message }
 	end
 
-	if type(ref) ~= "table" then
+	if not Shape.isObject(ref) then
 		add("", "객체가 아니다")
 		return problems
 	end

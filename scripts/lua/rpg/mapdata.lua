@@ -20,6 +20,7 @@ local Commands = require("scripts/lua/rpg/commands")
 local Assets = require("scripts/lua/rpg/assets")
 local Event = require("scripts/lua/rpg/event")
 local Character = require("scripts/lua/rpg/character")
+local Shape = require("scripts/lua/rpg/jsonshape")
 
 local M = {}
 
@@ -90,17 +91,8 @@ local function isNonNegInt(v) return isInteger(v) and v >= 0 end
 -- 배회 기본값 (character.lua 의 setWander 와 같다)
 local WANDER_MIN, WANDER_MAX = 30, 120
 
--- 배열의 마지막 정수 키. JSON 의 null 이 만든 구멍도 칸으로 센다.
-local function arrayLength(t)
-	local n = 0
-	for k in pairs(t) do
-		if math.type(k) == "integer" and k > n then n = k end
-	end
-	return n
-end
-
 local function checkWander(wander, here, add)
-	if type(wander) ~= "table" then
+	if not Shape.isObject(wander) then
 		add(here, "배회가 객체가 아니다")
 		return
 	end
@@ -118,7 +110,7 @@ local function checkWander(wander, here, add)
 	end
 	local area = wander.area
 	if area ~= nil then
-		if type(area) ~= "table" then
+		if not Shape.isObject(area) then
 			add(here .. ".area", "구역이 객체가 아니다")
 		else
 			for _, key in ipairs({ "x", "y" }) do
@@ -137,7 +129,7 @@ end
 
 -- 이벤트 하나를 검사한다. seen 은 앞 이벤트들의 id 모음이다.
 local function checkEvent(ev, here, seen, env, add)
-	if type(ev) ~= "table" then
+	if not Shape.isObject(ev) then
 		add(here, "이벤트가 객체가 아니다")
 		return
 	end
@@ -196,20 +188,20 @@ end
 function M.validateEvents(events, env)
 	local problems, valid = {}, {}
 	if events == nil then return true, problems, valid, 0 end
-	if type(events) ~= "table" then
+	if not Shape.isArray(events) then
 		problems[1] = { index = nil, path = "events", message = "이벤트 목록이 배열이 아니다" }
 		return false, problems, valid, 0
 	end
 
 	local seen, skipped = {}, 0
-	for i = 1, arrayLength(events) do
+	for i = 1, Shape.length(events) do
 		local ev = events[i]
 		local here = "events[" .. i .. "]"
 		local before = #problems
 		checkEvent(ev, here, seen, env, function(path, message)
 			problems[#problems + 1] = { index = i, path = path, message = message }
 		end)
-		if type(ev) == "table" and type(ev.id) == "string" and seen[ev.id] == nil then
+		if Shape.isObject(ev) and type(ev.id) == "string" and seen[ev.id] == nil then
 			seen[ev.id] = i
 		end
 		if #problems == before then
@@ -249,7 +241,8 @@ end
 function M.resolveAssets(events, assets)
 	assets = assets or Assets
 	local out = {}
-	for i, ev in ipairs(events or {}) do
+	for i = 1, Shape.length(events) do
+		local ev = events[i]
 		if type(ev) == "table" then
 			local resolved = {}
 			for k, v in pairs(ev) do resolved[k] = v end
