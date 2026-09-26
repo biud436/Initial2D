@@ -145,6 +145,55 @@ function M.standY(x, y, solid, step)
 	return sy
 end
 
+M.REACH = 16                    -- 시작 칸에 설 땅이 없을 때 좌우로 찾는 칸 수
+
+--- 발이 y일 때 머리 위 room 높이가 비었는가
+local function roomAbove(x, y, solid, step, room)
+	local py = y - 1
+	while py > y - room do
+		if solid(x, py) then return false end
+		py = py - step
+	end
+	return not solid(x, y - room)
+end
+
+--- x 칸에서 발이 y 근처일 때 설 수 있는 y. 설 땅이 없으면 nil.
+-- standY로 올린 뒤 떨어져 닿는 땅 위에 몸이 들어가면 그 y를 쓴다. 아래가 바닥까지
+-- 비었거나 닿는 땅 위가 좁으면 위쪽에서 가장 가까운 설 자리(구덩이 위의 발판)를 찾는다.
+local function columnY(x, y, solid, step, bottom, room)
+	local sy = M.standY(x, y, solid, step)
+	if solid(x, sy - 1) then return nil end        -- 위가 끝까지 막혔다
+	local py = sy
+	while py < bottom and not solid(x, py) do py = py + step end
+	if py < bottom and roomAbove(x, math.floor(py / step) * step, solid, step, room) then
+		return sy
+	end
+	local gy = math.floor(sy / step) * step - step
+	while gy - room >= 0 do
+		if solid(x, gy) and roomAbove(x, gy, solid, step, room) then return gy end
+		gy = gy - step
+	end
+	return nil
+end
+
+--- 옮긴 시작 x에서 캐릭터가 설 자리 x, y. 발은 y 근처에서 찾는다.
+-- 그 칸에 설 땅이 없으면(구덩이 위) 좌우 REACH칸 안에서 가장 가까운 칸의 가운데로
+-- 옮기고, 거리가 같으면 왼쪽을 고른다. 어디에도 없으면 x, y를 그대로 돌려준다.
+-- solid(px, py)는 그 픽셀이 막혔는가, bottom은 월드의 아래끝, room은 몸 높이.
+function M.startSpot(x, y, solid, tileW, tileH, bottom, room)
+	local sy = columnY(x, y, solid, tileH, bottom, room)
+	if sy ~= nil then return x, sy end
+	local col = math.floor(x / tileW)
+	for d = 1, M.REACH do
+		for _, c in ipairs({ col - d, col + d }) do
+			local cx = c * tileW + tileW // 2
+			local cy = columnY(cx, y, solid, tileH, bottom, room)
+			if cy ~= nil then return cx, cy end
+		end
+	end
+	return x, y
+end
+
 -- ---- 스테이지 이름 -------------------------------------------------------------
 
 --- 경로의 구분자를 /로 맞추고 앞의 ./를 뗀다

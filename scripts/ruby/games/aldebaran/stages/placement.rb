@@ -132,6 +132,53 @@ module Aldebaran
         sy <= 0 ? y : sy
       end
 
+      REACH = 16 # 시작 칸에 설 땅이 없을 때 좌우로 찾는 칸 수
+
+      # 발이 y일 때 머리 위 room 높이가 비었는가
+      def self.room_above?(x, y, solid, step, room)
+        py = y - 1
+        while py > y - room
+          return false if solid.call(x, py)
+          py -= step
+        end
+        !solid.call(x, y - room)
+      end
+
+      # x 칸에서 발이 y 근처일 때 설 수 있는 y. 설 땅이 없으면 nil.
+      # stand_y로 올린 뒤 떨어져 닿는 땅 위에 몸이 들어가면 그 y를 쓴다. 아래가 바닥까지
+      # 비었거나 닿는 땅 위가 좁으면 위쪽에서 가장 가까운 설 자리(구덩이 위의 발판)를 찾는다.
+      def self.column_y(x, y, solid, step, bottom, room)
+        sy = stand_y(x, y, solid, step)
+        return nil if solid.call(x, sy - 1) # 위가 끝까지 막혔다
+        py = sy
+        py += step while py < bottom && !solid.call(x, py)
+        return sy if py < bottom && room_above?(x, (py / step).floor * step, solid, step, room)
+        gy = (sy / step).floor * step - step
+        while gy - room >= 0
+          return gy if solid.call(x, gy) && room_above?(x, gy, solid, step, room)
+          gy -= step
+        end
+        nil
+      end
+
+      # 옮긴 시작 x에서 캐릭터가 설 자리 [x, y]. 발은 y 근처에서 찾는다.
+      # 그 칸에 설 땅이 없으면(구덩이 위) 좌우 REACH칸 안에서 가장 가까운 칸의 가운데로
+      # 옮기고, 거리가 같으면 왼쪽을 고른다. 어디에도 없으면 [x, y]를 그대로 돌려준다.
+      # solid.call(px, py)는 그 픽셀이 막혔는가, bottom은 월드의 아래끝, room은 몸 높이.
+      def self.start_spot(x, y, solid, tile_w, tile_h, bottom, room)
+        sy = column_y(x, y, solid, tile_h, bottom, room)
+        return [x, sy] unless sy.nil?
+        col = (x / tile_w).floor
+        (1..REACH).each do |d|
+          [col - d, col + d].each do |c|
+            cx = c * tile_w + tile_w / 2
+            cy = column_y(cx, y, solid, tile_h, bottom, room)
+            return [cx, cy] unless cy.nil?
+          end
+        end
+        [x, y]
+      end
+
       # ---- 스테이지 이름 -----------------------------------------------------
 
       # 경로의 구분자를 /로 맞추고 앞의 ./를 뗀다

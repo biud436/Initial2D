@@ -266,8 +266,13 @@ end
 local function resetStage()
 	rng = Rng.new(Stage.SEED)
 	if startAt ~= nil then
-		-- 옮긴 시작 x의 지면이 시작 지점보다 높으면 땅속에서 시작하지 않게 지면 위로 올린다
-		player = Player.new(startAt, Placement.standY(startAt, Stage.START.y, probe, tileH))
+		-- 옮긴 시작 x의 설 자리. 땅속이면 지면 위로 올리고, 구덩이 위면 가까운 땅으로 옮긴다
+		local x, y = Placement.startSpot(startAt, Stage.START.y, probe, tileW, tileH, worldH,
+			Player.BODY_H)
+		if x ~= startAt then
+			print(string.format("알데바란: 시작 x %g → %g (구덩이 위라 가까운 땅으로)", startAt, x))
+		end
+		player = Player.new(x, y)
 	else
 		player = Player.new(Stage.START.x, Stage.START.y)
 	end

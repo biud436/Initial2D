@@ -9,6 +9,7 @@
 #   [D] 스테이지 모듈이 맵에서 만든 표가 아래의 고정값과 같다 (Integer와 Float의 구분까지)
 #   [E] INITIAL2D_ALDEBARAN_STAGE가 스테이지 id, 맵 이름, 맵 파일 경로를 모두 받는다
 #   [F] INITIAL2D_ALDEBARAN_AT으로 옮긴 시작 x가 지면 속이면 지면 위로 올린다
+#   [G] 옮긴 시작 x가 구덩이 위면 그 칸의 발판이나 가까운 칸의 땅에 세운다
 #
 # 섞는 비율의 기댓값은 `29.0 / 192`처럼 나눗셈으로 적는다. 이 엔진의 mruby는 몇몇 실수
 # 리터럴을 1 ulp 어긋나게 읽는다 (docs/plans/s2-ruby-aldebaran.md 6절).
@@ -17,6 +18,7 @@ require "scripts/ruby/games/aldebaran/data/monsters"
 require "scripts/ruby/games/aldebaran/combat"
 require "scripts/ruby/games/aldebaran/stages/init"
 require "scripts/ruby/games/aldebaran/stages/placement"
+require "scripts/ruby/games/aldebaran/player"
 
 module MapObjectsTest
   SCHEMA_PATH = "./resources/schema/map-objects.json"
@@ -467,5 +469,74 @@ T.run_case("aldebaran_map_objects") do |t|
     t.check_eq(stand_on.call(maps_path["forest"], 1990.0), 304, "절벽의 어깨 위(지면 304)로 올린다")
     t.check_eq(stand_on.call(maps_path["tomb"], 2480.0), 384, "별들의 방은 바닥이 더 낮아 그대로 (떨어진다)")
     t.check_eq(placement.stand_y(10, 384, ->(_px, _py) { true }, 16), 384, "위가 끝까지 막혔으면 그대로")
+  end
+
+  # [G] 옮긴 시작 x의 설 자리: 구덩이 위면 그 칸의 발판이나 가까운 칸의 땅에 세운다.
+  # 숲의 협곡은 열 128~131과 135~139가 지면 304 한 줄(발판)이고 아래가 비었으며,
+  # 열 132~134는 위아래가 다 빈 구덩이다.
+  begin
+    placement = Aldebaran::Stages::Placement
+    body_h = Aldebaran::Player::BODY_H
+    maps_path = MapObjectsTest::MAPS
+    with_solid = lambda do |path, &fn|
+      map = Tilemap.new(path)
+      w, h, tw, th, = map.size
+      solid = lambda do |px, py|
+        next true if px < 0 || px >= w * tw
+        next false if py < 0 || py >= h * th
+        !map.passable?((px / tw).floor, (py / th).floor)
+      end
+      out = fn.call(solid, w, h, tw, th)
+      map.dispose
+      out
+    end
+    # 열의 막힌 행 목록 ("19"나 "19,21,22")
+    solid_rows = lambda do |path, col|
+      with_solid.call(path) do |solid, _w, h, tw, th|
+        (0...h).select { |r| solid.call(col * tw + tw / 2, r * th) }.map(&:to_s).join(",")
+      end
+    end
+    spot_on = lambda do |path, x|
+      with_solid.call(path) do |solid, _w, h, tw, th|
+        placement.start_spot(x, 384, solid, tw, th, h * th, body_h)
+      end
+    end
+
+    [128, 131, 135, 139].each do |col|
+      t.check_eq(solid_rows.call(maps_path["forest"], col), "19", "숲 열 #{col}은 발판 한 줄 (전제)")
+    end
+    [132, 133, 134].each do |col|
+      t.check_eq(solid_rows.call(maps_path["forest"], col), "", "숲 열 #{col}은 빈 구덩이 (전제)")
+    end
+    t.check_eq(solid_rows.call(maps_path["forest"], 113), "19,21,22,23,24,25,26,27",
+               "숲 열 113은 발판 아래에 한 칸 틈 (전제)")
+
+    t.check_eq(spot_on.call(maps_path["forest"], 2054.0), [2054, 304], "발판 칸은 x 그대로 발판 위(304)")
+    t.check_eq(spot_on.call(maps_path["forest"], 2200.0), [2200, 304], "발판 칸 x 2200도 발판 위")
+    t.check_eq(spot_on.call(maps_path["forest"], 2120.0), [2104, 304], "구덩이 왼쪽 열은 왼쪽 한 칸 발판 가운데로")
+    t.check_eq(spot_on.call(maps_path["forest"], 2136.0), [2104, 304], "구덩이 가운데 열은 거리가 같아 왼쪽으로")
+    t.check_eq(spot_on.call(maps_path["forest"], 2152.0), [2168, 304], "구덩이 오른쪽 열은 오른쪽 한 칸 발판으로")
+    t.check_eq(with_solid.call(maps_path["forest"]) { |solid| placement.stand_y(1816.0, 384, solid, 16) },
+               336, "stand_y만으로는 한 칸 틈(336)에 끼인다")
+    t.check_eq(spot_on.call(maps_path["forest"], 1816.0), [1816, 304], "몸이 안 들어가는 틈이면 그 위 발판(304)")
+
+    # 지면이 있는 자리는 stand_y와 같다 (인수 씬이 쓰는 무덤의 2480, 4300 포함)
+    t.check_eq(spot_on.call(maps_path["forest"], 224.0), [224, 384], "숲 입구의 평지는 그대로 384")
+    t.check_eq(spot_on.call(maps_path["forest"], 1400.0), [1400, 304], "옛 길의 턱 위(304)")
+    t.check_eq(spot_on.call(maps_path["forest"], 1990.0), [1990, 304], "절벽의 어깨 위(304)")
+    t.check_eq(spot_on.call(maps_path["tomb"], 2480.0), [2480, 384], "별들의 방은 그대로 384 (떨어진다)")
+    t.check_eq(spot_on.call(maps_path["tomb"], 4300.0), [4300, 384], "태양의 방은 그대로 384 (떨어진다)")
+
+    # 찾는 거리는 좌우 REACH(16)칸까지. 열 10~43이 빈 구덩이인 가짜 지형
+    pit = lambda do |px, py|
+      col = (px / 16).floor
+      py >= 384 && py < 448 && (col < 10 || col > 43)
+    end
+    spot = ->(x, solid = pit) { placement.start_spot(x, 384, solid, 16, 16, 448, body_h) }
+    t.check_eq(Aldebaran::Stages::Placement::REACH, 16, "찾는 거리는 16칸")
+    t.check_eq(spot.call(28 * 16 + 3), [712, 384], "열 28은 16칸 오른쪽 열 44로")
+    t.check_eq(spot.call(27 * 16 + 3), [435, 384], "열 27은 양쪽 땅이 16칸 밖이라 그대로")
+    t.check_eq(spot.call(25 * 16), [152, 384], "열 25는 16칸 왼쪽 열 9로")
+    t.check_eq(spot.call(10, ->(_px, _py) { true }), [10, 384], "위가 끝까지 막힌 곳뿐이면 그대로")
   end
 end
