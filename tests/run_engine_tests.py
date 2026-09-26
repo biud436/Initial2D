@@ -1146,17 +1146,20 @@ def test_rpg_play_here():
           'rpg:message:|첫 줄\\n"둘째" 줄' in lines, str(lines[-4:]))
     check("[D] 스스로 끝난다", bool(lines) and lines[-1] == "rpg:route:done", str(lines[-3:]))
 
-    # [E] 정의 파일의 외형에 file 이 없으면 플레이어 그림으로 조용히 그리지 않고 오류다
-    innfile = os.path.join(work_d, "scripts", "lua", "maps", "inn.lua")
-    with open(innfile, encoding="utf-8") as f:
+    # [E] 정의 파일의 외형에 file 이 없으면 플레이어 그림으로 조용히 그리지 않고 오류다.
+    # 이벤트가 Lua 정의 파일에 남아 있는 마을(RTP 쌍둥이 맵이라 옮기지 않았다)의 촌장으로 본다
+    villagefile = os.path.join(work_d, "scripts", "lua", "maps", "village.lua")
+    with open(villagefile, encoding="utf-8") as f:
         text = f.read()
-    with open(innfile, "w", encoding="utf-8") as f:
-        f.write(text.replace("charset = { file = CHARSET, index = 1 },", "charset = { index = 1 },"))
-    r = run_game(work_d, rpg_play_env("inn"), exit_after=60)
+    broken = text.replace("charset = { file = CHARSET, index = 2 },", "charset = { index = 2 },")
+    check("[E] 마을 정의 파일에 고칠 줄이 하나 있다", broken != text and text.count("charset = { file = CHARSET, index = 2 },") == 1)
+    with open(villagefile, "w", encoding="utf-8") as f:
+        f.write(broken)
+    r = run_game(work_d, rpg_play_env("village"), exit_after=60)
     lines = rpg_lines(r.stdout)
     check("[E] 정상 종료", r.returncode == 0, f"rc={r.returncode}")
     check("[E] 정의 파일의 오류가 stdout 에 나온다",
-          "rpg:error:scripts/lua/maps/inn.lua:innkeeper: 외형(charset)에 file 이 없다" in lines, str(lines))
+          "rpg:error:scripts/lua/maps/village.lua:elder: 외형(charset)에 file 이 없다" in lines, str(lines))
 
     # [F] 게임 설정과 아이템 표를 못 읽으면: 이유 글의 줄바꿈까지 한 줄로, 한 번만 찍는다
     work_f = make_game_workdir(copy=("data",))

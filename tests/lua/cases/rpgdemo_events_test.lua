@@ -1,4 +1,4 @@
--- rpgdemo_events_test.lua : 항구 마을과 여관의 이벤트 목록이 옮기기 전과 같다
+-- rpgdemo_events_test.lua : 항구 마을과 여관의 이벤트를 맵 파일로 옮겨도 게임이 받는 목록이 같다
 -- (docs/plans/m2-rpg-events.md 6절)
 --
 -- tests/fixtures/events/rpgdemo_events_before.json 은 이벤트를 맵 파일로 옮기기 전의 트리에서
@@ -130,6 +130,12 @@ function M.run(t)
 				local d = diff(real, materialize(before), name)
 				t.check(d == nil, name .. ": 지금 고르는 경로로 풀어도 같은 목록", d)
 			end
+
+			-- 이벤트는 맵 파일에만 있다. 정의 파일에 남으면 같은 id 의 Lua 가 이겨 에디터의 편집이 안 보인다
+			local ok, def = requireWith(module, Assets)
+			t.check(ok and def.events == nil, name .. ": 정의 파일에 이벤트가 없다")
+			local fromMap = MapData.loadEvents(Config.projectPath(entry.file))
+			t.check_eq(#fromMap, #before, name .. ": 맵 파일의 이벤트 수")
 		end
 	end
 end

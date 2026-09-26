@@ -946,7 +946,7 @@ rpg:error:resources/maps/port_town.json:events[2].charset.index: 외형: 0..7 �
 
 커맨드의 인자는 필수든 선택이든 스키마에 적힌 타입과 범위로 검사합니다. `transfer`의 `x`에 글을 넣으면 `...commands[1].x: 정수가 아니다 (지금은 string)`으로 그 이벤트만 빠지고, 게임은 멈추지 않습니다. `rpg:error:` 줄은 값에 줄바꿈이 들어 있어도 늘 한 줄입니다.
 
-정의 파일(Lua)의 이벤트가 틀리면 맵을 열지 않고 화면에 "맵 로드 실패"를 띄우며, 같은 글이 `rpg:error:scripts/lua/maps/inn.lua:innkeeper: ...` 꼴로 stdout에도 나옵니다.
+정의 파일(Lua)의 이벤트가 틀리면 맵을 열지 않고 화면에 "맵 로드 실패"를 띄우며, 같은 글이 `rpg:error:scripts/lua/maps/village.lua:elder: ...` 꼴로 stdout에도 나옵니다.
 
 트리거는 네 가지입니다.
 
@@ -1146,13 +1146,14 @@ INITIAL2D_SCENE=rpg INITIAL2D_MAP=inn INITIAL2D_RPG_SCALE=3 ./build/Initial2D
 
 타이틀 화면에서는 항목을 직접 눌러도 선택됩니다 (`Choice:indexAt`).
 
-구성은 다음과 같습니다. 씬은 데모 폴더에, 맵의 이벤트 정의는 맵 이름과 짝이 되는 파일에 둡니다.
+구성은 다음과 같습니다. 씬은 데모 폴더에, 이벤트와 대사는 맵 파일에, 그 밖의 맵 속성은 맵 이름과 짝이 되는 정의 파일에 둡니다.
 
 | 파일 | 역할 |
 | :--- | :--- |
 | `scripts/lua/games/rpgdemo/title.lua` | 타이틀 씬. 배경 한 장과 커서 메뉴(시작, 조작 방법, 나가기) |
 | `scripts/lua/games/rpgdemo/game.lua` | 맵 씬. 맵 적재, 페이드 전환, 대화창과 실행기 연결, 장소 이름 |
-| `scripts/lua/maps/port_town.lua`, `inn.lua` | 이벤트 정의와 대사 (커맨드 목록) |
+| `resources/maps/port_town.json`, `inn.json` | 맵과 이벤트, 대사 (커맨드 목록). 에디터가 편집합니다 |
+| `scripts/lua/maps/port_town.lua`, `inn.lua` | 시작 위치, BGM, 캐릭터 아래에 그릴 레이어 수, 자동 시연 경로 |
 | `resources/data/rpg-game.json` | 맵 등록(이름, 맵 파일, 정의 파일), 아이템 표의 경로, 에디터의 실행 변수 |
 | `resources/data/items.json` | 아이템 표 (이름, 설명, 목록 순서). `items.lua`가 읽습니다 |
 | `scripts/lua/games/rpgdemo/config.lua` | `rpg-game.json` 읽기 |
@@ -1178,7 +1179,7 @@ python3 tools/generate_title.py
 
 ## 맵 등록과 여기서 실행
 
-데모의 맵은 `resources/data/rpg-game.json`에 등록합니다. `name`은 `transfer`의 `map`과 `INITIAL2D_MAP`이 쓰는 이름이고, `file`은 맵 파일, `def`는 이벤트와 시작 위치와 BGM을 적은 정의 파일입니다. 마을과 오두막처럼 RTP 판이 따로 있는 맵은 `alt`에 그 파일을 적습니다.
+데모의 맵은 `resources/data/rpg-game.json`에 등록합니다. `name`은 `transfer`의 `map`과 `INITIAL2D_MAP`이 쓰는 이름이고, `file`은 맵 파일, `def`는 시작 위치와 BGM을 적은 정의 파일입니다 (마을과 오두막은 이벤트도 여기 있습니다). 마을과 오두막처럼 RTP 판이 따로 있는 맵은 `alt`에 그 파일을 적습니다.
 
 ```json
 { "name": "inn", "file": "resources/maps/inn.json", "def": "scripts/lua/maps/inn.lua" }
@@ -1217,7 +1218,7 @@ rpg:route:done
 
 ## 이벤트를 맵 파일로 옮기기
 
-에디터는 맵 파일의 `events`만 고칩니다. 정의 파일(`scripts/lua/maps/<이름>.lua`)에 커맨드로 적은 이벤트는 `tools/export_events.py`로 맵 파일에 한 번 옮겨 두면, 그 뒤로는 에디터에서 고칠 수 있습니다.
+에디터는 맵 파일의 `events`만 고칩니다. 정의 파일(`scripts/lua/maps/<이름>.lua`)에 커맨드로 적은 이벤트는 `tools/export_events.py`로 맵 파일에 한 번 옮겨 두면, 그 뒤로는 에디터에서 고칠 수 있습니다. 항구 마을과 여관은 이 도구로 옮겼습니다.
 
 ```bash
 # 쓰지 않고 무엇을 옮기는지만 봅니다
