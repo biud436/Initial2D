@@ -1,0 +1,201 @@
+# 알데바란, 스테이지 1-1 「검은 안개의 숲」 (기획서 4.3절).
+# scripts/lua/games/aldebaran/stages/forest.lua 의 Ruby 판.
+#
+# 배치와 구간과 이야기 글. 좌표는 전부 손으로 정한 자리다 (픽셀,
+# tools/generate_aldebaran_maps.py의 지형과 짝이 맞아야 한다).
+# 코드가 아니라 표다. 다른 스테이지는 다른 표를 만든다 (stages/tomb.rb).
+#
+# 종별 표는 data/monsters.rb 에 있다.
+#
+# Lua 의 칸은 여기서 두 겹이다. 값은 상수(Lua 의 대문자 칸은 이름 그대로,
+# 소문자 칸은 대문자로 바꿔서)에 두고, 씬은 모듈 함수(stage.id, stage.sections,
+# ...)로 읽는다. 함수 이름은 Lua 칸 이름의 snake_case 다. 이름이 겹치는 자리만
+# 풀어 썼다: Lua 에는 소문자 intro(컷씬의 종류)와 대문자 INTRO(나레이션)가 함께
+# 있으므로 intro 는 상수 INTRO_KIND 와 함수 intro, INTRO 는 상수 INTRO 와 함수
+# intro_text 다. GAMEOVER 도 짝을 맞춰 함수 gameover_text 로 읽는다.
+
+require "scripts/ruby/games/aldebaran/data/monsters"
+
+module Aldebaran
+  module Stages
+    module Forest
+      # ---- 스테이지가 씬에게 알려 주는 것 -------------------------------------
+      # game.rb 는 이 칸들만 보고 무대를 차린다. 새 스테이지는 같은 칸을 채우면 된다.
+
+      ID = "forest"
+      NUMBER = "1-1"
+      TITLE = "검은 안개의 숲"
+      MAP = "./resources/maps/aldebaran_forest.json"
+      BGM_SLOT = "./resources/audio/aldebaran_forest.ogg"
+      BRIGHT = "./resources/aldebaran/forest_bright.png"   # 환각 때 겹치는 옛 숲
+      FOG = true                                            # 안개 입자를 뿌린다
+      BOSS = { species: :monkey, kind: :thief, drops: :bag }  # 짐도둑
+      INTRO_KIND = :thief                                   # 도입 컷씬의 종류
+
+      def self.id; ID; end
+      def self.number; NUMBER; end
+      def self.title; TITLE; end
+      def self.map; MAP; end
+      def self.bgm_slot; BGM_SLOT; end
+      def self.bright; BRIGHT; end
+      def self.fog; FOG; end
+      def self.boss; BOSS; end
+      def self.intro; INTRO_KIND; end
+
+      # ---- 구간 (기획서 4.3절) -------------------------------------------------
+      # 걸을수록 무대가 바뀐다. 씬은 카메라 x 로 지금 구간을 알아내고, 경계 앞뒤
+      # FADE 픽셀에서 두 벌을 겹쳐 서서히 바꾼다.
+
+      SECTIONS = [
+        { name: :entrance, x1: 767 },     # 타일 0~47
+        { name: :road, x1: 1599 },        # 48~99
+        { name: :gorge, x1: 2367 },       # 100~147
+        { name: :den, x1: 3263 },         # 148~203
+        { name: :altar, x1: 4096 },       # 204~255
+      ]
+      SECTION_FADE = 96                   # 경계 앞뒤로 겹치는 폭 (픽셀)
+
+      def self.sections; SECTIONS; end
+      def self.section_fade; SECTION_FADE; end
+
+      # 카메라 x 가 속한 구간과, 다음 구간으로 얼마나 넘어갔는가 (0..1).
+      # Lua 의 세 값 반환을 [지금 구간, 다음 구간, 섞는 비율] 로 옮겼다.
+      def self.section_at(x)
+        SECTIONS.each_with_index do |s, i|
+          if x <= s[:x1]
+            blend = 0
+            if i < SECTIONS.size - 1
+              d = s[:x1] - x
+              if d < SECTION_FADE
+                blend = (SECTION_FADE - d).to_f / (SECTION_FADE * 2)
+              end
+            end
+            if i > 0
+              prev = SECTIONS[i - 1]
+              d = x - prev[:x1]
+              if d < SECTION_FADE
+                return [prev[:name], SECTIONS[i][:name], 0.5 + d.to_f / (SECTION_FADE * 2)]
+              end
+            end
+            next_name = i < SECTIONS.size - 1 ? SECTIONS[i + 1][:name] : s[:name]
+            return [s[:name], next_name, blend]
+          end
+        end
+        [:altar, :altar, 0]
+      end
+
+      START = { x: 56, y: 384 }          # 숲 입구 (타일 3.5, 지면 24)
+      # 체크포인트 둘 (2구간 끝의 석주, 4구간 초입의 우리). 지나면 부활 지점이 된다.
+      # 씬이 지난 것을 cp[:taken] 에 적는다 (그래서 얼리지 않는다).
+      CHECKPOINTS = [
+        { x: 1552, y: 304 },
+        { x: 2400, y: 352 },
+      ]
+      LIVES = 2                          # 원안 1절의 "2번의 목숨"
+      SEED = 20260823                    # 전투 굴림의 시드 (테스트 재현용)
+
+      def self.start; START; end
+      def self.checkpoints; CHECKPOINTS; end
+      def self.lives; LIVES; end
+      def self.seed; SEED; end
+
+      # 1-1 에는 기후가 없다 (Lua 에는 CLIMATE 칸이 아예 없다)
+      def self.climate; nil; end
+
+      # ---- 종별 표 ------------------------------------------------------------
+      # 원안 규격서를 그릇으로 삼은 표는 data/monsters.rb 로 옮겼다 (A6). 여기서는
+      # 이름만 다시 내보낸다. 배치(spawns)가 이 키를 쓰기 때문이다.
+
+      def self.species; Aldebaran::Monsters::SPECIES; end
+
+      # ---- 배치 (지형: 입구 24, 턱 22/21/20, 다리, 어깨 20, 내리막 22, 숲 24) ----
+
+      # 배치는 지면 높이를 계산해 정했다 (계획 3.5절의 레벨 디자인 원칙).
+      # 적은 구간 경계에서 100px 이상 안쪽에 두어, 넘어오는 순간 맞지 않게 한다.
+      SPAWNS = [
+        # 1구간 숲 입구 (지면 384 / 턱 352): 베기를 가르치고, 점프한 뒤 싸우게 한다
+        { species: :spider, x: 224, y: 384, min_x: 180, max_x: 280 },
+        { species: :spider, x: 672, y: 352, min_x: 630, max_x: 730 },
+
+        # 2구간 옛 길 (계단 352 → 336 → 320 → 304): 턱마다 하나, 마지막에 둘
+        { species: :spider, x: 900, y: 352, min_x: 860, max_x: 960 },
+        { species: :spider, x: 1056, y: 336, min_x: 1010, max_x: 1120 },
+        { species: :spider, x: 1400, y: 304, min_x: 1370, max_x: 1450 },
+        { species: :spider, x: 1470, y: 304, min_x: 1440, max_x: 1520 },
+
+        # 3구간 기암 절벽: 어깨 한가운데 (착지하자마자 맞지 않게)
+        { species: :spider, x: 1700, y: 304, min_x: 1660, max_x: 1760 },
+        { species: :wolf, x: 1990, y: 304, min_x: 1950, max_x: 2030 },
+        { species: :spider, x: 2290, y: 320, min_x: 2260, max_x: 2340 },
+
+        # 4구간 늑대 마을: 둘씩 두 번, 그리고 안쪽에 검은 늑대
+        { species: :wolf, x: 2760, y: 368, min_x: 2700, max_x: 2820 },
+        { species: :wolf, x: 2830, y: 368, min_x: 2770, max_x: 2890 },
+        { species: :wolf, x: 3060, y: 368, min_x: 3010, max_x: 3120 },
+        { species: :wolf, x: 3120, y: 368, min_x: 3060, max_x: 3180 },
+        { species: :blackwolf, x: 3220, y: 368, min_x: 3160, max_x: 3250 },
+
+        # 5구간 제단 앞: 전초 하나와 짐도둑
+        { species: :wolf, x: 3450, y: 384, min_x: 3400, max_x: 3520 },
+        { species: :monkey, x: 3860, y: 384, min_x: 3640, max_x: 4040, boss: true },
+      ]
+
+      def self.spawns; SPAWNS; end
+
+      # ---- 흔적 (기획서 4.3.1절) ----------------------------------------------
+      # 구간마다 하나. 밟으면 글이 뜨고 발견 기록에 남는다. 강제가 아니다.
+
+      LANDMARKS = [
+        # 첫 거미를 잡은 뒤, 턱 앞의 평지 (읽는 동안 맞지 않는 자리)
+        { id: :tracks, x0: 300, x1: 348, title: "여러 갈래의 발자국",
+          text: "발자국이 여럿이다. 그놈은 혼자가 아니었다.", skill: :edge },
+        # 포석이 시작되는 자리 (2구간 초입)
+        { id: :road, x0: 790, x1: 838, title: "다져진 포석",
+          text: "밟혀 다져진 돌길이다. 숲이 나중에 덮은 것이다.", skill: :read },
+        # 다리를 건너기 전 어깨 (체크포인트 바로 뒤)
+        { id: :cart, x0: 1640, x1: 1688, title: "버려진 짐수레",
+          text: "짐이 그대로 실려 있다. 사람들은 급히 떠났다.", skill: :leap },
+        # 마을 초입의 우리. 여기서 안개에 취해 옛 숲이 보인다
+        { id: :cage, x0: 2440, x1: 2488, title: "부서진 우리",
+          text: "실험실의 우리다. 안개는 저들이 열매를 태워 만든다.",
+          hallucination: 3.0, skill: :berserk },
+        # 제단 앞. 보스와 붙기 전에 읽는다
+        { id: :altar, x0: 3700, x1: 3748, title: "네 개의 화두",
+          text: "고대 문자와 굳은 피. 지도에 그려진 것이 이곳이었다.", skill: :bolt },
+      ]
+
+      # 다섯을 다 모은 플레이어만 읽는 마지막 한 줄
+      EPILOGUE_FULL = "도둑이 노린 것은 금괴가 아니었다. 이 숲의 지형을 그린 그 지도였다."
+
+      def self.landmarks; LANDMARKS; end
+      def self.epilogue_full; EPILOGUE_FULL; end
+
+      # ---- 이야기 글 (기획서 4절) ---------------------------------------------
+
+      # 도입 컷씬의 나레이션. 대화창이 쪽을 나눈다.
+      INTRO = "알데바란에 발을 디딘 순간이었다. 발 빠른 가면 원숭이들이 배낭과 금괴, " +
+        "지도까지 전부 채 갔다. 남은 것은 단검 한 자루와, 본능적으로 지켜 낸 몇 장의 " +
+        "단서뿐. 깜깜한 하늘, 우거진 숲, 마른 넝쿨과 부서진 대나무. 잔상 같은 세계 " +
+        "속에서, 카르토는 달아난 원숭이의 발자국을 뒤따랐다."
+
+      # 에필로그 (배낭을 되찾으면). 넷으로 나눠 한 쪽씩 보여 준다.
+      EPILOGUE = [
+        "배낭은 반쯤 비어 있었다. 금괴는 사라졌지만, 지도는 무사했다.",
+        "지도 위, 협회의 문양과 일치하던 그 지형에 누군가 새로 표시를 남겨 두었다.",
+        "스핑크스를 닮은 왕릉, 사람들이 황제의 무덤이라 부르는 곳이었다.",
+        "카르토는 배낭을 고쳐 메고, 더 깊은 숲을 향해 걸음을 옮겼다.",
+      ]
+
+      # 게임 오버 (목숨을 다 잃으면)
+      GAMEOVER = "검은 안개가 시야를 덮었다. ...멀리서 늑대 울음이 들린다."
+
+      # 표지 글: 그 x 구간에 처음 닿으면 화면 위에 잠깐 뜬다 (컷씬이 아니다)
+      SIGNS = []     # 표지 글은 흔적(LANDMARKS)으로 바뀌었다
+
+      def self.intro_text; INTRO; end
+      def self.epilogue; EPILOGUE; end
+      def self.gameover_text; GAMEOVER; end
+      def self.signs; SIGNS; end
+    end
+  end
+end

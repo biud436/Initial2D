@@ -559,12 +559,22 @@ brew install mruby
 cmake -B build && cmake --build build
 ./build/Initial2D --features        # "lua mruby" 가 나오면 준비된 것입니다
 
-# Ruby로 쓴 플래피 (scripts/ruby/main.rb)
+# Ruby로 쓴 알데바란 (scripts/ruby/main.rb 가 타이틀로 부팅합니다. Lua 판과 같은 게임입니다)
 INITIAL2D_SCRIPT=mruby ./build/Initial2D
+
+# 스테이지만 바로 열기, 1-2 열기 (환경 변수는 Lua 판과 같습니다)
+INITIAL2D_SCRIPT=mruby INITIAL2D_SCENE=aldebaran INITIAL2D_SKIP_INTRO=1 ./build/Initial2D
+INITIAL2D_SCRIPT=mruby INITIAL2D_SCENE=aldebaran INITIAL2D_ALDEBARAN_STAGE=tomb \
+  INITIAL2D_ALDEBARAN_AT=2400 INITIAL2D_SKIP_INTRO=1 ./build/Initial2D
+
+# Ruby로 쓴 플래피 (엔진 데모)
+INITIAL2D_SCRIPT=mruby INITIAL2D_SCENE=flappy ./build/Initial2D
 
 # 헤드리스로 몇 프레임만 돌려 확인
 INITIAL2D_SCRIPT=mruby INITIAL2D_EXIT_AFTER=60 SDL_VIDEODRIVER=dummy ./build/Initial2D
 ```
+
+Ruby 알데바란은 `scripts/ruby/games/aldebaran/`에 있고 Lua 판(`scripts/lua/games/aldebaran/`)을 한 파일씩 옮긴 것입니다. 기대는 공용 모듈(`scripts/ruby/rpg/`의 창과 대화창과 선택지, `scripts/ruby/ui/`의 가상 패드와 버튼, `bgm.rb`)도 함께 옮겼습니다. 두 판이 같은 게임이라는 것은 인수 시나리오가 확인합니다. Ruby 시나리오(`tests/engine/scenes/mruby_aldebaran_scene.rb`)가 Lua 시나리오와 같은 검사와 같은 골든 스크린샷 세 장(숲 첫 화면, 타이틀, 무덤 별들의 방)을 통과합니다 ([계획](./docs/plans/s2-ruby-aldebaran.md)).
 
 어느 언어로 돌릴지는 다음 순서로 정합니다. `INITIAL2D_SCRIPT=lua|mruby` 환경 변수, `game.json`의 `"script": "mruby"`, 그리고 둘 다 없으면 `scripts/lua/main.lua`가 있는 한 Lua입니다 (`scripts/ruby/main.rb`만 있으면 mruby). mruby가 없는 빌드에서 mruby를 고르면 그 사실을 알리고 종료 코드 1로 끝납니다.
 

@@ -5,7 +5,8 @@
 렌더링·애니메이션·텍스트·프리미티브·오디오·입력 API를 프레임 덤프의
 픽셀 검증으로 확인한다. 게임 실행 파일(build/Initial2D)이 필요하다.
 
-사용법: python3 tests/run_engine_tests.py [빌드된 실행 파일 경로]
+사용법: python3 tests/run_engine_tests.py [빌드된 실행 파일 경로] [--only=이름조각,...]
+  --only=mruby_units      mruby 단위 테스트만 (이름 조각은 test_ 함수 이름에 부분 일치)
 """
 
 import os
@@ -870,7 +871,20 @@ def test_aldebaran_scene():
     결과 창 → 타이틀. 골든은 타이틀과 스테이지 첫 화면 두 장.
     """
     print("\n[9] aldebaran_scene — 알데바란 인수 시나리오 (타이틀부터 에필로그까지)")
-    work = make_workdir("aldebaran_scene.lua")
+    run_aldebaran_scene("aldebaran_scene.lua")
+
+
+def test_mruby_aldebaran_scene():
+    """같은 인수 시나리오를 Ruby 알데바란으로 (S2). 검사도 골든 세 장도 Lua 와 같다."""
+    print("\n[9m] mruby_aldebaran_scene — Ruby 알데바란, 같은 시나리오와 같은 골든")
+    if not HAS_MRUBY:
+        print("  SKIP: 이 빌드에는 mruby 가 없습니다 (brew install mruby 후 cmake 다시 실행)")
+        return
+    run_aldebaran_scene("mruby_aldebaran_scene.rb")
+
+
+def run_aldebaran_scene(scene):
+    work = make_workdir(scene)
     env = dict(os.environ)
     env["INITIAL2D_EXIT_AFTER"] = "90"
     env["INITIAL2D_NO_RTP"] = "1"     # 골든과 같은 그림으로 (RTP는 기계마다 다르다)
@@ -879,7 +893,8 @@ def test_aldebaran_scene():
     log = result.stdout + result.stderr
 
     check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode}")
-    check("Lua 오류 없음", "PANIC" not in log and "attempt to" not in log, log[-300:])
+    check("스크립트 오류 없음", "PANIC" not in log and "attempt to" not in log
+          and "uncaught exception" not in log, log[-300:])
 
     def has(needle, name):
         check(name, needle in log, f"'{needle}' 없음 | {log[-400:]}")
@@ -941,7 +956,7 @@ def test_aldebaran_scene():
     # A7: 1-2 황제의 무덤을 자율 봇이 주파한다. 좌표를 박지 않은 같은 봇이며,
     # 방마다의 기후가 실제로 걸리는지와 새 적 셋을 만나는지를 본다.
     # 24000틱(400초분)이지만 헤드리스는 실시간이 아니라 벽시계로 12초쯤이다.
-    _, r_tomb, _ = run_scene("aldebaran_scene.lua", [], 300,
+    _, r_tomb, _ = run_scene(scene, [], 300,
                              {"INITIAL2D_ALDEBARAN_STOP": "tomb",
                               "INITIAL2D_SKIP_INTRO": "1",
                               "INITIAL2D_NO_RTP": "1",
@@ -970,7 +985,7 @@ def test_aldebaran_scene():
 
     # 터치 조작의 끝-끝 검증: 가상 패드로 걷고, 버튼으로 뛰고 베고, 정지 버튼과
     # 항목 누름으로 일시 정지를 여닫는다 (재생기의 마우스 = SDL의 첫 손가락)
-    _, r_pad, s_pad = run_scene("aldebaran_scene.lua", [10], 15,
+    _, r_pad, s_pad = run_scene(scene, [10], 15,
                                 {"INITIAL2D_ALDEBARAN_STOP": "touch",
                                  "INITIAL2D_SKIP_INTRO": "1",
                                  "INITIAL2D_NO_RTP": "1",
@@ -990,7 +1005,7 @@ def test_aldebaran_scene():
     # 회귀 (T1 후속, 2026-08-24 실기 검수): 논리 폭이 384보다 넓은 화면(모바일)에서
     # 홍수 물이 왼쪽 384px에만 그려졌다. 1920x896 창(논리 960x448)으로 태양의 방을
     # 열어, 수면의 물결 띠가 화면 폭 전체(오른쪽 절반 포함)에 있는지 본다.
-    _, r_fd, s_fd = run_scene("aldebaran_scene.lua", [30], 40,
+    _, r_fd, s_fd = run_scene(scene, [30], 40,
                               {"INITIAL2D_ALDEBARAN_STOP": "flood",
                                "INITIAL2D_ALDEBARAN_AT": "4300",
                                "INITIAL2D_SKIP_INTRO": "1",
@@ -1024,7 +1039,7 @@ def test_aldebaran_scene():
               f"{covered}/{cols} (wy={wy})")
 
     # 골든 1: 스테이지 첫 화면 (컷씬을 생략하고 시간을 얼려 고정한다)
-    _, r2, shots = run_scene("aldebaran_scene.lua", [20], 30,
+    _, r2, shots = run_scene(scene, [20], 30,
                              {"INITIAL2D_ALDEBARAN_STOP": "start",
                               "INITIAL2D_SKIP_INTRO": "1",
                               "INITIAL2D_NO_RTP": "1"})
@@ -1042,7 +1057,7 @@ def test_aldebaran_scene():
 
     # 골든 3 (A7): 1-2 별들의 방. 빛기둥이 켜진 순간을 잡는다 — 이 스테이지에서
     # 가장 많은 것이 한 화면에 있다 (기후, 공중형 적, 발판, 금별 벽).
-    _, r_tg, s_tg = run_scene("aldebaran_scene.lua", [20], 30,
+    _, r_tg, s_tg = run_scene(scene, [20], 30,
                               {"INITIAL2D_ALDEBARAN_STOP": "start",
                                "INITIAL2D_ALDEBARAN_STAGE": "tomb",
                                "INITIAL2D_ALDEBARAN_AT": "2480",
@@ -1057,7 +1072,7 @@ def test_aldebaran_scene():
         check_golden("aldebaran_tomb_stars", img)
 
     # 골든 2: 타이틀 (배경에 글자가 구워져 있고 메뉴 창이 왼쪽 아래에 뜬다)
-    _, r3, s_title = run_scene("aldebaran_scene.lua", [20], 30,
+    _, r3, s_title = run_scene(scene, [20], 30,
                                {"INITIAL2D_ALDEBARAN_STOP": "title",
                                 "INITIAL2D_NO_RTP": "1"})
     check("타이틀 화면 덤프", 20 in s_title, f"rc={r3.returncode}")
@@ -1166,19 +1181,32 @@ def main():
     global HAS_MRUBY
     HAS_MRUBY = "mruby" in engine_features()
 
-    test_lua_units()
-    test_mruby_units()
-    test_assert_scene()
-    test_mruby_assert_scene()
-    test_mruby_flappy_scene()
-    test_tilemap_scene()
-    test_rpg_walk_scene()
-    test_rpg_event_scene()
-    test_rpg_dialogue_scene()
-    test_rpgdemo_scene()
-    test_aldebaran_scene()
-    test_resolution()
-    test_rtp_charset()
+    tests = [
+        test_lua_units,
+        test_mruby_units,
+        test_assert_scene,
+        test_mruby_assert_scene,
+        test_mruby_flappy_scene,
+        test_tilemap_scene,
+        test_rpg_walk_scene,
+        test_rpg_event_scene,
+        test_rpg_dialogue_scene,
+        test_rpgdemo_scene,
+        test_aldebaran_scene,
+        test_mruby_aldebaran_scene,
+        test_resolution,
+        test_rtp_charset,
+    ]
+    # --only=mruby_units,assert_scene 처럼 이름 조각으로 골라 돌린다 (빠른 되풀이용).
+    only = [a[len("--only="):] for a in sys.argv[1:] if a.startswith("--only=")]
+    if only:
+        wanted = [w for w in only[-1].split(",") if w]
+        tests = [t for t in tests if any(w in t.__name__ for w in wanted)]
+        if not tests:
+            print(f"--only={only[-1]}: 맞는 테스트가 없습니다")
+            sys.exit(2)
+    for t in tests:
+        t()
 
     print(f"\n결과: {len(PASSES)} PASS / {len(FAILS)} FAIL")
     if FAILS:
