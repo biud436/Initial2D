@@ -25,6 +25,7 @@ M.charset = {
 	blockW = 72, blockH = 128,
 	frameW = 24, frameH = 32,
 	patterns = 3,   -- 한 방향의 가로 프레임 수 (왼발, 서기, 오른발)
+	standPattern = 1,   -- 서 있는 자세의 열 (에디터가 이벤트 외형을 그릴 때 쓴다)
 	dirs = 4,
 	-- 방향 이름 → 블록 안의 행 번호 (0부터)
 	dirRows = { up = 0, right = 1, down = 2, left = 3 },

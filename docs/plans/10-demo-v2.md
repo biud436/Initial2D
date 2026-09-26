@@ -55,27 +55,7 @@
 
 ### 3.2 커맨드 목록 (v1)
 
-| code | 인자 | 하는 일 | 기다리는가 |
-|---|---|---|---|
-| `message` | `text`, `name`, `face` | 대화창 | 닫힐 때까지 |
-| `choice` | `options`, `cancel`, `branches` | 선택지, 고른 번호의 목록을 이어서 실행 | 고를 때까지 |
-| `wait` | `ms` | 멈춤 | 그만큼 |
-| `transfer` | `map`, `x`, `y`, `dir` | 맵 이동 (이 뒤의 커맨드는 실행되지 않는다) | — |
-| `moveRoute` | `target`, `route`, `wait` | 이동 루트 | `wait`이 거짓이 아니면 끝날 때까지 |
-| `turn` | `target`, `dir` | 방향만 돌린다 | 아니오 |
-| `setFlag` | `key`, `value` | `ctx.state[key] = value` | 아니오 |
-| `setVar` | `key`, `op`, `value` | `op`는 `=`, `+`, `-` | 아니오 |
-| `if` | `cond`, `thenDo`, `elseDo` | 조건 분기 | 안쪽에 따라 |
-| `playSe` | `file`, `id` | 효과음 | 아니오 |
-| `playBgm` | `file`, `volume`, `fade` | 배경음 (같은 곡이면 이어서) | 아니오 |
-| `showLocation` | `text`, `seconds` | 장소 이름 표시 (씬이 그린다) | 아니오 |
-| `scene` | `name`, `fade` | 다른 씬으로 (에필로그 뒤 타이틀) | — |
-| `script` | `name`, `args` 또는 `run` | 등록된 Lua 함수 (탈출구) | 함수가 정하는 대로 |
-| `comment` | `text` | 아무것도 하지 않는다 (에디터 가독성) | 아니오 |
-
-> **뒤에 늘어난 것**: 10단계에서 `giveItem`과 `takeItem`이 더해져 17종이 되었고,
-> 조건에 `{ item = ... }` 형태가 하나 늘었다 ([11-game-systems.md 4.2](11-game-systems.md)).
-> 커맨드의 전체 목록은 `Commands.codes()`가 진실이며, 단위 테스트가 그 목록을 못 박는다.
+커맨드 17종의 인자와 조건의 꼴은 `resources/schema/event-commands.json` 이 정본이다 (계약은 [m2-rpg-events.md](m2-rpg-events.md)).
 
 조건(`cond`)의 형태는 둘뿐이다.
 

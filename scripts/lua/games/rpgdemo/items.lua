@@ -1,30 +1,27 @@
 -- 「떠나기 전에」의 아이템 표 (10단계, docs/plans/11-game-systems.md)
 --
--- 표 하나이며 코드가 없다. 소지품 프레임워크(scripts/lua/rpg/inventory.lua)는 이 표를
--- 주입받을 뿐 내용을 모른다 — 다른 게임은 다른 표를 넣는다.
+-- 표는 resources/data/items.json 에 있고 (rpg-game.json 의 items 가 가리킨다), 이 모듈은
+-- 그것을 읽어 id → { name, desc, order } 표로 돌려준다. 소지품 프레임워크
+-- (scripts/lua/rpg/inventory.lua)는 이 표를 주입받을 뿐 내용을 모른다.
 --
 --   name   소지품 창에 뜨는 이름
 --   desc   창 아래 칸의 설명 (두 줄까지 보인다)
---   order  목록에서의 순서. 작은 것이 위. 얻는 차례대로 매겼다.
+--   order  목록에서의 순서. 작은 것이 위
 --
--- 이 데모의 물건은 전부 열쇠와 증표다. 쓰는 커맨드가 없는 것은 그래서다
--- (기획서 9절 "이번 범위 밖": 소모품과 장비).
+-- 아이템 표를 읽지 못하면 빈 표를 돌려주고, 틀린 항목은 빼고 나머지를 돌려준다. 문제마다
+-- rpg:error 줄을 하나 찍는다. rpg-game.json 의 문제(items 경로 포함)는 맵 씬(game.lua)이
+-- 알리므로 여기서는 찍지 않는다.
 
-return {
-	warehouse_key = {
-		name = "창고 열쇠", order = 10,
-		desc = "여관 주인이 삼 년째 맡아 둔 열쇠. 손잡이가 반들반들하다.",
-	},
-	lamp_oil = {
-		name = "등유 한 통", order = 20,
-		desc = "창고에 남아 있던 등유. 아직 맑다.",
-	},
-	silver = {
-		name = "은화", order = 30,
-		desc = "이 지방에서 쓰는 은화. 여관 하루치가 두 닢이다.",
-	},
-	shell = {
-		name = "조개 목걸이", order = 40,
-		desc = "아이가 실에 꿰어 준 것. 숲에서 주웠다고 했다.",
-	},
-}
+local Config = require("scripts/lua/games/rpgdemo/config")
+local PlayEnv = require("scripts/lua/games/rpgdemo/playenv")
+
+local config = Config.load()
+if config == nil then
+	return {}
+end
+
+local items, problems, path = Config.loadItems(config)
+for _, p in ipairs(problems) do
+	print(PlayEnv.errorLine(Config.where(path, p.path), p.message))
+end
+return items

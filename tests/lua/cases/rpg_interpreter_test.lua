@@ -308,6 +308,28 @@ function M.run(t)
 	local ev = makeEvent("me", "action", function(self, ctx) gotSelf = self end)
 	interp:start(ev)
 	t.check_eq(gotSelf, ev, "스크립트의 첫 인자는 이벤트 자신")
+
+	-- ---- [12] onStart: 받아들인 시작만, 첫 재개보다 먼저 알린다 -------------
+	local order = {}
+	local port = fakePort()
+	interp = Interpreter.new{ messagePort = port,
+		onStart = function(event) order[#order + 1] = "start:" .. event.id end }
+	local origShow = port.showMessage
+	port.showMessage = function(text) order[#order + 1] = "message:" .. text; origShow(text) end
+	t.check(interp:start(makeEvent("talker", "action", function(self, ctx) ctx.message("안녕") end)),
+		"막는 이벤트가 시작된다")
+	t.check_eq(table.concat(order, ","), "start:talker,message:안녕",
+		"onStart 가 첫 대사보다 먼저 불린다")
+	t.check_eq(interp:start(makeEvent("second", "action", function() end)), false,
+		"도는 중에는 둘째가 시작되지 않는다")
+	t.check_eq(#order, 2, "받아들이지 않은 시작은 알리지 않는다")
+	local loop = makeEvent("loop", "parallel", function(self, ctx) while true do ctx.wait(100) end end)
+	interp:start(loop)
+	interp:start(loop)
+	t.check_eq(order[3], "start:loop", "parallel 도 알린다")
+	t.check_eq(#order, 3, "이미 도는 parallel 은 다시 알리지 않는다")
+	t.check_eq(interp:start(makeEvent("empty", "action", nil)), false, "스크립트가 없으면 시작하지 않는다")
+	t.check_eq(#order, 3, "스크립트가 없는 이벤트는 알리지 않는다")
 end
 
 return M

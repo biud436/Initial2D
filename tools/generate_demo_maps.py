@@ -10,6 +10,9 @@ RTP 그림은 재배포할 수 없으므로 저장소에 넣지 않는다. 대�
 (scripts/maps/*.lua)가 칩셋 파일이 있는지 보고 있으면 RTP 판을, 없으면 기본 판을
 연다. 두 판의 지오메트리가 같으므로 이벤트 좌표는 하나로 충분하다.
 
+타일, collision, tilesets만 새로 쓰고 기존 파일의 events와 objects는 그대로 둔다
+(tools/mapfile.py의 write_map).
+
 RTP 칩셋은 왼쪽 12열이 오토타일 블록이고 나머지 18열이 평범한 타일이다. 맵 포맷
 v1에는 오토타일이 없으므로, 오토타일 블록에서는 속을 채우는 칸만 골라 쓰고
 건물과 장식은 평범한 구역에서 가져왔다 (번호는 실물을 확대해 눈으로 확인).
@@ -17,9 +20,10 @@ v1에는 오토타일이 없으므로, 오토타일 블록에서는 속을 채�
 Usage: python3 tools/generate_demo_maps.py
 """
 
-import json
 import os
 import random
+
+from mapfile import write_map
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAPS = os.path.join(REPO, "resources", "maps")
@@ -192,8 +196,7 @@ def build_room(skin):
 
 def write(name, data):
     path = os.path.join(MAPS, name)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    write_map(path, data)
     print("generated:", os.path.relpath(path, REPO))
 
 

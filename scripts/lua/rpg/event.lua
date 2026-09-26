@@ -120,6 +120,8 @@ function M.newManager(opts)
 	self.player = opts.player          -- Character
 	self.interpreter = opts.interpreter
 	self.prevTx, self.prevTy = nil, nil
+	self.pendingAuto = {}      -- 아직 돌지 않은 auto 이벤트 (병합 순서)
+	self.leaveMark = nil       -- onMapStart 때의 실행기 leaveCount
 	return self
 end
 
@@ -137,6 +139,7 @@ function Manager:clear()
 	self.events = {}
 	self.byId = {}
 	self.prevTx, self.prevTy = nil, nil
+	self.pendingAuto = {}
 end
 
 --- 그 칸에 있는 이벤트 (여러 개면 먼저 등록된 것)
@@ -180,7 +183,8 @@ function Manager:confirm()
 	return self.interpreter:start(target)
 end
 
---- 맵에 들어갈 때 한 번: auto는 즉시 실행(조작 잠금), parallel은 상시 실행.
+--- 맵에 들어갈 때 한 번: parallel은 상시 실행, auto는 병합 순서대로 하나씩 실행(조작 잠금).
+-- 첫 auto 는 여기서 시작하고, 나머지는 실행기가 한가해질 때마다 update 가 하나씩 시작한다.
 function Manager:onMapStart()
 	if self.interpreter == nil then return end
 	for _, e in ipairs(self.events) do
@@ -188,20 +192,60 @@ function Manager:onMapStart()
 			self.interpreter:start(e)
 		end
 	end
+	self.pendingAuto = {}
 	for _, e in ipairs(self.events) do
 		if e.enabled and e.script ~= nil and e.trigger == "auto" then
-			self.interpreter:start(e)
-			break   -- auto는 하나만 (여러 개면 첫 번째. 나머지는 다음 진입에)
+			self.pendingAuto[#self.pendingAuto + 1] = e
 		end
 	end
+	self.leaveMark = self:leaveCount()
+	self:startPendingAuto()
 	if self.player ~= nil then
 		self.prevTx, self.prevTy = self.player.tx, self.player.ty
 	end
 end
 
+function Manager:leaveCount()
+	local interp = self.interpreter
+	if interp == nil or interp.leaveCount == nil then return 0 end
+	return interp:leaveCount()
+end
+
+-- 맵을 떠나는 요청(transfer, scene)이 있었으면 남은 auto 를 버린다.
+function Manager:dropAutoIfLeaving()
+	if #self.pendingAuto > 0 and self.leaveMark ~= nil
+		and self:leaveCount() ~= self.leaveMark then
+		self.pendingAuto = {}
+	end
+end
+
+--- 실행기가 한가하면 기다리는 auto 중 다음 것을 시작한다. 시작했으면 true.
+function Manager:startPendingAuto()
+	if self.interpreter == nil then return false end
+	self:dropAutoIfLeaving()
+	while #self.pendingAuto > 0 and not self.interpreter:isBusy() do
+		local e = table.remove(self.pendingAuto, 1)
+		if e.enabled and e.script ~= nil then
+			self.interpreter:start(e)
+			self:dropAutoIfLeaving()
+			return true
+		end
+	end
+	return false
+end
+
+--- 아직 시작하지 않은 auto 이벤트가 있는가.
+function Manager:hasPendingAuto()
+	self:dropAutoIfLeaving()
+	return #self.pendingAuto > 0
+end
+
 --- 매 프레임. 플레이어가 칸을 옮긴 순간에 touch 트리거를 본다.
 function Manager:update()
-	if self.player == nil or self.interpreter == nil then return end
+	if self.interpreter == nil then return end
+	-- 기다리는 auto 가 touch 보다 먼저다
+	self:startPendingAuto()
+	if self.player == nil then return end
 
 	local tx, ty = self.player.tx, self.player.ty
 	if self.prevTx == nil then

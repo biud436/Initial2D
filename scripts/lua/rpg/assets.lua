@@ -12,6 +12,9 @@
 --   local charset = Assets.charset()                 -- CharSet 한 장의 경로
 --   local map = Assets.mapPath("village", "Exterior") -- 칩셋에 맞는 맵 파일
 
+local Specs = require("scripts/lua/rpg/specs")
+local Shape = require("scripts/lua/rpg/jsonshape")
+
 local M = {}
 
 -- INITIAL2D_NO_RTP 가 있으면 RTP 후보를 아예 보지 않는다. 검수는 어느 기계에서나
@@ -60,6 +63,77 @@ function M.playerCharset() return M.pick(M.PLAYER_CHARSET) end
 function M.npcCharset() return M.pick(M.NPC_CHARSET) end
 function M.faceset() return M.pick(M.FACESET) end
 function M.windowskin() return M.pick(M.WINDOWSKIN) end
+
+-- 맵 파일의 이벤트가 외형과 얼굴에 적는 논리 이름. { "set": "npc", "index": 6 } 꼴이며
+-- resources/schema/event-commands.json 의 assets 와 같은 목록이다 (테스트가 대조한다).
+M.SETS = {
+	charset = { player = M.PLAYER_CHARSET, npc = M.NPC_CHARSET },
+	face = { npc = M.FACESET },
+}
+
+--- 외형이나 얼굴 참조를 파일 경로로 푼다.
+-- @param kind  "charset" | "face"
+-- @param ref   { set = 이름, index = n } 또는 { file = 경로, index = n }
+-- @return 경로, 또는 nil 과 이유
+function M.resolveRef(kind, ref)
+	if type(ref) ~= "table" then
+		return nil, "assets: 참조가 객체가 아니다"
+	end
+	if ref.file ~= nil then
+		return ref.file
+	end
+	local sets = M.SETS[kind]
+	if sets == nil then
+		return nil, "assets: 모르는 종류 " .. tostring(kind)
+	end
+	local candidates = sets[ref.set]
+	if candidates == nil then
+		return nil, "assets: 모르는 " .. tostring(kind) .. " 이름 " .. tostring(ref.set)
+	end
+	return M.pick(candidates)
+end
+
+-- 참조 종류마다 한 시트에 든 칸 수 (번호는 0부터 이 수 미만)
+local SHEET_COUNT = {
+	charset = Specs.charset.perSheet,
+	face = Specs.faceset.perSheet,
+}
+
+local isInteger = Shape.isInteger
+
+--- 외형이나 얼굴 참조의 모양을 검사한다. 파일로 풀기 전의 값을 본다.
+-- @return 문제 배열. 항목은 { path = "" | ".set" | ".file" | ".index", message = 이유 }
+function M.checkRef(kind, ref)
+	local problems = {}
+	local function add(path, message)
+		problems[#problems + 1] = { path = path, message = message }
+	end
+
+	if not Shape.isObject(ref) then
+		add("", "객체가 아니다")
+		return problems
+	end
+	local hasSet, hasFile = ref.set ~= nil, ref.file ~= nil
+	if hasSet and hasFile then
+		add("", "set 과 file 중 하나만 적는다")
+	elseif not hasSet and not hasFile then
+		add("", "set 이나 file 이 필요하다")
+	end
+	local sets = M.SETS[kind] or {}
+	if hasSet and (type(ref.set) ~= "string" or sets[ref.set] == nil) then
+		add(".set", "모르는 " .. tostring(kind) .. " 이름 " .. tostring(ref.set))
+	end
+	if hasFile and (type(ref.file) ~= "string" or ref.file == "") then
+		add(".file", "경로가 글이 아니다")
+	end
+	local count = SHEET_COUNT[kind]
+	if ref.index ~= nil and count ~= nil
+		and not (isInteger(ref.index) and ref.index >= 0 and ref.index < count) then
+		add(".index", "0.." .. (count - 1) .. " 의 정수가 아니다 (지금은 "
+			.. tostring(ref.index) .. ")")
+	end
+	return problems
+end
 
 --- 맵 파일. 같은 지오메트리를 타일 번호만 바꿔 두 벌 만들어 두었으므로
 -- (tools/generate_demo_maps.py) 칩셋이 있으면 RTP 판을, 없으면 기본 판을 연다.

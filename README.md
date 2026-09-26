@@ -148,13 +148,21 @@ INITIAL2D_SCENE=aldebaran INITIAL2D_SKIP_INTRO=1 \
   INITIAL2D_ALDEBARAN_STAGE=aldebaran_tomb INITIAL2D_ALDEBARAN_AT=2480 ./build/Initial2D
 ```
 
+`INITIAL2D_ALDEBARAN_TRACE=1`을 더하면 게임이 실제로 읽은 맵을 콘솔에 찍습니다. 맵 경로와 타일 검사합(레이어 순서와 칸 순서대로 `(합 * 31 + gid) mod 1000000007`), 그리고 몬스터마다 종류와 x와 순찰 범위입니다. 에디터의 실데이터 인수 테스트가 저장한 맵과 이 줄을 대조합니다. 시작 x를 준 실행은 늘 `알데바란: 시작 x ...` 줄도 찍습니다.
+
+```text
+알데바란: 맵 ./resources/maps/aldebaran_forest.json 타일 221069392
+알데바란: 시작 x 1966 (y 304)
+알데바란: 몬스터 spider x 224 범위 180..280
+```
+
 맵 생성기를 다시 돌려도 `objects`는 남습니다. 타일과 collision은 생성기가 새로 쓰므로 손으로 칠한 타일은 덮입니다. 맵 파일은 에디터와 같은 형식(2칸 들여쓰기, 타일은 맵 한 줄을 한 줄에)으로 쓰므로 diff가 칸 단위로 보입니다 (`tools/mapfile.py`, 형식은 `docs/plans/02-tilemap.md`).
 
 ```bash
 python3 tools/generate_aldebaran_maps.py       # 1-1 지형 (objects는 그대로)
 python3 tools/generate_aldebaran_tomb_map.py   # 1-2 지형
 
-python3 tools/mapfile.py check resources/maps/aldebaran_tomb.json    # 정해진 형식인가
+python3 tools/mapfile.py check resources/maps/*.json                 # 정해진 형식인가 (tests/run_all.sh가 전부 봅니다)
 python3 tools/mapfile.py format resources/maps/aldebaran_tomb.json   # 손으로 고친 맵을 형식에 맞춥니다
 python3 tools/mapfile.py selftest                                    # 에디터와 같은 텍스트를 쓰는가
 ```
@@ -925,9 +933,21 @@ Android 빌드에는 아직 mruby가 없습니다 (Lua만 그대로 돕니다). 
 
 조건은 `{ flag = "gotHerb" }`, `{ flag = "booked", equals = false }`, `{ var = "silver", op = ">=", value = 2 }` 세 형태입니다.
 
+커맨드와 인자, 조건, 이벤트 칸의 전체 목록은 `resources/schema/event-commands.json`에 데이터로 있습니다. 에디터가 이 파일로 입력 폼을 만들고, 엔진 테스트(`tests/lua/cases/rpg_event_schema_test.lua`)가 이 파일을 `commands.lua`와 맞대어 봅니다. 커맨드를 하나 더하고 스키마를 고치지 않으면 테스트가 깨집니다.
+
 커맨드로 적기 어려운 이벤트는 예전처럼 `script = function(self, ctx) ... end`으로 적으면 됩니다. 데이터 안에서 부르려면 맵 정의 파일의 `scripts` 표에 이름을 등록하고 `{ code = "script", name = "이름", args = {...} }`으로 부릅니다. 이름으로 부르므로 JSON을 오가도 왕복이 깨지지 않습니다.
 
 잘못된 커맨드는 **맵을 열 때** 어느 자리인지와 함께 걸립니다 (`[4].branches[1][1]: 알 수 없는 code`). 실행 도중에 조용히 실패하지 않습니다.
+
+맵 파일의 `events`는 에디터가 쓰는 자리라, 게임이 맵을 열 때 이벤트마다 검사합니다. 틀린 이벤트는 그것만 빼고 나머지로 맵을 열며, 문제마다 한 줄을 stdout에 찍습니다. 경로는 1부터 셉니다.
+
+```
+rpg:error:resources/maps/port_town.json:events[2].charset.index: 외형: 0..7 의 정수가 아니다 (지금은 9)
+```
+
+커맨드의 인자는 필수든 선택이든 스키마에 적힌 타입과 범위로 검사합니다. `transfer`의 `x`에 글을 넣으면 `...commands[1].x: 정수가 아니다 (지금은 string)`으로 그 이벤트만 빠지고, 게임은 멈추지 않습니다. `rpg:error:` 줄은 값에 줄바꿈이 들어 있어도 늘 한 줄입니다.
+
+정의 파일(Lua)의 이벤트가 틀리면 맵을 열지 않고 화면에 "맵 로드 실패"를 띄우며, 같은 글이 `rpg:error:scripts/lua/maps/village.lua:elder: ...` 꼴로 stdout에도 나옵니다.
 
 트리거는 네 가지입니다.
 
@@ -1036,16 +1056,18 @@ python3 tools/generate_ui_assets.py
 
 열쇠와 증표를 들고 다니고, 가진 것에 따라 문이 열리거나 대사가 바뀌게 하는 층입니다. 소지품은 별도의 저장소가 아니라 이벤트가 공유하는 `ctx.state` 안의 표 하나(`state.items`)입니다. 맵을 넘는 상태 공유가 이미 그 테이블로 되고 있어서, 나중에 저장 기능이 붙으면 소지품도 함께 저장됩니다.
 
-아이템 목록은 **데이터**입니다. 프레임워크(`scripts/lua/rpg/inventory.lua`)는 표를 주입받을 뿐 내용을 모르므로, 다른 게임은 다른 표를 넣으면 됩니다.
+아이템 목록은 **데이터**입니다. 프레임워크(`scripts/lua/rpg/inventory.lua`)는 표를 주입받을 뿐 내용을 모르므로, 다른 게임은 다른 표를 넣으면 됩니다. 데모의 표는 `resources/data/items.json`에 있고 `scripts/lua/games/rpgdemo/items.lua`가 읽어 id로 찾는 표를 돌려줍니다. 에디터의 아이템 칸도 이 파일에서 고릅니다.
 
-```lua
-	-- scripts/lua/games/rpgdemo/items.lua
-	return {
-		warehouse_key = { name = "창고 열쇠", order = 10,
-			desc = "여관 주인이 삼 년째 맡아 둔 열쇠. 손잡이가 반들반들하다." },
-		silver = { name = "은화", order = 30,
-			desc = "이 지방에서 쓰는 은화. 여관 하루치가 두 닢이다." },
-	}
+```json
+{
+  "version": 1,
+  "items": [
+    { "id": "warehouse_key", "name": "창고 열쇠", "order": 10,
+      "desc": "여관 주인이 삼 년째 맡아 둔 열쇠. 손잡이가 반들반들하다." },
+    { "id": "silver", "name": "은화", "order": 30,
+      "desc": "이 지방에서 쓰는 은화. 여관 하루치가 두 닢이다." }
+  ]
+}
 ```
 
 이벤트에서는 커맨드 둘과 조건 하나를 씁니다.
@@ -1125,14 +1147,17 @@ INITIAL2D_SCENE=rpg INITIAL2D_MAP=inn INITIAL2D_RPG_SCALE=3 ./build/Initial2D
 
 타이틀 화면에서는 항목을 직접 눌러도 선택됩니다 (`Choice:indexAt`).
 
-구성은 다음과 같습니다. 씬은 데모 폴더에, 맵의 이벤트 정의는 맵 이름과 짝이 되는 파일에 둡니다.
+구성은 다음과 같습니다. 씬은 데모 폴더에, 이벤트와 대사는 맵 파일에, 그 밖의 맵 속성은 맵 이름과 짝이 되는 정의 파일에 둡니다.
 
 | 파일 | 역할 |
 | :--- | :--- |
 | `scripts/lua/games/rpgdemo/title.lua` | 타이틀 씬. 배경 한 장과 커서 메뉴(시작, 조작 방법, 나가기) |
 | `scripts/lua/games/rpgdemo/game.lua` | 맵 씬. 맵 적재, 페이드 전환, 대화창과 실행기 연결, 장소 이름 |
-| `scripts/lua/maps/port_town.lua`, `inn.lua` | 이벤트 정의와 대사 (커맨드 목록) |
-| `scripts/lua/games/rpgdemo/items.lua` | 아이템 표 (이름, 설명, 목록 순서) |
+| `resources/maps/port_town.json`, `inn.json` | 맵과 이벤트, 대사 (커맨드 목록). 에디터가 편집합니다 |
+| `scripts/lua/maps/port_town.lua`, `inn.lua` | 시작 위치, BGM, 캐릭터 아래에 그릴 레이어 수, 자동 시연 경로 |
+| `resources/data/rpg-game.json` | 맵 등록(이름, 맵 파일, 정의 파일), 아이템 표의 경로, 에디터의 실행 변수 |
+| `resources/data/items.json` | 아이템 표 (이름, 설명, 목록 순서). `items.lua`가 읽습니다 |
+| `scripts/lua/games/rpgdemo/config.lua` | `rpg-game.json` 읽기 |
 | `scripts/lua/rpg/assets.lua` | 그림 고르기 (RTP가 있으면 RTP, 없으면 저장소의 플레이스홀더) |
 | `scripts/lua/bgm.lua` | 지금 걸린 곡을 기억해, 같은 곡이면 다시 틀지 않는 배경음 층 |
 | `scripts/lua/ui/buttons.lua` | 터치용 결정과 취소 버튼 |
@@ -1145,12 +1170,73 @@ INITIAL2D_SCENE=rpg INITIAL2D_MAP=inn INITIAL2D_RPG_SCALE=3 ./build/Initial2D
 # 항구 타일 41종 (바다 2x2 한 벌, 부두, 배, 등대, 우물, 게시판, 좌판, 난로 등)
 python3 tools/generate_port_tileset.py
 
-# 맵 두 장. 기획서 4절의 좌표 그대로, 난수를 쓰지 않습니다
+# 맵 두 장. 기획서 4절의 좌표 그대로, 난수를 쓰지 않습니다.
+# 타일만 새로 쓰고 맵 파일의 events는 그대로 둡니다 (마을과 오두막의 generate_demo_maps.py도 같습니다)
 python3 tools/generate_port_maps.py
 
 # 타이틀 배경 (제목 글자가 그림에 구워집니다. 한글 TTF 필요)
 python3 tools/generate_title.py
 ```
+
+## 맵 등록과 여기서 실행
+
+데모의 맵은 `resources/data/rpg-game.json`에 등록합니다. `name`은 `transfer`의 `map`과 `INITIAL2D_MAP`이 쓰는 이름이고, `file`은 맵 파일, `def`는 시작 위치와 BGM을 적은 정의 파일입니다 (마을과 오두막은 이벤트도 여기 있습니다). 마을과 오두막처럼 RTP 판이 따로 있는 맵은 `alt`에 그 파일을 적습니다.
+
+```json
+{ "name": "inn", "file": "resources/maps/inn.json", "def": "scripts/lua/maps/inn.lua" }
+```
+
+`rpg-game.json`과 `items.json`도 맵 파일의 `events`와 같은 규칙으로 읽습니다. 틀린 항목(가운데의 `null` 포함)은 그것만 빼고 `rpg:error:rpg-game.json:maps[2]: 맵 항목이 객체가 아니다`처럼 자리와 함께 알리며, 나머지 맵과 아이템은 그대로 씁니다.
+
+같은 파일의 `play`는 에디터의 "여기서 실행"이 넘기는 환경 변수입니다. 손으로도 같은 것을 줄 수 있습니다.
+
+| 환경 변수 | 하는 일 |
+| :--- | :--- |
+| `INITIAL2D_RPG_AT=x,y[,dir]` | 첫 맵의 시작 칸과 방향. 없으면 정의 파일의 `start` |
+| `INITIAL2D_RPG_STATE=arrived,silver=2,item:shell=1` | 새 게임의 시작 상태. `이름`은 참, `이름=값`은 값(`true`, `false`, 수, 글), `item:<id>=<n>`은 소지품 |
+| `INITIAL2D_RPG_ROUTE=talk,up,left` | 자동 재생 경로. 한 번만 걷고, 대화는 알아서 넘기며(선택지는 첫 항목), 다 걸은 뒤 도는 이벤트가 없으면 `rpg:route:done`을 찍고 끝납니다. 빈 값이면 걷지 않고 맵에 들어설 때의 auto 이벤트만 기다립니다 |
+| `INITIAL2D_RPG_TRACE=1` | 맵, 플레이어가 선 자리, 이벤트, 대사, 선택지, 이동을 `rpg:` 줄로 찍습니다 |
+
+`INITIAL2D_SCRIPT=lua`도 함께 줍니다. RPG 이벤트 층은 Lua에만 있어서, `game.json`이 mruby를 고른 체크아웃에서는 이것이 없으면 아무 줄도 나오지 않습니다.
+
+```bash
+# 짐 상자 옆에서 왼쪽을 보고 서서 말을 한 번 걸고 끝냅니다. 선장의 첫 인사는 건너뜁니다
+SDL_VIDEODRIVER=dummy INITIAL2D_NO_RTP=1 INITIAL2D_SCRIPT=lua INITIAL2D_SCENE=rpg INITIAL2D_MAP=port_town \
+  INITIAL2D_RPG_AT=15,40,left INITIAL2D_RPG_STATE=arrived \
+  INITIAL2D_RPG_ROUTE=talk INITIAL2D_RPG_TRACE=1 INITIAL2D_EXIT_AFTER=6000 ./build/Initial2D
+```
+
+```
+rpg:map:port_town events:17 skipped:0
+rpg:player:port_town,15,40,left
+rpg:event:arrival
+rpg:event:crates
+rpg:message:|누군가의 짐이다. 남쪽으로 간다는 표가 붙어 있다.
+rpg:route:done
+```
+
+`rpg:message:`는 `이름|대사` 꼴이고 대사 안의 줄바꿈은 `\n` 두 글자로 찍습니다. `rpg:player:`는 맵을 열 때마다 실제로 선 칸과 방향이라, 문으로 옮겨 간 뒤의 방향도 이 줄로 확인합니다. 틀린 값은 건너뛰고 `rpg:error:state:item:lamp_oill=1: 아이템 표에 없는 id lamp_oill`처럼 알립니다. `rpg:error:` 줄은 `INITIAL2D_RPG_TRACE` 없이도 늘 나옵니다. 엔진 테스트(`test_rpg_play_here`)가 같은 변수를 `rpg-game.json`에서 만들어 진짜 게임으로 확인합니다.
+
+## 이벤트를 맵 파일로 옮기기
+
+에디터는 맵 파일의 `events`만 고칩니다. 정의 파일(`scripts/lua/maps/<이름>.lua`)에 커맨드로 적은 이벤트는 `tools/export_events.py`로 맵 파일에 한 번 옮겨 두면, 그 뒤로는 에디터에서 고칠 수 있습니다. 항구 마을과 여관은 이 도구로 옮겼습니다.
+
+```bash
+# 쓰지 않고 무엇을 옮기는지만 봅니다
+python3 tools/export_events.py --dry-run port_town inn
+
+# 옮깁니다. 맵 파일의 events만 바뀌고 원래 있던 이벤트는 바이트 그대로입니다
+python3 tools/export_events.py port_town inn
+
+# 도구 자체의 검사 (tests/run_all.sh가 돌립니다)
+python3 tools/export_events.py selftest
+```
+
+정의 파일은 엔진으로 읽습니다. `build/Initial2D`가 있어야 하고, 다른 곳에 있으면 `--engine`으로 알려 줍니다. 게임과 같은 Lua가 정의 파일을 돌리므로 지역 함수로 만든 커맨드 묶음도 게임이 받던 모양 그대로 펼쳐져 옮겨집니다. `Assets.npcCharset()`, `Assets.faceset()` 자리의 외형과 얼굴은 `{ "set": "npc", "index": 6 }`처럼 이름으로 바뀌어서 RTP가 있든 없든 게임이 그때 고릅니다. 이벤트 순서는 게임이 합치는 순서(맵 파일에 있던 것이 먼저)이고, 키 순서는 에디터가 쓰는 순서와 같아 옮긴 맵을 에디터로 열어 저장해도 diff가 없습니다.
+
+함수(`script` 함수, `run`)나 스키마에 없는 칸이 든 이벤트, 게임의 검사에 걸리는 이벤트는 옮기지 않고 이유를 찍습니다. 그런 이벤트는 정의 파일에 그대로 두면 됩니다. RTP 판이 따로 있는 맵(`alt`가 있는 마을과 오두막)은 두 파일에 같은 이벤트를 둬야 해서 옮기지 않습니다.
+
+옮긴 뒤에는 정의 파일에서 옮긴 이벤트와 그것만 쓰던 지역 값을 손으로 지웁니다. 남겨 두면 같은 `id`의 Lua 쪽이 이겨서 에디터에서 고친 것이 게임에 보이지 않습니다. 다시 돌려도 결과는 같고, 맵 생성기를 다시 돌려도 옮긴 이벤트는 남습니다.
 
 ## 음악과 효과음
 
@@ -1493,8 +1579,8 @@ SDL_VIDEODRIVER=dummy INITIAL2D_SCENE=tilemap INITIAL2D_MAP=./resources/maps/my_
   INITIAL2D_SCREENSHOT=/tmp/shot_%04ld.bmp INITIAL2D_SCREENSHOT_FRAME=40 \
   INITIAL2D_EXIT_AFTER=60 ./build/Initial2D
 
-# 데모의 맵 씬으로 열려면 맵과 짝이 되는 이벤트 정의(scripts/lua/maps/<이름>.lua)가
-# 필요합니다. INITIAL2D_MAP에는 파일 경로가 아니라 그 정의 이름을 줍니다.
+# 데모의 맵 씬으로 열려면 맵이 resources/data/rpg-game.json에 등록되어 있어야 합니다
+# (정의 파일 scripts/lua/maps/<이름>.lua와 짝). INITIAL2D_MAP에는 그 등록 이름을 줍니다.
 INITIAL2D_SCENE=rpg INITIAL2D_MAP=village ./build/Initial2D
 ```
 

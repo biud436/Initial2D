@@ -18,6 +18,7 @@
 --       host = { transfer = function(map, x, y) ... end,
 --                characterById = function(id) ... end },
 --       messagePort = 대화창,        -- 없으면 print 스텁
+--       onStart = function(event) ... end,   -- 이벤트가 실제로 시작될 때 (첫 재개 전)
 --   }
 
 local M = {}
@@ -55,6 +56,8 @@ function M.new(opts)
 	self.running = nil               -- 막는 이벤트 하나
 	self.parallels = {}              -- 병렬 이벤트들
 	self.errors = {}                 -- 스크립트 오류 기록 (테스트가 본다)
+	self.leaves = 0                  -- transfer 와 scene 요청 수 (맵이나 씬을 떠나는 요청)
+	self.onStart = opts.onStart      -- function(event). 시작이 받아들여졌을 때, 첫 재개 전에 부른다
 	self.ctx = M.makeCtx(self)
 	return self
 end
@@ -151,6 +154,7 @@ function Interp:start(event)
 		for _, e in ipairs(self.parallels) do
 			if e.event == event then return false end   -- 이미 돌고 있다
 		end
+		if self.onStart ~= nil then self.onStart(event) end
 		local entry = entryFor(event)
 		self:step(entry)
 		if not entry.dead then
@@ -160,6 +164,7 @@ function Interp:start(event)
 	end
 
 	if self.running ~= nil then return false end
+	if self.onStart ~= nil then self.onStart(event) end
 	local entry = entryFor(event)
 	self:step(entry)
 	-- 한 프레임 만에 끝나는 스크립트도 있다. 그런 이벤트가 조작을 잠그면 안 된다.
@@ -172,6 +177,11 @@ end
 --- 막는 이벤트가 도는 중인가 (조작 잠금 판단)
 function Interp:isBusy()
 	return self.running ~= nil
+end
+
+--- 지금까지 받은 transfer 와 scene 요청 수. 이벤트 관리자가 맵을 떠나는 중인지 본다.
+function Interp:leaveCount()
+	return self.leaves
 end
 
 --- 전부 중단한다 (맵 전환).
@@ -205,6 +215,7 @@ function Interp:beginWait(request)
 	end
 
 	if request.transfer ~= nil then
+		self.leaves = self.leaves + 1
 		local t = request.transfer
 		if self.host.transfer ~= nil then
 			self.host.transfer(t.map, t.x, t.y, t.dir)
@@ -255,6 +266,7 @@ function Interp:beginWait(request)
 	end
 
 	if request.scene ~= nil then
+		self.leaves = self.leaves + 1
 		if self.host.scene ~= nil then
 			self.host.scene(request.scene.name, request.scene.opts)
 		end
