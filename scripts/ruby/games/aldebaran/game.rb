@@ -237,8 +237,13 @@ module AldebaranScene
     def reset_stage
       @rng = Rpg::Rng.new(stage.seed)
       if @start_at
-        # 옮긴 시작 x의 지면이 시작 지점보다 높으면 땅속에서 시작하지 않게 지면 위로 올린다
-        @player = Player.new(@start_at, Aldebaran::Stages::Placement.stand_y(@start_at, stage.start[:y], @probe, @tile_h))
+        # 옮긴 시작 x의 설 자리. 땅속이면 지면 위로 올리고, 구덩이 위면 가까운 땅으로 옮긴다
+        x, y = Aldebaran::Stages::Placement.start_spot(@start_at, stage.start[:y], @probe,
+                                                       @tile_w, @tile_h, @world_h, Player::BODY_H)
+        if x != @start_at
+          puts format("알데바란: 시작 x %g → %g (구덩이 위라 가까운 땅으로)", @start_at, x)
+        end
+        @player = Player.new(x, y)
       else
         @player = Player.new(stage.start[:x], stage.start[:y])
       end

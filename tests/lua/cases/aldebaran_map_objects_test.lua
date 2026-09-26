@@ -9,11 +9,13 @@
 --   [D] 스테이지 모듈이 맵에서 만든 표가 아래의 고정값과 같다 (정수와 실수의 구분까지)
 --   [E] INITIAL2D_ALDEBARAN_STAGE가 스테이지 id, 맵 이름, 맵 파일 경로를 모두 받는다
 --   [F] INITIAL2D_ALDEBARAN_AT으로 옮긴 시작 x가 지면 속이면 지면 위로 올린다
+--   [G] 옮긴 시작 x가 구덩이 위면 그 칸의 발판이나 가까운 칸의 땅에 세운다
 
 local Monsters = require("scripts/lua/games/aldebaran/data/monsters")
 local Combat = require("scripts/lua/games/aldebaran/combat")
 local Stages = require("scripts/lua/games/aldebaran/stages/init")
 local Placement = require("scripts/lua/games/aldebaran/stages/placement")
+local Player = require("scripts/lua/games/aldebaran/player")
 
 local M = {}
 
@@ -513,6 +515,80 @@ function M.run(t)
 		t.check_eq(standOn(MAPS.tomb, 2480), 384, "별들의 방은 바닥이 더 낮아 그대로 (떨어진다)")
 		t.check_eq(Placement.standY(10, 384, function() return true end, 16), 384,
 			"위가 끝까지 막혔으면 그대로")
+	end
+
+	-- [G] 옮긴 시작 x의 설 자리: 구덩이 위면 그 칸의 발판이나 가까운 칸의 땅에 세운다.
+	-- 숲의 협곡은 열 128~131과 135~139가 지면 304 한 줄(발판)이고 아래가 비었으며,
+	-- 열 132~134는 위아래가 다 빈 구덩이다.
+	do
+		local function withSolid(path, fn)
+			local map = Tilemap.Load(path)
+			local w, h, tw, th = Tilemap.GetSize(map)
+			local function solid(px, py)
+				if px < 0 or px >= w * tw then return true end
+				if py < 0 or py >= h * th then return false end
+				return not Tilemap.IsPassable(map, math.floor(px / tw), math.floor(py / th))
+			end
+			local out = fn(solid, w, h, tw, th)
+			Tilemap.Dispose(map)
+			return out
+		end
+		-- 열의 막힌 행 목록 ("19"나 "19,21,22")
+		local function solidRows(path, col)
+			return withSolid(path, function(solid, _, h, tw, th)
+				local rows = {}
+				for r = 0, h - 1 do
+					if solid(col * tw + tw // 2, r * th) then rows[#rows + 1] = tostring(r) end
+				end
+				return table.concat(rows, ",")
+			end)
+		end
+		local function spotOn(path, x)
+			return withSolid(path, function(solid, _, h, tw, th)
+				local sx, sy = Placement.startSpot(x, 384, solid, tw, th, h * th, Player.BODY_H)
+				return string.format("%g %g", sx, sy)
+			end)
+		end
+
+		for _, col in ipairs({ 128, 131, 135, 139 }) do
+			t.check_eq(solidRows(MAPS.forest, col), "19", "숲 열 " .. col .. "은 발판 한 줄 (전제)")
+		end
+		for _, col in ipairs({ 132, 133, 134 }) do
+			t.check_eq(solidRows(MAPS.forest, col), "", "숲 열 " .. col .. "은 빈 구덩이 (전제)")
+		end
+		t.check_eq(solidRows(MAPS.forest, 113), "19,21,22,23,24,25,26,27",
+			"숲 열 113은 발판 아래에 한 칸 틈 (전제)")
+
+		t.check_eq(spotOn(MAPS.forest, 2054), "2054 304", "발판 칸은 x 그대로 발판 위(304)")
+		t.check_eq(spotOn(MAPS.forest, 2200), "2200 304", "발판 칸 x 2200도 발판 위")
+		t.check_eq(spotOn(MAPS.forest, 2120), "2104 304", "구덩이 왼쪽 열은 왼쪽 한 칸 발판 가운데로")
+		t.check_eq(spotOn(MAPS.forest, 2136), "2104 304", "구덩이 가운데 열은 거리가 같아 왼쪽으로")
+		t.check_eq(spotOn(MAPS.forest, 2152), "2168 304", "구덩이 오른쪽 열은 오른쪽 한 칸 발판으로")
+		t.check_eq(withSolid(MAPS.forest, function(solid) return Placement.standY(1816, 384, solid, 16) end),
+			336, "standY만으로는 한 칸 틈(336)에 끼인다")
+		t.check_eq(spotOn(MAPS.forest, 1816), "1816 304", "몸이 안 들어가는 틈이면 그 위 발판(304)")
+
+		-- 지면이 있는 자리는 standY와 같다 (인수 씬이 쓰는 무덤의 2480, 4300 포함)
+		t.check_eq(spotOn(MAPS.forest, 224), "224 384", "숲 입구의 평지는 그대로 384")
+		t.check_eq(spotOn(MAPS.forest, 1400), "1400 304", "옛 길의 턱 위(304)")
+		t.check_eq(spotOn(MAPS.forest, 1990), "1990 304", "절벽의 어깨 위(304)")
+		t.check_eq(spotOn(MAPS.tomb, 2480), "2480 384", "별들의 방은 그대로 384 (떨어진다)")
+		t.check_eq(spotOn(MAPS.tomb, 4300), "4300 384", "태양의 방은 그대로 384 (떨어진다)")
+
+		-- 찾는 거리는 좌우 REACH(16)칸까지. 열 10~43이 빈 구덩이인 가짜 지형
+		local function pit(px, py)
+			local col = math.floor(px / 16)
+			return py >= 384 and py < 448 and (col < 10 or col > 43)
+		end
+		local function spot(x, solid)
+			local sx, sy = Placement.startSpot(x, 384, solid or pit, 16, 16, 448, Player.BODY_H)
+			return string.format("%g %g", sx, sy)
+		end
+		t.check_eq(Placement.REACH, 16, "찾는 거리는 16칸")
+		t.check_eq(spot(28 * 16 + 3), "712 384", "열 28은 16칸 오른쪽 열 44로")
+		t.check_eq(spot(27 * 16 + 3), "435 384", "열 27은 양쪽 땅이 16칸 밖이라 그대로")
+		t.check_eq(spot(25 * 16), "152 384", "열 25는 16칸 왼쪽 열 9로")
+		t.check_eq(spot(10, function() return true end), "10 384", "위가 끝까지 막힌 곳뿐이면 그대로")
 	end
 end
 
