@@ -191,6 +191,7 @@ macOS 포팅을 기반으로 Android까지 확장하였습니다. 역시 AI와�
 - 알데바란의 그림을 이미지 생성 모델에게 (진행 중, 2026-09). 코드로 찍던 도트를 GPT가 그리고, `tools/import_gpt_art.py`가 잘라서 시트로 굽습니다. 카르토와 숲 몬스터부터 바꿨고, 배경 원본은 `python3 tools/import_gpt_art.py pull far_entrance`로 `~/Downloads`에서 가져온 뒤 `python3 tools/import_gpt_art.py inspect-bg resources/aldebaran/src/gpt/far_entrance.png`로 확인하고 `python3 tools/import_gpt_art.py build-bg far_entrance --preview /tmp/far_entrance_preview.png`로 384x448 반복 배경을 굽습니다 ([메타 프롬프트](./docs/prompts/aldebaran-art-meta-prompt.md))
 - Ruby(mruby)로도 스크립트를 쓸 수 있게 (완료, 2026-09). Lua와 하나씩 짝이 되는 바인딩이고, Lua 검증 씬을 Ruby로 옮긴 것이 같은 골든 스크린샷을 통과합니다. 플래피를 Ruby로 다시 썼습니다 ([계획](./docs/plans/s1-mruby-binding.md))
 - 다음 로드맵: 에디터의 이벤트 편집기, 저장과 로드, 오토타일, 씬 스택 ([로드맵 v2](./docs/plans/roadmap-v2.md))
+- 에디터를 다시 세우는 계획 (2026-09). Tauri 2 셸 위의 장르 중립 에디터로, 타일맵은 확장이고 실행 버튼이 이 엔진을 띄웁니다. 엔진 쪽 선행 작업(씬 로더, API 스텁, Emscripten 빌드)은 [docs/plans](./docs/plans/index.md)의 에디터 트랙에, 에디터 계획은 InitialEditor 저장소의 `docs/plans/`에 있습니다
 
 # 스크립트 예제
 
