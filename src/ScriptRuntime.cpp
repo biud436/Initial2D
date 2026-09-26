@@ -10,6 +10,7 @@
 #endif
 
 #include "App.h"
+#include "platform/Env.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -135,6 +136,10 @@ std::string Script_Features()
 	{
 		features += " mruby";
 	}
+#ifdef __EMSCRIPTEN__
+	// 브라우저 빌드 표시. 에디터가 "wasm" 을 보고 내장 실행(E4)을 연다.
+	features += " wasm";
+#endif
 	return features;
 }
 
@@ -251,6 +256,12 @@ int Script_Destroy()
 		}
 		return rc;
 	}
+}
+
+int Script_Restart()
+{
+	Script_Destroy();
+	return Script_Init();
 }
 
 bool Script_Failed()

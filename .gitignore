@@ -354,6 +354,8 @@ healthchecksdb
 
 # CMake build output (macOS port)
 build/
+# Emscripten 빌드 산출물 (R3, tools/build_web.sh)
+build-web/
 
 # Android port — 다운로드된 SDL 소스, 스테이징된 에셋, gradle 산출물
 android/app/jni/SDL2/

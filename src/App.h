@@ -118,6 +118,19 @@ public:
 	LRESULT HandleEvent(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 #else
 	void HandleEvent(const SDL_Event& event);
+
+	/**
+	* @brief 게임 루프의 한 바퀴 (이벤트, 고정 스텝 갱신, 그리기, Present).
+	*        Run 이 네이티브에서는 while 로 돌리고, 브라우저에서는 requestAnimationFrame 이
+	*        매 프레임 부른다 (platform/emscripten/WebMain.cpp). 종료할 차례면 false.
+	*/
+	bool StepFrame();
+
+	/**
+	* @brief 루프가 끝난 뒤의 정리 (핫 리로드 서버, delete this, 렌더러와 창, SDL_Quit).
+	*        이 뒤로 App 을 쓰면 안 된다.
+	*/
+	void Teardown();
 #endif
 
 	const char* GetWindowName() const;

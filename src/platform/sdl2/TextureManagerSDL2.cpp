@@ -23,6 +23,7 @@
 #include <cstdio>
 
 #include "../Utf8.h"
+#include "../Env.h"
 
 namespace {
 
@@ -208,7 +209,7 @@ void TextureManager::DrawFrame(std::string id, int x, int y, int width, int heig
 
 	SDL_FPoint center = { 0.0f, 0.0f }; // GDI 월드 트랜스폼은 원점 기준 회전
 
-	if (SDL_getenv("INITIAL2D_DEBUG_DRAW") != nullptr) {
+	if (Initial2D::Platform::GetEnv("INITIAL2D_DEBUG_DRAW") != nullptr) {
 		std::fprintf(stderr, "DrawFrame id=%s src=(%d,%d,%d,%d) dst=(%.1f,%.1f,%.1f,%.1f) angle=%.1f opacity=%d\n",
 			id.c_str(), src.x, src.y, src.w, src.h, dst.x, dst.y, dst.w, dst.h, angle, opacity);
 	}

@@ -1,6 +1,6 @@
 # Initial2D
 
-Lua 스크립트로 게임을 만드는 범용 2D 엔진. Windows(GDI), macOS(SDL2), Android(SDL2)를 지원한다.
+Lua 스크립트로 게임을 만드는 범용 2D 엔진. Windows(GDI), macOS(SDL2), Android(SDL2), 웹(Emscripten)을 지원한다.
 
 ## 로드맵과 진행 상황 (필독)
 

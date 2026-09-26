@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Initial2D 웹 데모</title>
+<style>
+	:root { color-scheme: light dark; }
+	body { margin: 0; font: 14px/1.5 -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; background: #111; color: #ddd; }
+	header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #1c1c1c; border-bottom: 1px solid #333; }
+	header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+	button { font: inherit; padding: 6px 18px; border-radius: 6px; border: 1px solid #666; background: #2a2a2a; color: #eee; cursor: pointer; }
+	button:disabled { opacity: 0.5; cursor: default; }
+	#status { color: #9a9; }
+	main { display: grid; grid-template-columns: auto 1fr; gap: 16px; padding: 16px; align-items: start; }
+	canvas { background: #000; outline: none; image-rendering: pixelated; }
+	canvas:focus { box-shadow: 0 0 0 2px #4a8; }
+	#console { margin: 0; padding: 8px; height: 896px; overflow: auto; background: #000; color: #bbb; font: 12px/1.4 ui-monospace, Menlo, monospace; white-space: pre-wrap; border: 1px solid #333; }
+	#console .err { color: #f88; }
+	@media (max-width: 1200px) { main { grid-template-columns: 1fr; } #console { height: 240px; } }
+</style>
+</head>
+<body>
+<header>
+	<h1>Initial2D 웹 데모: 알데바란</h1>
+	<button id="run">실행</button>
+	<span id="status">실행을 누르면 프로젝트 파일을 내려받아 엔진을 띄웁니다 (소리는 브라우저 정책상 클릭 뒤에 납니다)</span>
+</header>
+<main>
+	<canvas id="canvas" tabindex="0" width="768" height="896" oncontextmenu="event.preventDefault()"></canvas>
+	<pre id="console"></pre>
+</main>
+<script type="module">
+import { bootInitial2D } from "./initial2d-loader.js";
+
+const canvas = document.getElementById("canvas");
+const button = document.getElementById("run");
+const status = document.getElementById("status");
+const consoleEl = document.getElementById("console");
+const MAX_LINES = 400;
+
+function log(line, isErr) {
+	const span = document.createElement("span");
+	span.textContent = line + "\n";
+	if (isErr) span.className = "err";
+	consoleEl.appendChild(span);
+	while (consoleEl.childNodes.length > MAX_LINES) consoleEl.removeChild(consoleEl.firstChild);
+	consoleEl.scrollTop = consoleEl.scrollHeight;
+	(isErr ? console.error : console.log)(line);
+}
+
+// 설정: 네이티브의 환경 변수와 같은 이름. ?env=INITIAL2D_SCENE=flappy 처럼 URL 로 더할 수 있다 (검수용)
+const env = { INITIAL2D_SCRIPT: "lua" };
+for (const pair of new URLSearchParams(location.search).getAll("env")) {
+	const i = pair.indexOf("=");
+	if (i > 0) env[pair.slice(0, i)] = pair.slice(i + 1);
+}
+
+// project.json (tools/web_stage.py 가 만든다): { "root": "project", "files": ["game.json", "scripts/lua/main.lua", ...] }
+async function loadProject() {
+	const manifest = await (await fetch("project.json", { cache: "no-cache" })).json();
+	const root = manifest.root || "project";
+	const files = {};
+	const queue = manifest.files.slice();
+	let done = 0;
+	async function worker() {
+		while (queue.length > 0) {
+			const rel = queue.shift();
+			const response = await fetch(`${root}/${rel}`);
+			if (!response.ok) throw new Error(`${rel}: HTTP ${response.status}`);
+			files[rel] = new Uint8Array(await response.arrayBuffer());
+			done += 1;
+			status.textContent = `파일 내려받는 중 ${done}/${manifest.files.length}`;
+		}
+	}
+	await Promise.all(Array.from({ length: 8 }, worker));
+	return files;
+}
+
+button.addEventListener("click", async () => {
+	button.disabled = true;
+	try {
+		const files = await loadProject();
+		status.textContent = "엔진 시작 중";
+		const handle = await bootInitial2D({
+			canvas,
+			files,
+			env,
+			print: (line) => log(line, false),
+			printErr: (line) => log(line, true),
+		});
+		window.__initial2d = handle;
+		status.textContent = `실행 중 (${handle.features()}). canvas 를 누르면 키보드가 게임으로 갑니다`;
+		canvas.focus();
+	} catch (e) {
+		status.textContent = "실패: " + (e && e.message ? e.message : e);
+		log(String(e && e.stack ? e.stack : e), true);
+		button.disabled = false;
+	}
+});
+</script>
+</body>
+</html>
