@@ -100,7 +100,8 @@ def build(size, out_name, ttf_path, ids, padding=1):
     lines = [
         '<?xml version="1.0"?>',
         "<font>",
-        f'  <info face="NanumGothic" size="{size}" bold="0" italic="0" charset=""'
+        # 나눔글꼴의 OFL 은 이름(Nanum, NanumGothic 등)을 예약한다. 구운 비트맵은 바꾼 판이라 다른 이름을 쓴다
+        f'  <info face="Initial2D Hangul" size="{size}" bold="0" italic="0" charset=""'
         ' unicode="1" stretchH="100" smooth="1" aa="1" padding="0,0,0,0"'
         ' spacing="1,1" outline="0"/>',
         f'  <common lineHeight="{line_height}" base="{ascent}" scaleW="{atlas}"'
