@@ -88,7 +88,7 @@ module Rpg
       c = CHARSET
       raise ArgumentError, "charIndex는 0..7" unless char_index >= 0 && char_index < c[:per_sheet]
       row = c[:dir_rows][dir]
-      raise ArgumentError, "알 수 없는 방향: #{dir.inspect}" if row.nil?
+      raise ArgumentError, "지원하지 않는 방향: #{dir.inspect}" if row.nil?
       raise ArgumentError, "pattern은 0..2" unless pattern >= 0 && pattern < c[:patterns]
 
       block_x = (char_index % c[:sheet_cols]) * c[:block_w]

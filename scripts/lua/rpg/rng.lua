@@ -36,7 +36,7 @@ function M.new(seed)
 end
 
 function Rng:reseed(seed)
-	assert(type(seed) == "number", "rng: 시드는 숫자여야 한다")
+	assert(type(seed) == "number", "rng: 시드는 숫자여야 함")
 	self.state = math.floor(seed) % MOD
 	self.count = 0   -- 뽑은 횟수 (테스트에서 소비량을 볼 때 쓴다)
 	return self
@@ -56,7 +56,7 @@ end
 
 --- a..b 정수, 양끝 포함
 function Rng:int(a, b)
-	assert(b >= a, "rng: int(a, b)는 b >= a 여야 한다")
+	assert(b >= a, "rng: int(a, b)는 b >= a 여야 함")
 	local n = b - a + 1
 	local v = a + math.floor(self:float() * n)
 	if v > b then v = b end   -- 부동소수 경계 보호

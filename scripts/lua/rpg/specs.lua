@@ -92,7 +92,7 @@ function M.charsetFrameRect(charIndex, dir, pattern)
 	local c = M.charset
 	assert(charIndex >= 0 and charIndex < c.perSheet, "charIndex는 0..7")
 	local row = c.dirRows[dir]
-	assert(row ~= nil, "알 수 없는 방향: " .. tostring(dir))
+	assert(row ~= nil, "지원하지 않는 방향: " .. tostring(dir))
 	assert(pattern >= 0 and pattern < c.patterns, "pattern은 0..2")
 
 	local blockX = (charIndex % c.sheetCols) * c.blockW

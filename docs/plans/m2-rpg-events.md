@@ -585,7 +585,8 @@ E5 초안의 물음 열한 개는 저자가 자리에 없는 동안 리드가 �
 엔진이 내는 이유 글과 스키마 라벨, API 설명을 에디터의 용어 규칙에 맞춘다 (7절 "이유 글과 라벨의 문구").
 
 - [x] `commands.lua`, `mapdata.lua`, `assets.lua`, `event.lua`, 데모의 `config.lua`, `playenv.lua`, `game.lua` 의 이유 글과 `rpg:error` 글.
-  `TYPE_NAMES` 는 문자열, 숫자, 정수, 불리언. Ruby 의 `assets.rb` 도 같은 글
+  `TYPE_NAMES` 는 문자열, 숫자, 정수, 불리언. 정의 파일 이벤트의 `rpg:error` 에 나오는 `character.lua`, `rng.lua` 의 assert 와
+  `specs.lua` 의 방향 assert 도 같은 규칙이다. Ruby 의 `assets.rb`, `rng.rb`, `specs.rb` 도 같은 글
 - [x] `event-commands.json` 라벨 (`x (타일)`, `루트 단계`, `플래그`, `방향 전환`, `볼륨`, `씬 전환` 등), `map-objects.json` 의 `text` 라벨은 `본문`
 - [x] `initial2d-api.json` 설명과 다시 만든 스텁 둘, 브리지의 HMR 안내 글
 - [x] 글을 보는 테스트(`test_rpg_play_here`, `rpgdemo_playenv_test`, `export_events.py selftest`)의 기대 글

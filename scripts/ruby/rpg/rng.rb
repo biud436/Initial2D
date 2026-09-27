@@ -27,7 +27,7 @@ module Rpg
     end
 
     def reseed(seed)
-      raise ArgumentError, "rng: 시드는 숫자여야 한다" unless seed.is_a?(Numeric)
+      raise ArgumentError, "rng: 시드는 숫자여야 함" unless seed.is_a?(Numeric)
       @state = seed.floor % MOD
       @count = 0 # 뽑은 횟수 (테스트에서 소비량을 확인할 때 쓴다)
       self
@@ -47,7 +47,7 @@ module Rpg
 
     # a..b 정수, 양끝 포함
     def int(a, b)
-      raise ArgumentError, "rng: int(a, b)는 b >= a 여야 한다" unless b >= a
+      raise ArgumentError, "rng: int(a, b)는 b >= a 여야 함" unless b >= a
       n = b - a + 1
       v = a + (float * n).floor
       v = b if v > b # 부동소수 경계 보호
