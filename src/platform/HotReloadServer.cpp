@@ -126,7 +126,7 @@ namespace {
 		while (g_running.load()) {
 			const int client = accept(g_listenFd, nullptr, nullptr);
 			if (client < 0) {
-				// Stop()이 리슨 소켓을 닫으면 accept가 실패하며 루프가 끝난다.
+				// Stop()이 리슨 소켓을 shutdown 하고 닫으면 accept가 실패하며 루프가 끝난다.
 				if (!g_running.load()) {
 					break;
 				}
@@ -198,6 +198,9 @@ namespace HotReloadServer {
 		}
 		g_running.store(false);
 		if (g_listenFd >= 0) {
+			// Linux 는 close() 만으로는 accept() 에서 기다리는 스레드를 깨우지 않는다 (macOS 는 깨운다).
+			// shutdown() 이 accept() 를 실패로 돌려보내야 아래 join 이 끝난다.
+			shutdown(g_listenFd, SHUT_RDWR);
 			close(g_listenFd);
 			g_listenFd = -1;
 		}
