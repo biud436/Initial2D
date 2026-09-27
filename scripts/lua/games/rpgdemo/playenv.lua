@@ -36,18 +36,18 @@ end
 --- "x,y" 또는 "x,y,dir".
 -- @return { x, y, dir } (dir 은 없을 수 있다), 또는 nil 과 이유
 function M.parseAt(text)
-	if type(text) ~= "string" then return nil, "값이 없다" end
+	if type(text) ~= "string" then return nil, "값 없음" end
 	local parts = {}
 	for part in (text .. ","):gmatch("([^,]*),") do parts[#parts + 1] = trim(part) end
 	if #parts < 2 or #parts > 3 then
-		return nil, "x,y 나 x,y,dir 꼴이 아니다"
+		return nil, "x,y 또는 x,y,dir 형식이어야 함"
 	end
 	if not parts[1]:match("^%d+$") or not parts[2]:match("^%d+$") then
-		return nil, "x, y 가 0 이상의 정수가 아니다"
+		return nil, "x, y 는 0 이상의 정수여야 함"
 	end
 	local at = { x = tonumber(parts[1]), y = tonumber(parts[2]) }
 	if parts[3] ~= nil and parts[3] ~= "" then
-		if not isDir(parts[3]) then return nil, "모르는 방향 " .. parts[3] end
+		if not isDir(parts[3]) then return nil, "지원하지 않는 방향: " .. parts[3] end
 		at.dir = parts[3]
 	end
 	return at
@@ -83,24 +83,24 @@ function M.parseState(text, items)
 			local id = key:sub(#M.ITEM_PREFIX + 1)
 			local count = value == nil and 1 or (value:match("^%d+$") and tonumber(value))
 			if id == "" then
-				bad(entry, "아이템 id 가 비었다")
+				bad(entry, "아이템 id 비어 있음")
 			elseif not count then
-				bad(entry, "개수가 0 이상의 정수가 아니다")
+				bad(entry, "개수는 0 이상의 정수여야 함")
 			elseif items ~= nil and items[id] == nil then
-				bad(entry, "아이템 표에 없는 id " .. id)
+				bad(entry, "아이템 표에 없는 id: " .. id)
 			else
 				Inventory.give(state, id, count)
 			end
 		elseif key == "" then
-			bad(entry, "이름이 비었다")
+			bad(entry, "이름 비어 있음")
 		elseif key:find(":", 1, true) ~= nil then
-			bad(entry, "모르는 접두사 (아이템은 item:<id>)")
+			bad(entry, "지원하지 않는 접두사 (아이템은 item:<id>)")
 		elseif key == Inventory.KEY then
-			bad(entry, key .. " 는 소지품 자리라 쓸 수 없다")
+			bad(entry, key .. ": 예약된 상태 키(소지품)라 사용 불가")
 		elseif value == nil then
 			state[key] = true
 		elseif value == "" then
-			bad(entry, "값이 비었다")
+			bad(entry, "값 비어 있음")
 		else
 			state[key] = scalar(value)
 		end
@@ -119,7 +119,7 @@ function M.parseRoute(text)
 		if M.ROUTE_STEPS[step] then
 			steps[#steps + 1] = step
 		else
-			errors[#errors + 1] = { entry = step, message = "모르는 걸음 (talk, up, down, left, right)" }
+			errors[#errors + 1] = { entry = step, message = "지원하지 않는 경로 단계 (허용: talk, up, down, left, right)" }
 		end
 	end
 	return steps, errors

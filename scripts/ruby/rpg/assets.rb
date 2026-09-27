@@ -34,7 +34,7 @@ module Rpg
     # 후보 중 처음으로 존재하는 파일의 경로를 돌려준다. 전부 없으면 마지막 후보의
     # 경로를 돌려준다 (nil이 아니라 경로를 돌려주므로 오류에 파일 이름이 남는다).
     def self.pick(candidates)
-      raise ArgumentError, "assets: 후보가 필요하다" unless candidates.is_a?(Array) && candidates.size > 0
+      raise ArgumentError, "assets: 후보 1개 이상 필요" unless candidates.is_a?(Array) && candidates.size > 0
       allow_rtp = rtp_allowed?
       candidates.each do |path|
         is_rtp = path.include?("/rtp/")

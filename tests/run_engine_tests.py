@@ -1409,7 +1409,7 @@ def test_rpg_play_here():
     lines = rpg_lines(r.stdout)
     check("[E] 정상 종료", r.returncode == 0, f"rc={r.returncode}")
     check("[E] 정의 파일의 오류가 stdout 에 나온다",
-          "rpg:error:scripts/lua/maps/village.lua:elder: 외형(charset)에 file 이 없다" in lines, str(lines))
+          "rpg:error:scripts/lua/maps/village.lua:elder: 외형(charset)에 file 없음" in lines, str(lines))
 
     # [F] 게임 설정과 아이템 표를 못 읽으면: 이유 글의 줄바꿈까지 한 줄로, 한 번만 찍는다
     work_f = make_game_workdir(copy=("data",))
@@ -1444,7 +1444,7 @@ def test_rpg_play_here():
     lines = rpg_lines(r.stdout)
     errors = [ln for ln in lines if ln.startswith("rpg:error")]
     check("[F] items[2] 의 null 은 경로와 함께 한 줄", errors == [
-        "rpg:error:resources/data/items.json:items[2]: 아이템이 객체가 아니다"], str(errors))
+        "rpg:error:resources/data/items.json:items[2]: 아이템은 객체여야 함"], str(errors))
     check("[F] null 뒤의 아이템도 표에 있다 (시작 상태의 silver, shell 이 받아들여진다)",
           r.returncode == 0 and bool(lines) and lines[-1] == "rpg:route:done", str(lines[-3:]))
     as_object = dict(items_json, items={it["id"]: it for it in items_json["items"]})
@@ -1454,7 +1454,7 @@ def test_rpg_play_here():
     lines = rpg_lines(r.stdout)
     check("[F] 객체로 쓴 items 는 items 자리의 한 줄",
           [ln for ln in lines if ln.startswith("rpg:error")]
-          == ["rpg:error:resources/data/items.json:items: 아이템 목록이 배열이 아니다"], str(lines[:4]))
+          == ["rpg:error:resources/data/items.json:items: 아이템 목록은 배열이어야 함"], str(lines[:4]))
     shutil.copy(os.path.join(REPO, "resources", "data", "items.json"), data_dir)
 
     work_m = make_game_workdir(copy=("data", "maps"))
@@ -1474,7 +1474,7 @@ def test_rpg_play_here():
     lines = rpg_lines(r.stdout)
     check("[F] maps[2] 의 null 은 경로와 함께 한 줄",
           [ln for ln in lines if ln.startswith("rpg:error")]
-          == ["rpg:error:rpg-game.json:maps[2]: 맵 항목이 객체가 아니다"], str(lines[:4]))
+          == ["rpg:error:rpg-game.json:maps[2]: 맵 항목은 객체여야 함"], str(lines[:4]))
     check("[F] null 뒤에 등록된 여관으로 옮겨 간다", "rpg:map:inn events:6 skipped:0" in lines
           and r.returncode == 0 and lines[-1] == "rpg:route:done", str(lines[-4:]))
     with open(game_json, "w", encoding="utf-8") as f:
@@ -1483,7 +1483,7 @@ def test_rpg_play_here():
     lines = rpg_lines(r.stdout)
     check("[F] 객체로 쓴 maps 는 maps 자리의 한 줄",
           r.returncode == 0 and [ln for ln in lines if ln.startswith("rpg:error")]
-          == ["rpg:error:rpg-game.json:maps: 맵 목록이 배열이 아니다"], str(lines[:4]))
+          == ["rpg:error:rpg-game.json:maps: 맵 목록은 배열이어야 함"], str(lines[:4]))
 
     # [G] 선택 인자의 타입: 검수에서 게임을 멈추게 한 값들. 말을 걸 자리의 이벤트가 검사에서 빠지고
     # rpg:error 로 알린 뒤 끝까지 돈다 (playSe.id 는 전에 SIGSEGV, 나머지는 Lua 오류였다)
@@ -1555,12 +1555,12 @@ def test_rpg_play_here():
     check("[H] 파이썬 splitlines 로 갈라도 줄 수가 같다 (러너가 stdout 을 가르는 방식)",
           len([ln for ln in out.splitlines() if "rpg:error" in ln]) == len(by_lf), repr(by_lf))
     for label, expect in (
-            ("시작 상태의 LF", "rpg:error:state:arrived item:shell=1: 모르는 접두사 (아이템은 item:<id>)"),
-            ("시작 칸의 LF (자리와 이유)", "rpg:error:at:15,40,left x: 모르는 방향 left x"),
-            ("경로의 LF", "rpg:error:route:up talk: 모르는 걸음 (talk, up, down, left, right)"),
-            ("code 의 CR 과 U+2028", where + "[1]: 알 수 없는 code a b c"),
-            ("face.set 의 CR", where + "[2].face.set: 얼굴: 모르는 face 이름 n pc"),
-            ("code 의 CRLF 와 U+2029", where + "[3]: 알 수 없는 code c d e")):
+            ("시작 상태의 LF", "rpg:error:state:arrived item:shell=1: 지원하지 않는 접두사 (아이템은 item:<id>)"),
+            ("시작 칸의 LF (자리와 이유)", "rpg:error:at:15,40,left x: 지원하지 않는 방향: left x"),
+            ("경로의 LF", "rpg:error:route:up talk: 지원하지 않는 경로 단계 (허용: talk, up, down, left, right)"),
+            ("code 의 CR 과 U+2028", where + "[1]: 스키마에 없는 커맨드: a b c"),
+            ("face.set 의 CR", where + "[2].face.set: 얼굴: 스키마에 없는 face 이름: n pc"),
+            ("code 의 CRLF 와 U+2029", where + "[3]: 스키마에 없는 커맨드: c d e")):
         check(f"[H] 한 줄: {label}", expect in by_lf, repr(by_lf))
 
     # [H] 유니코드의 다른 줄 끊김(VT, FF, FS, GS, RS, NEL)도 한 줄로
@@ -1575,10 +1575,10 @@ def test_rpg_play_here():
     out = r.stdout.decode("utf-8", "replace")
     by_split = [ln for ln in out.splitlines() if "rpg:error" in ln]
     for label, expect in (
-            ("시작 상태의 VT", "rpg:error:state:arrived item:shell=1: 모르는 접두사 (아이템은 item:<id>)"),
-            ("시작 칸의 FF", "rpg:error:at:15,40,left x: 모르는 방향 left x"),
-            ("경로의 NEL", "rpg:error:route:up talk: 모르는 걸음 (talk, up, down, left, right)"),
-            ("code 의 FS, GS, RS", where + "[1]: 알 수 없는 code a b c d")):
+            ("시작 상태의 VT", "rpg:error:state:arrived item:shell=1: 지원하지 않는 접두사 (아이템은 item:<id>)"),
+            ("시작 칸의 FF", "rpg:error:at:15,40,left x: 지원하지 않는 방향: left x"),
+            ("경로의 NEL", "rpg:error:route:up talk: 지원하지 않는 경로 단계 (허용: talk, up, down, left, right)"),
+            ("code 의 FS, GS, RS", where + "[1]: 스키마에 없는 커맨드: a b c d")):
         check(f"[H] splitlines 로도 한 줄: {label}", expect in by_split, repr(by_split))
 
     # [I] 배회하는 아이(kid, 14,20에서 아래를 본다)를 새 게임 그대로 자동 재생한다. 에디터가 고르는
@@ -1615,7 +1615,7 @@ def test_rpg_play_here():
     lines = rpg_lines(r.stdout)
     check("[I] 모르는 id: rpg:error 한 줄",
           [ln for ln in lines if ln.startswith("rpg:error")]
-          == ["rpg:error:hold:nobody: 맵 port_town에 이 id의 이벤트가 없다"], str(lines[:4]))
+          == ["rpg:error:hold:nobody: 맵 port_town에 이 id의 이벤트 없음"], str(lines[:4]))
     check("[I] 모르는 id: rpg:hold 줄이 없고 끝까지 돈다",
           r.returncode == 0 and not any(ln.startswith("rpg:hold:") for ln in lines)
           and bool(lines) and lines[-1] == "rpg:route:done", f"rc={r.returncode} {lines[-3:]}")
@@ -1626,7 +1626,7 @@ def test_rpg_play_here():
     lines = rpg_lines(r.stdout)
     check("[I] 첫 맵에만: 여관에서 한 번 알린다",
           [ln for ln in lines if ln.startswith("rpg:error")]
-          == ["rpg:error:hold:kid: 맵 inn에 이 id의 이벤트가 없다"], str(lines[:4]))
+          == ["rpg:error:hold:kid: 맵 inn에 이 id의 이벤트 없음"], str(lines[:4]))
     check("[I] 첫 맵에만: 항구 마을에 가도 rpg:hold가 없다",
           r.returncode == 0 and index("rpg:map:port_town") >= 0
           and not any(ln.startswith("rpg:hold:") for ln in lines)

@@ -103,16 +103,16 @@ end
 
 -- 검증이 아는 인자 타입과 이유 글에 쓰는 이름 (charset, wander, list 는 이벤트 칸이라 mapdata 가 본다)
 local TYPE_NAMES = {
-	string = "글", text = "글", enum = "글", ref = "id 글", file = "경로 글",
-	integer = "정수", number = "수", boolean = "참거짓", scalar = "참거짓, 수, 글 중 하나",
-	json = "JSON 값", face = "얼굴 객체", options = "항목 배열", route = "걸음 배열",
+	string = "문자열", text = "문자열", enum = "문자열", ref = "id 문자열", file = "경로 문자열",
+	integer = "정수", number = "숫자", boolean = "불리언", scalar = "불리언, 숫자, 문자열 중 하나",
+	json = "JSON 값", face = "얼굴 객체", options = "항목 배열", route = "루트 단계 배열",
 	condition = "조건 객체",
 }
 
 local function define(code, args, run)
 	for _, arg in ipairs(args) do
 		assert(TYPE_NAMES[arg.type] ~= nil,
-			"commands: " .. code .. "." .. tostring(arg.name) .. " 의 모르는 타입 " .. tostring(arg.type))
+			"commands: 지원하지 않는 인자 타입: " .. tostring(arg.type) .. " (" .. code .. "." .. tostring(arg.name) .. ")")
 	end
 	ARGS[code] = args
 	HANDLERS[code] = run
@@ -280,7 +280,7 @@ define("script", {
 		fn = env ~= nil and env.scripts ~= nil and env.scripts[cmd.name] or nil
 	end
 	assert(type(fn) == "function",
-		"commands: script 커맨드가 부를 함수가 없다 (" .. tostring(cmd.name) .. ")")
+		"commands: script 커맨드가 호출할 함수 없음 (" .. tostring(cmd.name) .. ")")
 	return fn(self, ctx, cmd.args)
 end)
 
@@ -433,7 +433,7 @@ local function runList(list, self, ctx, env)
 		local run = HANDLERS[cmd.code]
 		-- compile 전에 validate를 거치는 것이 정상 경로지만, 손으로 만든 목록이
 		-- 바로 들어올 수도 있어 여기서도 분명하게 죽는다.
-		assert(run ~= nil, "commands: 알 수 없는 code " .. tostring(cmd.code))
+		assert(run ~= nil, "commands: 스키마에 없는 커맨드: " .. tostring(cmd.code))
 		run(cmd, self, ctx, env, runList)
 	end
 end
@@ -443,7 +443,7 @@ end
 -- @param env.scripts  script 커맨드가 이름으로 부를 함수 표
 -- @return function(self, ctx)
 function M.compile(list, env)
-	assert(type(list) == "table", "commands: 커맨드 목록이 필요하다")
+	assert(type(list) == "table", "commands: 커맨드 목록 필요")
 	return function(self, ctx)
 		runList(list, self, ctx, env)
 	end
@@ -456,13 +456,6 @@ local function isNumber(v)
 end
 
 local function isString(v) return type(v) == "string" end
-
--- 이유 글의 조사: 마지막 글자에 받침이 있으면 "이", 없으면 "가"
-local function subject(word)
-	local last = utf8.codepoint(word, utf8.offset(word, -1))
-	local noFinal = last >= 0xAC00 and last <= 0xD7A3 and (last - 0xAC00) % 28 == 0
-	return word .. (noFinal and "가" or "이")
-end
 
 -- 값 하나짜리 타입의 판정
 local VALUE_TESTS = {
@@ -488,13 +481,13 @@ local checkArg
 -- 글 배열 (options, route). 항목 수를 돌려준다.
 local function checkStrings(value, here, add, what)
 	if not Shape.isArray(value) then
-		add(here, what .. " 목록이 배열이 아니다")
+		add(here, what .. " 목록은 배열이어야 함")
 		return nil
 	end
 	local count = Shape.length(value)
 	for k = 1, count do
 		if type(value[k]) ~= "string" then
-			add(here .. "[" .. k .. "]", subject(what) .. " 글이 아니다 (지금은 " .. type(value[k]) .. ")")
+			add(here .. "[" .. k .. "]", what .. ": 문자열이어야 함 (현재 타입: " .. type(value[k]) .. ")")
 		end
 	end
 	return count
@@ -510,16 +503,16 @@ local COMPOUND_CHECKS = {
 	options = function(arg, value, here, add)
 		local count = checkStrings(value, here, add, "항목")
 		if count ~= nil and arg.min ~= nil and count < arg.min then
-			add(here, "항목이 " .. arg.min .. "개 이상 필요하다")
+			add(here, "항목 " .. arg.min .. "개 이상 필요")
 		end
 	end,
 	route = function(_, value, here, add)
-		checkStrings(value, here, add, "걸음")
+		checkStrings(value, here, add, "루트 단계")
 	end,
 	-- 판정하는 꼴(CONDITIONS 순서의 첫 키)의 인자만 본다. 꼴이 없는 조건은 참이다.
 	condition = function(_, value, here, add)
 		if not Shape.isObject(value) then
-			add(here, "조건이 객체가 아니다 (지금은 " .. type(value) .. ")")
+			add(here, "조건은 객체여야 함 (현재 타입: " .. type(value) .. ")")
 			return
 		end
 		for _, kind in ipairs(M.CONDITIONS) do
@@ -537,7 +530,7 @@ local COMPOUND_CHECKS = {
 checkArg = function(arg, value, here, add)
 	if value == nil then
 		if arg.required then
-			add(here, subject(TYPE_NAMES[arg.type]) .. " 필요하다")
+			add(here, "값 없음 (" .. TYPE_NAMES[arg.type] .. " 필요)")
 		end
 		return
 	end
@@ -548,17 +541,17 @@ checkArg = function(arg, value, here, add)
 	end
 	if not VALUE_TESTS[arg.type](value) then
 		local shown = type(value) == "number" and tostring(value) or type(value)
-		add(here, subject(TYPE_NAMES[arg.type]) .. " 아니다 (지금은 " .. shown .. ")")
+		add(here, "타입 불일치: " .. TYPE_NAMES[arg.type] .. " 필요 (현재: " .. shown .. ")")
 	elseif arg.type == "file" and value == "" then
-		add(here, "경로가 비었다")
+		add(here, "경로 비어 있음")
 	elseif arg.type == "ref" and (arg.ref == "flag" or arg.ref == "var") and value == Inventory.KEY then
-		add(here, value .. " 는 소지품 자리라 깃발이나 변수 이름으로 쓸 수 없다")
+		add(here, value .. ": 예약된 상태 키(소지품)라 플래그나 변수 이름으로 사용 불가")
 	elseif arg.values ~= nil and not contains(arg.values, value) then
-		add(here, table.concat(arg.values, ", ") .. " 중 하나가 아니다 (지금은 " .. tostring(value) .. ")")
+		add(here, table.concat(arg.values, ", ") .. " 중 하나여야 함 (현재: " .. tostring(value) .. ")")
 	elseif type(value) == "number" and arg.min ~= nil and value < arg.min then
-		add(here, arg.min .. " 이상이 아니다 (지금은 " .. tostring(value) .. ")")
+		add(here, arg.min .. " 이상이어야 함 (현재: " .. tostring(value) .. ")")
 	elseif type(value) == "number" and arg.max ~= nil and value > arg.max then
-		add(here, arg.max .. " 이하가 아니다 (지금은 " .. tostring(value) .. ")")
+		add(here, arg.max .. " 이하여야 함 (현재: " .. tostring(value) .. ")")
 	end
 end
 
@@ -568,7 +561,7 @@ local function checkList(list, path, problems, env)
 	end
 
 	if not Shape.isArray(list) then
-		add(path, "커맨드 목록이 배열이 아니다")
+		add(path, "커맨드 목록은 배열이어야 함")
 		return
 	end
 
@@ -576,9 +569,9 @@ local function checkList(list, path, problems, env)
 		local cmd = list[i]
 		local here = path .. "[" .. i .. "]"
 		if not Shape.isObject(cmd) then
-			add(here, "커맨드가 객체가 아니다")
+			add(here, "커맨드는 객체여야 함")
 		elseif HANDLERS[cmd.code] == nil then
-			add(here, "알 수 없는 code " .. tostring(cmd.code))
+			add(here, "스키마에 없는 커맨드: " .. tostring(cmd.code))
 		else
 			for _, arg in ipairs(ARGS[cmd.code]) do
 				checkArg(arg, cmd[arg.name], here .. "." .. arg.name, add)
@@ -588,12 +581,12 @@ local function checkList(list, path, problems, env)
 				local named = cmd.name ~= nil
 					and env ~= nil and env.scripts ~= nil and env.scripts[cmd.name] ~= nil
 				if not hasRun and not named then
-					add(here .. ".name", "등록되지 않은 스크립트 " .. tostring(cmd.name))
+					add(here .. ".name", "등록되지 않은 스크립트: " .. tostring(cmd.name))
 				end
 			end
 			for _, child in ipairs(childLists(cmd)) do
 				if child.notArray then
-					add(here .. child.path, "가지 목록이 배열이 아니다")
+					add(here .. child.path, "분기 목록은 배열이어야 함")
 				else
 					checkList(child.list, here .. child.path, problems, env)
 				end
@@ -612,7 +605,7 @@ function M.problems(list, env, prefix)
 end
 
 --- 커맨드 목록을 검사한다. 실행 도중이 아니라 맵을 열 때 틀린 곳을 알기 위한 것이다.
--- @return ok, errors  (errors는 "[2].branches[1][3]: 알 수 없는 code ..." 꼴의 배열)
+-- @return ok, errors  (errors는 "[2].branches[1][3]: 스키마에 없는 커맨드: ..." 꼴의 배열)
 function M.validate(list, env)
 	local errors = {}
 	for _, p in ipairs(M.problems(list, env)) do

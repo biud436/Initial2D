@@ -373,7 +373,7 @@ SELFTEST_LEFT = {
     "memo": ["events[6].memo: 스키마에 없는 칸"],
     "misplaced": ["events[7].commands[1].text: 자산 표식 @charset:npc 이 외형이나 얼굴의 file 자리 밖에 있다"],
     "wrongkind": ["events[8].charset.file: charset 자리에 @face:npc 표식"],
-    "bad": ["events[9].x: 0 이상의 정수가 아니다 (지금은 -1)"],
+    "bad": ["events[9].x: 0 이상의 정수여야 함 (현재: -1)"],
     "sign": ["events[10].commands[1].note: 스키마에 없는 인자"],
     "meta": ["events[11]: 메타테이블이 있는 표는 옮길 수 없다 (메타테이블로 오는 칸을 잃는다)"],
     "dup": ["events[12].id: 같은 id 의 이벤트가 정의 파일에 둘 이상이다 (게임은 뒤의 것만 쓴다)",

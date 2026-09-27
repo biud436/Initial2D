@@ -167,7 +167,7 @@ local function spawnEvent(def, held)
 	if def.charset ~= nil then
 		local file = def.charset.file
 		if type(file) ~= "string" or file == "" then
-			error("외형(charset)에 file 이 없다", 0)
+			error("외형(charset)에 file 없음", 0)
 		end
 		ev.character = scene:addCharacter{
 			tx = def.x, ty = def.y, dir = def.dir,
@@ -209,8 +209,8 @@ local function loadMap(name, startX, startY, startDir)
 
 	local modulePath = MAPS[name]
 	if modulePath == nil then
-		sceneError = "알 수 없는 맵: " .. tostring(name)
-		reportError("rpg-game.json", "등록되지 않은 맵 " .. tostring(name))
+		sceneError = "등록되지 않은 맵: " .. tostring(name)
+		reportError("rpg-game.json", "등록되지 않은 맵: " .. tostring(name))
 		return
 	end
 
@@ -298,7 +298,7 @@ local function loadMap(name, startX, startY, startDir)
 		if events:get(hold) ~= nil then
 			print("rpg:hold:" .. PlayEnv.escape(hold))
 		else
-			reportError("hold:" .. hold, "맵 " .. tostring(name) .. "에 이 id의 이벤트가 없다")
+			reportError("hold:" .. hold, "맵 " .. tostring(name) .. "에 이 id의 이벤트 없음")
 		end
 	end
 	scene:setEvents(events)

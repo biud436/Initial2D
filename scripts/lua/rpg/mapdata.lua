@@ -34,7 +34,7 @@ M.RESERVED_IDS = { player = true }
 function M.loadEvents(mapPath, loader)
 	loader = loader or (_G.Json ~= nil and _G.Json.Load) or nil
 	if loader == nil or mapPath == nil then
-		return {}, nil, "mapdata: Json.Load를 쓸 수 없다"
+		return {}, nil, "mapdata: Json.Load 사용 불가"
 	end
 
 	local data, err = loader(mapPath)
@@ -90,34 +90,34 @@ local WANDER_MIN, WANDER_MAX = 30, 120
 
 local function checkWander(wander, here, add)
 	if not Shape.isObject(wander) then
-		add(here, "배회가 객체가 아니다")
+		add(here, "배회는 객체여야 함")
 		return
 	end
 	if wander.minWait ~= nil and not isNonNegInt(wander.minWait) then
-		add(here .. ".minWait", "0 이상의 정수가 아니다")
+		add(here .. ".minWait", "0 이상의 정수여야 함")
 	end
 	if wander.maxWait ~= nil and not isNonNegInt(wander.maxWait) then
-		add(here .. ".maxWait", "0 이상의 정수가 아니다")
+		add(here .. ".maxWait", "0 이상의 정수여야 함")
 	end
 	local minWait = wander.minWait == nil and WANDER_MIN or wander.minWait
 	local maxWait = wander.maxWait == nil and WANDER_MAX or wander.maxWait
 	if isNonNegInt(minWait) and isNonNegInt(maxWait) and minWait > maxWait then
 		local where = wander.maxWait ~= nil and ".maxWait" or ".minWait"
-		add(here .. where, "minWait(" .. minWait .. ")가 maxWait(" .. maxWait .. ")보다 크다")
+		add(here .. where, "minWait 는 maxWait 이하여야 함 (현재: minWait " .. minWait .. ", maxWait " .. maxWait .. ")")
 	end
 	local area = wander.area
 	if area ~= nil then
 		if not Shape.isObject(area) then
-			add(here .. ".area", "구역이 객체가 아니다")
+			add(here .. ".area", "배회 영역은 객체여야 함")
 		else
 			for _, key in ipairs({ "x", "y" }) do
 				if not isNonNegInt(area[key]) then
-					add(here .. ".area." .. key, "0 이상의 정수가 아니다")
+					add(here .. ".area." .. key, "0 이상의 정수여야 함")
 				end
 			end
 			for _, key in ipairs({ "w", "h" }) do
 				if not (isInteger(area[key]) and area[key] >= 1) then
-					add(here .. ".area." .. key, "1 이상의 정수가 아니다")
+					add(here .. ".area." .. key, "1 이상의 정수여야 함")
 				end
 			end
 		end
@@ -127,29 +127,29 @@ end
 -- 이벤트 하나를 검사한다. seen 은 앞 이벤트들의 id 모음이다.
 local function checkEvent(ev, here, seen, env, add)
 	if not Shape.isObject(ev) then
-		add(here, "이벤트가 객체가 아니다")
+		add(here, "이벤트는 객체여야 함")
 		return
 	end
 
 	local id = ev.id
 	if type(id) ~= "string" or id == "" then
-		add(here .. ".id", "id 가 비었거나 글이 아니다")
+		add(here .. ".id", "id 는 비어 있지 않은 문자열이어야 함")
 	elseif M.RESERVED_IDS[id] then
-		add(here .. ".id", "예약된 id " .. id)
+		add(here .. ".id", "예약된 id: " .. id)
 	elseif seen[id] ~= nil then
-		add(here .. ".id", "id " .. id .. " 가 events[" .. seen[id] .. "] 와 겹친다")
+		add(here .. ".id", "id " .. id .. " 중복 (events[" .. seen[id] .. "])")
 	end
 
 	for _, key in ipairs({ "x", "y" }) do
 		if not isNonNegInt(ev[key]) then
-			add(here .. "." .. key, "0 이상의 정수가 아니다 (지금은 " .. tostring(ev[key]) .. ")")
+			add(here .. "." .. key, "0 이상의 정수여야 함 (현재: " .. tostring(ev[key]) .. ")")
 		end
 	end
 	if ev.dir ~= nil and (type(ev.dir) ~= "string" or Character.DIR_VECTORS[ev.dir] == nil) then
-		add(here .. ".dir", "모르는 방향 " .. tostring(ev.dir))
+		add(here .. ".dir", "지원하지 않는 방향: " .. tostring(ev.dir))
 	end
 	if ev.trigger ~= nil and (type(ev.trigger) ~= "string" or not Event.TRIGGERS[ev.trigger]) then
-		add(here .. ".trigger", "모르는 트리거 " .. tostring(ev.trigger))
+		add(here .. ".trigger", "지원하지 않는 트리거: " .. tostring(ev.trigger))
 	end
 	if ev.charset ~= nil then
 		for _, p in ipairs(Assets.checkRef("charset", ev.charset)) do
@@ -158,12 +158,12 @@ local function checkEvent(ev, here, seen, env, add)
 	end
 	for _, key in ipairs({ "through", "solid" }) do
 		if ev[key] ~= nil and type(ev[key]) ~= "boolean" then
-			add(here .. "." .. key, "참거짓이 아니다")
+			add(here .. "." .. key, "불리언이어야 함")
 		end
 	end
 	if ev.speed ~= nil and not (type(ev.speed) == "number" and ev.speed > 0
 		and ev.speed ~= math.huge) then
-		add(here .. ".speed", "0 보다 큰 수가 아니다")
+		add(here .. ".speed", "0보다 큰 숫자여야 함")
 	end
 	if ev.wander ~= nil then
 		checkWander(ev.wander, here .. ".wander", add)
@@ -186,7 +186,7 @@ function M.validateEvents(events, env)
 	local problems, valid = {}, {}
 	if events == nil then return true, problems, valid, 0 end
 	if not Shape.isArray(events) then
-		problems[1] = { index = nil, path = "events", message = "이벤트 목록이 배열이 아니다" }
+		problems[1] = { index = nil, path = "events", message = "이벤트 목록은 배열이어야 함" }
 		return false, problems, valid, 0
 	end
 
@@ -265,7 +265,7 @@ end
 -- @param loader  Json.Load 대체 (테스트용)
 -- @return 이벤트 배열, 오류 메시지, 정의 파일이 덮어쓴 id 배열
 function M.eventsFor(def, loader)
-	if def == nil then return {}, "mapdata: 맵 정의가 없다", {} end
+	if def == nil then return {}, "mapdata: 맵 정의 없음", {} end
 	local fromMap, _, err = M.loadEvents(def.map, loader)
 	local merged, overridden = M.merge(fromMap, def.events)
 	return merged, err, overridden

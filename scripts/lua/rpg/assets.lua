@@ -44,7 +44,7 @@ end
 -- nil 대신 경로를 돌려주어 오류가 "그림이 안 뜬다"가 아니라 "이 파일이 없다"로
 -- 드러나게 한다.
 function M.pick(candidates)
-	assert(type(candidates) == "table" and #candidates > 0, "assets: 후보가 필요하다")
+	assert(type(candidates) == "table" and #candidates > 0, "assets: 후보 1개 이상 필요")
 	local allowRtp = rtpAllowed()
 	for _, path in ipairs(candidates) do
 		local isRtp = path:find("/rtp/", 1, true) ~= nil
@@ -77,18 +77,18 @@ M.SETS = {
 -- @return 경로, 또는 nil 과 이유
 function M.resolveRef(kind, ref)
 	if type(ref) ~= "table" then
-		return nil, "assets: 참조가 객체가 아니다"
+		return nil, "assets: 참조는 객체여야 함"
 	end
 	if ref.file ~= nil then
 		return ref.file
 	end
 	local sets = M.SETS[kind]
 	if sets == nil then
-		return nil, "assets: 모르는 종류 " .. tostring(kind)
+		return nil, "assets: 지원하지 않는 종류: " .. tostring(kind)
 	end
 	local candidates = sets[ref.set]
 	if candidates == nil then
-		return nil, "assets: 모르는 " .. tostring(kind) .. " 이름 " .. tostring(ref.set)
+		return nil, "assets: 스키마에 없는 " .. tostring(kind) .. " 이름: " .. tostring(ref.set)
 	end
 	return M.pick(candidates)
 end
@@ -110,26 +110,26 @@ function M.checkRef(kind, ref)
 	end
 
 	if not Shape.isObject(ref) then
-		add("", "객체가 아니다")
+		add("", "객체여야 함")
 		return problems
 	end
 	local hasSet, hasFile = ref.set ~= nil, ref.file ~= nil
 	if hasSet and hasFile then
-		add("", "set 과 file 중 하나만 적는다")
+		add("", "set 과 file 중 하나만 허용")
 	elseif not hasSet and not hasFile then
-		add("", "set 이나 file 이 필요하다")
+		add("", "set 또는 file 필요")
 	end
 	local sets = M.SETS[kind] or {}
 	if hasSet and (type(ref.set) ~= "string" or sets[ref.set] == nil) then
-		add(".set", "모르는 " .. tostring(kind) .. " 이름 " .. tostring(ref.set))
+		add(".set", "스키마에 없는 " .. tostring(kind) .. " 이름: " .. tostring(ref.set))
 	end
 	if hasFile and (type(ref.file) ~= "string" or ref.file == "") then
-		add(".file", "경로가 글이 아니다")
+		add(".file", "경로는 비어 있지 않은 문자열이어야 함")
 	end
 	local count = SHEET_COUNT[kind]
 	if ref.index ~= nil and count ~= nil
 		and not (isInteger(ref.index) and ref.index >= 0 and ref.index < count) then
-		add(".index", "0.." .. (count - 1) .. " 의 정수가 아니다 (지금은 "
+		add(".index", "0.." .. (count - 1) .. " 범위의 정수여야 함 (현재: "
 			.. tostring(ref.index) .. ")")
 	end
 	return problems
