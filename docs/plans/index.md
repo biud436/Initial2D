@@ -209,3 +209,7 @@ Emscripten 내장 실행이 2차). 저자의 요구 "에디터가 만든 데이�
 단계 문서는 각 단계를 시작할 때 쓴다. R1 은 [r1-scene-loader.md](r1-scene-loader.md), R2 는 [r2-api-stubs.md](r2-api-stubs.md),
 R3 는 [r3-emscripten.md](r3-emscripten.md), R4 는 [r4-dist-build.md](r4-dist-build.md), M1은 [m1-map-objects.md](m1-map-objects.md), M2 는 [m2-rpg-events.md](m2-rpg-events.md)가 정본이다. 에디터 쪽 초안은 `InitialEditor/docs/plans/03-project-and-runtime.md` 5절과
 `e4-embedded-play.md` 에 있다.
+
+E6 의 안드로이드 스테이징(`InitialEditor/docs/plans/e6-packaging.md` 6절)은 엔진 쪽에 `android/prepare_assets.sh --project`,
+`tools/stage_list.py`, `tools/stage_rules.json` 과 그 검사(`tests/tools/prepare_assets_test.sh`)를 더했다. 인자 없는 실행은
+예전과 같다 (RTP 변환물과 `config.setting` 까지 올린다). C++ 은 그대로다.
