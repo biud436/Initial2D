@@ -31,9 +31,22 @@ namespace
 		case Json::nullValue:
 			return mrb_nil_value();
 		case Json::intValue:
-			return mrb_int_value(mrb, static_cast<mrb_int>(value.asInt64()));
+		{
+			// mrb_int 에 들지 않는 정수는 Float 로 (32비트 mrb_int 빌드에서도 값이 뒤집히지 않게)
+			const Json::Int64 i = value.asInt64();
+			if (i >= static_cast<Json::Int64>(MRB_INT_MIN) && i <= static_cast<Json::Int64>(MRB_INT_MAX)) {
+				return mrb_int_value(mrb, static_cast<mrb_int>(i));
+			}
+			return mrb_float_value(mrb, static_cast<mrb_float>(i));
+		}
 		case Json::uintValue:
-			return mrb_int_value(mrb, static_cast<mrb_int>(value.asUInt64()));
+		{
+			const Json::UInt64 u = value.asUInt64();
+			if (u <= static_cast<Json::UInt64>(MRB_INT_MAX)) {
+				return mrb_int_value(mrb, static_cast<mrb_int>(u));
+			}
+			return mrb_float_value(mrb, static_cast<mrb_float>(u));
+		}
 		case Json::realValue:
 			return mrb_float_value(mrb, value.asDouble());
 		case Json::stringValue:

@@ -57,8 +57,23 @@ function M.run(t)
     local viaBackslash = Json.Load(".\\json_test_data.json")
     t.check(viaBackslash ~= nil and viaBackslash.id == 7, "백슬래시 경로 정규화")
 
+    -- 32비트를 넘는 정수는 64비트 integer, 64비트 부호 없는 범위의 큰 값은 실수 (게임 전체가 멈추지 않는다)
+    local big = assert(io.open("./json_big_data.json", "w"))
+    big:write('{"a": 2147483648, "b": -2147483649, "c": 9007199254740993, "d": 18446744073709551615}')
+    big:close()
+    local nums, err3 = Json.Load("./json_big_data.json")
+    t.check(nums ~= nil, "32비트를 넘는 정수가 든 파일도 읽힌다", err3)
+    if nums ~= nil then
+        t.check_eq(nums.a, 2147483648, "2^31 은 integer")
+        t.check_eq(math.type(nums.a), "integer", "2^31 의 타입")
+        t.check_eq(nums.b, -2147483649, "-2^31-1 은 integer")
+        t.check_eq(nums.c, 9007199254740993, "2^53+1 도 정확한 integer")
+        t.check_eq(math.type(nums.d), "float", "int64 밖의 부호 없는 값은 실수")
+    end
+
     os.remove("./json_test_data.json")
     os.remove("./json_bad_data.json")
+    os.remove("./json_big_data.json")
 end
 
 return M

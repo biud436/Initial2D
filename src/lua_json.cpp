@@ -29,11 +29,21 @@ static void PushJsonValue(lua_State* pL, const Json::Value& value)
 		lua_pushnil(pL);
 		break;
 	case Json::intValue:
-		lua_pushinteger(pL, value.asInt());
+		// 32비트를 넘는 정수도 Lua 의 64비트 integer 로 (asInt 는 범위 밖에서 예외를 던진다)
+		lua_pushinteger(pL, static_cast<lua_Integer>(value.asInt64()));
 		break;
 	case Json::uintValue:
-		lua_pushinteger(pL, static_cast<lua_Integer>(value.asUInt()));
+	{
+		// lua_Integer 에 들지 않는 부호 없는 정수는 실수로
+		const Json::UInt64 u = value.asUInt64();
+		if (u <= static_cast<Json::UInt64>(LUA_MAXINTEGER)) {
+			lua_pushinteger(pL, static_cast<lua_Integer>(u));
+		}
+		else {
+			lua_pushnumber(pL, static_cast<lua_Number>(u));
+		}
 		break;
+	}
 	case Json::realValue:
 		lua_pushnumber(pL, value.asDouble());
 		break;
