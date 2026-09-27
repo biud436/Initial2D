@@ -3,6 +3,7 @@
 #include "ExperimentalFont.h"
 #include <clocale>
 #include <codecvt>
+#include <locale>
 #include <string>
 #include <exception>
 

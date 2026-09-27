@@ -14,6 +14,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# engine-dist.json 과 --version 은 커밋 40자를 싣는다. git 체크아웃이 아니면(압축 파일이나 git archive) 먼저 멈춘다
+if ! git rev-parse --verify -q HEAD > /dev/null 2>&1; then
+    echo "build_dist.sh: git 체크아웃에서 돌려야 한다 (커밋을 판 정보에 싣는다): $ROOT" >&2
+    exit 1
+fi
+
 case "$(uname -s)-$(uname -m)" in
     Darwin-arm64)  TRIPLE=aarch64-apple-darwin ;;
     Linux-x86_64)  TRIPLE=x86_64-unknown-linux-gnu ;;

@@ -343,12 +343,6 @@ if(INITIAL2D_SDL2_GAME)
   target_link_libraries(Initial2D PRIVATE initial2d_core vendored_tinyxml ${SDL2_IMAGE_LIBRARY})
   message(STATUS "Initial2D game executable enabled (SDL2 backend)")
 
-  # libstdc++ 의 <codecvt> 는 std::wstring_convert 를 선언한 <locale> 을 들이지 않는다.
-  # lua_font.cpp 가 <locale> 을 직접 포함하기 전까지 Linux 에서는 컴파일러가 먼저 넣게 한다
-  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/src/lua_font.cpp" PROPERTIES COMPILE_OPTIONS "-include;locale")
-  endif()
-
   # 판 헤더 (--version). 빌드마다 git describe 와 커밋을 다시 읽고, 바뀌었을 때만 헤더를 고친다
   find_package(Git QUIET)
   set(INITIAL2D_GENERATED_DIR "${CMAKE_BINARY_DIR}/generated")

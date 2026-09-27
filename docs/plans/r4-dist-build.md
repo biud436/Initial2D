@@ -24,21 +24,21 @@
 | **mruby 는 소스 빌드** (`tools/build_mruby.sh`, 4.0.0, full-core) | tests.yml 의 대체 경로와 같은 설정이다 (`build_config/default.rb` 에서 gembox 만 바꾼다). `-D` 정의가 Homebrew 병과 같다 (`MRB_USE_BIGINT`, `MRB_USE_COMPLEX`, `MRB_USE_RATIONAL`, `MRB_USE_SET`, `MRB_USE_TASK_SCHEDULER`, `MRB_UTF8_STRING`, `HAVE_MRUBY_IO_GEM`, `HAVE_MRUBY_ENCODING_GEM`). 태그의 커밋(`831da26`)을 확인한다 |
 | **`MRUBY_ROOT` 를 주면 그 폴더만 본다** (`NO_DEFAULT_PATH`) | 기본 탐색은 PATH 의 `/opt/homebrew/bin` 에서 `/opt/homebrew/lib` 까지 보므로, 배포용 빌드가 Homebrew 의 libmruby 를 줍지 않게 막는다. 배포용 빌드에서 `MRUBY_ROOT` 가 없으면 Lua 만이다 |
 | **판 헤더는 빌드마다 만든다** (초안은 설정 때) | `cmake/initial2d_version.cmake` 를 사용자 정의 대상이 빌드마다 부르고, 내용이 같으면 파일을 건드리지 않는다. 설정 때 한 번 만들면 커밋한 뒤 `cmake --build` 만 할 때 옛 커밋이 찍힌다 |
-| **describe 는 v2 이상의 태그만 본다** (`--match "v[2-9]*"`) | `v1.0.0`, `v1.1.0` 은 Windows GDI 판 태그라 SDL2 엔진이 `v1.1.0-215-g...` 로 보이면 틀린 말이다. 그런 태그가 없는 지금은 짧은 커밋(`2234d67`)이다 |
+| **describe 는 v2 이상의 태그만 본다** (`--match "v[2-9]*"`) | `v1.0.0`, `v1.1.0` 은 Windows GDI 판 태그라 SDL2 엔진이 `v1.1.0-215-g...` 로 보이면 틀린 말이다. 그런 태그가 없는 지금은 짧은 커밋이다 (예: `2234d67`) |
 | **모르는 `--` 인자는 종료 코드 2** | 전에는 모든 인자를 무시하고 게임을 띄워, `--version` 조차 작업 폴더에 `config.setting` 을 썼다. 이제 `App::Run` 전에 사용법을 stderr 에 찍고 끝난다. `-psn_` 같은 한 줄표 인자는 그대로 무시한다 |
 | **중간 산출물은 `build-dist/engine` 과 `build-dist/mruby`** (초안은 `build-dist` 하나) | 엔진의 CMake 빌드 폴더와 mruby 의 rake 빌드 폴더를 나눴다. 결과물은 `dist/` 이고 셋 다 gitignore |
 | **타일맵 템플릿은 새로 그리지 않는다** | E6 결정 기록. 코드로 그린 새 도트는 저자가 받아들이지 않은 방식이다. 이미 커밋되어 `resources/maps/sample.json` 과 씬 로더 픽스처가 쓰는 `resources/tiles/tileset16-8x13.png`(2020년, RTP 아님)를 그대로 쓴다. 초안의 `tiles16.png` 와 `tools/gen_template_tiles.py` 는 만들지 않았다 (6절) |
 | **표식 칸은 그리지 않고 있는 타일에서 고른다** | 타일 44(0 부터, gid 45)는 모래이고 256 픽셀 가운데 251 개가 `#d8c880` 이다. 템플릿 맵은 이 타일을 쓰지 않는다 |
 | **템플릿 묶음 잡을 따로 둔다** | 플래피 그림 넷은 생성물이라 묶는 곳에서 만든다. `templates` 잡이 macOS 배포용 엔진을 받아 그 그림으로 플래피 씬 검수를 돌린 뒤 묶는다 (검수에 쓴 바로 그 그림) |
-| **Linux 에서 `lua_font.cpp` 에 `<locale>` 을 먼저 넣는다** (CMake) | libstdc++ 의 `<codecvt>` 는 `std::wstring_convert` 를 선언한 `<locale>` 을 들이지 않는다. 이 단계의 C++ 변경은 `sdl2Main.cpp` 뿐이라 파일은 고치지 않고 CMake 의 `-include locale` 로 막았다. 제대로 고치는 것은 `lua_font.cpp` 에 `#include <locale>` 한 줄이다 (10절) |
+| **`lua_font.cpp` 가 `<locale>` 을 직접 포함한다** | libstdc++ 의 `<codecvt>` 는 `std::wstring_convert` 를 선언한 `<locale>` 을 들이지 않아 Linux 에서 컴파일이 실패했다. 포함 한 줄로 고쳤다 (GDI 경로가 아닌 공용 파일이고 동작은 같다) |
 
 ## 3. 바뀐 것
 
 | 파일 | 무엇 |
 |---|---|
-| `CMakeLists.txt` | 옵션 `INITIAL2D_VENDORED_SDL`(켜면 배포 대상 11.0), 캐시 변수 `MRUBY_ROOT`, SDL 셋을 `add_subdirectory(... EXCLUDE_FROM_ALL)` 로 정적 빌드하는 분기와 캐시 값 전부 (`SDL_SHARED=OFF`, `SDL_STATIC=ON`, `SDL_TEST=OFF`, `BUILD_SHARED_LIBS=OFF`, `SDL2IMAGE_BACKEND_IMAGEIO=OFF`, `SDL2IMAGE_BACKEND_STB=ON`, `SDL2IMAGE_DEPS_SHARED=OFF`, `SDL2MIXER_DEPS_SHARED=OFF`, `SDL2MIXER_VORBIS=STB`, 포맷 스위치, 설치와 예제 끔), 판 헤더 대상 `initial2d_version`, Linux 의 `lua_font.cpp` 선포함. Homebrew 빌드의 길은 그대로다 |
-| `cmake/initial2d_version.cmake` (신규) | `generated/initial2d_version.h` 에 `INITIAL2D_VERSION_DESCRIBE` 와 `INITIAL2D_VERSION_COMMIT`. git 이 없으면 `unknown` |
-| `src/platform/sdl2/sdl2Main.cpp` | `--version` 과 모르는 `--` 인자의 종료 코드 2. 판 헤더는 `__has_include` 로 찾아 안드로이드 빌드는 손대지 않았다 (`unknown`) |
+| `CMakeLists.txt` | 옵션 `INITIAL2D_VENDORED_SDL`(켜면 배포 대상 11.0), 캐시 변수 `MRUBY_ROOT`, SDL 셋을 `add_subdirectory(... EXCLUDE_FROM_ALL)` 로 정적 빌드하는 분기와 캐시 값 전부 (`SDL_SHARED=OFF`, `SDL_STATIC=ON`, `SDL_TEST=OFF`, `BUILD_SHARED_LIBS=OFF`, `SDL2IMAGE_BACKEND_IMAGEIO=OFF`, `SDL2IMAGE_BACKEND_STB=ON`, `SDL2IMAGE_DEPS_SHARED=OFF`, `SDL2MIXER_DEPS_SHARED=OFF`, `SDL2MIXER_VORBIS=STB`, 포맷 스위치, 설치와 예제 끔), 판 헤더 대상 `initial2d_version`. Homebrew 빌드의 길은 그대로다 |
+| `cmake/initial2d_version.cmake` (신규) | `generated/initial2d_version.h` 에 `INITIAL2D_VERSION_DESCRIBE` 와 `INITIAL2D_VERSION_COMMIT`. git 이 없으면 `unknown` (보통 빌드는 그대로 된다). 배포용 빌드 `tools/build_dist.sh` 는 판 정보에 커밋 40자를 실어야 하므로 git 체크아웃이 아니면 처음에 멈춘다 |
+| `src/platform/sdl2/sdl2Main.cpp` | `--version` 과 모르는 `--` 인자의 종료 코드 2. 옵션은 어느 자리에 와도 같고 한 줄표 인자(macOS 의 `-psn_`)는 무시한다. 판 헤더는 `__has_include` 로 찾아 안드로이드 빌드는 손대지 않았다 (`unknown`) |
 | `tools/sdl_versions.sh` (신규) | SDL2 2.30.9, SDL2_image 2.8.2, SDL2_mixer 2.8.0 의 판, 주소, tar.gz 의 sha256 |
 | `tools/fetch_sdl_src.sh` (신규) | 셋을 `external/sdl-src/` 에 받고 sha256 을 확인한다. 같은 판이면 건너뛴다 |
 | `android/download_sdl.sh` | 판과 주소를 `tools/sdl_versions.sh` 에서 읽는다 |
@@ -161,15 +161,15 @@ SQLite 는 코어 라이브러리와 함께 빌드하지만 지금 실행 파일
 
 | 무엇 | 결과 |
 |---|---|
-| `tools/build_dist.sh` | Apple M1 8코어에서 mruby 약 30초, SDL 셋과 엔진 약 40초. 경고는 `ld: warning: ignoring duplicate libraries: '-lm'` 하나 |
+| `tools/build_dist.sh` | Apple M1 8코어에서 mruby 약 30초, SDL 셋과 엔진 약 40초. 새 경고는 `ld: warning: ignoring duplicate libraries: '-lm'` 하나다 (나머지 경고는 엔진과 SDL 의 기존 코드에서 나온다) |
 | `tools/check_dist.sh` | 27 PASS / 0 FAIL |
 | 배포용 실행 파일로 전체 씬 검수 (`python3 tests/run_engine_tests.py dist/Initial2D-aarch64-apple-darwin`) | 575 PASS / 0 FAIL, 골든 대조 17건(그림 11장) 전부 허용 안 (RTP 가 없는 작업 트리라 RTP 검사 하나는 SKIP, Homebrew 빌드와 같다) |
 | `tests/tools/templates_test.py` (배포용 실행 파일, Homebrew 빌드) | 44 PASS / 0 FAIL |
 | `tools/pack_templates.py` | 파일 32개, 980 KB, 생성물 넷 |
 | `SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy tests/run_all.sh` (Homebrew 빌드) | 전체 검수 통과 (엔진 씬 575 PASS / 0 FAIL, `templates_test.py` 44 PASS). 오디오 드라이버를 주지 않으면 mruby 단위의 소리 검사 셋(`play_music`, `play_sound` 둘)이 거짓으로 실패하는데, 같은 맥에서 master `fab4710` 을 빌드해도 똑같이 실패해 이 단계와 무관하다 (이 맥의 기본 출력 장치가 가상 장치 `Blackhole+` 다) |
-| 골든 차이 비율 (배포용 대 Homebrew) | 두 빌드가 같다: 16건이 0.0000%, `assert_scene_f35` 두 건이 0.4139% (허용 2%). stb 디코더가 libpng 와 다른 픽셀을 내지 않는다 |
+| 골든 차이 비율 (배포용 대 Homebrew) | 두 빌드가 같다: 골든 검사 17건 가운데 15건이 0.0000%, `assert_scene_f35` 를 보는 두 건이 0.4139% (허용 2%). stb 디코더가 libpng 와 다른 픽셀을 내지 않는다 |
 | actionlint 1.7.12 (shellcheck 0.11.0 연동) | `dist.yml` 경고 없음. 새 셸 스크립트들도 shellcheck 경고 없음 |
-| GCC 14 와 libstdc++ 로 엔진 소스의 문법 검사 (Linux 의 위험을 미리 본 것) | `lua_font.cpp` 하나가 `std::wstring_convert` 로 실패, 2절의 CMake 선포함으로 통과 |
+| GCC 14 와 libstdc++ 로 엔진 소스의 문법 검사 (Linux 의 위험을 미리 본 것) | `lua_font.cpp` 하나가 `std::wstring_convert` 로 실패, `#include <locale>` 한 줄로 통과 |
 
 ## 9. `dist.yml`
 
@@ -183,7 +183,7 @@ SQLite 는 코어 라이브러리와 함께 빌드하지만 지금 실행 파일
   플래피 씬 검수와 `templates_test.py` 를 돈 뒤 `pack_templates.py`. 산출물 `templates`
 - `collect` (`ubuntu-22.04`): 엔진 둘, 템플릿 묶음, `engine_dist_json.py merge` 로 합친 `engine-dist.json`,
   `THIRD-PARTY.md`, `SHA256SUMS.txt` 를 산출물 `initial2d-dist-<커밋>` 하나로. 에디터 CI 가 `yarn engine:fetch --from` 으로 쓸 폴더다
-- 모든 잡의 `git describe` 가 태그를 보도록 `fetch-depth: 0`. `SDL_VIDEODRIVER=dummy`, `SDL_AUDIODRIVER=dummy`
+- 판 정보를 만드는 잡(네이티브 둘과 템플릿)은 `git describe` 가 태그를 보도록 `fetch-depth: 0`. 모으는 잡은 git 을 쓰지 않아 기본 체크아웃이다. `SDL_VIDEODRIVER=dummy`, `SDL_AUDIODRIVER=dummy`
 - 기존 `tests.yml`(Homebrew 빌드의 전체 검수)은 그대로다
 
 ## 10. 확인하지 못한 것과 저자에게 남긴 것
@@ -206,7 +206,6 @@ SQLite 는 코어 라이브러리와 함께 빌드하지만 지금 실행 파일
   복사되므로 배포 전에 확인이 필요하다. 제3자 소재라면 `THIRD-PARTY.md` 에 더한다
 - 나눔고딕: `hangul.fnt` 는 글꼴 이름을 `나눔고딕` 으로 적는다. OFL 은 수정판(비트맵으로 구운 것)이 예약 글꼴 이름을 쓰지
   못하게 할 수 있으므로, 나눔글꼴 OFL 의 예약 이름 목록과 대조해 볼 것. 고지에는 이 맥의 글꼴 파일(3.021)에 적힌 저작권 표기를 옮겼다
-- `src/lua_font.cpp` 에 `#include <locale>` 한 줄을 넣으면 CMake 의 Linux 선포함을 지울 수 있다
 
 ## 작업 항목 (E6 마일스톤 2)
 
