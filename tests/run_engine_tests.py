@@ -1256,15 +1256,16 @@ def test_rpgdemo_scene():
         check("집 벽이 캐릭터의 머리를 덮지 않는다", hair > 40, f"머리색 px={hair}")
 
 
-def rpg_play_env(rpg_map, at=None, state=None, route=None):
+def rpg_play_env(rpg_map, at=None, state=None, route=None, event=None):
     """resources/data/rpg-game.json 의 play.env (route 가 있으면 play.probe 까지)를 채운다.
 
     에디터의 실행 명령과 같은 규칙이다 (docs/plans/m2-rpg-events.md 2.4절): 자리표시자에
     채울 값이 없는 변수는 넣지 않는다. route 의 빈 글은 값이다 (걸음 없이 auto 만 기다린다).
+    event는 "이 이벤트 자동 재생"의 이벤트 id다 ({event}).
     """
     with open(os.path.join(REPO, "resources", "data", "rpg-game.json"), encoding="utf-8") as f:
         play = json.load(f)["play"]
-    values = {"rpg.map": rpg_map, "state": state or None, "route": route}
+    values = {"rpg.map": rpg_map, "state": state or None, "route": route, "event": event}
     if at is not None:
         values.update({"cx": str(at[0]), "cy": str(at[1]), "dir": at[2]})
     wanted = dict(play["env"])
@@ -1311,6 +1312,7 @@ def test_rpg_play_here():
           and env.get("INITIAL2D_MAP") == "port_town" and env.get("INITIAL2D_RPG_AT") == "15,40,left"
           and env.get("INITIAL2D_RPG_TRACE") == "1" and env.get("INITIAL2D_AUTOPLAY") == "1"
           and env.get("INITIAL2D_RPG_ROUTE") == "talk" and "INITIAL2D_RPG_STATE" not in env, str(env))
+    check("실행 변수: 이벤트가 없으면 HOLD를 넣지 않는다", "INITIAL2D_RPG_HOLD" not in env, str(env))
     r = run_game(work, env)
     lines = rpg_lines(r.stdout)
     log = r.stdout + r.stderr
@@ -1578,6 +1580,57 @@ def test_rpg_play_here():
             ("경로의 NEL", "rpg:error:route:up talk: 모르는 걸음 (talk, up, down, left, right)"),
             ("code 의 FS, GS, RS", where + "[1]: 알 수 없는 code a b c d")):
         check(f"[H] splitlines 로도 한 줄: {label}", expect in by_split, repr(by_split))
+
+    # [I] 배회하는 아이(kid, 14,20에서 아래를 본다)를 새 게임 그대로 자동 재생한다. 에디터가 고르는
+    # 앞 칸 14,21에 위를 보고 서고, 선장의 인사(arrival)가 도는 동안 아이는 INITIAL2D_RPG_HOLD로
+    # 제자리에 서 있다 (m2-rpg-events.md 5.2절)
+    env = rpg_play_env("port_town", at=(14, 21, "up"), route="talk", event="kid")
+    check("실행 변수: 자동 재생은 그 이벤트를 HOLD로 넘기고 늘 trace를 켠다",
+          env.get("INITIAL2D_RPG_HOLD") == "kid" and env.get("INITIAL2D_RPG_TRACE") == "1"
+          and env.get("INITIAL2D_RPG_ROUTE") == "talk" and env.get("INITIAL2D_RPG_AT") == "14,21,up"
+          and "INITIAL2D_RPG_STATE" not in env, str(env))
+    r = run_game(work, env)
+    lines = rpg_lines(r.stdout)
+    log = r.stdout + r.stderr
+    check("[I] 정상 종료", r.returncode == 0, f"rc={r.returncode}")
+    check("[I] Lua 오류 없음", "PANIC" not in log and "attempt to" not in log, log[-300:])
+    check("[I] rpg:error가 없다", not any(ln.startswith("rpg:error") for ln in lines), str(lines[:5]))
+    check("[I] rpg:hold:kid가 한 번", lines.count("rpg:hold:kid") == 1
+          and not any(ln.startswith("rpg:hold:") and ln != "rpg:hold:kid" for ln in lines), str(lines[:6]))
+    i_player = index("rpg:player:port_town,14,21,up")
+    i_hold = index("rpg:hold:kid")
+    i_arrival = index("rpg:event:arrival")
+    check("[I] 플레이어를 세운 뒤, 첫 auto보다 먼저 찍는다", 0 <= i_player < i_hold < i_arrival, str(lines[:6]))
+    i_kid = index("rpg:event:kid")
+    check("[I] 새 게임이라 선장의 인사 뒤에 아이가 돈다",
+          i_arrival < index("rpg:message:선장|") < i_kid, str(lines))
+    kid_lines = [ln for ln in lines if ln.startswith("rpg:message:아이|")]
+    check("[I] 아이의 대사 셋 (조개도 제단 얘기도 없는 가지)",
+          len(kid_lines) == 3 and kid_lines[0].startswith("rpg:message:아이|북쪽 문은")
+          and index("rpg:message:아이|") > i_kid, str(lines[i_kid:] if i_kid >= 0 else lines))
+    check("[I] 경로를 다 걷고 스스로 끝난다", bool(lines) and lines[-1] == "rpg:route:done", str(lines[-3:]))
+
+    # [I] 모르는 id는 rpg:error 한 줄이고 게임은 그대로 돈다
+    r = run_game(work, rpg_play_env("port_town", at=(14, 21, "up"), route="talk", event="nobody"))
+    lines = rpg_lines(r.stdout)
+    check("[I] 모르는 id: rpg:error 한 줄",
+          [ln for ln in lines if ln.startswith("rpg:error")]
+          == ["rpg:error:hold:nobody: 맵 port_town에 이 id의 이벤트가 없다"], str(lines[:4]))
+    check("[I] 모르는 id: rpg:hold 줄이 없고 끝까지 돈다",
+          r.returncode == 0 and not any(ln.startswith("rpg:hold:") for ln in lines)
+          and bool(lines) and lines[-1] == "rpg:route:done", f"rc={r.returncode} {lines[-3:]}")
+
+    # [I] HOLD는 AT처럼 첫 맵에만 걸린다: 여관에서 시작하면 kid는 여관에 없어 오류 한 줄이고,
+    # 출입구로 항구 마을에 가도 다시 찾거나 다시 알리지 않는다
+    r = run_game(work, rpg_play_env("inn", route="down", event="kid"))
+    lines = rpg_lines(r.stdout)
+    check("[I] 첫 맵에만: 여관에서 한 번 알린다",
+          [ln for ln in lines if ln.startswith("rpg:error")]
+          == ["rpg:error:hold:kid: 맵 inn에 이 id의 이벤트가 없다"], str(lines[:4]))
+    check("[I] 첫 맵에만: 항구 마을에 가도 rpg:hold가 없다",
+          r.returncode == 0 and index("rpg:map:port_town") >= 0
+          and not any(ln.startswith("rpg:hold:") for ln in lines)
+          and bool(lines) and lines[-1] == "rpg:route:done", str(lines[-4:]))
 
 
 def test_rpg_auto_chain():

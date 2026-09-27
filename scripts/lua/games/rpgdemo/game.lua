@@ -26,6 +26,7 @@
 --   INITIAL2D_RPG_STATE 새 게임의 시작 상태 (arrived,silver=2,item:shell=1)
 --   INITIAL2D_RPG_ROUTE 한 번만 걷는 자동 재생 경로. 끝나면 rpg:route:done 을 찍고 끝낸다
 --   INITIAL2D_RPG_TRACE 맵, 플레이어, 이벤트, 대사, 선택지, 이동을 rpg: 줄로 찍는다
+--   INITIAL2D_RPG_HOLD  첫 맵의 이 id 이벤트는 배회하지 않는다. 찾으면 rpg:hold:<id>를 찍는다
 
 local MapScene = require("scripts/lua/rpg/map_scene")
 local Player = require("scripts/lua/rpg/player")
@@ -103,6 +104,7 @@ local autoplay = false            -- AUTOPLAY 이거나 INITIAL2D_RPG_ROUTE 가 
 -- INITIAL2D_RPG_ROUTE 의 걸음. 맵을 옮겨도 이어서 걷고, 다 걸으면 끝낸다.
 local routeSteps, routeIndex, routeDone = nil, 1, false
 local tracing = false             -- INITIAL2D_RPG_TRACE
+local holdId = nil                -- INITIAL2D_RPG_HOLD. 첫 맵을 열 때 쓰고 비운다
 
 local function env(name)
 	return (os.getenv ~= nil) and os.getenv(name) or nil
@@ -150,7 +152,8 @@ local function disposeMap()
 end
 
 --- 이벤트 정의 하나를 씬에 세운다. 외형이 있으면 캐릭터를 붙인다.
-local function spawnEvent(def)
+-- held면 배회(wander)를 켜지 않고 맵의 칸에 세워 둔다 (INITIAL2D_RPG_HOLD).
+local function spawnEvent(def, held)
 	local ev = Event.new{
 		id = def.id, x = def.x, y = def.y, dir = def.dir,
 		trigger = def.trigger,
@@ -173,7 +176,7 @@ local function spawnEvent(def)
 			speed = def.speed or 3,
 			name = def.id,
 		}
-		if def.wander ~= nil then
+		if def.wander ~= nil and not held then
 			ev.character:setWander{
 				rng = rng,
 				minWait = def.wander.minWait, maxWait = def.wander.maxWait,
@@ -201,6 +204,8 @@ end
 local function loadMap(name, startX, startY, startDir)
 	disposeMap()
 	mapName = name
+	local hold = holdId   -- INITIAL2D_RPG_AT처럼 첫 맵에만 걸린다
+	holdId = nil
 
 	local modulePath = MAPS[name]
 	if modulePath == nil then
@@ -278,7 +283,7 @@ local function loadMap(name, startX, startY, startDir)
 	for _, edef in ipairs(eventDefs) do
 		-- 정의 파일의 이벤트가 틀리면 Event.new 가 어느 자리인지와 함께 죽는다. 게임을
 		-- 통째로 멈추는 대신 씬 오류로 띄우고 stdout 에도 찍는다.
-		local built, result = pcall(spawnEvent, edef)
+		local built, result = pcall(spawnEvent, edef, hold ~= nil and edef.id == hold)
 		if not built then
 			local source = fromDef[edef.id] and defFile or mapFile
 			reportError(source .. ":" .. tostring(edef.id), result)
@@ -287,6 +292,14 @@ local function loadMap(name, startX, startY, startDir)
 			return
 		end
 		events:add(result)
+	end
+	if hold ~= nil then
+		-- 자동 재생이 배회하는 NPC 앞에 세운 플레이어가 그 NPC에 닿게 한다
+		if events:get(hold) ~= nil then
+			print("rpg:hold:" .. PlayEnv.escape(hold))
+		else
+			reportError("hold:" .. hold, "맵 " .. tostring(name) .. "에 이 id의 이벤트가 없다")
+		end
 	end
 	scene:setEvents(events)
 
@@ -401,6 +414,7 @@ function RpgDemoScene.init()
 		routeSteps = steps
 	end
 	autoplay = (AUTOPLAY == true) or routeSteps ~= nil
+	holdId = PlayEnv.parseHold(env("INITIAL2D_RPG_HOLD"))
 
 	if VirtualPad.shouldShow() then
 		local size = math.floor(PAD_DEVICE_SIZE / scale)

@@ -6,6 +6,7 @@
 --   INITIAL2D_RPG_AT     x,y[,dir]                    첫 맵의 시작 칸과 방향
 --   INITIAL2D_RPG_STATE  arrived,booked=false,item:shell=1   새 게임의 시작 상태
 --   INITIAL2D_RPG_ROUTE  talk,up,up,...               한 번만 걷는 자동 재생 경로
+--   INITIAL2D_RPG_HOLD   kid                          첫 맵에서 배회하지 않고 제자리에 서 있는 이벤트
 
 local Character = require("scripts/lua/rpg/character")
 local Inventory = require("scripts/lua/rpg/inventory")
@@ -122,6 +123,13 @@ function M.parseRoute(text)
 		end
 	end
 	return steps, errors
+end
+
+--- 제자리에 세울 이벤트 id. 이벤트 id와 그대로 견주므로 앞뒤 공백도 떼지 않는다.
+-- @return id, 또는 nil (값이 없거나 빈 글)
+function M.parseHold(text)
+	if type(text) ~= "string" or text == "" then return nil end
+	return text
 end
 
 --- trace 줄에 실을 글. 줄바꿈은 \n 두 글자로 쓴다.

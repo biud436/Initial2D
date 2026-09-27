@@ -880,8 +880,12 @@ function M.run(t)
 			INITIAL2D_RPG_STATE = "{state}",
 			INITIAL2D_RPG_TRACE = "1",
 		}, "play.env 는 RPG 씬을 그 맵과 그 칸으로 연다")
-		same(play.probe, { INITIAL2D_AUTOPLAY = "1", INITIAL2D_RPG_ROUTE = "{route}" },
-			"play.probe 는 자동 재생 변수")
+		same(play.probe, {
+			INITIAL2D_AUTOPLAY = "1",
+			INITIAL2D_RPG_ROUTE = "{route}",
+			INITIAL2D_RPG_HOLD = "{event}",
+			INITIAL2D_RPG_TRACE = "1",
+		}, "play.probe는 자동 재생 변수 (그 이벤트를 제자리에 세우고 늘 trace를 켠다)")
 
 		-- 알데바란의 실행 변수는 알데바란 맵에만 붙는다 (등록된 RPG 맵과 겹치지 않는다)
 		local objects = Json.Load(MAP_OBJECTS_PATH) or {}
