@@ -1,6 +1,6 @@
 -- rpgdemo_playenv_test.lua : 데모 맵 씬의 실행 환경 변수 해석 검증 (M2).
 --
--- INITIAL2D_RPG_AT, INITIAL2D_RPG_STATE, INITIAL2D_RPG_ROUTE 의 꼴은 에디터의 실행 명령이
+-- INITIAL2D_RPG_AT, INITIAL2D_RPG_STATE, INITIAL2D_RPG_ROUTE, INITIAL2D_RPG_HOLD 의 꼴은 에디터의 실행 명령이
 -- 만드는 글이다 (docs/plans/m2-rpg-events.md 5.2절). 엔진 없이 도는 순수 함수라 여기서
 -- 꼴마다 본다. 게임에 실제로 실리는지는 tests/run_engine_tests.py 의 test_rpg_play_here 가 본다.
 
@@ -73,6 +73,12 @@ function M.run(t)
 	steps, bad = PlayEnv.parseRoute("up,jump,down")
 	t.check_eq(table.concat(steps, ","), "up,down", "모르는 걸음은 빼고")
 	t.check(#bad == 1 and bad[1].entry == "jump", "모르는 걸음을 알린다")
+
+	-- ---- [3b] INITIAL2D_RPG_HOLD ----------------------------------------------
+	t.check_eq(PlayEnv.parseHold("kid"), "kid", "이벤트 id 그대로")
+	t.check_eq(PlayEnv.parseHold(" kid "), " kid ", "공백도 떼지 않는다 (이벤트 id와 그대로 견준다)")
+	t.check_eq(PlayEnv.parseHold("아이"), "아이", "한글 id")
+	t.check(PlayEnv.parseHold("") == nil and PlayEnv.parseHold(nil) == nil, "빈 값과 없음은 끔")
 
 	-- ---- [4] trace 글과 켜짐 값 ----------------------------------------------
 	t.check_eq(PlayEnv.escape("첫 줄\n둘째 줄"), "첫 줄\\n둘째 줄", "줄바꿈은 \\n 두 글자")

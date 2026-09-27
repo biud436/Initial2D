@@ -1188,7 +1188,7 @@ python3 tools/generate_title.py
 
 `rpg-game.json`과 `items.json`도 맵 파일의 `events`와 같은 규칙으로 읽습니다. 틀린 항목(가운데의 `null` 포함)은 그것만 빼고 `rpg:error:rpg-game.json:maps[2]: 맵 항목이 객체가 아니다`처럼 자리와 함께 알리며, 나머지 맵과 아이템은 그대로 씁니다.
 
-같은 파일의 `play`는 에디터의 "여기서 실행"이 넘기는 환경 변수입니다. 손으로도 같은 것을 줄 수 있습니다.
+같은 파일의 `play`는 에디터가 게임을 띄울 때 넘기는 환경 변수입니다. "여기서 실행"과 "이 이벤트 앞에서 실행"(고른 이벤트의 앞 칸에서 이벤트 쪽을 보고 섭니다)은 `play.env`만 쓰고, "이 이벤트 자동 재생"은 그 위에 `play.probe`를 더해 그 앞 칸에서 말을 한 번 걸고(touch는 한 걸음, auto는 맵에 들어서기만) 스스로 끝납니다. `probe`는 `INITIAL2D_AUTOPLAY=1`, 경로 `INITIAL2D_RPG_ROUTE`, 그 이벤트의 id를 받는 `INITIAL2D_RPG_HOLD`, 그리고 `INITIAL2D_RPG_TRACE=1`입니다. 에디터가 자동 재생의 `rpg:` 줄을 지켜보므로 trace는 `env`와 상관없이 늘 켭니다. 손으로도 같은 것을 줄 수 있습니다.
 
 | 환경 변수 | 하는 일 |
 | :--- | :--- |
@@ -1196,6 +1196,7 @@ python3 tools/generate_title.py
 | `INITIAL2D_RPG_STATE=arrived,silver=2,item:shell=1` | 새 게임의 시작 상태. `이름`은 참, `이름=값`은 값(`true`, `false`, 수, 글), `item:<id>=<n>`은 소지품 |
 | `INITIAL2D_RPG_ROUTE=talk,up,left` | 자동 재생 경로. 한 번만 걷고, 대화는 알아서 넘기며(선택지는 첫 항목), 다 걸은 뒤 도는 이벤트가 없으면 `rpg:route:done`을 찍고 끝납니다. 빈 값이면 걷지 않고 맵에 들어설 때의 auto 이벤트만 기다립니다 |
 | `INITIAL2D_RPG_TRACE=1` | 맵, 플레이어가 선 자리, 이벤트, 대사, 선택지, 이동을 `rpg:` 줄로 찍습니다 |
+| `INITIAL2D_RPG_HOLD=kid` | 첫 맵의 그 이벤트는 배회하지 않고 맵 파일의 칸에 서 있습니다. 찾으면 `rpg:hold:kid`를 한 번 찍고, 없는 id면 `rpg:error:hold:<id>:` 한 줄입니다 |
 
 `INITIAL2D_SCRIPT=lua`도 함께 줍니다. RPG 이벤트 층은 Lua에만 있어서, `game.json`이 mruby를 고른 체크아웃에서는 이것이 없으면 아무 줄도 나오지 않습니다.
 
@@ -1215,7 +1216,32 @@ rpg:message:|누군가의 짐이다. 남쪽으로 간다는 표가 붙어 있다
 rpg:route:done
 ```
 
-`rpg:message:`는 `이름|대사` 꼴이고 대사 안의 줄바꿈은 `\n` 두 글자로 찍습니다. `rpg:player:`는 맵을 열 때마다 실제로 선 칸과 방향이라, 문으로 옮겨 간 뒤의 방향도 이 줄로 확인합니다. 틀린 값은 건너뛰고 `rpg:error:state:item:lamp_oill=1: 아이템 표에 없는 id lamp_oill`처럼 알립니다. `rpg:error:` 줄은 `INITIAL2D_RPG_TRACE` 없이도 늘 나옵니다. 엔진 테스트(`test_rpg_play_here`)가 같은 변수를 `rpg-game.json`에서 만들어 진짜 게임으로 확인합니다.
+배회하는 NPC는 앞의 auto 이벤트(선장의 인사)가 도는 동안 앞 칸을 떠나 버려서, 새 게임 그대로 자동 재생하면 말을 걸 상대가 없습니다. `INITIAL2D_RPG_HOLD`가 그 NPC를 제자리에 세워 둡니다. 에디터의 자동 재생이 넘기는 것과 같은 변수입니다.
+
+```bash
+# 아이(kid, 14,20)의 앞 칸에서 새 게임 그대로 말을 겁니다
+SDL_VIDEODRIVER=dummy INITIAL2D_NO_RTP=1 INITIAL2D_SCRIPT=lua INITIAL2D_SCENE=rpg INITIAL2D_MAP=port_town \
+  INITIAL2D_RPG_AT=14,21,up INITIAL2D_AUTOPLAY=1 INITIAL2D_RPG_ROUTE=talk INITIAL2D_RPG_HOLD=kid \
+  INITIAL2D_RPG_TRACE=1 INITIAL2D_EXIT_AFTER=6000 ./build/Initial2D
+```
+
+```
+rpg:map:port_town events:17 skipped:0
+rpg:player:port_town,14,21,up
+rpg:hold:kid
+rpg:event:arrival
+rpg:message:선장|짐은 다 내렸네. 저녁 물때에 배가 다시 뜨니, 그때까지는 자네 시간이야.
+rpg:message:선장|급할 것 없으면 마을을 좀 둘러보게. 여긴 떠나는 사람을 붙잡지 않는 대신, 남는 사람도 서운하게 하지 않거든.
+rpg:event:kid
+rpg:message:아이|북쪽 문은 어른들이 막아 놨어요. 숲에서 노래가 들린다고요.
+rpg:message:아이|근데 저는 들었어요. 생일 노래 같은 거였는데, 아무도 안 믿어요.
+rpg:message:아이|등대 할아버지한테 물어봐 주세요. 그 할아버지는 뭐든 아니까.
+rpg:route:done
+```
+
+`INITIAL2D_RPG_HOLD` 없이 띄우면 선장의 인사 뒤에 `rpg:event:kid` 없이 `rpg:route:done`으로 끝납니다. HOLD는 `INITIAL2D_RPG_AT`처럼 첫 맵을 처음 열 때만 걸리고, 문으로 옮겨 간 맵에서는 같은 id를 찾지 않습니다.
+
+`rpg:message:`는 `이름|대사` 꼴이고 대사 안의 줄바꿈은 `\n` 두 글자로 찍습니다. `rpg:player:`는 맵을 열 때마다 실제로 선 칸과 방향이라, 문으로 옮겨 간 뒤의 방향도 이 줄로 확인합니다. 틀린 값은 건너뛰고 `rpg:error:state:item:lamp_oill=1: 아이템 표에 없는 id lamp_oill`처럼 알립니다. `rpg:error:`, `rpg:hold:`, `rpg:route:done` 줄은 `INITIAL2D_RPG_TRACE` 없이도 늘 나옵니다. 엔진 테스트(`test_rpg_play_here`)가 같은 변수를 `rpg-game.json`에서 만들어 진짜 게임으로 확인합니다.
 
 ## 이벤트를 맵 파일로 옮기기
 
