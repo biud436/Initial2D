@@ -62,7 +62,7 @@ E5 의 마일스톤 2, 4, 5, 6 은 에디터 저장소의 일이다.
 - `ends: true` 는 "이 뒤의 커맨드는 실행되지 않는다"(`transfer`, `scene`). 에디터가 그 뒤의 커맨드를 경고한다
 - `lists` 의 `perOption` 은 그 목록이 그 인자(`options`)의 항목마다 하나라는 뜻이다. `branches[i]` 가 i 번째 항목의 가지다
 - `summary` 의 `{이름}` 은 그 커맨드의 인자 이름이다. 없으면 에디터가 label 과 첫 필수 인자로 요약한다
-- 스키마는 `commands.lua` 가 호스트에 넘기는 인자를 적는다. 데모 호스트가 버리는 인자(`playBgm.fade`, `Bgm.play` 가 쓰지 않는다)는 칸 이름에 "(지금 데모는 쓰지 않는다)"를 붙인다
+- 스키마는 `commands.lua` 가 호스트에 넘기는 인자를 적는다. 데모 호스트가 버리는 인자(`playBgm.fade`, `Bgm.play` 가 쓰지 않는다)는 칸 이름에 "(현재 데모는 미사용)"을 붙인다
 - 모르는 키는 어디서든 보존한다 (이벤트, 커맨드, 조건). 에디터는 "스키마에 없는 인자"로 보여 주되 지우지 않는다.
   맵 파일 이벤트의 `script` 키도 모르는 키다. 함수 `script` 는 정의 파일만 줄 수 있고, 게임은 함수가 아닌 `script` 값을 쓰지 않는다
 - `state.reserved` 는 깃발과 변수 이름으로 쓸 수 없는 state 자리다 (`["items"]`, 소지품이 사는 `Inventory.KEY`). 스키마 테스트가 대조한다
@@ -375,7 +375,7 @@ Ruby 에는 이벤트 레이어가 없어 커맨드 대조는 Lua 만 한다. �
 | `INITIAL2D_RPG_STATE=arrived,booked=false,silver=2,item:shell=1` | 새 게임의 시작 상태. 쉼표로 가른 항목마다: `이름` 은 참, `이름=값` 은 값(`true`, `false`, 수, 그 밖은 글), `item:<id>=<n>` 은 소지품. Lua 에는 JSON 글을 읽는 함수가 없고(`Json.Load` 는 파일만) 내장 실행의 스테이징은 숨은 폴더를 빼므로 파일 대신 이 꼴이다. 틀린 항목은 `rpg:error:state:<항목>: <이유>` 를 찍고 건너뛴다 |
 | `INITIAL2D_RPG_ROUTE=talk,up,...` | `INITIAL2D_AUTOPLAY` 의 경로를 덮는다. **한 번만** 걷고, 마지막 걸음 뒤 실행기와 대화창이 한가하고 기다리는 auto 가 없으면(`hasPendingAuto()`) `rpg:route:done` 을 찍고 `GameExit()`. 빈 값이면 걸음 없이 그 조건만 기다린다 (auto 이벤트의 자동 재생). 그래서 검사가 프레임 속도에 기대지 않는다 |
 | `INITIAL2D_RPG_TRACE=1` | 아래 줄을 stdout 에 찍는다 |
-| `INITIAL2D_RPG_HOLD=kid` | 첫 맵의 그 id 이벤트는 배회(`wander`)를 켜지 않고 맵 파일의 칸에 서 있다. 찾으면 `rpg:hold:<id>`를, 없으면 `rpg:error:hold:<id>: 맵 <이름>에 이 id의 이벤트가 없다`를 한 번 찍는다. 빈 값이면 꺼짐이다. 에디터의 자동 재생이 `play.probe`의 `{event}`로 넘긴다 |
+| `INITIAL2D_RPG_HOLD=kid` | 첫 맵의 그 id 이벤트는 배회(`wander`)를 켜지 않고 맵 파일의 칸에 서 있다. 찾으면 `rpg:hold:<id>`를, 없으면 `rpg:error:hold:<id>: 맵 <이름>에 이 id의 이벤트 없음`을 한 번 찍는다. 빈 값이면 꺼짐이다. 에디터의 자동 재생이 `play.probe`의 `{event}`로 넘긴다 |
 
 ```
 rpg:map:port_town events:18 skipped:0
@@ -401,7 +401,7 @@ rpg:route:done
 - 대사 안의 줄바꿈은 `\n` 두 글자로 찍는다. `rpg:error:...` 는 TRACE 와 상관없이 늘 찍는다 (3.3)
 - `MAPS` 는 씬을 열 때마다 `rpg-game.json` 에서 만든다 (2.4). 그 파일을 못 읽으면 `rpg:error:rpg-game.json: <이유>` 를 찍고 씬 오류로 띄운다.
   틀린 `maps` 항목은 `rpg:error:rpg-game.json:maps[2]: <이유>` 로 알리고 빼며 나머지 맵은 연다.
-  등록되지 않은 맵(`INITIAL2D_MAP`, `transfer.map`)도 `rpg:error:rpg-game.json: 등록되지 않은 맵 <이름>` 이다
+  등록되지 않은 맵(`INITIAL2D_MAP`, `transfer.map`)도 `rpg:error:rpg-game.json: 등록되지 않은 맵: <이름>` 이다
 - `charset` 에 `file` 이 없으면 플레이어 CharSet 으로 조용히 그리던 것(`def.charset.file or charsetPath`)을 오류로 바꾼다 (3.3 의 정의 파일 오류)
 - `transfer` 의 `dir` 을 다음 맵에서 쓴다. 없으면 정의 파일의 `start.dir` 이다. `rpg:transfer:` 줄은 빠진 인자를 빈칸으로 찍는다 (`rpg:transfer:inn,,,`)
 - `INITIAL2D_RPG_AT` 은 첫 맵에만 걸린다. `x`, `y` 는 0 이상의 정수, `dir` 은 네 방향이고, 틀리면 `rpg:error:at:<값>: <이유>` 를 찍고 정의 파일의 시작에 선다
@@ -520,6 +520,7 @@ E5 초안의 물음 열한 개는 저자가 자리에 없는 동안 리드가 �
 | 환경 변수 해석 | `playenv.lua` 로 떼어 순수 함수로 둔다. 게임 씬은 부르기만 한다 |
 | ROUTE 와 AUTOPLAY | ROUTE 만으로 자동 재생이 된다. 빠뜨려서 안전망 프레임까지 멈춰 있는 실행을 막는다 |
 | `rpg:error` 의 경로 꼴 | 프로젝트 기준, `./` 없이 (3.3). 그 밖의 자리는 `rpg-game.json`, `state:<항목>`, `at:<값>`, `route:<걸음>`, 아이템 표 경로 |
+| 이유 글과 라벨의 문구 | 한다체 대신 명사형으로 끝낸다 (`객체여야 함`, `경로 비어 있음`, `지원하지 않는 방향: north`). 값은 콜론 뒤나 `(현재: v)`에 두고, 타입 이름은 문자열, 숫자, 정수, 불리언이다. 이유 글은 에디터의 같은 검사(`validate.ts`, `game.ts`, `play.ts`)와 글자까지 같아야 하고, 스키마 라벨과 API 설명(`initial2d-api.json`)도 같은 규칙을 따른다. 규칙의 정본은 에디터의 `docs/design/ui-terms.md` 다. 트리거의 화면 이름(결정 키, 플레이어 접촉, 자동 실행, 병렬 처리)은 에디터가 정하고 스키마에는 값만 둔다 |
 | RPG 맵의 저장 형식 | 항구 마을, 여관, 마을, 오두막(두 벌)과 `sample.json` 을 `mapfile.py format` 으로 맞췄다. 바뀐 값은 `version`(1 에서 2)뿐이다. 생성기 둘(`generate_port_maps.py`, `generate_demo_maps.py`)은 `write_map` 으로 쓰고 `events` 를 이어받으며, 다시 돌리면 커밋된 파일과 바이트가 같다. `crates` 는 이제 맵 파일에만 있다 |
 
 ## 8. 작업 항목
@@ -579,6 +580,18 @@ E5 초안의 물음 열한 개는 저자가 자리에 없는 동안 리드가 �
 - [ ] 에디터: `probeEnv`가 `{event}`를 채우고 `yarn sync:rpg`로 새 `rpg-game.json`을 받는다. `yarn test:engine-events`의 [7](새 게임의 kid)이
   실패 알림 대신 `rpg:event:kid`로 끝나야 한다 (에디터 저장소의 일)
 
+### 문구 규칙 (에디터 용어 정리와 함께)
+
+엔진이 내는 이유 글과 스키마 라벨, API 설명을 에디터의 용어 규칙에 맞춘다 (7절 "이유 글과 라벨의 문구").
+
+- [x] `commands.lua`, `mapdata.lua`, `assets.lua`, `event.lua`, 데모의 `config.lua`, `playenv.lua`, `game.lua` 의 이유 글과 `rpg:error` 글.
+  `TYPE_NAMES` 는 문자열, 숫자, 정수, 불리언. 정의 파일 이벤트의 `rpg:error` 에 나오는 `character.lua`, `rng.lua` 의 assert 와
+  `specs.lua` 의 방향 assert 도 같은 규칙이다. Ruby 의 `assets.rb`, `rng.rb`, `specs.rb` 도 같은 글
+- [x] `event-commands.json` 라벨 (`x (타일)`, `루트 단계`, `플래그`, `방향 전환`, `볼륨`, `씬 전환` 등), `map-objects.json` 의 `text` 라벨은 `본문`
+- [x] `initial2d-api.json` 설명과 다시 만든 스텁 둘, 브리지의 HMR 안내 글
+- [x] 글을 보는 테스트(`test_rpg_play_here`, `rpgdemo_playenv_test`, `export_events.py selftest`)의 기대 글
+- [ ] 에디터: 같은 검사의 이유 글, `yarn sync:engine-rpg` 로 받는 스키마, `api-fallback.json` 을 이 커밋의 글로 맞춘다 (에디터 저장소의 일)
+
 ## 9. 검수
 
 | 무엇 | 결과 |
@@ -589,7 +602,7 @@ E5 초안의 물음 열한 개는 저자가 자리에 없는 동안 리드가 �
 | 인수 시나리오와 `rpg_event_scene` | `transfer` 방향 고치기(따로 커밋) 앞뒤로 두 씬의 stdout 이 바이트까지 같다 (`tickUntil` 의 프레임 수 포함). `game.lua` 를 다 고친 뒤에도 그대로 통과 (골든 세 장, 벽 앞 픽셀 검사 포함) |
 | `test_rpg_play_here` (진짜 허브) | 97건 통과 (`INITIAL2D_RPG_HOLD` 뒤, 전에는 83건). 실행 변수는 `rpg-game.json` 의 `play.env` 와 `play.probe` 에서 만든다. 판마다 `rpg:route:done` 으로 스스로 끝난다. [F] 는 깨진 `rpg-game.json` 과 `items.json` 에서 오류 줄이 한 번, 한 줄인지, 그리고 `items[2]`, `maps[2]` 의 `null` 과 객체로 쓴 `items`, `maps` 가 경로와 함께 한 줄이고 나머지 아이템과 맵(`null` 뒤의 여관)은 쓰이는지 본다. [G] 는 검수가 게임을 멈추게 한 다섯 경우(`playSe.id`, `message.name`, `transfer.x`/`y`, `playBgm.volume`, `scene.text`)를 말을 걸 자리에 두고 그 이벤트만 빠지며 rc 0 으로 끝까지 도는지, [H] 는 시작 상태, 시작 칸, 걸음의 LF 와 맵 파일 값의 CR, CRLF, U+2028, U+2029 가 든 `rpg:error` 가 바이트로 받아도 한 줄인지 본다. [I]는 배회하는 아이를 새 게임 그대로 자동 재생해 `rpg:hold:kid`, `rpg:event:kid`, 대사 셋, `rpg:route:done`을 보고, 모르는 id의 오류 한 줄과 첫 맵에만 걸리는 것을 본다. `spawnEvent`가 HOLD를 무시하게 되돌리면 [I]의 두 건(아이가 돈다, 대사 셋)이 깨진다. 같은 변수에서 HOLD만 빼고 띄우면 선장의 인사 뒤 `rpg:event:kid` 없이 `rpg:route:done`으로 끝난다 (에디터가 본 실패와 같다) |
 | `test_rpg_auto_chain` | 8건 통과. auto 둘 사이에 걷지 않고, 다 끝난 뒤에는 걷는다 |
-| 검수의 재현 스크립트 | 검수가 게임을 멈추게 한 경우(`null` 가지 뒤의 얼굴 번호 99)가 이제 `rpg:error` 두 줄과 `skipped:1` 로 그 이벤트만 건너뛰고 끝까지 돈다. `events` 를 객체로 쓴 맵은 `rpg:error:...:events: 이벤트 목록이 배열이 아니다` 를 찍는다. 검수 2 의 스크립트(선택 인자 세 묶음 23가지, 줄바꿈 셋, CR, 아이템 표와 맵 등록의 `null` 과 객체)도 전부 `rpg:error` 한 줄씩과 rc 0 이다 |
+| 검수의 재현 스크립트 | 검수가 게임을 멈추게 한 경우(`null` 가지 뒤의 얼굴 번호 99)가 이제 `rpg:error` 두 줄과 `skipped:1` 로 그 이벤트만 건너뛰고 끝까지 돈다. `events` 를 객체로 쓴 맵은 `rpg:error:...:events: 이벤트 목록은 배열이어야 함` 을 찍는다. 검수 2 의 스크립트(선택 인자 세 묶음 23가지, 줄바꿈 셋, CR, 아이템 표와 맵 등록의 `null` 과 객체)도 전부 `rpg:error` 한 줄씩과 rc 0 이다 |
 | 맵 형식 | 모든 맵이 `mapfile.py check` 를 통과하고 `tests/run_all.sh` 가 `resources/maps/*.json` 을 본다. 생성기 둘을 다시 돌리면 커밋된 맵과 바이트가 같다 |
 | 전체 스위트 (`tests/run_all.sh`, 헤드리스, `INITIAL2D_NO_RTP=1`) | 통과. C++ 단위 18, 엔진 씬 526, 브리지 25 (이 기계는 오디오 장치가 없어 `SDL_AUDIODRIVER=dummy` 를 함께 준다. 없으면 mruby `audio_test` 셋이 master 에서도 실패한다) |
 | 이전 도구 (마일스톤 3) | `export_events.py selftest` 10건 통과. 표본 정의 파일(지역 함수로 두 번 쓰는 얼굴 있는 대사, 실수 2.5, 배회와 구역, 빈 가지, 조건, `script.args`, 플레이어 외형)로 쓴 글 전체를 기대 글과 대조하고, 남기는 여섯 경우(함수, 모르는 칸, 모르는 인자, 자리 밖의 표식, 다른 종류의 표식, 검사에 걸린 이벤트)의 이유 글, 맵 파일 이벤트의 바이트 보존, 되풀이, 멈추는 셋(`alt`, id 없는 이벤트, 등록 안 된 이름)을 본다. `REF_KEYS` 순서를 바꾸거나 조건의 꼴 찾기를 끄면 깨지는 것을 보았다 |

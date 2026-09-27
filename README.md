@@ -937,26 +937,26 @@ Android 빌드에는 아직 mruby가 없습니다 (Lua만 그대로 돕니다). 
 
 커맨드로 적기 어려운 이벤트는 예전처럼 `script = function(self, ctx) ... end`으로 적으면 됩니다. 데이터 안에서 부르려면 맵 정의 파일의 `scripts` 표에 이름을 등록하고 `{ code = "script", name = "이름", args = {...} }`으로 부릅니다. 이름으로 부르므로 JSON을 오가도 왕복이 깨지지 않습니다.
 
-잘못된 커맨드는 **맵을 열 때** 어느 자리인지와 함께 걸립니다 (`[4].branches[1][1]: 알 수 없는 code`). 실행 도중에 조용히 실패하지 않습니다.
+잘못된 커맨드는 **맵을 열 때** 어느 자리인지와 함께 걸립니다 (`[4].branches[1][1]: 스키마에 없는 커맨드: ...`). 실행 도중에 조용히 실패하지 않습니다.
 
 맵 파일의 `events`는 에디터가 쓰는 자리라, 게임이 맵을 열 때 이벤트마다 검사합니다. 틀린 이벤트는 그것만 빼고 나머지로 맵을 열며, 문제마다 한 줄을 stdout에 찍습니다. 경로는 1부터 셉니다.
 
 ```
-rpg:error:resources/maps/port_town.json:events[2].charset.index: 외형: 0..7 의 정수가 아니다 (지금은 9)
+rpg:error:resources/maps/port_town.json:events[2].charset.index: 외형: 0..7 범위의 정수여야 함 (현재: 9)
 ```
 
-커맨드의 인자는 필수든 선택이든 스키마에 적힌 타입과 범위로 검사합니다. `transfer`의 `x`에 글을 넣으면 `...commands[1].x: 정수가 아니다 (지금은 string)`으로 그 이벤트만 빠지고, 게임은 멈추지 않습니다. `rpg:error:` 줄은 값에 줄바꿈이 들어 있어도 늘 한 줄입니다.
+커맨드의 인자는 필수든 선택이든 스키마에 적힌 타입과 범위로 검사합니다. `transfer`의 `x`에 글을 넣으면 `...commands[1].x: 타입 불일치: 정수 필요 (현재: string)`으로 그 이벤트만 빠지고, 게임은 멈추지 않습니다. `rpg:error:` 줄은 값에 줄바꿈이 들어 있어도 늘 한 줄입니다.
 
 정의 파일(Lua)의 이벤트가 틀리면 맵을 열지 않고 화면에 "맵 로드 실패"를 띄우며, 같은 글이 `rpg:error:scripts/lua/maps/village.lua:elder: ...` 꼴로 stdout에도 나옵니다.
 
 트리거는 네 가지입니다.
 
-| 트리거 | 발동 조건 |
-| :--- | :--- |
-| `action` | 플레이어가 인접 칸에서 바라보고 결정키 (앞 칸에 없으면 발밑을 봅니다) |
-| `touch` | 플레이어가 그 칸에 들어섬 |
-| `auto` | 맵 진입 시 한 번, 끝날 때까지 조작 잠금 |
-| `parallel` | 매 프레임 병렬 실행, 조작을 잠그지 않음 |
+| 트리거 | 에디터 이름 | 발동 조건 |
+| :--- | :--- | :--- |
+| `action` | 결정 키 | 플레이어가 인접 칸에서 바라보고 결정키 (앞 칸에 없으면 발밑을 봅니다) |
+| `touch` | 플레이어 접촉 | 플레이어가 그 칸에 들어섬 |
+| `auto` | 자동 실행 | 맵 진입 시 한 번, 끝날 때까지 조작 잠금 |
+| `parallel` | 병렬 처리 | 매 프레임 병렬 실행, 조작을 잠그지 않음 |
 
 스크립트 안에서 쓰는 `ctx`는 다음과 같습니다. 전부 완료될 때까지 기다렸다가 다음 줄로 갑니다.
 
@@ -1186,7 +1186,7 @@ python3 tools/generate_title.py
 { "name": "inn", "file": "resources/maps/inn.json", "def": "scripts/lua/maps/inn.lua" }
 ```
 
-`rpg-game.json`과 `items.json`도 맵 파일의 `events`와 같은 규칙으로 읽습니다. 틀린 항목(가운데의 `null` 포함)은 그것만 빼고 `rpg:error:rpg-game.json:maps[2]: 맵 항목이 객체가 아니다`처럼 자리와 함께 알리며, 나머지 맵과 아이템은 그대로 씁니다.
+`rpg-game.json`과 `items.json`도 맵 파일의 `events`와 같은 규칙으로 읽습니다. 틀린 항목(가운데의 `null` 포함)은 그것만 빼고 `rpg:error:rpg-game.json:maps[2]: 맵 항목은 객체여야 함`처럼 자리와 함께 알리며, 나머지 맵과 아이템은 그대로 씁니다.
 
 같은 파일의 `play`는 에디터가 게임을 띄울 때 넘기는 환경 변수입니다. "여기서 실행"과 "이 이벤트 앞에서 실행"(고른 이벤트의 앞 칸에서 이벤트 쪽을 보고 섭니다)은 `play.env`만 쓰고, "이 이벤트 자동 재생"은 그 위에 `play.probe`를 더해 그 앞 칸에서 말을 한 번 걸고(touch는 한 걸음, auto는 맵에 들어서기만) 스스로 끝납니다. `probe`는 `INITIAL2D_AUTOPLAY=1`, 경로 `INITIAL2D_RPG_ROUTE`, 그 이벤트의 id를 받는 `INITIAL2D_RPG_HOLD`, 그리고 `INITIAL2D_RPG_TRACE=1`입니다. 에디터가 자동 재생의 `rpg:` 줄을 지켜보므로 trace는 `env`와 상관없이 늘 켭니다. 손으로도 같은 것을 줄 수 있습니다.
 
@@ -1241,7 +1241,7 @@ rpg:route:done
 
 `INITIAL2D_RPG_HOLD` 없이 띄우면 선장의 인사 뒤에 `rpg:event:kid` 없이 `rpg:route:done`으로 끝납니다. HOLD는 `INITIAL2D_RPG_AT`처럼 첫 맵을 처음 열 때만 걸리고, 문으로 옮겨 간 맵에서는 같은 id를 찾지 않습니다.
 
-`rpg:message:`는 `이름|대사` 꼴이고 대사 안의 줄바꿈은 `\n` 두 글자로 찍습니다. `rpg:player:`는 맵을 열 때마다 실제로 선 칸과 방향이라, 문으로 옮겨 간 뒤의 방향도 이 줄로 확인합니다. 틀린 값은 건너뛰고 `rpg:error:state:item:lamp_oill=1: 아이템 표에 없는 id lamp_oill`처럼 알립니다. `rpg:error:`, `rpg:hold:`, `rpg:route:done` 줄은 `INITIAL2D_RPG_TRACE` 없이도 늘 나옵니다. 엔진 테스트(`test_rpg_play_here`)가 같은 변수를 `rpg-game.json`에서 만들어 진짜 게임으로 확인합니다.
+`rpg:message:`는 `이름|대사` 꼴이고 대사 안의 줄바꿈은 `\n` 두 글자로 찍습니다. `rpg:player:`는 맵을 열 때마다 실제로 선 칸과 방향이라, 문으로 옮겨 간 뒤의 방향도 이 줄로 확인합니다. 틀린 값은 건너뛰고 `rpg:error:state:item:lamp_oill=1: 아이템 표에 없는 id: lamp_oill`처럼 알립니다. `rpg:error:`, `rpg:hold:`, `rpg:route:done` 줄은 `INITIAL2D_RPG_TRACE` 없이도 늘 나옵니다. 엔진 테스트(`test_rpg_play_here`)가 같은 변수를 `rpg-game.json`에서 만들어 진짜 게임으로 확인합니다.
 
 ## 이벤트를 맵 파일로 옮기기
 

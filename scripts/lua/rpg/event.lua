@@ -42,11 +42,11 @@ M.Event = Event
 -- @param opts.through   true면 외형이 있어도 통행을 막지 않는다
 function M.new(opts)
 	opts = opts or {}
-	assert(opts.id ~= nil, "event: id가 필요하다")
+	assert(opts.id ~= nil, "event: id 필요")
 	local trigger = opts.trigger or "action"
-	assert(M.TRIGGERS[trigger], "event: 알 수 없는 트리거 " .. tostring(trigger))
+	assert(M.TRIGGERS[trigger], "event: 지원하지 않는 트리거: " .. tostring(trigger))
 	assert(opts.script == nil or type(opts.script) == "function",
-		"event: script는 함수여야 한다")
+		"event: script 는 함수여야 함")
 
 	-- 커맨드 목록은 여기서 한 번 검사하고 함수로 바꾼다. 틀린 커맨드는 실행 도중이
 	-- 아니라 맵을 열 때, 어느 자리인지와 함께 드러나야 한다.
@@ -54,7 +54,7 @@ function M.new(opts)
 	if script == nil and opts.commands ~= nil then
 		local env = { scripts = opts.scripts }
 		local ok, errors = Commands.validate(opts.commands, env)
-		assert(ok, "event '" .. tostring(opts.id) .. "'의 커맨드가 잘못되었다:\n  "
+		assert(ok, "event '" .. tostring(opts.id) .. "': 커맨드 검사 실패:\n  "
 			.. table.concat(errors or {}, "\n  "))
 		script = Commands.compile(opts.commands, env)
 	end

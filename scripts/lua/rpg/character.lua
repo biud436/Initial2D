@@ -70,7 +70,7 @@ function M.new(opts)
 	self.tx = opts.tx or 0
 	self.ty = opts.ty or 0
 	self.dir = opts.dir or "down"
-	assert(M.DIR_VECTORS[self.dir] ~= nil, "character: 알 수 없는 방향 " .. tostring(self.dir))
+	assert(M.DIR_VECTORS[self.dir] ~= nil, "character: 지원하지 않는 방향: " .. tostring(self.dir))
 
 	self.speed = opts.speed or 4
 	self.tileW = opts.tileW or 16
@@ -257,7 +257,7 @@ end
 -- @param opts.maxWait  최대 프레임 수 (기본 120)
 -- @param opts.area     { x =, y =, w =, h = } 이 타일 구역 밖으로 나가지 않는다
 function Character:setWander(opts)
-	assert(opts ~= nil and opts.rng ~= nil, "character: 배회에는 rng 주입이 필요하다")
+	assert(opts ~= nil and opts.rng ~= nil, "character: 배회에는 rng 주입 필요")
 	self.wander = {
 		rng = opts.rng,
 		minWait = opts.minWait or 30,
@@ -288,7 +288,7 @@ local MS_PER_FRAME = 1000 / 60
 -- @param opts.skipBlocked true면 막힌 명령을 건너뛴다 (기본은 성공할 때까지 재시도)
 function Character:setRoute(steps, opts)
 	opts = opts or {}
-	assert(type(steps) == "table", "character: 이동 루트는 배열이어야 한다")
+	assert(type(steps) == "table", "character: 이동 루트는 배열이어야 함")
 	self.route = {
 		steps = steps,
 		index = 1,

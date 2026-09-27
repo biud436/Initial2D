@@ -74,7 +74,7 @@
           "name": "text",
           "type": "text",
           "required": true,
-          "label": "글"
+          "label": "본문"
         },
         {
           "name": "skill",

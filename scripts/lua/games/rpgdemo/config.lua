@@ -31,26 +31,26 @@ end
 -- maps 의 항목 하나. 문제를 add(경로, 이유) 로 알린다.
 local function checkMapEntry(entry, here, seen, add)
 	if not Shape.isObject(entry) then
-		add(here, "맵 항목이 객체가 아니다")
+		add(here, "맵 항목은 객체여야 함")
 		return
 	end
 	if not nonEmptyString(entry.name) then
-		add(here .. ".name", "이름이 비었거나 글이 아니다")
+		add(here .. ".name", "이름은 비어 있지 않은 문자열이어야 함")
 	elseif seen[entry.name] ~= nil then
-		add(here .. ".name", "이름 " .. entry.name .. " 가 maps[" .. seen[entry.name] .. "] 와 겹친다")
+		add(here .. ".name", "이름 " .. entry.name .. " 중복 (maps[" .. seen[entry.name] .. "])")
 	end
 	for _, key in ipairs({ "file", "def" }) do
 		if not nonEmptyString(entry[key]) then
-			add(here .. "." .. key, "경로가 비었거나 글이 아니다")
+			add(here .. "." .. key, "경로는 비어 있지 않은 문자열이어야 함")
 		end
 	end
 	if entry.alt ~= nil then
 		if not Shape.isArray(entry.alt) then
-			add(here .. ".alt", "alt 가 배열이 아니다")
+			add(here .. ".alt", "alt 는 배열이어야 함")
 		else
 			for k = 1, Shape.length(entry.alt) do
 				if not nonEmptyString(entry.alt[k]) then
-					add(here .. ".alt[" .. k .. "]", "경로가 비었거나 글이 아니다")
+					add(here .. ".alt[" .. k .. "]", "경로는 비어 있지 않은 문자열이어야 함")
 				end
 			end
 		end
@@ -66,12 +66,12 @@ function M.load(loader)
 	local function fail(path, message)
 		return nil, { { path = path, message = message } }
 	end
-	if loader == nil then return fail("", "Json.Load를 쓸 수 없다") end
+	if loader == nil then return fail("", "Json.Load 사용 불가") end
 	local data, err = loader(M.PATH)
-	if type(data) ~= "table" then return fail("", tostring(err or "읽을 수 없다")) end
-	if not Shape.isObject(data) then return fail("", "설정이 객체가 아니다") end
-	if data.version ~= 1 then return fail("version", "모르는 버전 " .. tostring(data.version)) end
-	if not Shape.isArray(data.maps) then return fail("maps", "맵 목록이 배열이 아니다") end
+	if type(data) ~= "table" then return fail("", tostring(err or "읽기 실패")) end
+	if not Shape.isObject(data) then return fail("", "설정은 객체여야 함") end
+	if data.version ~= 1 then return fail("version", "지원하지 않는 버전: " .. tostring(data.version)) end
+	if not Shape.isArray(data.maps) then return fail("maps", "맵 목록은 배열이어야 함") end
 
 	local problems = {}
 	local function add(path, message)
@@ -91,9 +91,9 @@ function M.load(loader)
 	for k, v in pairs(data) do config[k] = v end
 	config.maps = maps
 	if config.items == nil then
-		add("items", "아이템 표 경로가 없다")
+		add("items", "아이템 표 경로 없음")
 	elseif not nonEmptyString(config.items) then
-		add("items", "아이템 표 경로가 비었거나 글이 아니다")
+		add("items", "아이템 표 경로는 비어 있지 않은 문자열이어야 함")
 		config.items = nil
 	end
 	return config, problems
@@ -119,21 +119,21 @@ end
 -- items 의 항목 하나. 문제를 add(경로, 이유) 로 알린다.
 local function checkItem(item, here, seen, add)
 	if not Shape.isObject(item) then
-		add(here, "아이템이 객체가 아니다")
+		add(here, "아이템은 객체여야 함")
 		return
 	end
 	if not nonEmptyString(item.id) then
-		add(here .. ".id", "id 가 비었거나 글이 아니다")
+		add(here .. ".id", "id 는 비어 있지 않은 문자열이어야 함")
 	elseif seen[item.id] ~= nil then
-		add(here .. ".id", "id " .. item.id .. " 가 items[" .. seen[item.id] .. "] 와 겹친다")
+		add(here .. ".id", "id " .. item.id .. " 중복 (items[" .. seen[item.id] .. "])")
 	end
 	for _, key in ipairs({ "name", "desc" }) do
 		if item[key] ~= nil and type(item[key]) ~= "string" then
-			add(here .. "." .. key, "글이 아니다 (지금은 " .. type(item[key]) .. ")")
+			add(here .. "." .. key, "문자열이어야 함 (현재 타입: " .. type(item[key]) .. ")")
 		end
 	end
 	if item.order ~= nil and not Shape.isInteger(item.order) then
-		add(here .. ".order", "정수가 아니다 (지금은 " .. tostring(item.order) .. ")")
+		add(here .. ".order", "정수여야 함 (현재: " .. tostring(item.order) .. ")")
 	end
 end
 
@@ -144,16 +144,16 @@ function M.loadItems(config, loader)
 	loader = loader or (_G.Json ~= nil and _G.Json.Load) or nil
 	local path = config and config.items or nil
 	if not nonEmptyString(path) then return {}, {}, nil end
-	if loader == nil then return {}, { { path = "", message = "Json.Load를 쓸 수 없다" } }, path end
+	if loader == nil then return {}, { { path = "", message = "Json.Load 사용 불가" } }, path end
 	local data, err = loader(M.projectPath(path))
 	if type(data) ~= "table" then
-		return {}, { { path = "", message = tostring(err or "읽을 수 없다") } }, path
+		return {}, { { path = "", message = tostring(err or "읽기 실패") } }, path
 	end
 	if not Shape.isObject(data) then
-		return {}, { { path = "", message = "아이템 표가 객체가 아니다" } }, path
+		return {}, { { path = "", message = "아이템 표는 객체여야 함" } }, path
 	end
 	if not Shape.isArray(data.items) then
-		return {}, { { path = "items", message = "아이템 목록이 배열이 아니다" } }, path
+		return {}, { { path = "items", message = "아이템 목록은 배열이어야 함" } }, path
 	end
 
 	local problems = {}
