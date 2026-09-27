@@ -23,7 +23,8 @@ from PIL import Image
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _args = [a for a in sys.argv[1:] if not a.startswith("--")]
-GAME = _args[0] if _args else os.path.join(REPO, "build", "Initial2D")
+# 씬마다 임시 작업 폴더에서 실행하므로 상대 경로는 여기서 절대 경로로 바꾼다
+GAME = os.path.abspath(_args[0]) if _args else os.path.join(REPO, "build", "Initial2D")
 
 # 골든 스크린샷 (docs/plans/09-testing.md 3.3절)
 # 갱신은 의도적 절차로만: --update-golden 을 명시하고, 갱신된 이미지를 눈으로 확인한 뒤 커밋한다.

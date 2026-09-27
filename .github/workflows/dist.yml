@@ -1,0 +1,196 @@
+# 배포용 엔진 빌드 (R4, docs/plans/r4-dist-build.md)
+#
+# macOS arm64 와 Linux x86_64 에서 SDL2, SDL2_image, SDL2_mixer, mruby 를 소스에서 정적으로 빌드한 엔진 실행 파일을
+# 만들어 검사하고, 새 프로젝트 템플릿 묶음과 제3자 고지를 한데 모아 워크플로 산출물로 올린다.
+# 릴리스는 만들지 않는다. 태그를 밀어도 산출물만 나온다 (공개 릴리스는 저자가 정한다).
+#
+# 각 단계는 로컬에서도 같은 명령으로 돈다: tools/build_dist.sh, tools/check_dist.sh, tests/run_engine_tests.py,
+# tests/tools/templates_test.py, tools/pack_templates.py. 기존 tests.yml(Homebrew 빌드의 전체 검수)은 그대로다.
+name: dist
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - CMakeLists.txt
+      - cmake/**
+      - src/platform/sdl2/sdl2Main.cpp
+      - tools/sdl_versions.sh
+      - tools/fetch_sdl_src.sh
+      - tools/build_mruby.sh
+      - tools/build_dist.sh
+      - tools/check_dist.sh
+      - tools/engine_dist_json.py
+      - tools/pack_templates.py
+      - tools/templates_list.txt
+      - resources/templates/**
+      - tests/tools/templates_test.py
+      - THIRD-PARTY.md
+      - .github/workflows/dist.yml
+  push:
+    tags: ["v2.*"]
+
+permissions:
+  contents: read
+
+jobs:
+  # 타깃마다 배포용 엔진을 만들고 검사한다
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-26
+            target: aarch64-apple-darwin
+          - runner: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    env:
+      SDL_VIDEODRIVER: dummy
+      SDL_AUDIODRIVER: dummy
+    steps:
+      # git describe 가 태그를 보도록 전체 이력을 받는다
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 의존성 (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install ruby bison
+          python3 -m pip install --break-system-packages pillow numpy
+
+      # SDL 을 소스에서 빌드할 헤더. X11, Wayland, ALSA, PulseAudio 는 실행 중에 dlopen 하므로 실행 파일은 이것들에 링크되지 않는다
+      - name: 의존성 (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ruby bison \
+            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxss-dev \
+            libwayland-dev libxkbcommon-dev libegl1-mesa-dev libgl1-mesa-dev \
+            libasound2-dev libpulse-dev libdbus-1-dev libudev-dev
+          python3 -m pip install --user pillow numpy
+
+      # 판 헤더가 --dirty 를 달지 않게 그림을 만들기 전에 빌드한다
+      - name: 배포용 엔진 빌드
+        run: tools/build_dist.sh
+
+      - name: 배포용 엔진 검사
+        run: tools/check_dist.sh "dist/Initial2D-${{ matrix.target }}"
+
+      - name: 플레이스홀더 그림 (gitignore 된 최상위 PNG)
+        run: python3 tools/generate_placeholder_assets.py
+
+      # macOS 는 전체 씬 검수로 stb 디코더가 골든을 지키는지 본다. Linux 는 먼저 플래피 씬만
+      - name: 씬 검수
+        run: |
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            python3 tests/run_engine_tests.py "dist/Initial2D-${{ matrix.target }}"
+          else
+            python3 tests/run_engine_tests.py "dist/Initial2D-${{ matrix.target }}" --only=flappy
+          fi
+
+      - name: 템플릿 검사
+        run: python3 tests/tools/templates_test.py "dist/Initial2D-${{ matrix.target }}"
+
+      - name: 산출물
+        uses: actions/upload-artifact@v4
+        with:
+          name: engine-${{ matrix.target }}
+          path: |
+            dist/Initial2D-${{ matrix.target }}
+            dist/engine-dist.json
+          if-no-files-found: error
+
+      - name: 실패 시 프레임 덤프
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frame-dumps-${{ matrix.target }}
+          path: /tmp/initial2d_*.bmp
+          if-no-files-found: ignore
+
+  # 템플릿 묶음. 플래피 그림 넷은 생성물이라, 묶기 전에 같은 그림으로 macOS 배포용 엔진의 플래피 씬 검수를 돌린다
+  templates:
+    needs: native
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      SDL_VIDEODRIVER: dummy
+      SDL_AUDIODRIVER: dummy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 의존성
+        run: python3 -m pip install --break-system-packages pillow numpy
+
+      - name: macOS 배포용 엔진
+        uses: actions/download-artifact@v4
+        with:
+          name: engine-aarch64-apple-darwin
+          path: dist
+
+      # 산출물 zip 은 실행 권한을 잃는다
+      - name: 실행 권한
+        run: chmod +x dist/Initial2D-aarch64-apple-darwin
+
+      - name: 플레이스홀더 그림 (gitignore 된 최상위 PNG)
+        run: python3 tools/generate_placeholder_assets.py
+
+      - name: 묶을 그림으로 플래피 씬 검수
+        run: python3 tests/run_engine_tests.py dist/Initial2D-aarch64-apple-darwin --only=flappy
+
+      - name: 템플릿 검사
+        run: python3 tests/tools/templates_test.py dist/Initial2D-aarch64-apple-darwin
+
+      - name: 템플릿 묶음
+        run: python3 tools/pack_templates.py
+
+      - name: 산출물
+        uses: actions/upload-artifact@v4
+        with:
+          name: templates
+          path: dist/Initial2D-templates.zip
+          if-no-files-found: error
+
+  # 한 폴더로 모은다: 타깃별 엔진, 템플릿 묶음, 합친 engine-dist.json, THIRD-PARTY.md, SHA256SUMS.txt
+  collect:
+    needs: [native, templates]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 산출물 받기
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: 모으기
+        run: |
+          set -euo pipefail
+          out=initial2d-dist
+          mkdir -p "$out"
+          for target in aarch64-apple-darwin x86_64-unknown-linux-gnu; do
+            cp "artifacts/engine-$target/Initial2D-$target" "$out/"
+            chmod +x "$out/Initial2D-$target"
+          done
+          python3 tools/engine_dist_json.py merge "$out/engine-dist.json" \
+            artifacts/engine-aarch64-apple-darwin/engine-dist.json \
+            artifacts/engine-x86_64-unknown-linux-gnu/engine-dist.json
+          cp artifacts/templates/Initial2D-templates.zip "$out/"
+          cp THIRD-PARTY.md "$out/"
+          (cd "$out" && sha256sum Initial2D-* engine-dist.json THIRD-PARTY.md > SHA256SUMS.txt)
+          cat "$out/SHA256SUMS.txt"
+          cat "$out/engine-dist.json"
+
+      - name: 산출물
+        uses: actions/upload-artifact@v4
+        with:
+          name: initial2d-dist-${{ github.sha }}
+          path: initial2d-dist
+          if-no-files-found: error
