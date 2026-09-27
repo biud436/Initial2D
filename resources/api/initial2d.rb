@@ -4,52 +4,52 @@
 # 명세 version 1
 #
 # 씬 계약: 엔진이 부르는 최상위 메서드 (없는 것은 부르지 않는다)
-#   def init; end                  처음 한 번 부른다
-#   def update(elapsed_ms); end    고정 스텝마다 부른다 (경과 시간은 ms)
-#   def render; end                매 프레임 그릴 때 부른다
-#   def destroy; end               끝날 때 한 번 부른다
+#   def init; end                  처음 1번 호출
+#   def update(elapsed_ms); end    고정 스텝마다 호출 (경과 시간은 ms)
+#   def render; end                매 프레임 그리기 단계에서 호출
+#   def destroy; end               종료 시 1번 호출
 
-# 화면 크기, 렌더 배율, 비트맵 폰트 글자, 점 찍기 (Lua 는 전역 함수)
+# 화면 크기, 렌더 배율, 비트맵 폰트 텍스트, 점 그리기 (Lua 는 전역 함수)
 module Graphics
-  # 논리 해상도의 가로 픽셀 수 (렌더 배율로 나눈 값)
+  # 논리 해상도 너비 (px, 렌더 배율로 나눈 값)
   # @return [Integer]
   def self.width; end
 
-  # 논리 해상도의 세로 픽셀 수 (렌더 배율로 나눈 값)
+  # 논리 해상도 높이 (px, 렌더 배율로 나눈 값)
   # @return [Integer]
   def self.height; end
 
-  # 지금의 픽셀 확대 배율
+  # 현재 픽셀 확대 배율
   # @return [Integer]
   def self.render_scale; end
 
-  # 픽셀 확대 배율을 정하고 적용된 값을 돌려준다 (1 에서 16 사이로 자른다)
+  # 픽셀 확대 배율 설정. 적용된 값 반환 (1 에서 16 사이로 제한)
   # @param [Integer] scale
   # @return [Integer]
   def self.render_scale=(scale); end
 
-  # 최근의 초당 프레임 수 (SDL2 백엔드는 보통 60)
+  # 최근 초당 프레임 수 (FPS, SDL2 백엔드는 보통 60)
   # @return [Integer]
   def self.frame_count; end
 
-  # 비트맵 폰트를 읽어 글자 그리기에 쓴다. 실패하면 false
+  # 비트맵 폰트(.fnt)를 로드해 텍스트 그리기에 사용. 로드에 성공하면 true
   # @param [String] path BMFont .fnt 파일 경로
   # @return [Boolean]
   def self.prepare_font(path); end
 
-  # 준비한 비트맵 폰트로 글자를 그리고 그린 픽셀 폭을 돌려준다 (폰트가 없으면 0)
+  # 로드한 비트맵 폰트로 텍스트 그리기. 그린 너비(px) 반환 (폰트가 없으면 0)
   # @param [Numeric] x
   # @param [Numeric] y
   # @param [String] text
   # @return [Integer]
   def self.draw_text(x, y, text); end
 
-  # 그리지 않고 글자의 픽셀 폭만 잰다 (폰트가 없으면 0)
+  # 텍스트 너비 (px, 그리지 않고 측정, 폰트가 없으면 0)
   # @param [String] text
   # @return [Integer]
   def self.text_width(text); end
 
-  # draw_point 가 찍을 색을 정한다 (Lua 는 넷 다 줘야 하고 0 을 돌려준다)
+  # draw_point 의 색 설정 (Lua 는 인자 4개 모두 필요, 0 반환)
   # @param [Integer] r
   # @param [Integer] g
   # @param [Integer] b
@@ -57,7 +57,7 @@ module Graphics
   # @return [void]
   def self.set_color(r, g, b, a = 255); end
 
-  # 정해 둔 색(Lua 는 draw_set_color, Ruby 는 set_color)으로 점 하나를 찍는다 (Lua 는 0 을 돌려준다)
+  # 점 1개 그리기 (색은 Lua 는 draw_set_color, Ruby 는 set_color 로 설정, Lua 는 0 반환)
   # @param [Integer] x
   # @param [Integer] y
   # @return [void]
@@ -70,87 +70,87 @@ module System
   # @return [String]
   def self.platform; end
 
-  # 이번 프레임을 마치고 게임을 끝낸다
+  # 현재 프레임 처리 후 게임 종료
   # @return [void]
   def self.exit; end
 
-  # 작업 디렉터리 경로 (Ruby 는 언제나 / 구분자, Lua 는 인자를 주면 \ 를 / 로 바꾼다)
+  # 작업 디렉터리 경로 (Ruby 는 항상 / 구분자, Lua 는 인자를 지정하면 \ 를 / 로 변환)
   # @return [String]
   def self.current_directory; end
 
-  # ./resources 아래 파일의 경로 목록 (하위 폴더까지, 예: ./resources/maps/sample.json)
+  # ./resources 아래 파일의 경로 목록 (하위 폴더 포함, 예: ./resources/maps/sample.json)
   # @return [Array<String>]
   def self.resource_files; end
 
-  # 메시지 상자를 띄운다 (첫 인자가 본문, 둘째가 제목)
+  # 메시지 상자 표시 (첫 번째 인자는 본문, 두 번째는 제목)
   # @param [String] text 본문
   # @param [String] caption 제목, 기본값 ""
   # @return [void]
   def self.message_box(text, caption = ""); end
 
-  # 창 아이콘을 이미지 파일로 바꾼다
+  # 창 아이콘을 이미지 파일로 변경
   # @param [String] path
   # @return [void]
   def self.app_icon=(path); end
 
-  # 환경 변수 값, 없으면 nil (mruby 에는 ENV 가 없다. Lua 는 os.getenv)
+  # 환경 변수 값, 없으면 nil (mruby 에는 ENV 없음. Lua 는 os.getenv)
   # @param [String] name
   # @return [String, nil]
   def self.env(name); end
 
-  # 지금 도는 스크립트 백엔드 이름 (언제나 "mruby")
+  # 현재 실행 중인 스크립트 백엔드 이름 (항상 "mruby")
   # @return [String]
   def self.script; end
 end
 
-# 스크립트 파일 읽기와 출력 (Lua 는 전역 함수, Ruby 는 받는 쪽 없이 부르는 Kernel 메서드)
+# 스크립트 파일 로드와 출력 (Lua 는 전역 함수, Ruby 는 수신자 없이 호출하는 Kernel 메서드)
 module Kernel
-  # Ruby 파일을 매번 다시 읽어 실행한다. 실패하면 예외 (Lua 의 LoadScript 에 해당)
+  # Ruby 파일을 매번 다시 로드해 실행. 실패하면 예외 (Lua 의 LoadScript 에 해당)
   # @param [String] path
   # @return [Boolean]
   def load(path); end
 
-  # Ruby 파일을 한 번만 읽는다. 새로 읽었으면 true
-  # @param [String] path 작업 디렉터리 기준, .rb 는 붙여 준다
+  # Ruby 파일을 한 번만 로드. 새로 로드했으면 true
+  # @param [String] path 작업 디렉터리 기준, .rb 는 자동으로 추가
   # @return [Boolean]
   def require(path); end
 end
 
-# 키보드, 마우스, 멀티터치 입력 (고정 스텝마다 상태를 읽는다)
+# 키보드, 마우스, 멀티터치 입력 (고정 스텝마다 상태 갱신)
 module Input
-  # 이번 틱에 눌렸는가
-  # @param [Integer, Symbol] key 가상 키 코드 (Ruby 는 Keys 상수 이름 Symbol 도 된다)
+  # 이번 틱에 눌렸으면 true
+  # @param [Integer, Symbol] key 가상 키 코드 (Ruby 는 Keys 상수 이름의 Symbol 도 허용)
   # @return [Boolean]
   def self.key_down?(key); end
 
-  # 이번 틱에 떼었는가
-  # @param [Integer, Symbol] key 가상 키 코드 (Ruby 는 Keys 상수 이름 Symbol 도 된다)
+  # 이번 틱에 떼었으면 true
+  # @param [Integer, Symbol] key 가상 키 코드 (Ruby 는 Keys 상수 이름의 Symbol 도 허용)
   # @return [Boolean]
   def self.key_up?(key); end
 
-  # 눌린 채로 있는가
-  # @param [Integer, Symbol] key 가상 키 코드 (Ruby 는 Keys 상수 이름 Symbol 도 된다)
+  # 눌린 상태면 true
+  # @param [Integer, Symbol] key 가상 키 코드 (Ruby 는 Keys 상수 이름의 Symbol 도 허용)
   # @return [Boolean]
   def self.key_press?(key); end
 
-  # 이번 틱에 아무 키나 눌렸는가
+  # 이번 틱에 아무 키나 눌렸으면 true
   # @return [Boolean]
   def self.any_key_down?; end
 
-  # key_down? 의 RGSS 식 별명 (눌린 순간)
-  # @param [Integer, Symbol] key 가상 키 코드 (Ruby 는 Keys 상수 이름 Symbol 도 된다)
+  # key_down? 의 별칭 (RGSS 이름). 이번 틱에 눌렸으면 true
+  # @param [Integer, Symbol] key 가상 키 코드 (Ruby 는 Keys 상수 이름의 Symbol 도 허용)
   # @return [Boolean]
   # @see key_down?
   def self.trigger?(key); end
 
-  # key_press? 의 RGSS 식 별명 (눌린 채)
-  # @param [Integer, Symbol] key 가상 키 코드 (Ruby 는 Keys 상수 이름 Symbol 도 된다)
+  # key_press? 의 별칭 (RGSS 이름). 눌린 상태면 true
+  # @param [Integer, Symbol] key 가상 키 코드 (Ruby 는 Keys 상수 이름의 Symbol 도 허용)
   # @return [Boolean]
   # @see key_press?
   def self.press?(key); end
 
-  # key_up? 의 RGSS 식 별명 (뗀 순간)
-  # @param [Integer, Symbol] key 가상 키 코드 (Ruby 는 Keys 상수 이름 Symbol 도 된다)
+  # key_up? 의 별칭 (RGSS 이름). 이번 틱에 떼었으면 true
+  # @param [Integer, Symbol] key 가상 키 코드 (Ruby 는 Keys 상수 이름의 Symbol 도 허용)
   # @return [Boolean]
   # @see key_up?
   def self.release?(key); end
@@ -163,65 +163,65 @@ module Input
   # @return [Numeric]
   def self.mouse_y; end
 
-  # 이번 틱에 마우스 버튼이 눌렸는가
-  # @param [Integer, Symbol] button 0 왼쪽, 1 오른쪽, 2 가운데 (Ruby 는 :left, :right, :middle 도 된다)
+  # 이번 틱에 마우스 버튼이 눌렸으면 true
+  # @param [Integer, Symbol] button 0 왼쪽, 1 오른쪽, 2 가운데 (Ruby 는 :left, :right, :middle 도 허용)
   # @return [Boolean]
   def self.mouse_down?(button); end
 
-  # 이번 틱에 마우스 버튼을 떼었는가
-  # @param [Integer, Symbol] button 0 왼쪽, 1 오른쪽, 2 가운데 (Ruby 는 :left, :right, :middle 도 된다)
+  # 이번 틱에 마우스 버튼을 떼었으면 true
+  # @param [Integer, Symbol] button 0 왼쪽, 1 오른쪽, 2 가운데 (Ruby 는 :left, :right, :middle 도 허용)
   # @return [Boolean]
   def self.mouse_up?(button); end
 
-  # 마우스 버튼이 눌린 채로 있는가
-  # @param [Integer, Symbol] button 0 왼쪽, 1 오른쪽, 2 가운데 (Ruby 는 :left, :right, :middle 도 된다)
+  # 마우스 버튼이 눌린 상태면 true
+  # @param [Integer, Symbol] button 0 왼쪽, 1 오른쪽, 2 가운데 (Ruby 는 :left, :right, :middle 도 허용)
   # @return [Boolean]
   def self.mouse_press?(button); end
 
-  # 이번 틱에 아무 마우스 버튼이나 눌렸는가
+  # 이번 틱에 아무 마우스 버튼이나 눌렸으면 true
   # @return [Boolean]
   def self.any_mouse_down?; end
 
-  # 마우스 휠 값 (올림과 내림을 -1 과 1 로)
+  # 마우스 휠 값 (올림 -1, 내림 1)
   # @return [Integer]
   def self.mouse_z; end
 
-  # 마우스 휠 값을 정한다
+  # 마우스 휠 값 설정
   # @param [Integer] wheel
   # @return [void]
   def self.mouse_z=(wheel); end
 
-  # 이번 틱에 보이는 손가락 수 (뗀 손가락도 한 틱 보인다, GDI 는 언제나 0)
+  # 이번 틱의 터치 수 (뗀 터치도 1틱 동안 포함, GDI 는 항상 0)
   # @return [Integer]
   def self.touch_count; end
 
-  # 손가락 하나의 id, x, y, 단계(down, press, up). 범위 밖이면 nil
+  # 터치 1개의 id, x, y, 단계(down, press, up). 범위 밖이면 nil
   # @param [Integer] index Lua 는 1 부터, Ruby 는 0 부터
   # @return [Array, nil]
   def self.touch(index); end
 
-  # 이번 틱의 손가락 전부 ([id, x, y, 단계] 의 배열)
+  # 이번 틱의 모든 터치 ([id, x, y, 단계] 의 배열)
   # @return [Array<Array>]
   def self.touches; end
 end
 
-# 배경 음악과 효과음 (SDL_mixer, 파일은 재생할 때 읽고 id 로 찾는다)
+# 배경 음악과 효과음 (SDL_mixer, 파일은 재생 시 로드하고 id 로 구분)
 module Audio
-  # 음악 파일을 읽어 배경 음악으로 튼다 (Lua 는 loop 까지 셋 다 줘야 한다)
+  # 음악 파일을 로드해 배경 음악으로 재생 (Lua 는 loop 까지 인자 3개 모두 필요). Ruby 는 로드에 성공하면 true
   # @param [String] path
   # @param [String] id
-  # @param [Boolean, Integer] loop true 무한 반복, false 한 번, 숫자는 SDL_mixer 루프 값 그대로, 기본값 true
+  # @param [Boolean, Integer] loop true 무한 반복, false 1회, 숫자는 SDL_mixer 루프 값 그대로, 기본값 true
   # @return [Boolean]
   def self.play_music(path, id, loop = true); end
 
-  # 효과음 파일을 읽어 튼다 (Lua 는 loop 까지 셋 다 줘야 한다)
+  # 효과음 파일을 로드해 재생 (Lua 는 loop 까지 인자 3개 모두 필요). Ruby 는 로드에 성공하면 true
   # @param [String] path
   # @param [String] id
-  # @param [Boolean, Integer] loop true 무한 반복, false 한 번, 숫자는 SDL_mixer 루프 값 그대로, 기본값 false
+  # @param [Boolean, Integer] loop true 무한 반복, false 1회, 숫자는 SDL_mixer 루프 값 그대로, 기본값 false
   # @return [Boolean]
   def self.play_sound(path, id, loop = false); end
 
-  # 배경 음악 볼륨을 정한다 (0..255 를 SDL_mixer 의 0..128 로 바꾼다)
+  # 배경 음악 볼륨 설정 (0..255 를 SDL_mixer 의 0..128 로 변환)
   # @param [Integer] volume 0 에서 255
   # @return [void]
   def self.volume=(volume); end
@@ -230,78 +230,78 @@ module Audio
   # @return [Integer]
   def self.volume; end
 
-  # 지금 곡이 끝나면 이어서 틀 음악을 예약한다 (Lua 는 loop 까지 셋 다 줘야 한다)
+  # 현재 곡이 끝난 뒤 재생할 음악 예약 (Lua 는 loop 까지 인자 3개 모두 필요). Ruby 는 로드에 성공하면 true
   # @param [String] path
   # @param [String] id
-  # @param [Boolean, Integer] loop true 무한 반복, false 한 번, 숫자는 SDL_mixer 루프 값 그대로, 기본값 true
+  # @param [Boolean, Integer] loop true 무한 반복, false 1회, 숫자는 SDL_mixer 루프 값 그대로, 기본값 true
   # @return [Boolean]
   def self.insert_next_music(path, id, loop = true); end
 
-  # 배경 음악을 잠시 멈춘다
+  # 배경 음악 일시 정지
   # @return [void]
   def self.pause_music; end
 
-  # 배경 음악을 멈춘다
+  # 배경 음악 정지
   # @return [void]
   def self.stop_music; end
 
-  # 잠시 멈춘 배경 음악을 잇는다
+  # 일시 정지한 배경 음악 재개
   # @return [void]
   def self.resume_music; end
 
-  # 배경 음악이 나오고 있는가
+  # 배경 음악 재생 중이면 true
   # @return [Boolean]
   def self.playing_music?; end
 
-  # 배경 음악을 ms 동안 줄이며 끈다
+  # ms 동안 페이드 아웃 후 배경 음악 정지
   # @param [Integer] ms
   # @return [void]
   def self.fade_out_music(ms); end
 
-  # 배경 음악의 재생 위치(초)를 옮긴다
+  # 배경 음악 재생 위치(초) 이동
   # @param [Numeric] seconds
   # @return [void]
   def self.music_position=(seconds); end
 
-  # 읽어 둔 음악을 메모리에서 놓는다
+  # 로드한 음악을 메모리에서 해제
   # @param [String] id
   # @return [void]
   def self.release_music(id); end
 end
 
-# JSON 읽기 (객체는 표나 Hash, 배열은 배열, null 은 nil)
+# JSON 읽기 (객체는 Lua 테이블이나 Hash, 배열은 배열, null 은 nil)
 module Json
-  # JSON 파일을 읽는다. 실패하면 Lua 는 nil 과 메시지, Ruby 는 RuntimeError
+  # JSON 파일 읽기. 실패 시 Lua 는 nil 과 오류 메시지, Ruby 는 RuntimeError
   # @param [String] path
   # @return [Object]
   def self.load(path); end
 
-  # JSON 문자열을 바로 읽는다. 실패하면 RuntimeError
+  # JSON 문자열 파싱. 실패 시 RuntimeError
   # @param [String] text
   # @return [Object]
   def self.parse(text); end
 end
 
-# 텍스처 캐시 (이미지를 id 로 등록하고 스프라이트가 id 로 찾는다)
+# 텍스처 캐시 (이미지를 id 로 등록, 스프라이트가 id 로 참조)
 module TextureManager
-  # 이미지 파일을 읽어 id 로 등록한다
+  # 이미지 파일을 텍스처로 로드해 id 로 등록. 로드에 성공하면 true
   # @param [String] path
   # @param [String] id
   # @return [Boolean]
   def self.load(path, id); end
 
-  # id 의 텍스처를 놓는다
+  # id 의 텍스처 해제 (등록되지 않은 id 도 true)
   # @param [String] id
   # @return [Boolean]
   def self.remove(id); end
 
-  # id 로 등록된 텍스처가 있는가
+  # id 로 등록된 텍스처가 있으면 true
   # @param [String] id
   # @return [Boolean]
   def self.valid?(id); end
 end
 
-# 가상 키 상수 (Windows 가상 키 값, Input 이 Symbol 을 받을 때 여기서 찾는다)
+# 가상 키 상수 (Windows 가상 키 값, Input 메서드에 Symbol 을 넘기면 이 상수에서 조회)
 module Keys
   BACK = 8
   BACKSPACE = 8
@@ -387,18 +387,18 @@ module Keys
   F12 = 123
 end
 
-# 텍스처 한 장을 그리는 스프라이트 (시트 애니메이션, 회전, 확대, 투명도)
+# 텍스처 1장을 그리는 스프라이트 (시트 애니메이션, 회전, 확대, 불투명도)
 class Sprite
-  # 스프라이트를 만든다. 텍스처는 TextureManager 에 먼저 올려 둔다 (Lua 는 인자가 모자라면 0)
+  # 스프라이트 생성. 텍스처는 TextureManager 에 먼저 등록 필요 (Lua 는 인자가 부족하면 0 반환)
   # @param [Numeric] x
   # @param [Numeric] y
   # @param [Integer] width
   # @param [Integer] height
   # @param [Integer] max_frames
-  # @param [String] texture_id TextureManager 에 올린 id
+  # @param [String] texture_id TextureManager 에 등록한 id
   def initialize(x, y, width, height, max_frames, texture_id); end
 
-  # 텍스처를 읽고 스프라이트를 만든다 (Lua 의 scripts/lua/image.lua 에 해당). 실패하면 RuntimeError
+  # 이미지 파일을 텍스처로 로드해 스프라이트 생성 (Lua 의 scripts/lua/image.lua 에 해당). 실패 시 RuntimeError
   # @param [String] path
   # @param [String] id
   # @param [Numeric] x 기본값 0
@@ -409,12 +409,12 @@ class Sprite
   # @return [Sprite]
   def self.load(path, id, x = 0, y = 0, width = 0, height = 0, frames = 1); end
 
-  # 애니메이션을 경과 시간만큼 넘기고 변환을 확정한다
+  # 경과 시간만큼 애니메이션 진행 후 변환(위치, 확대, 회전) 적용
   # @param [Numeric] elapsed ms
   # @return [Sprite]
   def update(elapsed); end
 
-  # 화면에 그린다
+  # 화면에 그리기
   # @return [Sprite]
   def draw; end
 
@@ -430,23 +430,23 @@ class Sprite
   # @return [Numeric]
   def y; end
 
-  # 위치를 옮긴다
+  # 위치 설정
   # @param [Numeric] x
   # @param [Numeric] y
   # @return [Sprite]
   def set_position(x, y); end
 
-  # x 만 옮긴다
+  # x 좌표만 설정
   # @param [Numeric] x
   # @return [void]
   def x=(x); end
 
-  # y 만 옮긴다
+  # y 좌표만 설정
   # @param [Numeric] y
   # @return [void]
   def y=(y); end
 
-  # [x, y] 로 옮긴다
+  # [x, y] 로 위치 설정
   # @param [Array<Numeric>] pair [x, y]
   # @return [void]
   def position=(pair); end
@@ -455,16 +455,16 @@ class Sprite
   # @return [Numeric]
   def scale; end
 
-  # 확대 배율을 정한다
+  # 확대 배율 설정
   # @param [Numeric] scale
   # @return [void]
   def scale=(scale); end
 
-  # 한 프레임의 가로 픽셀
+  # 한 프레임 너비 (px)
   # @return [Integer]
   def width; end
 
-  # 한 프레임의 세로 픽셀
+  # 한 프레임 높이 (px)
   # @return [Integer]
   def height; end
 
@@ -472,7 +472,7 @@ class Sprite
   # @return [Numeric]
   def angle; end
 
-  # 회전 각도(도)를 정한다
+  # 회전 각도(도) 설정
   # @param [Numeric] degrees
   # @return [void]
   def angle=(degrees); end
@@ -481,16 +481,16 @@ class Sprite
   # @return [Numeric]
   def radians; end
 
-  # 회전 각도(라디안)를 정한다
+  # 회전 각도(라디안) 설정
   # @param [Numeric] radians
   # @return [void]
   def radians=(radians); end
 
-  # 보이는가
+  # 보이는 상태면 true
   # @return [Boolean]
   def visible?; end
 
-  # 보일지 정한다
+  # 표시 여부 설정
   # @param [Boolean] visible
   # @return [void]
   def visible=(visible); end
@@ -499,7 +499,7 @@ class Sprite
   # @return [Integer]
   def opacity; end
 
-  # 불투명도를 정한다
+  # 불투명도 설정
   # @param [Integer] opacity 0 에서 255
   # @return [void]
   def opacity=(opacity); end
@@ -508,14 +508,14 @@ class Sprite
   # @return [Numeric]
   def frame_delay; end
 
-  # 프레임 사이 시간을 정한다
+  # 프레임 사이 시간 설정
   # @param [Numeric] delay ms
   # @return [void]
   def frame_delay=(delay); end
 
-  # 애니메이션 프레임 범위를 정한다 (둘째 인자는 끝의 다음)
+  # 애니메이션 프레임 범위 설정 (last 는 마지막 프레임의 다음 번호)
   # @param [Integer] first
-  # @param [Integer] last 끝의 다음 프레임 번호
+  # @param [Integer] last 마지막 프레임의 다음 번호
   # @return [Sprite]
   def set_frames(first, last); end
 
@@ -527,40 +527,40 @@ class Sprite
   # @return [Integer]
   def end_frame; end
 
-  # 지금 프레임
+  # 현재 프레임
   # @return [Integer]
   def current_frame; end
 
-  # 지금 프레임을 정한다
+  # 현재 프레임 설정
   # @param [Integer] frame
   # @return [void]
   def current_frame=(frame); end
 
-  # 애니메이션을 되풀이할지 정한다
+  # 애니메이션 반복 여부 설정
   # @param [Boolean] loop
   # @return [void]
   def loop=(loop); end
 
-  # 애니메이션이 끝났는가
+  # 애니메이션이 끝났으면 true
   # @return [Boolean]
   def anim_complete?; end
 
-  # 애니메이션 끝 표시를 정한다
+  # 애니메이션 완료 상태 설정
   # @param [Boolean] complete
   # @return [void]
   def anim_complete=(complete); end
 
-  # 시트 분할을 정한다 (기본 4x4, R2K3 CharSet 은 3x4)
+  # 시트 분할 설정 (열 수 cols, 행 수 rows, 기본 4x4, R2K3 CharSet 은 3x4)
   # @param [Integer] cols
   # @param [Integer] rows
   # @return [Sprite]
   def set_sheet_grid(cols, rows); end
 
-  # 소스 사각형. Lua 는 width, height 칸에 오른쪽, 아래 좌표를 담고, Ruby 는 x, y, right, bottom, width, height 를 이름대로 준다
+  # 소스 사각형 (텍스처에서 잘라 그리는 영역). Lua 는 width, height 키에 오른쪽, 아래 좌표가 들어 있음. Ruby 는 x, y, right, bottom, width, height 키
   # @return [Hash]
   def rect; end
 
-  # 텍스처에서 잘라 그릴 소스 사각형을 정한다 (x, y, width, height 를 가진 표 하나로도 된다)
+  # 소스 사각형 설정 (텍스처에서 잘라 그릴 영역, x, y, width, height 키를 가진 테이블 1개도 허용)
   # @param [Integer] x
   # @param [Integer] y
   # @param [Integer] width
@@ -570,27 +570,27 @@ class Sprite
   # @return [Sprite]
   def set_rect(x, y, width, height); end
 
-  # 스프라이트를 놓는다. 텍스처는 함께 놓지 않는다
+  # 스프라이트 해제 (텍스처는 해제하지 않음)
   # @return [void]
   def dispose; end
 
-  # 이미 놓았는가 (놓은 뒤에 쓰면 RuntimeError)
+  # 이미 해제했으면 true (해제 후 사용하면 RuntimeError)
   # @return [Boolean]
   def disposed?; end
 end
 
-# 맵 포맷 v1, v2 JSON 을 읽어 그리는 다층 타일맵 (x, y 는 0 기준 타일 좌표)
+# 맵 포맷 v1, v2 JSON 을 로드해 그리는 다층 타일맵 (x, y 는 0부터 세는 타일 좌표)
 class Tilemap
-  # 맵 파일을 읽는다. 실패하면 nil (Lua 는 오류 메시지도 함께)
+  # 맵 파일 로드. 실패 시 nil (Lua 는 오류 메시지도 반환)
   # @param [String] path
   # @return [Tilemap, nil]
   def self.load(path); end
 
-  # 맵 파일을 읽는다. 실패하면 RuntimeError (메시지는 로더의 오류)
+  # 맵 파일 로드. 실패 시 RuntimeError (메시지는 로더의 오류)
   # @param [String] path
   def initialize(path); end
 
-  # 레이어 범위를 카메라 오프셋과 함께 그린다 (보이는 타일만)
+  # 레이어 범위를 카메라 오프셋을 적용해 그리기 (화면에 보이는 타일만)
   # @param [Integer] layer_from Lua 는 1 부터, Ruby 는 0 부터
   # @param [Integer] layer_to 양 끝 포함
   # @param [Integer] cam_x 월드 픽셀, 기본값 0
@@ -598,23 +598,23 @@ class Tilemap
   # @return [Tilemap]
   def draw(layer_from, layer_to, cam_x = 0, cam_y = 0); end
 
-  # 가로 타일 수, 세로 타일 수, 타일 가로 픽셀, 타일 세로 픽셀, 레이어 수
+  # 맵 크기 (너비 타일 수, 높이 타일 수, 타일 너비 px, 타일 높이 px, 레이어 수)
   # @return [Array<Integer>]
   def size; end
 
-  # 가로 타일 수
+  # 맵 너비 (타일 수)
   # @return [Integer]
   def width; end
 
-  # 세로 타일 수
+  # 맵 높이 (타일 수)
   # @return [Integer]
   def height; end
 
-  # 타일 한 칸의 가로 픽셀
+  # 타일 너비 (px)
   # @return [Integer]
   def tile_width; end
 
-  # 타일 한 칸의 세로 픽셀
+  # 타일 높이 (px)
   # @return [Integer]
   def tile_height; end
 
@@ -622,14 +622,14 @@ class Tilemap
   # @return [Integer]
   def layer_count; end
 
-  # 타일 gid (빈 칸과 범위 밖은 0)
+  # 타일 gid (빈 타일과 범위 밖은 0)
   # @param [Integer] x
   # @param [Integer] y
   # @param [Integer] layer Lua 는 1 부터, Ruby 는 0 부터
   # @return [Integer]
   def tile_id(x, y, layer); end
 
-  # 타일 gid 를 바꾼다. 범위 밖이면 false
+  # 타일 gid 변경. 변경하면 true, 범위 밖이면 false
   # @param [Integer] x
   # @param [Integer] y
   # @param [Integer] layer Lua 는 1 부터, Ruby 는 0 부터
@@ -637,77 +637,77 @@ class Tilemap
   # @return [Boolean]
   def set_tile_id(x, y, layer, gid); end
 
-  # 지나갈 수 있는 칸인가 (범위 밖은 false)
+  # 타일 좌표 (x, y)가 통행 가능하면 true (범위 밖은 false)
   # @param [Integer] x
   # @param [Integer] y
   # @return [Boolean]
   def passable?(x, y); end
 
-  # 맵을 놓는다. 타일셋 텍스처는 TextureManager 에 남는다
+  # 타일맵 해제 (타일셋 텍스처는 TextureManager 에 남음)
   # @return [void]
   def dispose; end
 
-  # 이미 놓았는가 (놓은 뒤에 쓰면 RuntimeError)
+  # 이미 해제했으면 true (해제 후 사용하면 RuntimeError)
   # @return [Boolean]
   def disposed?; end
 end
 
-# 시스템 폰트로 글자 텍스처를 만드는 동적 폰트 (Windows 전용, macOS 와 Android 는 무동작 스텁)
+# 시스템 폰트로 텍스트 텍스처를 만드는 동적 폰트 (Windows 전용, macOS 와 Android 는 동작 없는 스텁)
 class FontEx
-  # 폰트 이름과 크기, 텍스처 크기로 만든다 (Lua 는 인자가 모자라면 0)
+  # 폰트 이름, 크기, 텍스처 크기로 생성 (Lua 는 인자가 부족하면 0 반환)
   # @param [String] face 폰트 이름
   # @param [Integer] size
   # @param [Integer] width
   # @param [Integer] height
   def initialize(face, size, width, height); end
 
-  # 갱신한다 (지금은 하는 일이 없다)
+  # 갱신 (현재 동작 없음)
   # @param [Numeric] elapsed ms
   # @return [FontEx]
   def update(elapsed); end
 
-  # 화면에 그린다
+  # 화면에 그리기
   # @return [FontEx]
   def draw; end
 
-  # 그릴 글자를 정한다
+  # 표시할 텍스트 설정
   # @param [String] text
   # @return [void]
   def text=(text); end
 
-  # 위치를 정한다
+  # 위치 설정
   # @param [Integer] x
   # @param [Integer] y
   # @return [FontEx]
   def set_position(x, y); end
 
-  # 글자 색을 정한다
+  # 텍스트 색 설정
   # @param [Integer] r
   # @param [Integer] g
   # @param [Integer] b
   # @return [FontEx]
   def set_text_color(r, g, b); end
 
-  # 불투명도를 정한다
+  # 불투명도 설정
   # @param [Integer] opacity 0 에서 255
   # @return [void]
   def opacity=(opacity); end
 
-  # 회전 각도(도)를 정한다
+  # 회전 각도(도) 설정
   # @param [Numeric] degrees
   # @return [void]
   def angle=(degrees); end
 
-  # 글자의 픽셀 폭을 잰다
+  # 텍스트 너비 (px)
   # @param [String] text
   # @return [Integer]
   def text_width(text); end
 
-  # 폰트를 놓는다
+  # 폰트 해제
   # @return [void]
   def dispose; end
 
-  # 이미 놓았는가 (놓은 뒤에 쓰면 RuntimeError)
+  # 이미 해제했으면 true (해제 후 사용하면 RuntimeError)
   # @return [Boolean]
   def disposed?; end
 end
