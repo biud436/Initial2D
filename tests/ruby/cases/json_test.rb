@@ -70,6 +70,14 @@ T.run_case("json") do |t|
   end
   t.check(parse_bad, "깨진 문자열은 RuntimeError")
 
+  # 32비트를 넘는 정수와 int64 밖의 부호 없는 값
+  big = Json.parse('{"a": 2147483648, "b": -2147483649, "c": 9007199254740993, "d": 18446744073709551615}')
+  t.check_eq(big["a"], 2147483648, "2^31 은 Integer")
+  t.check_type(big["a"], Integer, "2^31 의 타입")
+  t.check_eq(big["b"], -2147483649, "-2^31-1 은 Integer")
+  t.check_eq(big["c"], 9007199254740993, "2^53+1 도 정확한 Integer")
+  t.check_type(big["d"], Float, "int64 밖의 부호 없는 값은 Float")
+
   File.delete("./json_test_data.json")
   File.delete("./json_bad_data.json")
 end
