@@ -177,7 +177,7 @@ export function createBridge(options = {}) {
       log(`reload ${bundle.length} files -> ${host}:${port} ${result.reply}`);
       return { ...result, host, port };
     } catch (err) {
-      throw new BridgeError(502, `HMR push failed (${host}:${port}): ${err.message} — 게임이 INITIAL2D_HMR=1 로 실행 중인지 확인`);
+      throw new BridgeError(502, `HMR push failed (${host}:${port}): ${err.message} (게임이 INITIAL2D_HMR=1 로 실행 중이어야 함)`);
     }
   }
 
@@ -510,7 +510,7 @@ export async function main(argv = process.argv.slice(2)) {
   process.stdout.write(
     `[bridge] project ${bridge.projectRoot}\n` +
       `[bridge] listening on http://127.0.0.1:${address.port}  (ws://127.0.0.1:${address.port}/ws)\n` +
-      `[bridge] HMR target ${values['hmr-host'] || '127.0.0.1'}:${values['hmr-port'] || DEFAULT_HMR_PORT} — 게임은 INITIAL2D_HMR=1 로 실행\n`,
+      `[bridge] HMR target ${values['hmr-host'] || '127.0.0.1'}:${values['hmr-port'] || DEFAULT_HMR_PORT} (게임은 INITIAL2D_HMR=1 로 실행)\n`,
   );
   const shutdown = () => {
     bridge.close().then(() => process.exit(0));
