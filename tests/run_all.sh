@@ -42,6 +42,9 @@ python3 tools/export_events.py selftest
 # 타일맵 템플릿이 규칙대로인가 (맵은 mapfile.py 의 형식, 씬은 새 프로젝트처럼 늘어놓고 엔진이 연다),
 # 템플릿 묶음의 목록과 tools/pack_templates.py (R4). [1/6] 의 빌드를 쓴다
 python3 tests/tools/templates_test.py
+# 안드로이드 에셋 스테이징 (android/prepare_assets.sh --project, tools/stage_list.py, tools/stage_rules.json).
+# 규칙 표대로 빠지고 남는가, 스탬프, 인자 없는 실행이 예전과 같은가, web_stage.py 의 목록이 그대로인가
+bash tests/tools/prepare_assets_test.sh
 
 echo ""
 echo "== [4/6] 엔진 씬 테스트 (Lua 단위 + 픽셀 검증 + 골든) =="

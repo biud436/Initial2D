@@ -1388,7 +1388,17 @@ gradle wrapper --gradle-version 8.6   # 최초 1회
 ```
 
 요구 사항: JDK 17, Android SDK (API 34), NDK r27 이상, CMake 3.22 이상.
-에셋은 최초 실행 시 APK assets에서 내부 저장소로 추출된 뒤 사용됩니다. `prepare_assets.sh`는 `resources/RTP.zip`(런타임 미사용, 재배포 불가)과 닷파일을 APK에서 제외합니다.
+에셋은 최초 실행 시 APK assets에서 내부 저장소로 추출된 뒤 사용됩니다. 인자 없는 `prepare_assets.sh`는 이 저장소를 올리고 `resources/RTP.zip`(런타임 미사용, 재배포 불가)과 닷파일을 APK에서 제외합니다.
+
+다른 프로젝트는 `--project`로 올립니다. 규칙은 `tools/stage_rules.json`에 있고 `config.setting`, zip, psd, RTP 변환물을 뺍니다. RTP 변환물은 `--with-rtp`일 때만 들어갑니다 (개인 기기 시험용).
+
+```bash
+./android/prepare_assets.sh --project ~/games/flappy             # 규칙대로 스테이징
+./android/prepare_assets.sh --project ~/games/flappy --dry-run   # 파일 수와 크기만
+./android/prepare_assets.sh --project . --with-rtp               # 이 저장소를 새 규칙으로, RTP 포함
+```
+
+마지막 줄은 `STAGED files=<n> bytes=<b> stamp=<12자> rtp=<yes|no> dest=<경로>`입니다. 스탬프 파일이 목록에 들어가 내용만 바뀐 프로젝트도 기기가 다시 풉니다. 자세한 것은 `android/README.md`의 "에셋 스테이징"을 참조하십시오.
 
 릴리즈 빌드는 서명이 필요합니다. 키스토어를 만들고 `android/keystore.properties`에 접속 정보를 적으면 `assembleRelease`가 서명까지 합니다 (두 파일 모두 gitignore 대상, 커밋 금지). 릴리즈 빌드에서는 개발용 핫 리로드 서버가 열리지 않습니다. 자세한 절차는 `android/README.md`를 참조하십시오.
 

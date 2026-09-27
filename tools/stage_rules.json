@@ -1,0 +1,83 @@
+{
+  "about": "안드로이드 에셋 스테이징 규칙 (android/prepare_assets.sh --project 와 tools/stage_list.py 가 읽는다). 인자 없는 prepare_assets.sh 는 이 규칙을 쓰지 않는다. shared 가 참인 줄은 에디터 게임 탭(InitialEditor 의 gameView/staging.ts)도 빼야 하고, 에디터 시험이 examples 로 그것을 본다",
+  "version": 1,
+  "rootFiles": ["game.json", "db.sqlite"],
+  "rootDirs": ["scripts", "resources"],
+  "keepExamples": ["game.json", "db.sqlite", "scripts/lua/main.lua", "scripts/ruby/main.rb", "resources/images/hero.png", "resources/big/movie.ogg"],
+  "exclude": [
+    {
+      "id": "dot-name",
+      "kind": "name-prefix",
+      "value": ".",
+      "shared": true,
+      "why": "점으로 시작하는 이름. AAPT 가 APK 에 넣지 않아 목록에 남으면 기기에서 풀기가 실패한다",
+      "examples": ["resources/.DS_Store", "scripts/lua/.cache/a.lua", "resources/.hidden/b.png"]
+    },
+    {
+      "id": "editor-folder",
+      "kind": "dir",
+      "value": ".initial-editor",
+      "shared": true,
+      "why": "에디터의 프로젝트 상태 (레이아웃, 엔진 경로)",
+      "examples": [".initial-editor/layout.json"]
+    },
+    {
+      "id": "git-folder",
+      "kind": "dir",
+      "value": ".git",
+      "shared": true,
+      "why": "저장소 메타데이터",
+      "examples": [".git/HEAD"]
+    },
+    {
+      "id": "zip",
+      "kind": "suffix",
+      "value": ".zip",
+      "shared": true,
+      "why": "압축 원본 (RTP.zip 은 재배포 금지). 게임은 zip 을 읽지 않는다",
+      "examples": ["resources/RTP.zip", "resources/audio/pack.zip"]
+    },
+    {
+      "id": "psd",
+      "kind": "suffix",
+      "value": ".psd",
+      "shared": true,
+      "why": "그림 원본",
+      "examples": ["resources/images/hero.psd"]
+    },
+    {
+      "id": "rtp",
+      "kind": "dir",
+      "value": "resources/rtp",
+      "shared": true,
+      "withRtp": true,
+      "why": "RTP 변환물 (재배포 금지). --with-rtp 면 넣고 경고한다 (개인 기기 시험)",
+      "examples": ["resources/rtp/CharSet/hero.png"]
+    },
+    {
+      "id": "aldebaran-src",
+      "kind": "dir",
+      "value": "resources/aldebaran/src",
+      "shared": true,
+      "why": "알데바란의 원본 그림. 게임이 읽지 않는다",
+      "examples": ["resources/aldebaran/src/gpt/sheet.png"]
+    },
+    {
+      "id": "config-setting",
+      "kind": "name",
+      "value": "config.setting",
+      "shared": false,
+      "why": "엔진이 쓰기만 하고 읽지 않는 파일. 옮기면 만든 사람의 절대 경로만 APK 에 들어간다",
+      "examples": ["config.setting", "resources/config.setting"]
+    },
+    {
+      "id": "aapt-ignored",
+      "kind": "aapt",
+      "value": "!.svn:!.git:!.ds_store:!*.scc:.*:<dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~",
+      "shared": false,
+      "warn": true,
+      "why": "AAPT 의 기본 제외 규칙 (ignoreAssetsPattern). APK 에 들어가지 않는 이름이라 목록에 남으면 기기에서 풀기가 실패한다. 빼고 경고한다",
+      "examples": ["resources/_old/a.png", "resources/images/a.png~", "resources/images/Thumbs.db", "resources/CVS/Entries"]
+    }
+  ]
+}
