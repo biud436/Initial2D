@@ -46,3 +46,70 @@ resources/templates/tilemap/map.json
 resources/templates/tilemap/scene.json
 resources/templates/tilemap/map-objects.json
 resources/tiles/tileset16-8x13.png
+
+# RPG 템플릿: 데모 「떠나기 전에」의 항구 마을과 여관 (Lua). 진입 파일과 게임 설정은 자리가 다르다:
+# resources/templates/rpg/main.lua 는 scripts/lua/main.lua, resources/templates/rpg/rpg-game.json 은
+# resources/data/rpg-game.json 에 둔다. 나머지는 엔진 경로 그대로이고, 32px 글꼴은 위의 한글 비트맵 폰트를 쓴다.
+# 마을(village)과 오두막(room)은 넣지 않는다 (항구 마을에서 가는 길이 없고, alt 가 RTP 판이라 에디터에서 읽기 전용이다)
+resources/templates/rpg/main.lua
+resources/templates/rpg/rpg-game.json
+# 데모의 두 씬과 설정, 아이템 표, 실행 변수 해석
+scripts/lua/games/rpgdemo/config.lua
+scripts/lua/games/rpgdemo/game.lua
+scripts/lua/games/rpgdemo/items.lua
+scripts/lua/games/rpgdemo/playenv.lua
+scripts/lua/games/rpgdemo/title.lua
+# RPG 레이어 (scripts/lua/rpg/ 전부)
+scripts/lua/rpg/assets.lua
+scripts/lua/rpg/camera.lua
+scripts/lua/rpg/character.lua
+scripts/lua/rpg/choice.lua
+scripts/lua/rpg/commands.lua
+scripts/lua/rpg/event.lua
+scripts/lua/rpg/interpreter.lua
+scripts/lua/rpg/inventory.lua
+scripts/lua/rpg/jsonshape.lua
+scripts/lua/rpg/map_scene.lua
+scripts/lua/rpg/mapdata.lua
+scripts/lua/rpg/menu.lua
+scripts/lua/rpg/message.lua
+scripts/lua/rpg/player.lua
+scripts/lua/rpg/rng.lua
+scripts/lua/rpg/specs.lua
+scripts/lua/rpg/text.lua
+scripts/lua/rpg/window.lua
+# 공용 모듈: 배경음, 스프라이트, 터치 패드와 버튼
+scripts/lua/bgm.lua
+scripts/lua/image.lua
+scripts/lua/ui/buttons.lua
+scripts/lua/ui/touch.lua
+scripts/lua/ui/vpad.lua
+# 맵 정의, 맵 파일, 타일셋
+scripts/lua/maps/port_town.lua
+scripts/lua/maps/inn.lua
+resources/maps/port_town.json
+resources/maps/inn.json
+resources/tiles/port16.png
+# 아이템 표와 이벤트 커맨드 스키마 (에디터의 RPG 확장이 읽는다)
+resources/data/items.json
+resources/schema/event-commands.json
+# 그림: 타이틀 배경, 창 스킨, 페이드 판, 터치 패드와 버튼, CharSet 과 FaceSet 의 플레이스홀더
+resources/titles/port_title.png
+resources/ui/window.png
+resources/ui/fade.png
+resources/ui/dpad.png
+resources/ui/actionbtn.png
+resources/charsets/placeholder.png
+resources/faces/placeholder.png
+# 맵 씬의 16px 한글 글꼴
+resources/fonts/hangul16.fnt
+resources/fonts/hangul16_0.png
+# 소리: 타이틀과 마을의 곡, 효과음 넷
+resources/audio/bless.ogg
+resources/audio/door.wav
+resources/audio/ui_cursor.wav
+resources/audio/ui_decision.wav
+resources/audio/ui_text.wav
+
+# 에디터가 타일맵 템플릿과 RPG 템플릿에 함께 싣는 타일셋 (게임 실행에는 쓰이지 않는다)
+resources/tiles/tile1.png
