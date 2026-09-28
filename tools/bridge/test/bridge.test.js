@@ -431,7 +431,9 @@ describe('bridge server v2 (dir, stat, mkdir, rename, game.json, ruby reload, ch
     assert.equal((await api(base, 'POST', '/api/rename', { body: 'garbage' })).status, 400);
   });
 
-  it('POST /api/reload pushes *.rb as well as *.lua', async () => {
+  it('POST /api/reload pushes *.rb as well as *.lua, and the component declarations (*.json)', async () => {
+    await fs.mkdir(path.join(root, 'scripts', 'components'), { recursive: true });
+    await fs.writeFile(path.join(root, 'scripts', 'components', 'mover.json'), '{ "version": 1, "fields": [] }\n');
     let received = null;
     const { server, port } = await fakeHmrServer((files) => {
       received = files;
@@ -444,8 +446,10 @@ describe('bridge server v2 (dir, stat, mkdir, rename, game.json, ruby reload, ch
       assert.equal(res.status, 200, JSON.stringify(res.body));
       assert.ok(received.map((f) => f.path).includes('scripts/ruby/main.rb'));
       assert.ok(received.map((f) => f.path).includes('scripts/main.lua'));
+      assert.ok(received.map((f) => f.path).includes('scripts/components/mover.json'));
     } finally {
       server.close();
+      await fs.rm(path.join(root, 'scripts', 'components'), { recursive: true, force: true });
     }
   });
 

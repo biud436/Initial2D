@@ -704,6 +704,54 @@ def test_scene_loader_mruby():
     check_scene_loader_run(work, result, shots, "/tmp/initial2d_scene_loader_mruby.bmp")
 
 
+# 씬 로더 params 픽스처(tests/fixtures/scenes/params_v1.json)의 stdout. 두 언어가 같은 줄을 찍어야 한다
+# (r1-scene-loader.md 5.4절). 선언의 기본값, 덮어쓴 값, 한 오브젝트의 두 컴포넌트, 선언이 없는 컴포넌트,
+# params 로 움직인 오브젝트, 훅에 넘어간 값, 검증 오류의 문장.
+SCENE_PARAMS_LINES = [
+    "params:order:plain,custom,pair,loose,old,mark",
+    'params:plain:count=3 enabled=true kind="ground" speed=1.5 title="제목"',
+    'params:custom:count=7 enabled=false kind="pipes" note="첫 줄\\n둘째 줄" speed=2.5 target="mark" title="바뀐 제목"',
+    'params:pair:count=1 enabled=true kind="ground" speed=1.5 title="제목"',
+    "params:probes:pair=1",
+    'params:loose:list=[1,2] nested={a=1} word="그대로"',
+    "params:separate:true",
+    "params:error:scene: params 'components/sample/probe': kind must be one of ground, pipes (custom)",
+    "params:tick1:mark=3,5",
+    "params:tick2:mark=6,10",
+    "params:tick3:mark=9,15",
+    "params:hooks:destroy=바뀐 제목,init=바뀐 제목,render=바뀐 제목,update=바뀐 제목",
+    "params:closed:true",
+]
+
+
+def check_scene_params_run(result):
+    """params 픽스처 씬의 검사. 두 언어가 같은 줄을 같은 순서로 찍는다."""
+    log = result.stdout + result.stderr
+    check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode} | {log[-300:]}")
+    check("스크립트 오류 없음", "error in" not in log.lower() and "uncaught" not in log.lower(), log[-300:])
+    lines = [line for line in result.stdout.splitlines() if line.startswith("params:")]
+    for want in SCENE_PARAMS_LINES:
+        check(f"stdout: {want}", want in lines, " / ".join(lines)[-400:])
+    check("params 줄이 이 순서로 이것뿐이다", lines == SCENE_PARAMS_LINES, " / ".join(lines)[-400:])
+
+
+def test_scene_params_lua():
+    """컴포넌트 params (선언 파일, 기본값, 덮어쓰기, 검사)를 Lua 씬 로더로 (r1 5.4절)."""
+    print("\n[1p] scene_params_lua: params 픽스처 씬을 Lua 씬 로더로 열어 컴포넌트가 받은 값을 본다")
+    _, result, _ = run_scene("scene_params_scene.lua", [], 6000, fixtures=True)
+    check_scene_params_run(result)
+
+
+def test_scene_params_mruby():
+    """같은 픽스처를 Ruby 씬 로더로. new(params) 클래스, 모듈 경로 클래스, 인자 없는 클래스가 섞여 있다."""
+    print("\n[1p-m] scene_params_mruby: 같은 params 픽스처를 Ruby 씬 로더로, 같은 줄을 찍는다")
+    if not HAS_MRUBY:
+        print("  SKIP: 이 빌드에는 mruby 가 없습니다 (brew install mruby 후 cmake 다시 실행)")
+        return
+    _, result, _ = run_scene("mruby_scene_params_scene.rb", [], 6000, fixtures=True)
+    check_scene_params_run(result)
+
+
 def test_lua_units():
     """tests/lua/ 의 Lua 단위 테스트를 엔진 바이너리로 실행한다 (09-testing.md 3.2절)."""
     print("\n[0] lua_unit_tests — Lua 단위 테스트 (엔진 VM에서 실행)")
@@ -2012,6 +2060,8 @@ def main():
         test_scene_flappy_mruby,
         test_scene_loader_lua,
         test_scene_loader_mruby,
+        test_scene_params_lua,
+        test_scene_params_mruby,
         test_tilemap_scene,
         test_rpg_walk_scene,
         test_rpg_event_scene,

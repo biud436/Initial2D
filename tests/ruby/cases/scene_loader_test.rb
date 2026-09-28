@@ -319,6 +319,311 @@ RUBY
   scene.close
   t.check_eq(scene.find("map"), nil, "close 뒤 tilemap 오브젝트도 없다")
 
+  # [params] 선언 파일, 기본값, 덮어쓰기, 컴포넌트마다 따로 만든 Hash, 선언 없는 컴포넌트, 검사 (계획 문서 5.4절)
+  t.check_eq(SceneLoader.declaration_path("components/sample/probe"), "scripts/components/sample/probe.json",
+             "논리 이름 -> 선언 파일 경로 (scripts/ 아래, 언어 중립)")
+  pdecl = SceneLoader.declaration("components/sample/probe")
+  t.check(!pdecl.nil? && pdecl["fields"].size == 7, "선언 파일을 읽는다 (필드 일곱)")
+  t.check_eq(SceneLoader.declaration("components/sample/loose"), nil, "선언 파일이 없으면 nil")
+  pdecl["fields"][0]["default"] = "바꿈"
+  t.check_eq(SceneLoader.declaration("components/sample/probe")["fields"][0]["default"], "제목", "declaration 은 복사본을 돌려준다")
+
+  write_file.call("./scripts/components/rbtest_params.json", <<'JSON')
+{ "version": 1, "editorOnly": { "group": "이동" }, "fields": [
+  { "key": "speed", "type": "number", "label": "속도", "default": 60, "min": 0, "max": 100.5 },
+  { "key": "kind", "type": "enum", "values": ["ground", "pipes"], "default": "ground" },
+  { "key": "target", "type": "object", "label": "대상" },
+  { "key": "name", "type": "string", "default": "새" },
+  { "key": "note", "type": "text" },
+  { "key": "count", "type": "integer", "default": 2, "min": -1, "max": 9 },
+  { "key": "on", "type": "boolean", "default": false, "editorOnly": true }
+] }
+JSON
+  $rbtest_params = []
+  recorder = <<'RUBY'
+class %s
+  def initialize(%s)
+    @params = params
+  end
+  def init(obj, scene); $rbtest_params.push(["init", obj.id, "%s", @params]); end
+  def update(obj, scene, elapsed); $rbtest_params.push(["update", obj.id, "%s", @params]); end
+  def render(obj, scene); $rbtest_params.push(["render", obj.id, "%s", @params]); end
+  def destroy(obj, scene); $rbtest_params.push(["destroy", obj.id, "%s", @params]); end
+end
+RUBY
+  write_file.call("./scripts/ruby/components/rbtest_params.rb", format(recorder, "RbtestParams", "params", "params", "params", "params", "params"))
+  write_file.call("./scripts/ruby/components/rbtest_loose.rb", format(recorder, "RbtestLoose", "params = {}", "loose", "loose", "loose", "loose"))
+  pn = "components/rbtest_params"
+  ln = "components/rbtest_loose"
+  recorded = lambda do |hook, id, name|
+    r = $rbtest_params.find { |x| x[0] == hook && x[1] == id && x[2] == name }
+    r.nil? ? nil : r[3]
+  end
+  scene = SceneLoader.from_hash(scene_of.call([
+    { "id" => "a", "type" => "node", "scripts" => [pn] },
+    { "id" => "b", "type" => "node", "scripts" => [pn, ln], "params" => {
+      pn => { "speed" => 5, "target" => "c", "note" => "첫 줄\n둘째 줄" },
+      ln => { "anything" => [1, 2], "deep" => { "x" => 1 }, "not an identifier" => true } } },
+    { "id" => "c", "type" => "node", "scripts" => [pn, pn], "params" => { pn => { "count" => 9 } } },
+  ]))
+  pa = recorded.call("init", "a", "params")
+  t.check(!pa.nil? && pa["speed"] == 60 && pa["kind"] == "ground" && pa["name"] == "새" && pa["count"] == 2 &&
+          pa["on"] == false, "기본값만: 선언의 default 가 params 가 된다")
+  t.check(!pa.key?("target") && !pa.key?("note"), "default 가 없고 파일에도 없는 키는 nil")
+  pb = recorded.call("init", "b", "params")
+  t.check(pb["speed"] == 5 && pb["target"] == "c" && pb["note"] == "첫 줄\n둘째 줄" && pb["kind"] == "ground" && pb["count"] == 2,
+          "덮어쓰기: 파일의 값이 기본값 위에 온다 (object 는 id 문자열 그대로, 뒤의 오브젝트도 된다)")
+  lb = recorded.call("init", "b", "loose")
+  t.check(!lb.nil? && lb["anything"][1] == 2 && lb["deep"]["x"] == 1 && lb["not an identifier"] == true,
+          "선언이 없는 컴포넌트는 params 항목을 검사 없이 그대로 받는다")
+  t.check(!lb.equal?(pb) && !lb.key?("speed") && !pb.key?("anything"), "한 오브젝트의 두 컴포넌트는 표를 따로 받는다")
+  t.check(!pa.equal?(pb), "같은 컴포넌트를 붙인 두 오브젝트도 표를 따로 받는다")
+  t.check(!lb["deep"].equal?(scene.find("b").spec["params"][ln]["deep"]), "params 는 파일 항목의 깊은 복사")
+  cs = $rbtest_params.select { |x| x[0] == "init" && x[1] == "c" }.map { |x| x[3] }
+  t.check(cs.size == 2 && !cs[0].equal?(cs[1]) && cs[0]["count"] == 9 && cs[1]["count"] == 9,
+          "같은 컴포넌트가 한 오브젝트에 두 번이면 예전처럼 둘 다 만들고 표는 따로")
+  pa["speed"] = 1
+  pa["kind"] = "pipes"
+  scene.tick(16)
+  scene.draw
+  t.check(recorded.call("update", "a", "params").equal?(pa) && recorded.call("render", "a", "params").equal?(pa),
+          "update 와 render 는 init 과 같은 표를 받는다")
+  t.check_eq(recorded.call("init", "c", "params")["speed"], 60, "한 표를 고쳐도 다른 오브젝트의 기본값은 그대로")
+  spawned = scene.spawn({ "type" => "node", "scripts" => [pn], "params" => { pn => { "target" => "a" } } })
+  ps = recorded.call("init", spawned.id, "params")
+  t.check(!ps.nil? && ps["speed"] == 60 && ps["kind"] == "ground" && ps["target"] == "a",
+          "spawn 도 params 를 만든다 (고친 표가 선언의 기본값에 번지지 않았다)")
+  self_ref = scene.spawn({ "id" => "me", "type" => "node", "scripts" => [pn], "params" => { pn => { "target" => "me" } } })
+  t.check(!self_ref.nil? && recorded.call("init", "me", "params")["target"] == "me", "spawn 의 object 값은 자기 id 도 된다")
+  e = fails_with.call { scene.spawn({ "id" => "s", "type" => "node", "scripts" => [pn], "params" => { pn => { "target" => "nope" } } }) }
+  t.check_eq(e, "scene: params 'components/rbtest_params': target names no object 'nope' (s)", "spawn 도 params 를 검사한다")
+  t.check_eq(scene.find("s"), nil, "params 가 틀린 spawn 은 오브젝트를 남기지 않는다")
+  scene.close
+  t.check(recorded.call("destroy", "a", "params").equal?(pa), "destroy 도 같은 표를 받는다")
+
+  # JSON 의 null 은 없는 것, 빈 배열은 빈 객체 (Lua 와 같은 결과)
+  write_file.call("./rbtest_nulls.json", <<'JSON')
+{ "version": 1, "objects": [
+  { "id": "n", "type": "node", "scripts": ["components/rbtest_params"],
+    "params": { "components/rbtest_params": { "speed": null, "bogus": null }, "components/not_there": null } },
+  { "id": "e", "type": "node", "scripts": ["components/rbtest_params"], "params": [] },
+  { "id": "f", "type": "node", "scripts": ["components/rbtest_params"], "params": { "components/rbtest_params": [] } }
+] }
+JSON
+  $rbtest_params = []
+  nulls = nil
+  e = fails_with.call { nulls = SceneLoader.open("./rbtest_nulls.json") }
+  t.check(e.nil?, "null 값과 빈 배열은 오류가 아니다", e)
+  unless nulls.nil?
+    t.check_eq(recorded.call("init", "n", "params")["speed"], 60, "null 값은 없는 것 (기본값이 남는다)")
+    t.check_eq(recorded.call("init", "e", "params")["speed"], 60, "params 의 빈 배열은 빈 객체")
+    t.check_eq(recorded.call("init", "f", "params")["speed"], 60, "항목의 빈 배열은 빈 객체")
+    nulls.close
+  end
+  File.delete("./rbtest_nulls.json")
+
+  # [Ruby 클래스] initialize 가 위치 인자를 받으면 new(params), 아니면 new
+  write_file.call("./scripts/ruby/components/rbtest_kinds.rb", <<'RUBY')
+class RbtestNoInit; end
+class RbtestZero; def initialize; @made = true; end; end
+class RbtestOpt; def initialize(params = {}); end; end
+class RbtestRest; def initialize(*args); end; end
+class RbtestChild < RbtestParams; end
+class RbtestKinds; end
+RUBY
+  require "./scripts/ruby/components/rbtest_kinds.rb"
+  t.check_eq(SceneLoader.takes_params?(RbtestParams), true, "initialize(params) 는 new(params)")
+  t.check_eq(SceneLoader.takes_params?(RbtestOpt), true, "initialize(params = {}) 도 new(params)")
+  t.check_eq(SceneLoader.takes_params?(RbtestRest), true, "initialize(*args) 도 new(params)")
+  t.check_eq(SceneLoader.takes_params?(RbtestChild), true, "상속한 initialize(params) 도 new(params)")
+  t.check_eq(SceneLoader.takes_params?(RbtestNoInit), false, "initialize 가 없으면 new")
+  t.check_eq(SceneLoader.takes_params?(RbtestZero), false, "인자 없는 initialize 면 new")
+  $rbtest_hooks = []
+  scene = SceneLoader.from_hash(scene_of.call([
+    { "id" => "h", "type" => "node", "scripts" => ["components/rbtest_hooks"],
+      "params" => { "components/rbtest_hooks" => { "ignored" => 1 } } },
+  ]))
+  t.check(scene.find("h").components[0].is_a?(RbtestHooks) && $rbtest_hooks.include?("init:h"),
+          "initialize 가 없는 예전 클래스는 params 가 있어도 new 로 만들고 훅은 그대로")
+  scene.close
+
+  # [Ruby 클래스 찾기] 논리 이름 전체의 모듈 경로가 먼저, 없으면 마지막 조각
+  t.check_eq(SceneLoader.component_class_path("components/flappy/bird"), "Components::Flappy::Bird", "논리 이름 -> 모듈 경로")
+  write_file.call("./scripts/ruby/components/sample/rbtest_twin.rb", <<'RUBY')
+module Components
+  module Sample
+    class RbtestTwin
+      def initialize(params); @params = params; end
+      def init(obj, scene); $rbtest_hooks.push("nested:#{@params['n']}"); end
+    end
+  end
+end
+RUBY
+  write_file.call("./scripts/ruby/components/rbtest_twin.rb", <<'RUBY')
+class RbtestTwin
+  def init(obj, scene); $rbtest_hooks.push("flat"); end
+end
+RUBY
+  $rbtest_hooks = []
+  scene = SceneLoader.from_hash(scene_of.call([
+    { "id" => "tw", "type" => "node", "scripts" => ["components/sample/rbtest_twin", "components/rbtest_twin"],
+      "params" => { "components/sample/rbtest_twin" => { "n" => 1 } } },
+  ]))
+  comps = scene.find("tw").components
+  t.check(comps[0].is_a?(Components::Sample::RbtestTwin) && comps[1].is_a?(RbtestTwin),
+          "마지막 이름이 같은 두 컴포넌트가 함께 있다 (Components::Sample::RbtestTwin 과 RbtestTwin)")
+  t.check_eq($rbtest_hooks.join(" "), "nested:1 flat", "모듈 경로 클래스가 params 를 받는다")
+  scene.close
+  t.check_eq(SceneLoader.load_component("components/sample/mover"), Mover,
+             "모듈 경로에 없으면 예전처럼 마지막 조각의 클래스 (Components::Sample 이 있어도)")
+  t.check_eq(SceneLoader.load_component("components/sample/probe"), Components::Sample::Probe, "픽스처의 probe 는 모듈 경로 클래스")
+  write_file.call("./scripts/ruby/components/sample/rbtest_modonly.rb", <<'RUBY')
+module Components
+  module Sample
+    module RbtestModonly; end
+  end
+end
+class RbtestModonly; end
+RUBY
+  t.check_eq(SceneLoader.load_component("components/sample/rbtest_modonly"), RbtestModonly,
+             "모듈 경로의 상수가 클래스가 아니면 마지막 조각의 클래스")
+  write_file.call("./scripts/ruby/components/rbtest_noclass.rb", "# 클래스가 없다\n")
+  e = fails_with.call { SceneLoader.load_component("components/rbtest_noclass") }
+  t.check_eq(e, "scene: component 'components/rbtest_noclass' must define class Components::RbtestNoclass or RbtestNoclass (scripts/ruby/components/rbtest_noclass.rb)",
+             "클래스가 없으면 두 이름과 파일을 말한다")
+
+  # [params 검사] 메시지는 글자 그대로 (에디터가 같은 문장을 쓴다)
+  v_err = lambda do |objects|
+    msg = fails_with.call { SceneLoader.validate(scene_of.call(objects)) }
+    msg.nil? ? "ok" : msg
+  end
+  one = lambda do |params, extra = []|
+    v_err.call([{ "id" => "o", "type" => "node", "scripts" => [pn], "params" => params }] + extra)
+  end
+  pe = "scene: params 'components/rbtest_params': "
+  t.check_eq(one.call("x"), "scene: params must be an object (o)", "params 가 객체가 아니면 거부")
+  t.check_eq(one.call([1, 2]), "scene: params must be an object (o)", "params 가 배열이면 거부")
+  t.check_eq(one.call({ pn => 3 }), "scene: params 'components/rbtest_params' must be an object (o)", "항목 값이 객체가 아니면 거부")
+  t.check_eq(one.call({ pn => [1] }), "scene: params 'components/rbtest_params' must be an object (o)", "항목 값이 배열이면 거부")
+  t.check_eq(one.call({ "components/rbtest_other" => {} }), "scene: params 'components/rbtest_other': not in scripts (o)",
+             "scripts 에 없는 컴포넌트의 params 는 거부")
+  t.check_eq(one.call({ pn => { "speeed" => 1 } }), pe + "unknown key 'speeed' (o)", "선언에 없는 키는 거부")
+  t.check_eq(one.call({ pn => { "name" => 3 } }), pe + "name must be a string (o)", "string")
+  t.check_eq(one.call({ pn => { "note" => false } }), pe + "note must be a string (o)", "text 도 문자열")
+  t.check_eq(one.call({ pn => { "speed" => "fast" } }), pe + "speed must be a number (o)", "number")
+  t.check_eq(one.call({ pn => { "speed" => -0.5 } }), pe + "speed must be >= 0 (o)", "number 의 min")
+  t.check_eq(one.call({ pn => { "speed" => 101 } }), pe + "speed must be <= 100.5 (o)", "number 의 max (소수는 %.14g)")
+  t.check_eq(one.call({ pn => { "count" => 1.5 } }), pe + "count must be an integer (o)", "integer 는 정수 값")
+  t.check_eq(one.call({ pn => { "count" => "2" } }), pe + "count must be an integer (o)", "integer 는 숫자")
+  t.check_eq(one.call({ pn => { "count" => -2 } }), pe + "count must be >= -1 (o)", "integer 의 min")
+  t.check_eq(one.call({ pn => { "count" => 10 } }), pe + "count must be <= 9 (o)", "integer 의 max")
+  t.check_eq(one.call({ pn => { "count" => 4.0, "speed" => 100.5 } }), "ok", "정수 값의 실수와 max 와 같은 값은 된다")
+  t.check_eq(one.call({ pn => { "on" => "yes" } }), pe + "on must be a boolean (o)", "boolean")
+  t.check_eq(one.call({ pn => { "kind" => "sky" } }), pe + "kind must be one of ground, pipes (o)", "enum 은 values 중 하나")
+  t.check_eq(one.call({ pn => { "kind" => 1 } }), pe + "kind must be one of ground, pipes (o)", "enum 에 문자열이 아닌 값")
+  t.check_eq(one.call({ pn => { "target" => 5 } }), pe + "target must be an object id (o)", "object 는 문자열")
+  t.check_eq(one.call({ pn => { "target" => "" } }), pe + "target must be an object id (o)", "object 는 빈 문자열이 아니다")
+  t.check_eq(one.call({ pn => { "target" => "ghost" } }), pe + "target names no object 'ghost' (o)", "object 는 씬에 있는 id")
+  t.check_eq(one.call({ pn => { "target" => "later" } }, [{ "id" => "later", "type" => "node" }]), "ok", "object 는 뒤의 오브젝트도 가리킨다")
+  t.check_eq(one.call({ pn => { "target" => "o" } }), "ok", "object 는 자기 자신도 가리킨다")
+  t.check_eq(one.call({ pn => { "speed" => "x", "count" => 1.5 } }), pe + "count must be an integer (o)", "키는 바이트 순서로 본다")
+  t.check_eq(one.call({ ln => { "x" => 1 }, "components/a_first" => {} }), "scene: params 'components/a_first': not in scripts (o)",
+             "params 의 이름도 바이트 순서로 본다")
+  t.check_eq(v_err.call([{ "id" => "p", "type" => "node", "scripts" => [pn], "params" => { pn => { "speed" => "x" } } },
+                         { "id" => "p", "type" => "node" }]), "scene: duplicate id 'p'", "params 검사는 3절 검사를 모두 통과한 뒤")
+  t.check_eq(v_err.call([{ "id" => "p", "type" => "node" },
+                         { "id" => "q", "type" => "node", "scripts" => [pn], "params" => { pn => { "on" => 1 } } }]),
+             pe + "on must be a boolean (q)", "메시지는 그 오브젝트의 id 를 말한다")
+  e = fails_with.call { SceneLoader.from_hash(scene_of.call([{ "id" => "o", "type" => "node", "scripts" => [pn], "params" => { pn => { "speed" => -1 } } }])) }
+  t.check_eq(e, pe + "speed must be >= 0 (o)", "fromTable 도 같은 오류로 멈춘다")
+
+  # [선언 파일 검사] 깨진 선언은 그 파일을 말한다 (params 가 없어도 scripts 에 있으면 읽는다)
+  decl_n = 0
+  decl_err = lambda do |text|
+    decl_n += 1
+    write_file.call("./scripts/components/rbtest_decl_#{decl_n}.json", text)
+    [v_err.call([{ "id" => "o", "type" => "node", "scripts" => ["components/rbtest_decl_#{decl_n}"] }]),
+     "scene: declaration scripts/components/rbtest_decl_#{decl_n}.json: "]
+  end
+  de, dp = decl_err.call('{ "version": 1, ')
+  t.check(de.start_with?(dp + "not valid JSON (") && de.end_with?(")") && de.include?("Line") && !de.include?("\n"),
+          "JSON 이 아니면 파일과 파서의 설명 (한 줄)", de)
+  de, dp = decl_err.call('[1, 2]')
+  t.check_eq(de, dp + "not an object", "루트가 객체가 아니면 거부")
+  de, dp = decl_err.call('null')
+  t.check_eq(de, dp + "not an object", "루트가 null 이면 거부")
+  de, dp = decl_err.call('{ "version": 2, "fields": [] }')
+  t.check_eq(de, dp + "unsupported version 2 (expected 1)", "version 2 는 거부")
+  de, dp = decl_err.call('{ "fields": [] }')
+  t.check_eq(de, dp + "unsupported version nil (expected 1)", "version 이 없으면 거부")
+  de, dp = decl_err.call('[]')
+  t.check_eq(de, dp + "unsupported version nil (expected 1)", "빈 배열은 빈 객체 (version 이 없다)")
+  de, dp = decl_err.call('{ "version": 1, "fields": { "a": 1 } }')
+  t.check_eq(de, dp + "fields must be an array", "fields 가 배열이 아니면 거부")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ 3 ] }')
+  t.check_eq(de, dp + "fields[1] is not an object", "필드가 객체가 아니면 거부")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "ok", "type": "string" }, { "key": "9lives", "type": "string" } ] }')
+  t.check_eq(de, dp + "fields[2] needs a key ([A-Za-z_][A-Za-z0-9_]*)", "key 는 식별자 (번호는 1 부터)")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "type": "string" } ] }')
+  t.check_eq(de, dp + "fields[1] needs a key ([A-Za-z_][A-Za-z0-9_]*)", "key 가 없으면 거부")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "string" }, { "key": "a", "type": "number" } ] }')
+  t.check_eq(de, dp + "duplicate key 'a'", "key 중복은 거부")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a" } ] }')
+  t.check_eq(de, dp + "field 'a' needs a type", "type 이 없으면 거부")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "color" } ] }')
+  t.check_eq(de, dp + "field 'a': unknown type 'color'", "모르는 type 은 거부")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "string", "label": 3 } ] }')
+  t.check_eq(de, dp + "field 'a': label must be a string", "label 은 문자열")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "enum" } ] }')
+  t.check_eq(de, dp + "field 'a': values must be a non-empty array of strings", "enum 은 values 가 필요")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "enum", "values": [] } ] }')
+  t.check_eq(de, dp + "field 'a': values must be a non-empty array of strings", "enum 의 values 는 비어 있지 않다")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "enum", "values": ["x", ""] } ] }')
+  t.check_eq(de, dp + "field 'a': values must be a non-empty array of strings", "values 에 빈 문자열은 안 된다")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "enum", "values": ["x", 1] } ] }')
+  t.check_eq(de, dp + "field 'a': values must be a non-empty array of strings", "values 는 문자열만")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "string", "values": ["x"] } ] }')
+  t.check_eq(de, dp + "field 'a': values is only for enum", "values 는 enum 에만")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "number", "min": "0" } ] }')
+  t.check_eq(de, dp + "field 'a': min must be a number", "min 은 숫자")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "integer", "max": true } ] }')
+  t.check_eq(de, dp + "field 'a': max must be a number", "max 는 숫자")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "string", "max": 3 } ] }')
+  t.check_eq(de, dp + "field 'a': max is only for number and integer", "max 는 number 와 integer 에만")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "number", "min": 5, "max": 1 } ] }')
+  t.check_eq(de, dp + "field 'a': min must be <= max", "min 은 max 이하")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "string", "default": 3 } ] }')
+  t.check_eq(de, dp + "field 'a': default must be a string", "string 의 default")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "text", "default": true } ] }')
+  t.check_eq(de, dp + "field 'a': default must be a string", "text 의 default")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "number", "default": "x" } ] }')
+  t.check_eq(de, dp + "field 'a': default must be a number", "number 의 default")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "number", "default": 11, "max": 10 } ] }')
+  t.check_eq(de, dp + "field 'a': default must be <= 10", "default 도 min, max 안")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "integer", "default": 0.5 } ] }')
+  t.check_eq(de, dp + "field 'a': default must be an integer", "integer 의 default")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "boolean", "default": "no" } ] }')
+  t.check_eq(de, dp + "field 'a': default must be a boolean", "boolean 의 default")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "enum", "values": ["x", "y"], "default": "z" } ] }')
+  t.check_eq(de, dp + "field 'a': default must be one of x, y", "enum 의 default")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "object", "default": 3 } ] }')
+  t.check_eq(de, dp + "field 'a': default must be an object id", "object 의 default")
+  de, dp = decl_err.call('{ "version": 1, "fields": [ { "key": "a", "type": "object", "default": "ghost" } ] }')
+  t.check_eq(de, "ok", "object 의 default 는 씬의 id 를 보지 않는다")
+  de, dp = decl_err.call('{ "version": 1 }')
+  t.check_eq(de, "ok", "fields 가 없으면 빈 배열")
+  nofields = "components/rbtest_decl_#{decl_n}"
+  t.check_eq(v_err.call([{ "id" => "o", "type" => "node", "scripts" => [nofields], "params" => { nofields => { "x" => 1 } } }]),
+             "scene: params '#{nofields}': unknown key 'x' (o)", "선언 파일이 있으면 필드가 없어도 모르는 키는 거부")
+  e = fails_with.call { SceneLoader.declaration("components/rbtest_decl_2") }
+  t.check_eq(e, "scene: declaration scripts/components/rbtest_decl_2.json: not an object", "SceneLoader.declaration 도 깨진 선언은 오류")
+  (1..decl_n).each { |i| File.delete("./scripts/components/rbtest_decl_#{i}.json") }
+  File.delete("./scripts/components/rbtest_params.json")
+  ["rbtest_params", "rbtest_loose", "rbtest_kinds", "rbtest_twin", "rbtest_noclass", "sample/rbtest_twin", "sample/rbtest_modonly"].each do |f|
+    File.delete("./scripts/ruby/components/#{f}.rb")
+  end
+  $rbtest_params = []
+
   File.delete("./scripts/ruby/components/rbtest_hooks.rb")
   File.delete("./scripts/ruby/components/rbtest_tail.rb")
   File.delete("./scripts/ruby/components/rbtest_spawner.rb")

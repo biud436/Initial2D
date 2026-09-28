@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """웹 빌드용 프로젝트 파일 스테이징 (R3, docs/plans/r3-emscripten.md).
 
-프로젝트의 game.json, scripts/lua/**, scripts/ruby/**, resources/** 를 사이트 폴더의 project/ 아래에 복사하고
-목록을 project.json 으로 쓴다. 페이지(tools/web/index.html)는 이 목록을 fetch 해 MEMFS 에 올린다.
+프로젝트의 game.json, scripts/lua/**, scripts/ruby/**, scripts/components/**(컴포넌트 선언 파일), resources/** 를
+사이트 폴더의 project/ 아래에 복사하고 목록을 project.json 으로 쓴다. 페이지(tools/web/index.html)는 이 목록을 fetch 해 MEMFS 에 올린다.
 
     python3 tools/web_stage.py --out build-web/site            # 이 저장소를 스테이징
     python3 tools/web_stage.py --project ~/mygame --out site   # 다른 프로젝트
@@ -42,7 +42,8 @@ def collect(project):
     files = []
     if os.path.isfile(os.path.join(project, "game.json")):
         files.append("game.json")
-    for top in (os.path.join("scripts", "lua"), os.path.join("scripts", "ruby"), "resources"):
+    for top in (os.path.join("scripts", "lua"), os.path.join("scripts", "ruby"),
+                os.path.join("scripts", "components"), "resources"):
         base = os.path.join(project, top)
         if not os.path.isdir(base):
             continue

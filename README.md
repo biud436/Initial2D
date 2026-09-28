@@ -1486,7 +1486,7 @@ tools/web_ci.sh all
 (`build-web/site/` 에서 가져가므로 먼저 `tools/build_web.sh`).
 
 브라우저에는 프로세스도 환경 변수도 파일 시스템도 없어서 페이지가 셋을 대신합니다. `tools/web_stage.py` 가
-`game.json`, `scripts/lua/**`, `scripts/ruby/**`, `resources/**` 를 `build-web/site/project/` 에 복사하고 목록을 `project.json` 으로
+`game.json`, `scripts/lua/**`, `scripts/ruby/**`, `scripts/components/**`(컴포넌트 선언), `resources/**` 를 `build-web/site/project/` 에 복사하고 목록을 `project.json` 으로
 씁니다 (`RTP.zip`, `rtp/`, `*.psd` 는 뺍니다). 페이지는 그 목록을 fetch 해 wasm 의 메모리 파일 시스템 `/project`
 에 쓰고 거기로 `chdir` 한 뒤 엔진을 시작합니다. 그래서 엔진은 네이티브와 똑같이 `./scripts/lua/main.lua` 나
 `./scripts/ruby/main.rb` 를 엽니다. 언어도 네이티브와 같은 순서로 고릅니다 (`INITIAL2D_SCRIPT`, `game.json` 의
@@ -1587,7 +1587,7 @@ HMR 서버는 게임에 내장되어 있습니다. **Android에서는 항상 켜
 ```bash
 # ── Android 기기 ──
 adb forward tcp:5959 tcp:5959      # 최초 1회 (기기 연결 후)
-python3 tools/hmr_push.py          # scripts/lua/*.lua 전체를 1회 push
+python3 tools/hmr_push.py          # scripts/ 아래의 .lua, .rb, 컴포넌트 선언 .json 전체를 1회 push
 python3 tools/hmr_push.py --watch  # 저장할 때마다 자동 push (개발 중 권장)
 
 # ── macOS ──
@@ -1632,7 +1632,7 @@ yarn dev
 | `GET /api/stat/<path>` | 종류와 크기 (없으면 404) |
 | `POST /api/mkdir/<path>` | 폴더 만들기 |
 | `POST /api/rename` | 본문 `{"from": ..., "to": ...}`로 파일이나 폴더 이름 바꾸기 |
-| `POST /api/reload` | `scripts/**/*.lua`와 `*.rb`를 게임 HMR 서버로 push |
+| `POST /api/reload` | `scripts/**/*.lua`, `*.rb`와 컴포넌트 선언 `*.json`을 게임 HMR 서버로 push |
 | WebSocket `/ws` | 파일 변경 알림. `kind`는 `create`, `modify`, `delete`이고 `origin`이 `external`이면 다른 편집기가 고친 것 |
 
 폴더 단위 API(`dir`, `stat`, `mkdir`, `rename`)는 2026-09 새 에디터의 `ProjectBackend`가 쓰려고 더한 것입니다 (브리지 0.2.0).
@@ -1759,6 +1759,51 @@ end
 `scene.name`, `scene.state`(컴포넌트들이 나눠 쓰는 표)입니다. Ruby는 `scene.find(id)`처럼 같은 이름입니다.
 `obj.sprite`는 엔진 스프라이트 핸들이라 엔진 API를 직접 불러도 됩니다.
 
+컴포넌트가 받을 값은 선언 파일로 정할 수 있습니다. `components/mover`의 선언은 `scripts/components/mover.json`에
+두고, Lua와 Ruby가 같은 파일을 읽습니다. 씬 파일의 오브젝트는 `params`에 컴포넌트 이름별로 값을 적습니다.
+
+```json
+{ "version": 1, "fields": [
+  { "key": "speed", "type": "number", "label": "속도", "default": 60, "min": 0 },
+  { "key": "target", "type": "object", "label": "대상" }
+] }
+```
+
+```json
+{ "id": "world", "type": "node", "scripts": ["components/mover"],
+  "params": { "components/mover": { "speed": 120, "target": "bird" } } }
+```
+
+```lua
+-- scripts/lua/components/mover.lua
+local M = {}
+function M.update(obj, scene, elapsed, params)   -- params 는 모든 훅의 마지막 인자입니다
+	local target = scene:find(params.target)
+	if target then target.x = target.x + params.speed * elapsed / 1000 end
+end
+return M
+```
+
+```ruby
+# scripts/ruby/components/mover.rb
+class Mover
+  def initialize(params)          # 인자를 받는 initialize 면 로더가 new(params) 로 만듭니다
+    @params = params
+  end
+  def update(obj, scene, elapsed)
+    target = scene.find(@params["target"])
+    target.x += @params["speed"] * elapsed / 1000.0 unless target.nil?
+  end
+end
+```
+
+로더는 선언의 기본값 위에 씬 파일의 값을 덮어 컴포넌트마다 따로 넘깁니다. 필드 타입은 `string`, `text`, `number`,
+`integer`, `boolean`, `enum`, `object`(씬 오브젝트 id)입니다. 선언에 없는 키, 타입이 맞지 않는 값, 씬에 없는 id는
+게임을 띄우자마자 이름을 말하는 오류가 됩니다. 선언 파일이 없는 컴포넌트는 `params`를 검사 없이 그대로 받습니다.
+`props`를 읽는 예전 컴포넌트도 그대로 돕니다. Ruby 클래스는 `Components::Mover`처럼 논리 이름 전체의 모듈 경로에
+두어도 되고, 그러면 폴더만 다르고 이름이 같은 컴포넌트를 함께 쓸 수 있습니다. 규칙과 오류 문장은
+[docs/plans/r1-scene-loader.md](./docs/plans/r1-scene-loader.md) 5.4절에 있습니다.
+
 플래피를 이 방식으로 다시 만든 것이 `resources/scenes/flappy.json`과 `scripts/lua/components/flappy/`
 (Ruby는 `scripts/ruby/components/flappy/`)입니다. 새, 파이프(spawn으로 만듭니다), 배경과 지면 스크롤, 상태 기계가
 컴포넌트 하나씩이고, 화면 글자는 전부 씬의 `text` 오브젝트입니다. 두 언어의 인수 씬이 이 씬을 `INITIAL2D_SCENE=flappy`로
@@ -1767,7 +1812,7 @@ end
 띄우자마자 이름을 말하는 오류로 끝납니다.
 
 ```bash
-python3 tests/run_engine_tests.py --only=scene_loader,scene_flappy   # 씬 로더 씬 테스트 넷만
+python3 tests/run_engine_tests.py --only=scene_loader,scene_flappy,scene_params   # 씬 로더 씬 테스트 여섯만
 ```
 
 # RTP 리소스 변환 (RPG Maker 2003)

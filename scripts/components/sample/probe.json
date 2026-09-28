@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "fields": [
+    { "key": "title", "type": "string", "label": "제목", "default": "제목" },
+    { "key": "note", "type": "text", "label": "메모" },
+    { "key": "speed", "type": "number", "label": "속도", "default": 1.5, "min": 0, "max": 10 },
+    { "key": "count", "type": "integer", "label": "개수", "default": 3, "min": 0, "max": 99 },
+    { "key": "enabled", "type": "boolean", "label": "켜짐", "default": true },
+    { "key": "kind", "type": "enum", "label": "종류", "values": ["ground", "pipes"], "default": "ground" },
+    { "key": "target", "type": "object", "label": "대상" }
+  ]
+}
