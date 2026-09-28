@@ -528,7 +528,7 @@ E5 초안의 물음 열한 개는 저자가 자리에 없는 동안 리드가 �
 ### 마일스톤 1: 계약 (PR 1)
 
 - [x] 문서: 이 문서(E5 초안 1절, 5.1절, 7절, 결정 기록을 옮겼다), [12-editor-events.md](12-editor-events.md) 머리의 "E5 와 M2 가 이어받았다", [10-demo-v2.md](10-demo-v2.md) 3.2 의 커맨드 표를 스키마를 가리키는 한 줄로, [index.md](index.md) 진행 표
-- [ ] E5 문서의 1절, 5.1절, 7절을 한 단락 요약과 이 문서로의 링크로 줄인다 (에디터 저장소 쪽 커밋)
+- [x] E5 문서의 1절, 5.1절, 7절을 한 단락 요약과 이 문서로의 링크로 줄인다 (에디터 저장소 쪽 커밋). 세 절은 "요약, 정본은 M2 문서" 로 이 문서의 절을 가리킨다
 - [x] `resources/schema/event-commands.json`: 17종, 조건 셋, 이벤트 칸, `assets`, `sheets`(`standPattern` 포함), `route`
 - [x] `resources/data/rpg-game.json`: 맵 넷(`file`, `alt`, `def`), 아이템 표 경로, `play.env` 와 `play.probe`
 - [x] `resources/schema/map-objects.json` 의 `play` 에 `"maps": ["aldebaran_*"]`
@@ -560,7 +560,7 @@ E5 초안의 물음 열한 개는 저자가 자리에 없는 동안 리드가 �
 - [x] 항구 마을 16개, 여관 6개를 맵 파일로. 정의 파일 정리 (`departure()`, `handKey()` 포함). 정의 파일에는 맵 속성(`map`, `start`, `groundLayers`, `bgm`, `autoRoute`)만 남는다
 - [x] 인수 시나리오와 골든 세 장과 벽 앞 픽셀 검사와 `rpg_event_scene` 무변경 (stdout 이 옮기기 전과 바이트까지 같다). `test_rpg_play_here` [E] 는 정의 파일의 외형 오류를 보는 검사라, 이벤트가 Lua 에 남은 마을의 촌장을 대상으로 옮겼다 (같은 단언, 대상만 바뀌었다)
 - [x] 에디터 왕복 바이트 같음 (에디터 E5 모델이 엔진의 모든 맵을 읽고 써서 바이트가 같다, E5 마일스톤 2)
-- [ ] 사람이 브리지 왕복 한 번 (저자가 손으로)
+- [x] 사람이 브리지 왕복 한 번 (저자가 손으로). 2026-09-28 에 Claude 가 저자의 Chrome 창을 마우스와 키 입력으로 조작해 했다 (저자가 손으로 한 것은 아니다): `ef00946` 사본을 브리지 서버로 열어 `port_town.json` 의 물고기 장수를 한 칸 끌어 저장하면 차이는 `y` 한 줄, 되돌려 저장하면 원본과 바이트가 같고, "앞에서 실행"은 게임 탭에서 `rpg:player:port_town,14,35,left` 에 선다 (에디터 E5 문서 마일스톤 3)
 - [x] 에디터 픽스처 다시 동기화, 에디터의 `yarn test:engine-events`가 이전한 항구 마을로 다시 통과 (E5 레이어 검수 뒤, 엔진 `419a829`에서 판 10, 검사 105개)
 - [x] README 에 `tools/export_events.py` (데모 절의 "이벤트를 맵 파일로 옮기기")
 
@@ -577,8 +577,8 @@ E5 초안의 물음 열한 개는 저자가 자리에 없는 동안 리드가 �
   `rpg:event:kid`와 아이의 대사 셋, `rpg:route:done`을 본다. 모르는 id는 `rpg:error:hold:nobody:` 한 줄이고 끝까지 돈다. 여관에서 시작하면
   `kid`는 없는 id로 한 번 알리고 항구 마을에 가도 다시 걸리지 않는다
 - [x] README의 "맵 등록과 여기서 실행" (에디터의 두 명령, `play.probe`, `INITIAL2D_RPG_HOLD`)
-- [ ] 에디터: `probeEnv`가 `{event}`를 채우고 `yarn sync:rpg`로 새 `rpg-game.json`을 받는다. `yarn test:engine-events`의 [7](새 게임의 kid)이
-  실패 알림 대신 `rpg:event:kid`로 끝나야 한다 (에디터 저장소의 일)
+- [x] 에디터: `probeEnv`가 `{event}`를 채우고 `yarn sync:rpg`로 새 `rpg-game.json`을 받는다. `yarn test:engine-events`의 [7](새 게임의 kid)이
+  실패 알림 대신 `rpg:event:kid`로 끝나야 한다 (에디터 저장소의 일). 에디터 PR #57 (핀 `ef00946`, [7] 이 `rpg:hold:kid`, `rpg:event:kid` 로 통과)
 
 ### 문구 규칙 (에디터 용어 정리와 함께)
 
@@ -590,7 +590,7 @@ E5 초안의 물음 열한 개는 저자가 자리에 없는 동안 리드가 �
 - [x] `event-commands.json` 라벨 (`x (타일)`, `루트 단계`, `플래그`, `방향 전환`, `볼륨`, `씬 전환` 등), `map-objects.json` 의 `text` 라벨은 `본문`
 - [x] `initial2d-api.json` 설명과 다시 만든 스텁 둘, 브리지의 HMR 안내 글
 - [x] 글을 보는 테스트(`test_rpg_play_here`, `rpgdemo_playenv_test`, `export_events.py selftest`)의 기대 글
-- [ ] 에디터: 같은 검사의 이유 글, `yarn sync:engine-rpg` 로 받는 스키마, `api-fallback.json` 을 이 커밋의 글로 맞춘다 (에디터 저장소의 일)
+- [x] 에디터: 같은 검사의 이유 글, `yarn sync:engine-rpg` 로 받는 스키마, `api-fallback.json` 을 이 커밋의 글로 맞춘다 (에디터 저장소의 일). 에디터 PR #60 (핀 `f04eba2`, 엔진과 짝인 문구 70개가 글자까지 같고 `yarn check:terms` 를 더했다)
 
 ## 9. 검수
 
