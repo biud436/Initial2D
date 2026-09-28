@@ -48,9 +48,10 @@
 | `tools/check_dist.sh` (신규) | 4절의 검사 |
 | `THIRD-PARTY.md` (신규) | 네이티브와 웹 판의 제3자 고지 (7절) |
 | `resources/templates/tilemap/` (신규) | `map.json`, `scene.json`, `map-objects.json` (6절) |
-| `tools/templates_list.txt` (신규) | 템플릿 묶음에 넣는 엔진 경로 32개 (5절) |
+| `tools/templates_list.txt` (신규) | 템플릿 묶음에 넣는 엔진 경로. 처음 32개, RPG 템플릿과 `tile1.png` 를 더해 84개 (5절, 6.1절) |
+| `resources/templates/rpg/` (2026-09-28) | RPG 템플릿의 진입 파일 `main.lua` 와 두 맵만 등록한 `rpg-game.json` (6.1절) |
 | `tools/pack_templates.py` (신규) | `dist/Initial2D-templates.zip` 과 그 안의 `MANIFEST.json` |
-| `tests/tools/templates_test.py` (신규), `tests/run_all.sh` | 템플릿 검사. 3단계(도구 self-test)에서 돈다 |
+| `tests/tools/templates_test.py` (신규), `tests/run_all.sh` | 템플릿 검사. 3단계(도구 self-test)에서 돈다. RPG 템플릿 검사는 6.1절 |
 | `tests/run_engine_tests.py` | 실행 파일 인자의 상대 경로를 절대 경로로 바꾼다 (씬마다 임시 작업 폴더에서 돌기 때문. 검사는 그대로) |
 | `.github/workflows/dist.yml` (신규) | 9절 |
 | `.gitignore` | `external/sdl-src/`, `external/mruby-src/`, `build-dist/`, `dist/` |
@@ -99,7 +100,9 @@ CoreHaptics, Metal, QuartzCore 는 weak)만 있다. 처음 빌드부터 링크�
 `tools/templates_list.txt` 는 InitialEditor 의 `scripts/sync-engine-templates.mjs`(next 와 feat/e4-play 가 같다)가 복사하는
 원본(`from`) 28개 전부와 타일맵 템플릿 넷이다: 씬 로더 두 언어와 `scene_types/tilemap`, `hangul.fnt` 와 그 그림, API 명세,
 진입 파일 둘과 빈 프로젝트의 씬, 플래피의 씬과 컴포넌트 열과 그림 넷과 효과음 셋, 그리고 타일맵의 맵, 씬, 스키마, 타일셋.
-새 프로젝트 안의 경로(`to`)와 템플릿 그룹은 에디터가 정한다.
+새 프로젝트 안의 경로(`to`)와 템플릿 그룹은 에디터가 정한다. 2026-09-28 에 RPG 템플릿 묶음 51개(6.1절)와 에디터가 타일맵과
+RPG 템플릿에 함께 싣는 타일셋 `resources/tiles/tile1.png` 를 더해 모두 84개다. 묶음은 빈 줄로 나뉘고 묶음의 첫 주석 줄이
+이름이다 (`templates_test.py` 가 "RPG 템플릿" 묶음을 이 이름으로 찾는다).
 
 `python3 tools/pack_templates.py [--list ...] [--out ...] [--allow-dirty]` 는 목록의 파일을 엔진 경로 그대로
 `dist/Initial2D-templates.zip` 에 넣고 맨 앞에 `MANIFEST.json` 을 둔다.
@@ -143,6 +146,60 @@ CoreHaptics, Metal, QuartzCore 는 weak)만 있다. 처음 빌드부터 링크�
 템플릿의 진입 파일로 씬을 열어(Lua 와 Ruby) 종료 코드 0 과 오류 줄 없음과 화면(잔디, 위에 그린 울타리, 칠한 표식), 그리고
 `templates_list.txt` 와 `pack_templates.py`. 씬을 일부러 틀리게(`groundLayers` -1) 고치면 두 언어의 로더 검사가 잡는 것을 확인했다.
 
+## 6.1 RPG 템플릿 (2026-09-28)
+
+에디터의 새 프로젝트와 웹 예제가 쓰는 RPG 템플릿이다. 데모 「떠나기 전에」의 항구 마을과 여관을 그대로 옮기고 커밋된 자산만
+쓴다. RTP 는 재배포할 수 없어 싣지 않으며, 캐릭터와 얼굴과 창 스킨은 `scripts/lua/rpg/assets.lua` 의 규칙대로 플레이스홀더로
+뜬다. 목록(`tools/templates_list.txt`)의 "RPG 템플릿" 묶음이 전부다.
+
+| 무리 | 파일 |
+|---|---|
+| 진입 파일과 게임 설정 | `resources/templates/rpg/main.lua`, `resources/templates/rpg/rpg-game.json` |
+| 데모의 두 씬 | `scripts/lua/games/rpgdemo/` 의 다섯 (`config`, `game`, `items`, `playenv`, `title`) |
+| RPG 레이어 | `scripts/lua/rpg/` 의 열여덟 전부 |
+| 공용 모듈 | `scripts/lua/bgm.lua`, `image.lua`, `ui/buttons.lua`, `ui/touch.lua`, `ui/vpad.lua` |
+| 맵 | `scripts/lua/maps/port_town.lua`, `inn.lua`, `resources/maps/port_town.json`, `inn.json`, 타일셋 `resources/tiles/port16.png` |
+| 데이터와 스키마 | `resources/data/items.json`, `resources/schema/event-commands.json` (에디터의 RPG 확장이 읽는다) |
+| 그림 | `resources/titles/port_title.png`, `resources/ui/window.png`, `fade.png`, `dpad.png`, `actionbtn.png`, `resources/charsets/placeholder.png`, `resources/faces/placeholder.png` |
+| 글꼴 | `resources/fonts/hangul16.fnt`, `hangul16_0.png` (맵 씬의 16px). 32px 인 `hangul.fnt` 와 `hangul_0.png` 는 공통 묶음(한글 비트맵 폰트)이다 |
+| 소리 | `resources/audio/bless.ogg`(타이틀과 마을의 곡), `door.wav`, `ui_cursor.wav`, `ui_decision.wav`, `ui_text.wav` |
+
+**새 프로젝트 안의 자리**: 진입 파일은 `scripts/lua/main.lua`, 게임 설정은 `resources/data/rpg-game.json` 이고 나머지는 엔진
+경로 그대로다. 공통 묶음의 `hangul.fnt` 와 `hangul_0.png` 가 함께 있어야 한다. `require` 와 리소스 경로가 모두 프로젝트
+루트 기준이라 진입 파일 말고는 고친 파일이 없다. `hangul16` 두 파일은 나눔고딕을 구운 것이라 `THIRD-PARTY.md` 의 나눔고딕 줄에 더했다.
+
+**진입 파일**: `title` 과 `rpg` 두 씬만 등록하고 타이틀부터 연다. 씬 전환(`SwitchScene`), `FontReady`, `AUTOPLAY`, 끝날 때의
+`Bgm.stop()` 은 `scripts/lua/main.lua` 와 같다. `INITIAL2D_SCENE` 이 등록된 이름이면 그 씬부터 연다 (에디터의 "이 맵에서 실행"이
+`rpg` 를 준다). 타이틀의 "나가기"와 ESC 는 엔진 함수 `GameExit` 를 부르므로 진입 파일과 상관없이 그대로다.
+
+**맵을 둘만 넣은 이유**: 마을(`village`)과 오두막(`room`)도 RTP 없이 열린다 (`file` 이 `village16.png` 판이다). 그래도 넣지
+않았다. 항구 마을과 여관의 이벤트에서 그 둘로 가는 `transfer` 가 없고, `alt` 가 RTP 칩셋 판이라 에디터에서 읽기 전용이며
+([m2-rpg-events.md](m2-rpg-events.md)), 6단계의 회귀 맵이다. 그래서 템플릿의 `rpg-game.json` 은 엔진의 것에서 두 항목을 뺀
+것이고 나머지(`items`, `play`)는 같다.
+
+**싣지 않는 것**: `resources/schema/map-objects.json` (두 맵에 `objects` 가 없고 엔진의 것은 알데바란의 스키마다), RTP 후보,
+여관의 개인 소장 곡 `inn.ogg` (없으면 `bless.ogg`), 엔진의 창 아이콘 `resources/icons/icon.png` (없으면 엔진이 한 줄 알리고
+그대로 돈다. 다른 템플릿도 같다).
+
+**함께 싣는 타일셋**: `resources/tiles/tile1.png` 는 에디터가 타일맵 템플릿과 RPG 템플릿에 함께 싣는 타일셋이다 (게임 실행에는
+쓰이지 않는다). 옛 에디터의 기본 타일셋 `2k_town05.png` 와 `2k_town05-01.png` 는 복원하지 않았다 (10절).
+
+`tests/tools/templates_test.py` 가 보는 것:
+
+- 목록: 묶음이 있고 진입 파일과 게임 설정이 들어 있다, 공통 글꼴이 목록에 있다, 엔진의 `rpg-game.json` 은 목록에 없다. 템플릿의
+  `rpg-game.json` 은 `maps` 말고는 엔진의 것과 같고 항목은 엔진의 항목 그대로다 (항구 마을, 여관, `alt` 없음). 맵 파일의 타일셋,
+  이벤트의 `transfer` 가 가리키는 맵과 `scene` 이 가리키는 씬, 이벤트 안의 파일 경로, Lua 31개의 `require` 와 `./resources/` 경로
+  (RTP 후보와 `inn.ogg` 는 빼고), `.fnt` 의 그림 페이지가 모두 묶음 안이다
+- 엔진: 묶음의 파일 53개(묶음 51개와 공통 글꼴 둘)만 늘어놓은 임시 폴더에서 네 번 돈다. 타이틀(200프레임째 화면이 골든
+  `rpgdemo_title` 과 같다), 자동 시연(타이틀이 "시작"을 골라 맵 씬으로 넘어가고 선장의 인사 뒤 `rpg:route:done` 으로 스스로
+  끝난다), 에디터의 "이 맵에서 실행"(템플릿의 `play.env` 로 채운 변수, 항구 마을의 시작 칸, 400프레임째 화면의 맵 부분이 골든
+  `rpgdemo_town` 과 같다), 자동 재생(`play.probe`, 여관의 출입구에서 항구 마을로). 모두 종료 코드 0 이고 오류 줄이 없다
+- 골든은 새로 만들지 않고 인수 시나리오의 것을 쓴다. 타이틀은 화면 전체, 마을은 논리 좌표 (0, 84)-(384, 330)만 본다 (위쪽 안내 글,
+  배회하는 아이의 구역, 아래쪽 대화창을 뺀 곳). 이 맥에서 두 차이는 0.00% 다
+- 목록에서 한 줄씩 빼 보았다. `port16.png` 는 정적 검사와 엔진 실행이 모두 실패하고(마을 차이 100%), `scripts/lua/ui/touch.lua` 는
+  require 검사와 네 실행이 모두 `module not found` 로 실패한다. `hangul16_0.png`(글꼴 페이지), `dpad.png`(데스크톱에서는 패드가
+  뜨지 않는다), `door.wav`(dummy 오디오) 는 실행으로는 드러나지 않아 정적 검사가 잡는다
+
 ## 7. 제3자 고지 (`THIRD-PARTY.md`)
 
 네이티브와 웹 판이 한 파일을 쓴다. 표(이름, 판, 라이선스, 네이티브, 웹)와 원문. 초안의 목록(SDL 셋, stb, Lua, mruby, JsonCpp,
@@ -167,6 +224,7 @@ SQLite 는 코어 라이브러리와 함께 빌드하지만 지금 실행 파일
 | `tests/tools/templates_test.py` (배포용 실행 파일, Homebrew 빌드) | 44 PASS / 0 FAIL |
 | `tools/pack_templates.py` | 파일 32개, 980 KB, 생성물 넷 |
 | `SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy tests/run_all.sh` (Homebrew 빌드) | 전체 검수 통과 (엔진 씬 575 PASS / 0 FAIL, `templates_test.py` 44 PASS). 오디오 드라이버를 주지 않으면 mruby 단위의 소리 검사 셋(`play_music`, `play_sound` 둘)이 거짓으로 실패하는데, 같은 맥에서 master `fab4710` 을 빌드해도 똑같이 실패해 이 단계와 무관하다 (이 맥의 기본 출력 장치가 가상 장치 `Blackhole+` 다) |
+| RPG 템플릿을 더한 뒤 (2026-09-28, Homebrew 빌드, dummy 드라이버) | `templates_test.py` 78 PASS / 0 FAIL (RPG 템플릿 34건, 두 골든 차이 0.00%), `pack_templates.py` 파일 84개 4419 KB 생성물 넷, `run_engine_tests.py` 621 PASS / 0 FAIL (Lua 단위 포함, RTP 검사 하나 SKIP), `prepare_assets_test.sh` 56 PASS |
 | 골든 차이 비율 (배포용 대 Homebrew) | 두 빌드가 같다: 골든 검사 17건 가운데 15건이 0.0000%, `assert_scene_f35` 를 보는 두 건이 0.4139% (허용 2%). stb 디코더가 libpng 와 다른 픽셀을 내지 않는다 |
 | actionlint 1.7.12 (shellcheck 0.11.0 연동) | `dist.yml` 경고 없음. 새 셸 스크립트들도 shellcheck 경고 없음 |
 | GCC 14 와 libstdc++ 로 엔진 소스의 문법 검사 (Linux 의 위험을 미리 본 것) | `lua_font.cpp` 하나가 `std::wstring_convert` 로 실패, `#include <locale>` 한 줄로 통과 |
@@ -205,6 +263,15 @@ SQLite 는 코어 라이브러리와 함께 빌드하지만 지금 실행 파일
   더하지 않는다 (오픈 소스 라이선스는 사실상 되돌릴 수 없고, 엔진은 저자의 에디터 안에 실려 나가므로 없어도 된다)
 - `resources/tiles/tileset16-8x13.png`: 저자의 2020년 커밋이다. 타일맵 템플릿에 그대로 두고 출처는 모른다고 적는다
 - 나눔고딕: 구운 비트맵 글꼴의 이름을 `Initial2D Hangul` 로 바꿨다 (PR #55). `THIRD-PARTY.md` 에 나눔고딕의 OFL 고지가 있다
+- 옛 에디터 타일셋 `2k_town05.png`, `2k_town05-01.png` (2026-09-28, 결정 대기): 복원하지 않았다. 옛 InitialEditor 의 README 와
+  `legacy/initial-editor/images/tiles/README.MD` 가 두 파일을 REFMAP 의 「FSM Tile」(<http://refmap-l.blog.jp/archives/8632768.html>,
+  RPG 쯔꾸르 2000 용 「2000town05」)로 적어 두었다. 그 쪽의 규약은 권리가 REFMAP 에 있고, 쓰는 도구는 가리지 않으며, 가공한 그림은
+  배포할 수 있지만 무가공 그림의 배포는 금지한다고 한다. 두 파일은 8비트 팔레트의 칩셋 그대로라 엔진 저장소와 템플릿 묶음에
+  넣으면 무가공 배포가 된다. push 한 이력은 되돌리지 않으므로 넣기 전에 정한다. 넣기로 하면
+  `git -C <InitialEditor> show 8442416^:legacy/initial-editor/images/tiles/<이름>` 으로 `resources/tiles/` 에 두고, 목록의 타일셋 묶음에
+  두 줄을 더하고, `THIRD-PARTY.md` 에 출처를 적는다
+- 같은 README 의 라이선스 목록에는 「Tuxemon Tileset」(opengameart)도 있었다. 어느 파일인지는 확인하지 못했다. 타일맵 템플릿의
+  `tileset16-8x13.png` 가 그것이면 그 라이선스의 고지가 필요할 수 있다
 
 ## 작업 항목 (E6 마일스톤 2)
 
@@ -222,3 +289,5 @@ SQLite 는 코어 라이브러리와 함께 빌드하지만 지금 실행 파일
 - [x] `dist.yml` 의 첫 CI 실행 (macOS 와 Linux). PR #53(36281586493)과 #55(36297974450)에서 네 잡(native 둘, templates, collect)이 모두 통과했다. 에디터 `release.yml` 도 핀의 커밋에서 같은 스크립트로 엔진을 만들어 설치본 자가 검사에 싣는다
 - [x] 기존 `tests.yml` 과 전체 검수가 무변경으로 통과한다 (Homebrew 빌드 경로는 그대로)
 - [x] 엔진 문서 (이 문서, index 의 R4 행, README 의 "배포용 빌드")
+- [x] RPG 템플릿 (2026-09-28): `resources/templates/rpg/`, 목록의 "RPG 템플릿" 묶음 51개와 `tile1.png`, `templates_test.py` 의 정적 검사와 엔진 실행 넷 (6.1절)
+- [ ] 옛 에디터 타일셋 `2k_town05.png`, `2k_town05-01.png`: REFMAP 의 규약 때문에 저자 결정 대기 (10절)
