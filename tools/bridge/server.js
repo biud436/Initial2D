@@ -20,7 +20,7 @@
 //   GET    /api/stat/<path>      종류와 크기 {kind, size, mtime}, 없으면 404
 //   POST   /api/mkdir/<path>     폴더 만들기 (상위 폴더 포함)
 //   POST   /api/rename           본문 JSON {from, to}. 파일과 폴더 이름 바꾸기 (옮기기)
-//   POST   /api/reload           scripts/**/*.lua 와 *.rb 를 엔진 HMR 서버로 push (본문 JSON {host, port} 선택)
+//   POST   /api/reload           scripts/**/*.lua, *.rb, *.json(컴포넌트 선언)을 엔진 HMR 서버로 push (본문 JSON {host, port} 선택)
 //   WS     /ws                   파일 변경 알림 {type:"change", path, event, kind: create|modify|delete, origin: bridge|external}
 //
 // 의존성 없음 (Node 20 이상의 내장 모듈만 사용).
@@ -147,7 +147,7 @@ export function createBridge(options = {}) {
   }
 
   async function collectScripts() {
-    const rels = await files.list('scripts', (rel) => rel.endsWith('.lua') || rel.endsWith('.rb'));
+    const rels = await files.list('scripts', (rel) => rel.endsWith('.lua') || rel.endsWith('.rb') || rel.endsWith('.json'));
     const out = [];
     for (const rel of rels) {
       const { data } = await files.read(rel);

@@ -3,7 +3,7 @@
 
 사용법:
     adb forward tcp:5959 tcp:5959      # Android 기기 최초 1회
-    python3 tools/hmr_push.py          # scripts/ 이하 *.lua 와 *.rb 전체를 1회 push
+    python3 tools/hmr_push.py          # scripts/ 이하 *.lua, *.rb, *.json(컴포넌트 선언) 전체를 1회 push
     python3 tools/hmr_push.py --watch  # 저장할 때마다 자동 push
 
 프로토콜: docs/porting/android-hmr-plan.md 참조.
@@ -21,11 +21,12 @@ SCRIPT_DIR = os.path.join(ROOT, "scripts")
 
 
 def collect_files():
-    """(상대경로, 절대경로) 목록 (scripts/ 이하 *.lua 와 *.rb 전부. Lua 는 scripts/lua/, Ruby 는 scripts/ruby/)."""
+    """(상대경로, 절대경로) 목록 (scripts/ 이하 *.lua, *.rb, *.json 전부. Lua 는 scripts/lua/, Ruby 는 scripts/ruby/,
+    컴포넌트 선언 파일은 scripts/components/)."""
     files = []
     for dirpath, _dirnames, filenames in os.walk(SCRIPT_DIR):
         for name in sorted(filenames):
-            if not name.endswith((".lua", ".rb")):
+            if not name.endswith((".lua", ".rb", ".json")):
                 continue
             full = os.path.join(dirpath, name)
             rel = os.path.relpath(full, ROOT).replace(os.sep, "/")

@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "fields": [
+    { "key": "target", "type": "object", "label": "대상" },
+    { "key": "dx", "type": "number", "label": "가로 이동", "default": 1 },
+    { "key": "dy", "type": "number", "label": "세로 이동", "default": 0 }
+  ]
+}
