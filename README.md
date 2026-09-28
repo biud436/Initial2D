@@ -1578,6 +1578,14 @@ GitHub Actions 의 `dist` 워크플로가 같은 일을 macOS 와 Linux 에서 �
 새 프로젝트의 타일맵 템플릿은 `resources/templates/tilemap/`(맵, 씬, 오브젝트 스키마)에 있고
 `python3 tests/tools/templates_test.py` 가 규칙대로인지 봅니다. 제3자 고지는 [THIRD-PARTY.md](./THIRD-PARTY.md) 입니다.
 
+RPG 템플릿은 데모 「떠나기 전에」의 항구 마을과 여관을 새 프로젝트로 옮긴 것입니다. `tools/templates_list.txt` 의
+"RPG 템플릿" 묶음에 진입 파일(`resources/templates/rpg/main.lua`), 두 맵만 등록한 게임 설정
+(`resources/templates/rpg/rpg-game.json`), 두 씬과 `scripts/lua/rpg/` 전부, 맵과 타일셋, 그림, 16px 글꼴, 소리가 있습니다.
+에디터는 진입 파일을 `scripts/lua/main.lua` 에, 게임 설정을 `resources/data/rpg-game.json` 에 두고 나머지는 엔진 경로
+그대로 둡니다. RTP 가 없어도 캐릭터와 얼굴은 플레이스홀더로 뜹니다. `templates_test.py` 는 이 묶음의 파일만 늘어놓은
+임시 폴더에서 타이틀과 항구 마을을 띄워 골든과 견주고, 에디터의 "이 맵에서 실행" 변수와 여관에서 항구로 가는 자동 재생까지
+돌려 봅니다.
+
 ## 핫 리로드 (HMR)
 
 APK를 다시 빌드하거나 설치하지 않고, 수정한 `scripts/lua/*.lua`를 실행 중인 게임에 밀어 넣어 바로 반영합니다.
