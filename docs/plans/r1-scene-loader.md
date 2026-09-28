@@ -36,7 +36,8 @@
       "props": { "image": "resources/images/bg.png", "width": 0, "height": 0, "frames": 1, "scale": 1, "angle": 0, "opacity": 255, "loop": true, "startFrame": 0, "endFrame": 0 },
       "scripts": [] },
     { "id": "score", "type": "text", "x": 8, "y": 8, "visible": true, "props": { "text": "0", "font": "resources/fonts/hangul.fnt" }, "scripts": [] },
-    { "id": "world", "type": "node", "x": 0, "y": 0, "visible": true, "props": {}, "scripts": ["components/spawner"] },
+    { "id": "world", "type": "node", "x": 0, "y": 0, "visible": true, "props": {}, "scripts": ["components/spawner"],
+      "params": { "components/spawner": { "interval": 1500, "target": "bg" } } },
     { "id": "map", "type": "tilemap", "x": 0, "y": 0, "visible": true, "props": { "map": "resources/maps/sample.json", "groundLayers": 1 }, "scripts": [] }
   ]
 }
@@ -62,6 +63,9 @@
    한 프레임). 엔진 API 와의 대응은 4절.
 9. text 의 props: `text`(줄바꿈과 한글 가능), `font`(.fnt 경로. 비어 있으면 게임이 준비해 둔 폰트), 선택 `color` [r, g, b, a].
 10. `node` 는 아무것도 그리지 않는다. 컴포넌트를 붙이는 자리다.
+11. `params` 는 컴포넌트 매개변수다. 컴포넌트 논리 이름에서 값 객체로 가는 객체이고, 기본은 없음이다.
+    매개변수의 선언 파일, 로더의 의미, 검사는 5.4절. 2026-09-28 에 더한 키이며 포맷은 그대로 v1 이다
+    (예전 로더는 모르는 키로 무시했다).
 
 **계약에 더한 것 하나**: sprite 의 `frameDelay` (ms, 기본 100). 엔진의 프레임 지연 기본값이 0 이라 애니메이션이
 매 틱 넘어가 버리므로 파일에서 정할 수 있게 했다. 없으면 100 이다. 에디터는 이 키를 모르는 키로 보존해도 되고
@@ -96,7 +100,11 @@
 | color 가 [r, g, b] 나 [r, g, b, a] 가 아니거나 0..255 밖 | `scene: props.color must be [r, g, b] or [r, g, b, a] (<id>)` |
 | 확장 타입의 검사 (tilemap: map 필수, groundLayers >= 0) | `scene: tilemap needs props.map (<id>)` |
 
-검증은 파일을 열지 않는다 (이미지, 폰트, 맵, 컴포넌트 모듈의 존재는 **열 때** 확인한다).
+컴포넌트 매개변수(`params`)와 선언 파일의 검사 목록과 메시지는 5.4절의 표에 따로 있다. 같은 `validate` 가 위의
+검사를 전부 통과한 뒤에 그 검사를 한다.
+
+검증은 이미지, 폰트, 맵, 컴포넌트 모듈을 열지 않는다 (그것들의 존재는 **열 때** 확인한다). 예외는 컴포넌트의
+선언 파일(`scripts/components/<경로>.json`) 하나다. params 를 검사하려면 선언이 있어야 해서 검증이 읽는다.
 열 때의 오류도 이름을 말한다: `scene: component 'components/x' not found (scripts/lua/components/x.lua)`,
 `scene: cannot load image ./resources/x.png`, `scene: text 'l': cannot load font resources/fonts/x.fnt`,
 `scene: tilemap 'map': cannot load resources/maps/x.json (...)`, `scene: cannot open scene ./resources/scenes/x.json (...)`.
@@ -167,19 +175,24 @@
 
 ### 5.1 모듈과 훅
 
-Lua 컴포넌트는 표 하나를 돌려주는 모듈이고, Ruby 컴포넌트는 파일 이름 마지막 조각의 CamelCase 클래스다
-(`components/pipe_spawner` → `PipeSpawner`, `components/flappy/bird` → `Bird`. 폴더는 이름에 들어가지 않는다).
-로더는 Ruby 클래스를 `Object.const_get` 으로 찾아 **오브젝트마다 하나씩** 만든다. 훅은 전부 선택이다.
+Lua 컴포넌트는 표 하나를 돌려주는 모듈이고, Ruby 컴포넌트는 클래스다. Ruby 클래스는 논리 이름 전체를 모듈
+경로로 먼저 찾고 (`components/flappy/bird` → `Components::Flappy::Bird`), 그 상수가 없으면 파일 이름 마지막 조각의
+CamelCase 클래스를 찾는다 (`components/pipe_spawner` → `PipeSpawner`, `components/flappy/bird` → `Bird`).
+모듈 경로 쪽은 2026-09-28 에 더했다 (5.4절). 마지막 이름이 같은 두 컴포넌트가 함께 있을 수 있고, 예전 클래스는
+그대로 찾아진다. 로더는 찾은 클래스로 **오브젝트마다 하나씩** 인스턴스를 만든다. 훅은 전부 선택이다.
 
 ```lua
 -- scripts/lua/components/bird.lua
 local M = {}
-function M.init(obj, scene) end             -- 모든 오브젝트가 만들어진 뒤, 오브젝트 순서대로
-function M.update(obj, scene, elapsed) end  -- 매 틱, elapsed 는 ms. 보이지 않는 오브젝트도 불린다
-function M.render(obj, scene) end           -- 로더가 그 오브젝트의 스프라이트나 글자를 그린 뒤. visible 이 false 면 안 불린다
-function M.destroy(obj, scene) end          -- remove 나 close 때
+function M.init(obj, scene, params) end             -- 모든 오브젝트가 만들어진 뒤, 오브젝트 순서대로
+function M.update(obj, scene, elapsed, params) end  -- 매 틱, elapsed 는 ms. 보이지 않는 오브젝트도 불린다
+function M.render(obj, scene, params) end           -- 로더가 그 오브젝트의 스프라이트나 글자를 그린 뒤. visible 이 false 면 안 불린다
+function M.destroy(obj, scene, params) end          -- remove 나 close 때
 return M
 ```
+
+Lua 훅의 마지막 인자 `params` 는 그 컴포넌트의 매개변수 표다 (5.4절). 2026-09-28 에 더한 인자라 받지 않는
+예전 컴포넌트도 그대로 돈다.
 
 ```ruby
 # scripts/ruby/components/bird.rb
@@ -228,6 +241,171 @@ Lua 의 obj 는 그냥 표라 컴포넌트가 아무 필드나 붙일 수 있다
 update 도중의 `spawn` 과 `remove` 는 된다. tick 은 목록의 복사본을 돌므로 이번 틱에 만든 것의 update 는 다음
 틱부터고, 이번 틱에 없앤 것의 update 는 건너뛴다.
 
+### 5.4 컴포넌트 매개변수 (params)
+
+> 2026-09-28 추가. InitialEditor 의 `docs/plans/next-goals.md` 2절 B 의 엔진 쪽이다. 컴포넌트가 받을 값을
+> 선언 파일에 적고, 씬 파일의 오브젝트가 값을 정하고, 로더가 검사해 컴포넌트에 넘긴다. 에디터는 선언 파일을
+> 읽어 인스펙터의 입력 항목을 만든다. 씬 포맷은 그대로 v1 이다.
+
+#### 선언 파일
+
+컴포넌트 `components/<경로>` 의 매개변수는 `scripts/components/<경로>.json` 에 선언한다 (논리 이름에 `.json` 을
+붙여 `scripts/` 아래에서 찾는다). 언어 중립의 JSON 이라 Lua 와 Ruby 가 한 파일을 같이 쓴다. 선언 파일이 없는
+컴포넌트는 선언된 매개변수가 없다.
+
+```json
+{
+  "version": 1,
+  "fields": [
+    { "key": "speed", "type": "number", "label": "속도", "default": 60, "min": 0 },
+    { "key": "kind", "type": "enum", "values": ["ground", "pipes"], "default": "ground" },
+    { "key": "target", "type": "object", "label": "대상" }
+  ]
+}
+```
+
+| 키 | 규칙 |
+|---|---|
+| `version` | 1 이어야 한다 |
+| `fields` | 필드의 배열. 없으면 빈 배열이다. 배열의 순서가 에디터의 표시 순서다 |
+| `key` | 필수. 식별자 `[A-Za-z_][A-Za-z0-9_]*`, 파일 안에서 유일 |
+| `type` | 필수. `string`, `text`(여러 줄 문자열), `number`, `integer`, `boolean`, `enum`, `object` 중 하나. `object` 는 씬 오브젝트 id 를 가리키는 문자열이다 |
+| `label` | 선택. 에디터에 보이는 이름 (문자열) |
+| `default` | 선택. 타입에 맞아야 한다: string 과 text 는 문자열, number 는 숫자, integer 는 정수 값의 숫자, boolean 은 불리언, enum 은 `values` 중 하나, object 는 빈 문자열이 아닌 문자열. number 와 integer 는 `min`, `max` 안이어야 한다 |
+| `values` | enum 에만 있고, enum 에는 필수. 빈 문자열이 아닌 문자열의 배열이며 하나 이상 |
+| `min`, `max` | number 와 integer 에만, 선택. 숫자. 둘 다 있으면 `min <= max` |
+
+선언 파일의 모르는 키(루트와 필드 안)는 무시한다. 에디터는 보존한다.
+
+#### 씬 파일의 `params`
+
+```json
+{ "id": "world", "type": "node",
+  "scripts": ["components/mover", "components/spawner"],
+  "params": { "components/mover": { "dx": 2, "target": "bird" } } }
+```
+
+오브젝트의 `params` 는 컴포넌트 논리 이름에서 값 객체로 가는 객체다. 값 객체의 키는 선언의 `key` 다.
+
+#### 로더의 의미 (두 언어가 같다)
+
+1. 로더는 `scripts` 순서대로 컴포넌트마다 params 를 만든다. 선언의 `default` 들 위에 `obj.params[이름]` 의 값을
+   덮는다. 기본값이 없고 씬 파일에도 없는 키는 params 에 없다 (Lua 는 nil, Ruby 는 키가 없다).
+2. 컴포넌트마다 따로 만든다 (값은 깊은 복사). 한 오브젝트의 두 컴포넌트, 같은 컴포넌트를 붙인 두 오브젝트가
+   같은 표를 나눠 쓰지 않는다. 컴포넌트가 제 params 를 고쳐도 다른 곳에 번지지 않는다.
+3. `object` 값은 id 문자열 그대로 넘긴다. 컴포넌트가 `scene:find(params.target)` 로 찾는다.
+4. 선언 파일이 없는 컴포넌트의 `params` 항목은 검사 없이 그대로 (깊은 복사로) 넘긴다. 게임은 선언을 쓰기 전에도
+   params 를 쓸 수 있다.
+5. JSON 의 `null` 은 없는 것으로 본다 (`"params": null`, 항목 값 null, 키 값 null, 선언의 `default: null` 등).
+   Lua 의 `Json.Load` 가 null 을 nil 로 읽어 키가 사라지므로 Ruby 도 같게 한다.
+6. 빈 배열 `[]` 은 빈 객체로도, 빈 객체 `{}` 는 빈 배열로도 본다. Lua 는 둘을 구분하지 못하므로 Ruby 도 같게 한다.
+   비어 있지 않은 배열은 객체가 아니고, 문자열 키가 있는 객체는 배열이 아니다.
+7. `props` 는 그대로다. `obj.props` 를 읽는 예전 컴포넌트는 바꾸지 않아도 돈다.
+8. 한 오브젝트의 `scripts` 에 같은 컴포넌트가 두 번 있으면 예전처럼 둘 다 만든다. 둘 다 같은 `params[이름]` 값을
+   따로 복사해 받는다. 에디터가 이 경우를 막는다.
+
+**Lua**: 훅이 params 를 마지막 인자로 받는다. 표는 컴포넌트 인스턴스마다 하나라 네 훅이 같은 표를 받는다.
+
+```lua
+function M.init(obj, scene, params) end
+function M.update(obj, scene, elapsed, params) end
+function M.render(obj, scene, params) end
+function M.destroy(obj, scene, params) end
+```
+
+**Ruby**: 컴포넌트 클래스의 `initialize` 가 위치 인자를 하나 이상 받으면 (`def initialize(params)`,
+`def initialize(params = {})`, `def initialize(*args)`) 로더가 `new(params)` 로 만든다. params 는 문자열 키 Hash 다.
+그렇지 않으면 예전처럼 `new` 다. 훅의 모양은 그대로다 (params 는 인스턴스가 들고 있다). 판정은
+`instance_method(:initialize).parameters` 에 `:req`, `:opt`, `:rest` 가 있는가이다. initialize 를 정의하지 않은
+클래스는 BasicObject 의 것을 쓰고 인자를 받지 않으므로 `new` 로 만든다.
+
+```ruby
+# scripts/ruby/components/mover.rb
+class Mover
+  def initialize(params)
+    @params = params
+  end
+
+  def update(obj, scene, elapsed)
+    obj.x += @params["dx"]
+  end
+end
+```
+
+**Ruby 클래스 찾기**: 논리 이름의 조각마다 CamelCase 로 바꿔 `Object` 에서 한 단계씩 따라간다
+(`components/flappy/bird` → `Components` → `Flappy` → `Bird`). 각 단계는 상속을 보지 않는 `const_defined?(이름, false)`
+다. 끝까지 있고 클래스이면 그것이고, 아니면 예전 규칙(마지막 조각, `Bird`)이다. 둘 다 없으면
+`scene: component 'components/flappy/bird' must define class Components::Flappy::Bird or Bird (scripts/ruby/components/flappy/bird.rb)`.
+
+#### 검사
+
+`SceneLoader.validate` 가 3절의 검사를 **모든 오브젝트에 대해** 통과한 뒤에 오브젝트 순서대로 본다. object 값이
+뒤에 나오는 오브젝트를 가리킬 수 있어서 id 를 다 모은 다음에 본다. 한 오브젝트 안의 순서는 이렇다.
+
+1. `params` 가 객체인가 (없으면 통과).
+2. `scripts` 순서대로 선언 파일을 읽는다. 없으면 선언 없음이고, 깨졌으면 그 파일을 말하는 오류다.
+   `params` 가 없는 오브젝트도 읽는다 (기본값이 필요하다).
+3. `params` 의 항목을 이름의 바이트 순서로 본다. 그 이름이 `scripts` 에 있는가, 값이 객체인가. 선언이 있으면 값
+   객체의 키를 바이트 순서로 본다. 선언된 키인가, 값이 필드에 맞는가.
+
+`scene:spawn(spec)` 도 같은 검사를 한다. object 값은 씬에 있는 id 와 새 오브젝트 자신의 id 를 가리킬 수 있다.
+값의 검사는 선언의 `default` 검사와 같은 규칙이고, object 값은 거기에 더해 씬에 그 id 가 있어야 한다.
+메시지 속의 숫자(`min`, `max`)는 정수 값이면 정수로 (`0`, `10`), 아니면 `%.14g` 로 쓴다 (`0.5`).
+`<id>` 는 오브젝트의 id 다.
+
+| 검사 | 메시지 |
+|---|---|
+| params 가 객체가 아니다 | `scene: params must be an object (<id>)` |
+| params 의 이름이 scripts 에 없다 | `scene: params '<이름>': not in scripts (<id>)` |
+| params 항목의 값이 객체가 아니다 | `scene: params '<이름>' must be an object (<id>)` |
+| 선언이 있는데 선언에 없는 키 | `scene: params '<이름>': unknown key '<key>' (<id>)` |
+| string, text 인데 문자열이 아니다 | `scene: params '<이름>': <key> must be a string (<id>)` |
+| number 인데 숫자가 아니다 | `scene: params '<이름>': <key> must be a number (<id>)` |
+| integer 인데 정수 값의 숫자가 아니다 | `scene: params '<이름>': <key> must be an integer (<id>)` |
+| number, integer 가 min 보다 작다, max 보다 크다 | `scene: params '<이름>': <key> must be >= <min> (<id>)`, `... must be <= <max> (<id>)` |
+| boolean 인데 불리언이 아니다 | `scene: params '<이름>': <key> must be a boolean (<id>)` |
+| enum 인데 values 에 없다 (문자열이 아닌 값 포함) | `scene: params '<이름>': <key> must be one of <v1>, <v2> (<id>)` |
+| object 인데 문자열이 아니거나 빈 문자열이다 | `scene: params '<이름>': <key> must be an object id (<id>)` |
+| object 가 가리키는 id 가 씬에 없다 | `scene: params '<이름>': <key> names no object '<값>' (<id>)` |
+
+선언 파일의 검사. `<경로>` 는 `scripts/components/x.json` 꼴이다. 루트, version, fields 를 본 뒤 필드를 배열 순서로
+보고, 한 필드 안에서는 key, key 중복, type, label, values, min, max, min 과 max, default 의 순서로 본다. min 과 max 는
+그 타입에 쓸 수 있는가를 먼저, 숫자인가를 다음에 본다.
+
+| 검사 | 메시지 |
+|---|---|
+| JSON 으로 읽히지 않는다 | `scene: declaration <경로>: not valid JSON (<파서의 설명>)` |
+| 루트가 객체가 아니다 | `scene: declaration <경로>: not an object` |
+| version 이 1 이 아니다 | `scene: declaration <경로>: unsupported version <v> (expected 1)` |
+| fields 가 배열이 아니다 | `scene: declaration <경로>: fields must be an array` |
+| 필드가 객체가 아니다 | `scene: declaration <경로>: fields[<n>] is not an object` |
+| key 가 없거나 식별자가 아니다 | `scene: declaration <경로>: fields[<n>] needs a key ([A-Za-z_][A-Za-z0-9_]*)` |
+| key 중복 | `scene: declaration <경로>: duplicate key '<key>'` |
+| type 이 없거나 문자열이 아니다 | `scene: declaration <경로>: field '<key>' needs a type` |
+| 모르는 type | `scene: declaration <경로>: field '<key>': unknown type '<type>'` |
+| label 이 문자열이 아니다 | `scene: declaration <경로>: field '<key>': label must be a string` |
+| enum 의 values 가 없거나, 비었거나, 문자열이 아니거나 빈 문자열인 항목이 있다 | `scene: declaration <경로>: field '<key>': values must be a non-empty array of strings` |
+| enum 이 아닌데 values 가 있다 | `scene: declaration <경로>: field '<key>': values is only for enum` |
+| min, max 가 숫자가 아니다 | `scene: declaration <경로>: field '<key>': min must be a number` (max 도 같다) |
+| number, integer 가 아닌데 min, max 가 있다 | `scene: declaration <경로>: field '<key>': min is only for number and integer` (max 도 같다) |
+| min > max | `scene: declaration <경로>: field '<key>': min must be <= max` |
+| default 가 타입에 맞지 않다 | `scene: declaration <경로>: field '<key>': default must be a string` 등 (params 값의 문장과 같다. object 는 `must be an object id` 이고 씬의 id 는 보지 않는다) |
+
+`<n>` 은 1 부터 센다 (3절의 `scripts[<i>]` 와 같다). `<파서의 설명>` 은 엔진의 JSON 파서(jsoncpp)가 준 문장을 한
+줄로 줄인 것이다. `<v>` 는 없으면 `nil` 이다.
+
+선언은 컴포넌트 이름마다 한 번 읽어 VM 이 살아 있는 동안 기억한다 (없음도 기억하고, 깨진 파일은 기억하지 않는다). 핫 리로드는 VM 을 새로
+만드므로 다시 읽는다.
+
+#### 로더 API 에 더한 것
+
+| Lua | Ruby | 뜻 |
+|---|---|---|
+| `SceneLoader.declarationPath(name)` | `SceneLoader.declaration_path(name)` | `scripts/components/x.json` 꼴의 경로 |
+| `SceneLoader.declaration(name)` | `SceneLoader.declaration(name)` | 검사를 통과한 선언 표(Ruby 는 Hash), 파일이 없으면 nil. 깨졌으면 위 표의 오류 |
+| | `SceneLoader.component_class_path(name)` | `"Components::Flappy::Bird"` 꼴의 모듈 경로 |
+| | `SceneLoader.takes_params?(klass)` | 그 클래스를 `new(params)` 로 만드는가 |
+
 ## 6. 로더 API
 
 | Lua | Ruby | 뜻 |
@@ -239,6 +417,7 @@ update 도중의 `spawn` 과 `remove` 는 된다. tick 은 목록의 복사본�
 | `scene:draw()` | `scene.draw` | 확장 타입 `drawBelow` 전부 → 오브젝트 순서대로 (스프라이트, 글자, 확장 타입 `draw`, 컴포넌트 `render`) → 확장 타입 `drawAbove` 전부. `visible` 이 false 인 오브젝트는 전부 건너뛴다 |
 | `scene:close()` | `scene.close` | 오브젝트 순서대로 컴포넌트 destroy, 확장 타입 destroy, 스프라이트 해제. 그 뒤 텍스처 해제. 두 번 불러도 된다 |
 | `SceneLoader.scenePath(name)`, `componentPath(name)`, `componentModule(name)`, `resolveType(type)`, `registerType(name, mod)` | `scene_path`, `component_path`, `component_class_name`, `resolve_type`, `register_type` | 이름 풀기와 확장 |
+| `SceneLoader.declarationPath(name)`, `declaration(name)` | `declaration_path`, `declaration`, `component_class_path`, `takes_params?(klass)` | 컴포넌트 매개변수 (5.4절) |
 
 오류는 Lua 에서 `error("scene: ...", 0)`, Ruby 에서 `SceneLoader::Error` 다. 엔진은 잡지 않은 오류를 stderr 에
 찍고 종료 코드 1 로 끝내므로 씬 파일의 잘못은 게임을 띄우자마자 이름과 함께 드러난다.
@@ -303,6 +482,14 @@ function Destroy() scene:close() end
   각 17건). `test_scene_flappy_lua` / `test_scene_flappy_mruby` 는 `test_mruby_flappy_scene` 과 같은 검사 12건씩.
   전체 스위트(`tests/run_all.sh`)는 엔진 씬 442 PASS / 0 FAIL, C++ 단위 18, 브리지 25 로 통과했고 기존 테스트는
   손대지 않았다.
+- **params (5.4절, 2026-09-28)**: 픽스처 `tests/fixtures/scenes/params_v1.json` 을 `test_scene_params_lua` /
+  `test_scene_params_mruby` 가 열어 두 언어가 같은 stdout 13줄을 찍는지 본다 (각 16건). 기본값만, 모든 타입의 덮어쓰기와
+  뒤의 오브젝트를 가리키는 object, 한 오브젝트의 두 컴포넌트(`probe` 와 `drift`), 선언이 없는 `loose`, `props` 를 읽는 예전
+  `mover`(Ruby 는 인자 없는 `new`), params 로 움직인 오브젝트, 네 훅이 받은 값, 한 표를 고쳐도 번지지 않음, 검증 오류 한 문장.
+  단위 케이스는 5.4절 두 표의 문장을 전부 글자 그대로 본다 (null 과 빈 배열, spawn, 키와 이름의 순서, Ruby 의
+  `new(params)` 판정 여섯 가지와 모듈 경로 클래스 찾기 포함). scene_loader 케이스가 Lua 121 에서 208건 (전체 2569건),
+  Ruby 126 에서 227건 (전체 2029건). 전체 스위트는 엔진 씬 621 PASS / 0 FAIL, C++ 단위 18, 브리지 25, 템플릿 44,
+  스테이징 56 으로 통과했다.
 - **픽스처**: `tests/fixtures/scenes/sample_v1.json`. 타입 넷 전부, 줄바꿈과 한글이 든 text, 컴포넌트가 움직이는
   node, `resources/maps/sample.json` 위의 tilemap, 루트와 오브젝트 안의 모르는 키 `editorOnly`. 에디터는 이 파일을
   열어 저장하면 같아야 한다 (모르는 키 보존).
@@ -331,6 +518,17 @@ function Destroy() scene:close() end
    골든에 찍히는 움직임은 첫 틱 둘 안에 끝나게 픽스처의 mover 가 102 씩 두 번 움직여 300 에서 멈춘다.
 6. **엔진의 프레임 지연 기본값 0**: `frameDelay` 를 더한 이유. 없으면 새가 매 틱 날갯짓 프레임을 넘겼다.
 7. **Lua 의 씬 계약 이름**: `Initialize`/`Update`/`Render`/`Destroy`. 초안의 소문자는 Ruby 이름이다.
+8. **params 의 JSON 모양 (5.4절)**: 엔진의 `Json.Load` 는 null 을 nil 로 읽어 키가 사라지고, `[]` 과 `{}` 를 같은 빈 표로
+   읽는다. 두 로더가 같은 결과를 내도록 Ruby 쪽이 null 을 없는 것으로, 빈 배열과 빈 객체를 서로 같게 본다. jsoncpp 는
+   객체의 키를 정렬해 넘기므로 Ruby Hash 의 순서는 사전 순이고 Lua 표는 순서가 없다. 그래서 여러 오류 중 무엇을 먼저
+   말할지는 이름과 키의 바이트 순서로 정했다.
+9. **mruby 의 initialize 판정**: `instance_method(:initialize).arity` 는 initialize 를 정의하지 않은 클래스(BasicObject 의
+   것)에서 -1 이라 쓸 수 없다. `parameters` 는 그 경우 `[]` 이므로 `:req`, `:opt`, `:rest` 가 있는지로 본다. 그 클래스에
+   `new(params)` 를 부르면 ArgumentError 다.
+10. **mruby 의 모듈 경로**: `Module#const_defined?(이름, false)` 로 한 단계씩 따라간다. mruby 에는 정규식이 없어 선언의
+    key 식별자 검사는 바이트를 직접 본다.
+11. **mruby 의 `String#gsub`**: 한글이 든 문자열에서 문자열 패턴을 바꾸면 그 뒤를 잃는다 (`"첫 줄\n둘째 줄".gsub("\n", "\\n")`
+    이 `"첫 줄\\n"`). params 픽스처 씬은 `split` 과 `join` 을 쓴다. 로더는 gsub 을 쓰지 않는다.
 
 ## 체크리스트
 
@@ -343,5 +541,11 @@ function Destroy() scene:close() end
 - [x] 픽스처 `tests/fixtures/scenes/sample_v1.json` 과 골든 `tests/golden/scene_loader.png`
 - [x] 단위 케이스 두 언어, 씬 테스트 넷, 러너 함수 넷
 - [x] README 「씬 파일과 씬 로더」, index.md R1 행
+- [x] 컴포넌트 매개변수 (5.4절, 2026-09-28): 선언 파일 `scripts/components/<경로>.json`, 씬 파일의 `params`, 두 로더의
+      같은 의미와 검사, Lua 훅의 마지막 인자, Ruby 의 `new(params)` 와 모듈 경로 클래스
+- [x] params 픽스처 `tests/fixtures/scenes/params_v1.json`, 예제 컴포넌트 `components/sample/probe`, `drift`, `loose`
+      두 언어, 씬 테스트 둘(`test_scene_params_lua`, `test_scene_params_mruby`), 단위 케이스 두 언어
+- [x] `tools/web_stage.py`, `tools/hmr_push.py`, 브리지의 `POST /api/reload` 가 선언 파일을 싣는다, README 「씬 파일과 씬 로더」
 - [ ] 에디터 쪽 E2/E3 가 같은 픽스처를 왕복한다 (InitialEditor 저장소)
+- [ ] 에디터의 인스펙터가 선언 파일로 params 입력 항목을 만들고 5.4절의 문장으로 검사한다 (InitialEditor 저장소)
 - [ ] 텍스트 색 (엔진에 색 인자가 생기면 `color` 를 붙인다)
