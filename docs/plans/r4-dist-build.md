@@ -199,13 +199,12 @@ SQLite 는 코어 라이브러리와 함께 빌드하지만 지금 실행 파일
 - `templates` 잡에서 다시 만든 효과음 WAV 가 커밋된 것과 바이트가 다르면 `pack_templates.py` 가 "HEAD 와 다르다" 로 멈춘다
   (로컬에서는 같았다. 그림 생성기는 표준 라이브러리의 시드 난수와 `math.sin` 만 쓴다)
 
-**저자에게 남긴 것**
+**저자에게 남긴 것** (2026-09-27 저자가 판단을 맡겨 정했다)
 
-- 태그 `v2.0.0-alpha.1` 과 공개 릴리스, 엔진 `LICENSE` (이 단계에서 만들지 않는다)
-- `resources/tiles/tileset16-8x13.png` 의 출처와 라이선스가 저장소에 적혀 있지 않다 (2020년 커밋). 템플릿 묶음으로 새 프로젝트에
-  복사되므로 배포 전에 확인이 필요하다. 제3자 소재라면 `THIRD-PARTY.md` 에 더한다
-- 나눔고딕: `hangul.fnt` 는 글꼴 이름을 `나눔고딕` 으로 적는다. OFL 은 수정판(비트맵으로 구운 것)이 예약 글꼴 이름을 쓰지
-  못하게 할 수 있으므로, 나눔글꼴 OFL 의 예약 이름 목록과 대조해 볼 것. 고지에는 이 맥의 글꼴 파일(3.021)에 적힌 저작권 표기를 옮겼다
+- 태그 `v2.0.0-alpha.1` 과 공개 릴리스: 에디터 E5 와 E6 이 병합되고 CI 가 녹색이면 두 저장소에 프리릴리스로 낸다. 엔진에는 라이선스를
+  더하지 않는다 (오픈 소스 라이선스는 사실상 되돌릴 수 없고, 엔진은 저자의 에디터 안에 실려 나가므로 없어도 된다)
+- `resources/tiles/tileset16-8x13.png`: 저자의 2020년 커밋이다. 타일맵 템플릿에 그대로 두고 출처는 모른다고 적는다
+- 나눔고딕: 구운 비트맵 글꼴의 이름을 `Initial2D Hangul` 로 바꿨다 (PR #55). `THIRD-PARTY.md` 에 나눔고딕의 OFL 고지가 있다
 
 ## 작업 항목 (E6 마일스톤 2)
 
@@ -218,8 +217,8 @@ SQLite 는 코어 라이브러리와 함께 빌드하지만 지금 실행 파일
 - [x] 타일맵 템플릿 `resources/templates/tilemap/` (있는 타일셋, `mapfile.py` 형식의 맵, 씬, 스키마)와 `tests/tools/templates_test.py`
 - [x] `tools/templates_list.txt`, `tools/pack_templates.py` (`generated` 표시, 빠진 파일이면 실패)
 - [x] macOS: 배포용 실행 파일로 전체 씬 검수 통과
-- [ ] Linux: 플래피 씬 셋 (첫 CI 실행)
+- [x] Linux: 플래피 씬 셋 (첫 CI 실행. `dist.yml` 실행 36297974450 의 `native (ubuntu-22.04)` 잡: 씬 셋이 스스로 끝났고 템플릿 씬을 Lua 와 Ruby 로 열어 종료 코드 0, 동적 의존은 glibc 계열과 libstdc++, libgcc_s 뿐, 요구 glibc 는 `GLIBC_2.35`)
 - [x] `.github/workflows/dist.yml` (native 둘, templates, collect. 산출물만, 릴리스 없음)
-- [ ] `dist.yml` 의 첫 CI 실행 (macOS 와 Linux)
+- [x] `dist.yml` 의 첫 CI 실행 (macOS 와 Linux). PR #53(36281586493)과 #55(36297974450)에서 네 잡(native 둘, templates, collect)이 모두 통과했다. 에디터 `release.yml` 도 핀의 커밋에서 같은 스크립트로 엔진을 만들어 설치본 자가 검사에 싣는다
 - [x] 기존 `tests.yml` 과 전체 검수가 무변경으로 통과한다 (Homebrew 빌드 경로는 그대로)
 - [x] 엔진 문서 (이 문서, index 의 R4 행, README 의 "배포용 빌드")
