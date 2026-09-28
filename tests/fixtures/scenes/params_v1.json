@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "name": "params",
+  "objects": [
+    { "id": "plain", "type": "node", "scripts": ["components/sample/probe"] },
+    { "id": "custom", "type": "node", "scripts": ["components/sample/probe"],
+      "params": {
+        "components/sample/probe": {
+          "title": "바뀐 제목", "note": "첫 줄\n둘째 줄", "speed": 2.5, "count": 7,
+          "enabled": false, "kind": "pipes", "target": "mark"
+        }
+      } },
+    { "id": "pair", "type": "node", "scripts": ["components/sample/probe", "components/sample/drift"],
+      "params": {
+        "components/sample/probe": { "count": 1 },
+        "components/sample/drift": { "target": "mark", "dx": 3 }
+      } },
+    { "id": "loose", "type": "node", "scripts": ["components/sample/loose"],
+      "params": {
+        "components/sample/loose": { "list": [1, 2], "nested": { "a": 1 }, "word": "그대로" }
+      } },
+    { "id": "old", "type": "node",
+      "props": { "target": "mark", "dx": 0, "dy": 5, "limit": 1000 },
+      "scripts": ["components/sample/mover"],
+      "params": { "components/sample/mover": { "unused": true } } },
+    { "id": "mark", "type": "node", "x": 0, "y": 0 }
+  ]
+}

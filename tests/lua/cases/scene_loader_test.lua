@@ -309,6 +309,249 @@ return M
     scene:close()
     t.check_eq(scene:find("map"), nil, "close 뒤 tilemap 오브젝트도 없다")
 
+    -- [params] 선언 파일, 기본값, 덮어쓰기, 컴포넌트마다 따로 만든 표, 선언 없는 컴포넌트, 검사 (계획 문서 5.4절)
+    t.check_eq(SceneLoader.declarationPath("components/sample/probe"), "scripts/components/sample/probe.json",
+        "논리 이름 -> 선언 파일 경로 (scripts/ 아래, 언어 중립)")
+    local pdecl = SceneLoader.declaration("components/sample/probe")
+    t.check(pdecl ~= nil and #pdecl.fields == 7, "선언 파일을 읽는다 (필드 일곱)")
+    t.check_eq(SceneLoader.declaration("components/sample/loose"), nil, "선언 파일이 없으면 nil")
+    pdecl.fields[1].default = "바꿈"
+    t.check_eq(SceneLoader.declaration("components/sample/probe").fields[1].default, "제목", "declaration 은 복사본을 돌려준다")
+
+    writeFile("./scripts/components/luatest_params.json", [[
+{ "version": 1, "editorOnly": { "group": "이동" }, "fields": [
+  { "key": "speed", "type": "number", "label": "속도", "default": 60, "min": 0, "max": 100.5 },
+  { "key": "kind", "type": "enum", "values": ["ground", "pipes"], "default": "ground" },
+  { "key": "target", "type": "object", "label": "대상" },
+  { "key": "name", "type": "string", "default": "새" },
+  { "key": "note", "type": "text" },
+  { "key": "count", "type": "integer", "default": 2, "min": -1, "max": 9 },
+  { "key": "on", "type": "boolean", "default": false, "editorOnly": true }
+] }
+]])
+    LUATEST_PARAMS = {}
+    local recorder = [[
+local M = {}
+local function note(hook, obj, params) LUATEST_PARAMS[#LUATEST_PARAMS + 1] = { hook = hook, id = obj.id, name = "%s", params = params } end
+function M.init(obj, scene, params) note("init", obj, params) end
+function M.update(obj, scene, elapsed, params) note("update", obj, params) end
+function M.render(obj, scene, params) note("render", obj, params) end
+function M.destroy(obj, scene, params) note("destroy", obj, params) end
+return M
+]]
+    writeFile("./scripts/lua/components/luatest_params.lua", string.format(recorder, "params"))
+    writeFile("./scripts/lua/components/luatest_loose.lua", string.format(recorder, "loose"))
+    local P = "components/luatest_params"
+    local L = "components/luatest_loose"
+    local function recorded(hook, id, name)
+        for _, r in ipairs(LUATEST_PARAMS) do
+            if r.hook == hook and r.id == id and r.name == name then return r.params end
+        end
+        return nil
+    end
+    scene = SceneLoader.fromTable(sceneOf({
+        { id = "a", type = "node", scripts = { P } },
+        { id = "b", type = "node", scripts = { P, L }, params = {
+            [P] = { speed = 5, target = "c", note = "첫 줄\n둘째 줄" },
+            [L] = { anything = { 1, 2 }, deep = { x = 1 }, ["not an identifier"] = true } } },
+        { id = "c", type = "node", scripts = { P, P }, params = { [P] = { count = 9 } } },
+    }))
+    local pa = recorded("init", "a", "params")
+    t.check(pa ~= nil and pa.speed == 60 and pa.kind == "ground" and pa.name == "새" and pa.count == 2
+        and pa.on == false, "기본값만: 선언의 default 가 params 가 된다")
+    t.check(pa.target == nil and pa.note == nil, "default 가 없고 파일에도 없는 키는 nil")
+    local pb = recorded("init", "b", "params")
+    t.check(pb.speed == 5 and pb.target == "c" and pb.note == "첫 줄\n둘째 줄" and pb.kind == "ground" and pb.count == 2,
+        "덮어쓰기: 파일의 값이 기본값 위에 온다 (object 는 id 문자열 그대로, 뒤의 오브젝트도 된다)")
+    local lb = recorded("init", "b", "loose")
+    t.check(lb ~= nil and lb.anything[2] == 2 and lb.deep.x == 1 and lb["not an identifier"] == true,
+        "선언이 없는 컴포넌트는 params 항목을 검사 없이 그대로 받는다")
+    t.check(lb ~= pb and lb.speed == nil and pb.anything == nil, "한 오브젝트의 두 컴포넌트는 표를 따로 받는다")
+    t.check(pa ~= pb, "같은 컴포넌트를 붙인 두 오브젝트도 표를 따로 받는다")
+    t.check(recorded("init", "b", "loose").deep ~= scene:find("b").spec.params[L].deep, "params 는 파일 항목의 깊은 복사")
+    local c1, c2
+    for _, r in ipairs(LUATEST_PARAMS) do
+        if r.hook == "init" and r.id == "c" then
+            if c1 == nil then c1 = r.params else c2 = r.params end
+        end
+    end
+    t.check(c1 ~= nil and c2 ~= nil and c1 ~= c2 and c1.count == 9 and c2.count == 9,
+        "같은 컴포넌트가 한 오브젝트에 두 번이면 예전처럼 둘 다 만들고 표는 따로")
+    pa.speed = 1
+    pa.kind = "pipes"
+    scene:tick(16)
+    scene:draw()
+    t.check(recorded("update", "a", "params") == pa and recorded("render", "a", "params") == pa,
+        "update 와 render 는 init 과 같은 표를 받는다")
+    t.check_eq(recorded("init", "c", "params").speed, 60, "한 표를 고쳐도 다른 오브젝트의 기본값은 그대로")
+    local spawned = scene:spawn({ type = "node", scripts = { P }, params = { [P] = { target = "a" } } })
+    local ps = recorded("init", spawned.id, "params")
+    t.check(ps ~= nil and ps.speed == 60 and ps.kind == "ground" and ps.target == "a",
+        "spawn 도 params 를 만든다 (고친 표가 선언의 기본값에 번지지 않았다)")
+    local self_ref = scene:spawn({ id = "me", type = "node", scripts = { P }, params = { [P] = { target = "me" } } })
+    t.check(self_ref ~= nil and recorded("init", "me", "params").target == "me", "spawn 의 object 값은 자기 id 도 된다")
+    okp, e = pcall(scene.spawn, scene, { id = "s", type = "node", scripts = { P }, params = { [P] = { target = "nope" } } })
+    t.check_eq(not okp and tostring(e), "scene: params 'components/luatest_params': target names no object 'nope' (s)",
+        "spawn 도 params 를 검사한다")
+    t.check_eq(scene:find("s"), nil, "params 가 틀린 spawn 은 오브젝트를 남기지 않는다")
+    scene:close()
+    t.check(recorded("destroy", "a", "params") == pa, "destroy 도 같은 표를 받는다")
+
+    -- JSON 의 null 은 없는 것, 빈 배열은 빈 객체 (Ruby 와 같은 결과)
+    writeFile("./luatest_nulls.json", [[
+{ "version": 1, "objects": [
+  { "id": "n", "type": "node", "scripts": ["components/luatest_params"],
+    "params": { "components/luatest_params": { "speed": null, "bogus": null }, "components/not_there": null } },
+  { "id": "e", "type": "node", "scripts": ["components/luatest_params"], "params": [] },
+  { "id": "f", "type": "node", "scripts": ["components/luatest_params"], "params": { "components/luatest_params": [] } }
+] }
+]])
+    LUATEST_PARAMS = {}
+    okp, e = pcall(SceneLoader.open, "./luatest_nulls.json")
+    t.check(okp, "null 값과 빈 배열은 오류가 아니다", e)
+    if okp then
+        t.check_eq(recorded("init", "n", "params").speed, 60, "null 값은 없는 것 (기본값이 남는다)")
+        t.check_eq(recorded("init", "e", "params").speed, 60, "params 의 빈 배열은 빈 객체")
+        t.check_eq(recorded("init", "f", "params").speed, 60, "항목의 빈 배열은 빈 객체")
+        e:close()
+    end
+    os.remove("./luatest_nulls.json")
+
+    -- [params 검사] 메시지는 글자 그대로 (에디터가 같은 문장을 쓴다)
+    local function vErr(objects)
+        local ok2, err2 = SceneLoader.validate(sceneOf(objects))
+        return (not ok2) and err2 or "ok"
+    end
+    local function one(params, extra)
+        local o = { id = "o", type = "node", scripts = { P }, params = params }
+        local list = { o }
+        for _, x in ipairs(extra or {}) do list[#list + 1] = x end
+        return vErr(list)
+    end
+    local PE = "scene: params 'components/luatest_params': "
+    t.check_eq(one("x"), "scene: params must be an object (o)", "params 가 객체가 아니면 거부")
+    t.check_eq(one({ 1, 2 }), "scene: params must be an object (o)", "params 가 배열이면 거부")
+    t.check_eq(one({ [P] = 3 }), "scene: params 'components/luatest_params' must be an object (o)", "항목 값이 객체가 아니면 거부")
+    t.check_eq(one({ [P] = { 1 } }), "scene: params 'components/luatest_params' must be an object (o)", "항목 값이 배열이면 거부")
+    t.check_eq(one({ ["components/luatest_other"] = {} }), "scene: params 'components/luatest_other': not in scripts (o)",
+        "scripts 에 없는 컴포넌트의 params 는 거부")
+    t.check_eq(one({ [P] = { speeed = 1 } }), PE .. "unknown key 'speeed' (o)", "선언에 없는 키는 거부")
+    t.check_eq(one({ [P] = { name = 3 } }), PE .. "name must be a string (o)", "string")
+    t.check_eq(one({ [P] = { note = false } }), PE .. "note must be a string (o)", "text 도 문자열")
+    t.check_eq(one({ [P] = { speed = "fast" } }), PE .. "speed must be a number (o)", "number")
+    t.check_eq(one({ [P] = { speed = -0.5 } }), PE .. "speed must be >= 0 (o)", "number 의 min")
+    t.check_eq(one({ [P] = { speed = 101 } }), PE .. "speed must be <= 100.5 (o)", "number 의 max (소수는 %.14g)")
+    t.check_eq(one({ [P] = { count = 1.5 } }), PE .. "count must be an integer (o)", "integer 는 정수 값")
+    t.check_eq(one({ [P] = { count = "2" } }), PE .. "count must be an integer (o)", "integer 는 숫자")
+    t.check_eq(one({ [P] = { count = -2 } }), PE .. "count must be >= -1 (o)", "integer 의 min")
+    t.check_eq(one({ [P] = { count = 10 } }), PE .. "count must be <= 9 (o)", "integer 의 max")
+    t.check_eq(one({ [P] = { count = 4.0, speed = 100.5 } }), "ok", "정수 값의 실수와 max 와 같은 값은 된다")
+    t.check_eq(one({ [P] = { on = "yes" } }), PE .. "on must be a boolean (o)", "boolean")
+    t.check_eq(one({ [P] = { kind = "sky" } }), PE .. "kind must be one of ground, pipes (o)", "enum 은 values 중 하나")
+    t.check_eq(one({ [P] = { kind = 1 } }), PE .. "kind must be one of ground, pipes (o)", "enum 에 문자열이 아닌 값")
+    t.check_eq(one({ [P] = { target = 5 } }), PE .. "target must be an object id (o)", "object 는 문자열")
+    t.check_eq(one({ [P] = { target = "" } }), PE .. "target must be an object id (o)", "object 는 빈 문자열이 아니다")
+    t.check_eq(one({ [P] = { target = "ghost" } }), PE .. "target names no object 'ghost' (o)", "object 는 씬에 있는 id")
+    t.check_eq(one({ [P] = { target = "later" } }, { { id = "later", type = "node" } }), "ok", "object 는 뒤의 오브젝트도 가리킨다")
+    t.check_eq(one({ [P] = { target = "o" } }), "ok", "object 는 자기 자신도 가리킨다")
+    t.check_eq(one({ [P] = { speed = "x", count = 1.5 } }), PE .. "count must be an integer (o)", "키는 바이트 순서로 본다")
+    t.check_eq(one({ [L] = { x = 1 }, ["components/a_first"] = {} }), "scene: params 'components/a_first': not in scripts (o)",
+        "params 의 이름도 바이트 순서로 본다")
+    t.check_eq(vErr({ { id = "p", type = "node", scripts = { P }, params = { [P] = { speed = "x" } } },
+        { id = "p", type = "node" } }), "scene: duplicate id 'p'", "params 검사는 3절 검사를 모두 통과한 뒤")
+    t.check_eq(vErr({ { id = "p", type = "node" },
+        { id = "q", type = "node", scripts = { P }, params = { [P] = { on = 1 } } } }), PE .. "on must be a boolean (q)",
+        "메시지는 그 오브젝트의 id 를 말한다")
+    okp, e = pcall(SceneLoader.fromTable, sceneOf({ { id = "o", type = "node", scripts = { P }, params = { [P] = { speed = -1 } } } }))
+    t.check_eq(not okp and tostring(e), PE .. "speed must be >= 0 (o)", "fromTable 도 같은 오류로 멈춘다")
+
+    -- [선언 파일 검사] 깨진 선언은 그 파일을 말한다 (params 가 없어도 scripts 에 있으면 읽는다)
+    local declN = 0
+    local function declErr(text)
+        declN = declN + 1
+        writeFile("./scripts/components/luatest_decl_" .. declN .. ".json", text)
+        local err2 = vErr({ { id = "o", type = "node", scripts = { "components/luatest_decl_" .. declN } } })
+        return err2, "scene: declaration scripts/components/luatest_decl_" .. declN .. ".json: "
+    end
+    local de, dp = declErr('{ "version": 1, ')
+    t.check(de:sub(1, #dp + 16) == dp .. "not valid JSON (" and de:sub(-1) == ")" and de:find("Line", 1, true) ~= nil
+        and not de:find("\n", 1, true), "JSON 이 아니면 파일과 파서의 설명 (한 줄)", de)
+    de, dp = declErr('[1, 2]')
+    t.check_eq(de, dp .. "not an object", "루트가 객체가 아니면 거부")
+    de, dp = declErr('null')
+    t.check_eq(de, dp .. "not an object", "루트가 null 이면 거부")
+    de, dp = declErr('{ "version": 2, "fields": [] }')
+    t.check_eq(de, dp .. "unsupported version 2 (expected 1)", "version 2 는 거부")
+    de, dp = declErr('{ "fields": [] }')
+    t.check_eq(de, dp .. "unsupported version nil (expected 1)", "version 이 없으면 거부")
+    de, dp = declErr('[]')
+    t.check_eq(de, dp .. "unsupported version nil (expected 1)", "빈 배열은 빈 객체 (version 이 없다)")
+    de, dp = declErr('{ "version": 1, "fields": { "a": 1 } }')
+    t.check_eq(de, dp .. "fields must be an array", "fields 가 배열이 아니면 거부")
+    de, dp = declErr('{ "version": 1, "fields": [ 3 ] }')
+    t.check_eq(de, dp .. "fields[1] is not an object", "필드가 객체가 아니면 거부")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "ok", "type": "string" }, { "key": "9lives", "type": "string" } ] }')
+    t.check_eq(de, dp .. "fields[2] needs a key ([A-Za-z_][A-Za-z0-9_]*)", "key 는 식별자 (번호는 1 부터)")
+    de, dp = declErr('{ "version": 1, "fields": [ { "type": "string" } ] }')
+    t.check_eq(de, dp .. "fields[1] needs a key ([A-Za-z_][A-Za-z0-9_]*)", "key 가 없으면 거부")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "string" }, { "key": "a", "type": "number" } ] }')
+    t.check_eq(de, dp .. "duplicate key 'a'", "key 중복은 거부")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a" } ] }')
+    t.check_eq(de, dp .. "field 'a' needs a type", "type 이 없으면 거부")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "color" } ] }')
+    t.check_eq(de, dp .. "field 'a': unknown type 'color'", "모르는 type 은 거부")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "string", "label": 3 } ] }')
+    t.check_eq(de, dp .. "field 'a': label must be a string", "label 은 문자열")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "enum" } ] }')
+    t.check_eq(de, dp .. "field 'a': values must be a non-empty array of strings", "enum 은 values 가 필요")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "enum", "values": [] } ] }')
+    t.check_eq(de, dp .. "field 'a': values must be a non-empty array of strings", "enum 의 values 는 비어 있지 않다")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "enum", "values": ["x", ""] } ] }')
+    t.check_eq(de, dp .. "field 'a': values must be a non-empty array of strings", "values 에 빈 문자열은 안 된다")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "enum", "values": ["x", 1] } ] }')
+    t.check_eq(de, dp .. "field 'a': values must be a non-empty array of strings", "values 는 문자열만")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "string", "values": ["x"] } ] }')
+    t.check_eq(de, dp .. "field 'a': values is only for enum", "values 는 enum 에만")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "number", "min": "0" } ] }')
+    t.check_eq(de, dp .. "field 'a': min must be a number", "min 은 숫자")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "integer", "max": true } ] }')
+    t.check_eq(de, dp .. "field 'a': max must be a number", "max 는 숫자")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "string", "max": 3 } ] }')
+    t.check_eq(de, dp .. "field 'a': max is only for number and integer", "max 는 number 와 integer 에만")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "number", "min": 5, "max": 1 } ] }')
+    t.check_eq(de, dp .. "field 'a': min must be <= max", "min 은 max 이하")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "string", "default": 3 } ] }')
+    t.check_eq(de, dp .. "field 'a': default must be a string", "string 의 default")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "text", "default": true } ] }')
+    t.check_eq(de, dp .. "field 'a': default must be a string", "text 의 default")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "number", "default": "x" } ] }')
+    t.check_eq(de, dp .. "field 'a': default must be a number", "number 의 default")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "number", "default": 11, "max": 10 } ] }')
+    t.check_eq(de, dp .. "field 'a': default must be <= 10", "default 도 min, max 안")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "integer", "default": 0.5 } ] }')
+    t.check_eq(de, dp .. "field 'a': default must be an integer", "integer 의 default")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "boolean", "default": "no" } ] }')
+    t.check_eq(de, dp .. "field 'a': default must be a boolean", "boolean 의 default")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "enum", "values": ["x", "y"], "default": "z" } ] }')
+    t.check_eq(de, dp .. "field 'a': default must be one of x, y", "enum 의 default")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "object", "default": 3 } ] }')
+    t.check_eq(de, dp .. "field 'a': default must be an object id", "object 의 default")
+    de, dp = declErr('{ "version": 1, "fields": [ { "key": "a", "type": "object", "default": "ghost" } ] }')
+    t.check_eq(de, "ok", "object 의 default 는 씬의 id 를 보지 않는다")
+    de, dp = declErr('{ "version": 1 }')
+    t.check_eq(de, "ok", "fields 가 없으면 빈 배열")
+    local nofields = "components/luatest_decl_" .. declN
+    t.check_eq(vErr({ { id = "o", type = "node", scripts = { nofields }, params = { [nofields] = { x = 1 } } } }),
+        "scene: params '" .. nofields .. "': unknown key 'x' (o)", "선언 파일이 있으면 필드가 없어도 모르는 키는 거부")
+    okp, e = pcall(SceneLoader.declaration, "components/luatest_decl_2")
+    t.check_eq(not okp and tostring(e), "scene: declaration scripts/components/luatest_decl_2.json: not an object",
+        "SceneLoader.declaration 도 깨진 선언은 오류")
+    for i = 1, declN do os.remove("./scripts/components/luatest_decl_" .. i .. ".json") end
+    os.remove("./scripts/components/luatest_params.json")
+    os.remove("./scripts/lua/components/luatest_params.lua")
+    os.remove("./scripts/lua/components/luatest_loose.lua")
+    LUATEST_PARAMS = nil
+
     os.remove("./scripts/lua/components/luatest_hooks.lua")
     os.remove("./scripts/lua/components/luatest_tail.lua")
     os.remove("./scripts/lua/components/luatest_spawner.lua")
