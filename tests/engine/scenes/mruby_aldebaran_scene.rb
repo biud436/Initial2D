@@ -513,7 +513,8 @@ def init
 end
 
 def update(elapsed)
-  Accept.current.update(0) if Accept.stop_mode
+  # 타이틀은 얼려 둔다. update 마다 메뉴 커서의 깜빡임이 한 칸 가서, 캡처 프레임까지 든 틱 수(기계마다 다르다)에 따라 커서가 바뀐다
+  Accept.current.update(0) if Accept.stop_mode && Accept.stop_mode != "title"
 end
 
 def render
