@@ -9,6 +9,7 @@
   --only=mruby_units      mruby 단위 테스트만 (이름 조각은 test_ 함수 이름에 부분 일치)
 """
 
+import itertools
 import json
 import os
 import re
@@ -19,7 +20,7 @@ import tempfile
 import threading
 import time
 
-from PIL import Image
+from PIL import Image, ImageChops
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _args = [a for a in sys.argv[1:] if not a.startswith("--")]
@@ -37,9 +38,36 @@ GOLDEN_PIXEL_TOL = 24              # 채널당 허용 오차
 #   서로 다른 씬(진짜 차이)의 비율 = 25.77%
 # → 소음의 약 2배, 신호의 1/12 지점인 2%로 설정.
 GOLDEN_DIFF_RATIO = 0.02
+# 한 칸 검사. 비율만으로는 맵 타일 한 칸(렌더 배율 2에서 32x32, 화면의 0.15%)이 바뀐 화면도 통과한다.
+# 캡처가 논리 해상도 그대로면(헤드리스, CI) 리샘플 잡음이 없으므로, 16x16 창 어디에서든 다른 픽셀이
+# 창 넓이의 1/4을 넘게 모이면 실패로 본다. 비스듬한 가장자리 한 줄이 통째로 달라도 23픽셀이다.
+GOLDEN_WINDOW = 16
+GOLDEN_WINDOW_MAX = 64
 
 PASSES = []
 FAILS = []
+
+# 작업 폴더. 테스트 하나가 끝나면 그 테스트가 만든 폴더를 지운다. 실패한 테스트의 폴더는
+# 남기고 경로를 찍는다. INITIAL2D_KEEP_WORK=1 이면 전부 남긴다.
+KEEP_WORK = os.environ.get("INITIAL2D_KEEP_WORK") == "1"
+WORKDIRS = []
+
+
+def new_workdir(prefix):
+    work = tempfile.mkdtemp(prefix=prefix)
+    WORKDIRS.append(work)
+    return work
+
+
+def settle_workdirs(failed):
+    if failed or KEEP_WORK:
+        for work in WORKDIRS:
+            if os.path.isdir(work):
+                print(f"  작업 폴더를 남김: {work}")
+    else:
+        for work in WORKDIRS:
+            shutil.rmtree(work, ignore_errors=True)
+    WORKDIRS.clear()
 
 # 이 빌드가 실행할 수 있는 스크립트 언어 (S1). `Initial2D --features` 가 "lua" 또는
 # "lua mruby" 를 찍는다. mruby 가 없는 빌드에서는 mruby 테스트를 눈에 띄게 건너뛴다
@@ -78,7 +106,7 @@ def stage_scripts(work):
 
 
 def make_workdir(scene, fixtures=False):
-    work = tempfile.mkdtemp(prefix="initial2d-test-")
+    work = new_workdir("initial2d-test-")
     os.symlink(os.path.join(REPO, "resources"), os.path.join(work, "resources"))
     if fixtures:
         # 포맷 계약 픽스처 (09-testing.md 3.5절). 씬 로더 씬이 tests/fixtures/scenes/ 를 연다
@@ -131,14 +159,17 @@ def make_game_workdir(copy=()):
     make_workdir 와 달리 main.lua 를 지우지 않고 scripts/ 를 그대로 복사한다. copy 에 적은
     resources 폴더만 복사한다 (link_resources).
     """
-    work = tempfile.mkdtemp(prefix="initial2d-game-")
+    work = new_workdir("initial2d-game-")
     link_resources(work, copy)
     shutil.copytree(os.path.join(REPO, "scripts"), os.path.join(work, "scripts"))
     return work
 
 
-def run_scene(scene, frames, exit_after, extra_env=None, fixtures=False):
+def run_scene(scene, frames, exit_after, extra_env=None, fixtures=False, prepare=None):
+    """prepare(work) 는 실행 전에 작업 폴더를 고친다 (예: link_resources 로 맵을 복사해 칸 하나를 바꾼다)."""
     work = make_workdir(scene, fixtures)
+    if prepare:
+        prepare(work)
     env = dict(os.environ)
     if extra_env:
         env.update(extra_env)
@@ -175,8 +206,50 @@ def count_color_in(img, scale, x0, y0, x1, y1, target, tol=28, invert=False):
     return n
 
 
-def check_golden(name, img):
-    """캡처를 논리 해상도로 정규화해 tests/golden/<name>.png 와 비교한다."""
+def golden_mask(norm, golden):
+    """채널 하나라도 GOLDEN_PIXEL_TOL 을 넘게 다른 픽셀은 1, 나머지는 0인 바이트열 (행 우선)."""
+    over = [ch.point(lambda v: 1 if v > GOLDEN_PIXEL_TOL else 0)
+            for ch in ImageChops.difference(norm, golden).split()]
+    return ImageChops.lighter(ImageChops.lighter(over[0], over[1]), over[2]).tobytes()
+
+
+def densest_window(mask, width, height, k, ignore=()):
+    """k x k 창 가운데 mask 의 1이 가장 많은 창의 (개수, x, y). ignore 의 사각형 (x0, y0, x1, y1) 안은 0으로 센다."""
+    if ignore:
+        mask = bytearray(mask)
+        for x0, y0, x1, y1 in ignore:
+            x0, x1 = max(x0, 0), min(x1, width)
+            for y in range(max(y0, 0), min(y1, height)):
+                mask[y * width + x0:y * width + x1] = bytes(x1 - x0)
+    best = (0, 0, 0)
+    cols = [0] * (width - k + 1)
+    rows = []
+    for y in range(height):
+        acc = list(itertools.accumulate(mask[y * width:(y + 1) * width], initial=0))
+        rows.append([acc[x + k] - acc[x] for x in range(width - k + 1)])
+        cols = [c + r for c, r in zip(cols, rows[y])]
+        if y >= k:
+            cols = [c - r for c, r in zip(cols, rows[y - k])]
+        if y >= k - 1:
+            top = max(cols)
+            if top > best[0]:
+                best = (top, cols.index(top), y - k + 1)
+    return best
+
+
+def golden_diff(img, golden, ignore=()):
+    """캡처와 골든의 차이: (다른 픽셀 비율, 가장 붐비는 창 (개수, x, y)). 창은 캡처가 논리 해상도
+    그대로일 때만 세고, 리샘플한 캡처(Retina 창)면 None 이다."""
+    mask = golden_mask(img.resize(LOGICAL_SIZE, Image.BILINEAR), golden)
+    ratio = mask.count(1) / len(mask)
+    if img.size != LOGICAL_SIZE:
+        return ratio, None
+    return ratio, densest_window(mask, *LOGICAL_SIZE, GOLDEN_WINDOW, ignore)
+
+
+def check_golden(name, img, ignore=()):
+    """캡처를 논리 해상도로 정규화해 tests/golden/<name>.png 와 비교한다. ignore 는 캡처할 때마다
+    그림이 달라지는 자리(논리 좌표 사각형)이고 한 칸 검사에서만 뺀다."""
     norm = img.resize(LOGICAL_SIZE, Image.BILINEAR)
     path = os.path.join(GOLDEN_DIR, f"{name}.png")
     if UPDATE_GOLDEN or not os.path.exists(path):
@@ -186,18 +259,16 @@ def check_golden(name, img):
         print(f"  GOLDEN {'생성' if newly else '갱신'}: {os.path.relpath(path, REPO)}"
               f" — 눈으로 확인한 뒤 커밋할 것")
         return
-    golden = Image.open(path).convert("RGB")
-    a, b = norm.tobytes(), golden.tobytes()
-    total = len(a) // 3
-    bad = 0
-    for i in range(0, len(a), 3):
-        if (abs(a[i] - b[i]) > GOLDEN_PIXEL_TOL
-                or abs(a[i + 1] - b[i + 1]) > GOLDEN_PIXEL_TOL
-                or abs(a[i + 2] - b[i + 2]) > GOLDEN_PIXEL_TOL):
-            bad += 1
-    ratio = bad / total
+    ratio, window = golden_diff(img, Image.open(path).convert("RGB"), ignore)
     check(f"골든 일치: {name}", ratio <= GOLDEN_DIFF_RATIO,
           f"차이 픽셀 {ratio:.2%} (허용 {GOLDEN_DIFF_RATIO:.0%}) — 의도된 변경이면 --update-golden")
+    if window is None:
+        print(f"  NOTE  골든 한 칸 검사: {name} — 리샘플한 캡처라 건너뜀 (헤드리스로 돌리면 한다)")
+        return
+    count, x, y = window
+    check(f"골든 한 칸 검사: {name}", count <= GOLDEN_WINDOW_MAX,
+          f"({x}, {y}) 의 {GOLDEN_WINDOW}x{GOLDEN_WINDOW} 창에 다른 픽셀 {count}개"
+          f" (허용 {GOLDEN_WINDOW_MAX}) — 의도된 변경이면 --update-golden")
 
 
 WHITE = (255, 255, 255)
@@ -257,7 +328,8 @@ def run_assert_scene(scene, dump_name):
     dot = px(img, scale, 703, 63)
     check("draw_set_color + draw_point", near(dot, RED, 12), str(dot))
 
-    check_golden("assert_scene_f35", img)
+    # 애니메이션 스프라이트 자리는 캡처 프레임이 어느 tick 에 걸리느냐에 따라 그림이 달라진다 ([B]가 따로 본다)
+    check_golden("assert_scene_f35", img, ignore=[(500, 200, 564, 264)])
     shutil.copy(os.path.join(work, "shot_0035.bmp"), f"/tmp/initial2d_{dump_name}.bmp")
 
 
@@ -281,7 +353,7 @@ def test_mruby_units():
     if not HAS_MRUBY:
         print("  SKIP: 이 빌드에는 mruby 가 없습니다 (brew install mruby 후 cmake 다시 실행)")
         return
-    work = tempfile.mkdtemp(prefix="initial2d-mrbtest-")
+    work = new_workdir("initial2d-mrbtest-")
     os.symlink(os.path.join(REPO, "resources"), os.path.join(work, "resources"))
     shutil.copytree(os.path.join(REPO, "tests", "fixtures"),
                     os.path.join(work, "fixtures"))
@@ -435,7 +507,7 @@ def run_hot_reload_error(lang):
     from hmr_push import push   # tools/hmr_push.py 와 같은 프로토콜
 
     entry, good, broken, fixed, error_re = HMR_CASES[lang]
-    work = tempfile.mkdtemp(prefix="initial2d-hmr-")
+    work = new_workdir("initial2d-hmr-")
     os.makedirs(os.path.join(work, os.path.dirname(entry)))
     with open(os.path.join(work, entry), "w", encoding="utf-8") as fp:
         fp.write(good)
@@ -575,7 +647,7 @@ def test_mruby_cpp_exception():
     if not HAS_MRUBY:
         print("  SKIP: 이 빌드에는 mruby 가 없습니다")
         return
-    work = tempfile.mkdtemp(prefix="initial2d-cppexc-")
+    work = new_workdir("initial2d-cppexc-")
     try:
         os.makedirs(os.path.join(work, "scripts", "ruby"))
         os.makedirs(os.path.join(work, "maps"))
@@ -755,7 +827,7 @@ def test_scene_params_mruby():
 def test_lua_units():
     """tests/lua/ 의 Lua 단위 테스트를 엔진 바이너리로 실행한다 (09-testing.md 3.2절)."""
     print("\n[0] lua_unit_tests — Lua 단위 테스트 (엔진 VM에서 실행)")
-    work = tempfile.mkdtemp(prefix="initial2d-luatest-")
+    work = new_workdir("initial2d-luatest-")
     os.symlink(os.path.join(REPO, "resources"), os.path.join(work, "resources"))
     # 포맷 계약 픽스처 (09-testing.md 3.5절) — 에디터 저장소와 공유하는 파일
     shutil.copytree(os.path.join(REPO, "tests", "fixtures"),
@@ -1272,6 +1344,29 @@ def test_rpgdemo_scene():
         hero = count_color_in(img, scale, 187, 357, 197, 370, DEMO_SHIRT, 30)
         check("플레이어가 부두 위에 서 있다", hero > 5, f"px={hero}")
         check_golden("rpgdemo_town", img)
+
+    # 대조: 마을 첫 화면 안의 한 칸(over 레이어 (10, 26), 에디터 test:engine-map 의 대조와 같은 칸과 타일)을
+    # 칠한 맵으로 같은 화면을 찍으면, 비율 검사는 통과하는 크기라도 한 칸 검사는 실패해야 한다.
+    def paint_one_cell(work):
+        link_resources(work, copy=("maps",))
+        path = os.path.join(work, "resources", "maps", "port_town.json")
+        with open(path, encoding="utf-8") as fp:
+            town = json.load(fp)
+        town["layers"][2]["data"][26 * town["width"] + 10] = 45
+        with open(path, "w", encoding="utf-8") as fp:
+            json.dump(town, fp)
+
+    _, r_cell, s_cell = run_scene("rpgdemo_scene.lua", [20], 30, shot_env, prepare=paint_one_cell)
+    check("한 칸 칠한 마을 화면 덤프", 20 in s_cell, f"rc={r_cell.returncode}")
+    town_golden = os.path.join(GOLDEN_DIR, "rpgdemo_town.png")
+    if 20 in s_cell and os.path.exists(town_golden) and not UPDATE_GOLDEN:
+        ratio, window = golden_diff(s_cell[20], Image.open(town_golden).convert("RGB"))
+        if window is None:
+            print("  NOTE  한 칸 검사의 대조 — 리샘플한 캡처라 건너뜀 (헤드리스로 돌리면 한다)")
+        else:
+            check("대조: 한 칸 칠한 마을 화면은 골든 한 칸 검사에서 실패한다", window[0] > GOLDEN_WINDOW_MAX,
+                  f"가장 붐비는 창 {window}, 비율 {ratio:.2%}")
+            print(f"  대조의 차이 픽셀 {ratio:.2%} (비율 검사의 허용 {GOLDEN_DIFF_RATIO:.0%}), 가장 붐비는 창 {window}")
 
     # 소지품 창이 열린 화면 (10단계). 창 두 칸과 커서, 개수와 설명이 한 장에 있다.
     shot_env = {"INITIAL2D_NO_RTP": "1", "INITIAL2D_DEMO_STOP": "bag"}
@@ -2083,7 +2178,9 @@ def main():
             print(f"--only={only[-1]}: 맞는 테스트가 없습니다")
             sys.exit(2)
     for t in tests:
+        fails_before = len(FAILS)
         t()
+        settle_workdirs(failed=len(FAILS) > fails_before)
 
     print(f"\n결과: {len(PASSES)} PASS / {len(FAILS)} FAIL")
     if FAILS:
