@@ -1678,7 +1678,7 @@ INITIAL2D_SCENE=rpg INITIAL2D_MAP=village ./build/Initial2D
 엔진이 Lua와 Ruby에 내놓는 함수를 `resources/api/initial2d-api.json` 한 장에 모두 적어 두었습니다. Lua 이름과 Ruby 이름의 짝, 인자와 타입, 반환 타입, 한 줄 설명이 들어 있고 에디터 자동완성의 원천이 됩니다. 이 파일은 손으로 고치며, 바인딩과 어긋나면 테스트가 깨집니다.
 
 ```bash
-# 명세를 고친 뒤 에디터용 스텁 두 장을 다시 만듭니다
+# 명세를 고친 뒤 에디터용 스텁과 LuaLS 설정을 다시 만듭니다
 python3 tools/gen_api_stubs.py
 
 # 스텁이 명세와 같은지만 확인합니다 (다르면 종료 코드 1. tests/run_all.sh가 부릅니다)
@@ -1693,11 +1693,30 @@ python3 tests/run_engine_tests.py --only=lua_units,mruby_units
 | `resources/api/initial2d-api.json` | 명세 원본 (손으로 유지) |
 | `resources/api/initial2d.lua` | Lua 스텁. LuaLS(EmmyLua) 주석이라 VS Code의 Lua 확장이 그대로 읽습니다 |
 | `resources/api/initial2d.rb` | Ruby 스텁. YARD 주석이라 Solargraph가 읽습니다 |
+| `resources/api/initial2d.rbs` | Ruby 시그니처 (RBS). Steep 같은 타입 검사기가 읽습니다 |
+| `resources/templates/luarc.json` | 새 프로젝트의 `.luarc.json` (Lua 5.3, 스텁, 진단 규칙) |
+| `.luarc.json` | 이 저장소의 LuaLS 설정. 위와 같은 규칙에 `tests`, `tools`를 뺍니다 |
 
 - 바인딩을 더하거나 바꾸면 명세도 고치고 스텁을 다시 만들어 함께 커밋합니다. 명세를 빠뜨리면 `api_surface_test`가 양쪽으로 잡습니다 (명세에 있는데 엔진에 없는 이름, 엔진에 있는데 명세에 없는 이름).
 - 에디터는 브리지의 `GET /api/files/resources/api/initial2d-api.json`으로 명세를 읽어 완성 목록을 만듭니다. 모듈 이름 뒤에 점을 찍으면 `functions`와 `methods`를, 괄호를 열면 `params`와 `doc`을 보여 주는 식입니다.
 - Lua 쪽 모듈 이름이 `null`이면 전역 함수입니다 (`DrawText`, `WindowWidth`). `Sprite`, `Tilemap`, `FontEx`는 Ruby에서는 클래스이고 Lua에서는 숫자 핸들을 첫 인자로 받는 함수 표입니다.
 - 명세의 규칙과 필드 설명은 [docs/plans/r2-api-stubs.md](./docs/plans/r2-api-stubs.md)에 있습니다.
+
+### 다른 에디터에서 LuaLS 쓰기
+
+InitialEditor가 만든 새 프로젝트에는 스텁과 `.luarc.json`이 들어 있어서, LuaLS(lua-language-server)를 쓰는 에디터로 프로젝트 폴더를 열면 엔진 API의 완성과 진단이 바로 됩니다. 이 저장소도 최상위에 `.luarc.json`이 있습니다.
+
+- VS Code: 확장 `sumneko.lua`를 설치하고 프로젝트 폴더를 엽니다.
+- Neovim: `nvim-lspconfig`의 `lua_ls`를 켭니다. 루트 표시로 `.luarc.json`을 찾습니다.
+- Zed: Lua 확장을 설치하면 LuaLS가 붙고 `.luarc.json`을 읽습니다.
+
+진단은 LuaLS 기본 규칙에서 형식 검사(`type-check`), 지역 변수 다시 선언(`redefined`), 줄 끝 공백(`trailing-space`)을 끈 것입니다. 형식 검사까지 보려면 `.luarc.json`의 `diagnostics.groupFileStatus`에서 그 줄을 지웁니다. 규칙을 바꾸려면 `tools/gen_api_stubs.py`의 `LUALS_BASE`를 고치고 다시 만듭니다.
+
+```bash
+# 저장소의 Lua 스크립트를 .luarc.json 의 규칙으로 검사합니다 (경고 이상이 있으면 종료 코드 1)
+# LuaLS 3.19.1 을 받아 build/luals/ 에 둡니다. 설치된 것을 쓰려면 LUALS=<실행 파일 경로>
+tools/check_luals.sh
+```
 
 ## 씬 파일과 씬 로더
 

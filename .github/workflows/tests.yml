@@ -140,3 +140,25 @@ jobs:
             build-web/smoke*.bmp
             build-web/mruby-build.log
           if-no-files-found: ignore
+
+  # 에디터와 LuaLS 용 스텁 검사 (docs/plans/r2-api-stubs.md 10절). 스텁과 .luarc.json 이 명세와 같은지,
+  # 저장소의 Lua 스크립트가 .luarc.json 의 규칙으로 경고 없이 읽히는지, RBS 시그니처가 맞는지 본다.
+  editor-stubs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+
+      - name: 스텁이 명세와 같은가
+        run: python3 tools/gen_api_stubs.py --check
+
+      - name: LuaLS 진단 (경고 이상 0건)
+        run: tools/check_luals.sh
+
+      - name: RBS 시그니처 검사
+        run: |
+          gem install rbs -v 3.8.0 --no-document
+          rbs -I resources/api validate
