@@ -192,3 +192,33 @@ Lua의 `GetResourcesFiles`도 같다). C++은 이 단계에서 고치지 않았�
 - 스크립트 레이어의 편의 함수(`scripts/lua/image.lua`의 `Image`, `scripts/lua/Font.lua`의 `Font`,
   `scripts/lua/rpg/` 전부)는 엔진 표면이 아니라 명세에 넣지 않았다. 필요해지면 같은 모양의 두 번째 명세로 둔다.
 - 6절의 README 어긋남을 고칠지는 저자가 정한다.
+
+## 10. 언어 서버용 스텁과 LuaLS 설정 (R2-B, 2026-10-03)
+
+InitialEditor 이슈 #53(스크립트 에디터의 언어 서버)의 단계 0이다. 에디터가 LuaLS를 붙이기 전에, 명세 하나에서
+언어 서버가 읽을 파일을 만들고 새 프로젝트에 싣는다. 이것만으로 VS Code, Neovim, Zed에서 LuaLS를 쓰는 사람은
+완성과 진단을 얻는다.
+
+### 10.1 결정
+
+| 결정 | 이유 |
+|---|---|
+| **생성기가 RBS 시그니처(`initial2d.rbs`)도 쓴다** | Steep 같은 Ruby 타입 검사기는 YARD가 아니라 RBS를 읽는다. 명세의 타입은 13가지와 합집합, 배열뿐이라 대응표가 짧다 (`number`는 `Numeric`, `boolean`은 `bool`, `table`은 `Hash[untyped, untyped]`, `nil` 반환은 `void`, `X|nil`은 `X?`). RBS 코어에 이미 있는 `Kernel`의 `load`, `require`는 오버로드(`\| ...`)로 더한다 |
+| **LuaLS 설정은 애드온이 아니라 `.luarc.json`** | 이슈는 LuaLS 애드온 `config.json`을 적었지만, 프로젝트 최상위의 `.luarc.json`을 VS Code, Neovim, Zed의 LuaLS가 모두 읽으니 애드온을 따로 두지 않는다. 새 프로젝트용은 `resources/templates/luarc.json`(에디터가 `.luarc.json`으로 복사한다), 이 저장소용은 최상위 `.luarc.json`이고 둘 다 생성기가 같은 표에서 쓴다 |
+| **진단 규칙은 기본에서 셋을 끈다** | LuaLS 3.19.1의 기본 규칙으로 이 저장소의 Lua 스크립트를 읽으면 591건이다. 형식 검사 묶음(`type-check`: need-check-nil 231, undefined-field 201, inject-field 16, param-type-mismatch 14 등)은 `nil`로 시작해 나중에 표가 들어오는 지역 변수마다 경고를 내고, 지역 변수 다시 선언(`redefined`, 18)과 줄 끝 공백(`trailing-space`, 63)은 스크립트가 흔히 쓰는 꼴이다. 셋을 끄면 경고 이상이 0건이고 힌트 25건(쓰지 않는 지역 변수와 함수)만 남는다. 엔진 API 이름의 오타는 `undefined-global`(전역 함수)과 인자 수(`missing-parameter`, `redundant-parameter`)로 잡는다. 모듈 함수의 오타(`Input.KeyDwon`)는 `undefined-field`라 기본으로는 잡지 않는다 |
+| **Lua 5.3, 스텁은 `workspace.library`** | 엔진의 Lua는 5.3.5다. 스텁은 프로젝트 안(`resources/api/initial2d.lua`)에 있어 작업 공간으로도 읽히지만, 스크립트 폴더만 연 경우에도 읽히게 라이브러리로 적는다 |
+| **이 저장소의 `.luarc.json`은 `tests`, `tools`를 뺀다** | 단위 시험과 도구 스크립트는 게임 스크립트가 아니다. 안드로이드 사본(`android/app/src/main/assets`)과 `build/`는 `.gitignore`로 이미 빠진다 |
+
+### 10.2 무엇이 바뀌었나
+
+- `tools/gen_api_stubs.py`: `resources/api/initial2d.rbs`, `resources/templates/luarc.json`, `.luarc.json`을 더 쓴다. `--check`가 다섯 파일을 본다.
+- `tools/templates_list.txt`: 스텁 셋(`initial2d.lua`, `initial2d.rb`, `initial2d.rbs`)과 `resources/templates/luarc.json`을 템플릿 묶음에 넣는다.
+- `scripts/lua/rpg/`의 아홉 파일과 `scripts/lua/ui/buttons.lua`: 첫 줄만 `--- @param`이던 주석 블록 11곳을 `-- @param`으로 고쳤다. LuaLS가 첫 줄을 주석 문법으로 읽어 `opts.skin` 같은 이름과 타입 자리의 한국어 설명을 오류(21건)로 냈다.
+- `tools/check_luals.sh`: LuaLS 3.19.1을 받아(sha256 확인, `build/luals/`) 저장소를 `.luarc.json`의 규칙으로 검사한다. 경고 이상이 하나라도 있으면 실패한다. 새 프로젝트 템플릿의 Lua 스크립트가 모두 `scripts/lua`에 있으므로 이것이 통과하면 템플릿도 깨끗하다.
+- CI `tests.yml`의 `editor-stubs` 작업(ubuntu): `gen_api_stubs.py --check`, `tools/check_luals.sh`, `rbs -I resources/api validate`(rbs 3.8.0).
+
+### 10.3 확인
+
+- `rbs parse`, `rbs -I resources/api validate` 통과 (rbs 3.8.0, Ruby 3.4). 없는 타입 이름을 일부러 넣으면 validate가 종료 코드 1로 실패한다.
+- `tools/check_luals.sh`: 0건. `require`를 `requre`로 바꾸면 `[undefined-global]` 1건으로 실패한다.
+- 전체 검수(`tests/run_all.sh`, 헤드리스) 통과. 템플릿 시험(`tests/tools/templates_test.py`)이 새 목록으로 묶음을 만든다.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""스크립트 API 명세에서 에디터용 스텁 두 장을 만든다 (R2, docs/plans/r2-api-stubs.md).
+"""스크립트 API 명세에서 에디터용 스텁과 LuaLS 설정을 만든다 (R2, docs/plans/r2-api-stubs.md).
 
 명세 resources/api/initial2d-api.json 은 손으로 유지하고, 바인딩과의 대조는 엔진 안의
 단위 테스트(tests/lua/cases/api_surface_test.lua, tests/ruby/cases/api_surface_test.rb)가 한다.
@@ -7,9 +7,12 @@
 
   resources/api/initial2d.lua   EmmyLua / LuaLS 주석 (---@param, ---@return, ---@class)
   resources/api/initial2d.rb    Ruby 스텁과 YARD 주석 (# @param [Integer] x)
+  resources/api/initial2d.rbs   RBS 시그니처 (Steep 같은 타입 검사기용)
+  resources/templates/luarc.json  새 프로젝트의 .luarc.json (Lua 5.3, 스텁, 진단 규칙)
+  .luarc.json                   이 저장소의 LuaLS 설정 (위와 같은 규칙에 저장소 전용 제외 폴더)
 
 사용법:
-  python3 tools/gen_api_stubs.py           # 스텁 두 장을 다시 쓴다
+  python3 tools/gen_api_stubs.py           # 위 파일을 다시 쓴다
   python3 tools/gen_api_stubs.py --check   # 디스크의 스텁이 명세와 다르면 종료 코드 1 (run_all.sh 가 쓴다)
 
 표준 라이브러리만 쓰고, 같은 명세에서는 언제나 같은 바이트를 만든다 (정렬하지 않고 명세의 순서를 따른다).
@@ -24,6 +27,9 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 API_JSON = os.path.join(REPO, "resources", "api", "initial2d-api.json")
 LUA_STUB = os.path.join(REPO, "resources", "api", "initial2d.lua")
 RUBY_STUB = os.path.join(REPO, "resources", "api", "initial2d.rb")
+RBS_STUB = os.path.join(REPO, "resources", "api", "initial2d.rbs")
+LUARC_TEMPLATE = os.path.join(REPO, "resources", "templates", "luarc.json")
+LUARC_REPO = os.path.join(REPO, ".luarc.json")
 
 RUBY_KINDS = ("method", "getter", "setter", "predicate", "module_function")
 
@@ -595,6 +601,166 @@ def render_ruby(api):
 
 
 # ----------------------------------------------------------------------
+# RBS 시그니처
+# ----------------------------------------------------------------------
+
+RBS_TYPE_NAMES = {
+    "number": "Numeric", "integer": "Integer", "string": "String", "boolean": "bool",
+    "table": "Hash[untyped, untyped]", "array": "Array[untyped]", "function": "Proc", "nil": "nil",
+    "any": "untyped", "symbol": "Symbol",
+}
+
+# RBS 코어 라이브러리에 이미 있는 모듈. 같은 이름의 메서드는 코어의 시그니처에 오버로드(| ...)로 더한다
+RBS_CORE_MODULES = ("Kernel",)
+
+
+def rbs_type(expr):
+    alts = []
+    for alt in expr.split("|"):
+        array = alt.endswith("[]")
+        base = alt[:-2] if array else alt
+        name = RBS_TYPE_NAMES.get(base, base)
+        alts.append(f"Array[{name}]" if array else name)
+    others = [a for a in alts if a != "nil"]
+    if len(alts) == 1:
+        return alts[0]
+    if len(others) == 1 and len(alts) == 2:
+        return others[0] + "?"
+    return "(" + " | ".join(alts) + ")"
+
+
+def rbs_return(expr):
+    return "void" if expr == "nil" else rbs_type(expr)
+
+
+def rbs_params(params):
+    parts = []
+    for p in params:
+        t = rbs_type(p.get("rubyType", p["type"]))
+        if p.get("variadic"):
+            parts.append(f"*{t} {p['name'].strip('.') or 'args'}")
+        elif p.get("optional"):
+            parts.append(f"?{t} {p['name']}")
+        else:
+            parts.append(f"{t} {p['name']}")
+    return "(" + ", ".join(parts) + ")"
+
+
+def rbs_method_type(f, params, ret):
+    sigs = [f"{rbs_params(params)} -> {ret}"]
+    for ov in f.get("overloads", []):
+        sigs.append(f"{rbs_params(ov)} -> {ret}")
+    return " | ".join(sigs)
+
+
+def render_rbs(api):
+    out = [
+        "# Initial2D 스크립트 API 시그니처 (Ruby, RBS)",
+        "# tools/gen_api_stubs.py 가 resources/api/initial2d-api.json 에서 만든다. 손으로 고치지 않는다.",
+        "# 타입 검사기용이며 엔진이 읽지 않는다.",
+        f"# 명세 version {api['version']}",
+        "",
+    ]
+
+    for m in api["modules"]:
+        fns = [f for f in m["functions"] if f.get("ruby") is not None]
+        if not fns or m.get("ruby") is None:
+            continue
+        core = m["ruby"] in RBS_CORE_MODULES
+        out.append("# " + m["doc"])
+        out.append(f"module {m['ruby']}")
+        body = []
+        for f in fns:
+            body.append("  # " + f["doc"])
+            prefix = "self?." if f.get("rubyKind") == "module_function" else "self."
+            sig = rbs_method_type(f, ruby_params(f), rbs_return(ruby_returns(f)))
+            body.append(f"  def {prefix}{f['ruby']}: {sig}" + (" | ..." if core else ""))
+            body.append("")
+        while body and body[-1] == "":
+            body.pop()
+        out.extend(body)
+        out.append("end")
+        out.append("")
+
+    for c in api["constants"]:
+        if c.get("ruby") is None:
+            continue
+        out.append("# " + c["doc"])
+        out.append(f"module {c['ruby']}")
+        for n in c["names"]:
+            out.append(f"  {n}: Integer")
+        out.append("end")
+        out.append("")
+
+    for c in api["classes"]:
+        if c.get("ruby") is None:
+            continue
+        out.append("# " + c["doc"])
+        out.append(f"class {c['ruby']}")
+        body = []
+        for k in c.get("constructors", []):
+            if k.get("ruby") is None:
+                continue
+            params = ruby_params(k)
+            name = k["ruby"].split(".", 1)[1]
+            body.append("  # " + k["doc"])
+            if name == "new":
+                body.append(f"  def initialize: {rbs_params(params)} -> void")
+            else:
+                body.append(f"  def self.{name}: {rbs_params(params)} -> {rbs_return(ruby_returns(k))}")
+            body.append("")
+        for f in c.get("methods", []):
+            if f.get("ruby") is None:
+                continue
+            body.append("  # " + f["doc"])
+            body.append(f"  def {f['ruby']}: {rbs_method_type(f, ruby_params(f), rbs_return(ruby_returns(f)))}")
+            body.append("")
+        while body and body[-1] == "":
+            body.pop()
+        out.extend(body)
+        out.append("end")
+        out.append("")
+
+    while out and out[-1] == "":
+        out.pop()
+    return "\n".join(out) + "\n"
+
+
+# ----------------------------------------------------------------------
+# LuaLS 설정 (.luarc.json)
+# ----------------------------------------------------------------------
+
+# 엔진은 Lua 5.3.5 를 쓴다. 스텁은 프로젝트 안의 resources/api/initial2d.lua 다
+LUALS_BASE = {
+    "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+    "runtime.version": "Lua 5.3",
+    "workspace.library": ["resources/api/initial2d.lua"],
+    # 형식 검사(need-check-nil, undefined-field 등)는 값이 나중에 채워지는 표마다 경고를 내고,
+    # 지역 변수 다시 선언과 줄 끝 공백은 스크립트가 흔히 쓰는 꼴이라 끈다
+    "diagnostics.groupFileStatus": {"redefined": "None", "type-check": "None"},
+    "diagnostics.disable": ["trailing-space"],
+}
+
+# 이 저장소에서만 빼는 폴더 (단위 시험과 도구 스크립트는 게임 스크립트가 아니다)
+LUALS_REPO_IGNORE = ["tests", "tools"]
+
+
+def render_luarc(settings):
+    lines = json.dumps(settings, ensure_ascii=False, indent=2)
+    return lines + "\n"
+
+
+def luarc_template():
+    return render_luarc(LUALS_BASE)
+
+
+def luarc_repo():
+    settings = dict(LUALS_BASE)
+    settings["workspace.ignoreDir"] = LUALS_REPO_IGNORE
+    return render_luarc(settings)
+
+
+# ----------------------------------------------------------------------
 # 진입점
 # ----------------------------------------------------------------------
 
@@ -624,7 +790,13 @@ def main(argv):
             print("  " + e, file=sys.stderr)
         return 1
 
-    outputs = [(LUA_STUB, render_lua(api)), (RUBY_STUB, render_ruby(api))]
+    outputs = [
+        (LUA_STUB, render_lua(api)),
+        (RUBY_STUB, render_ruby(api)),
+        (RBS_STUB, render_rbs(api)),
+        (LUARC_TEMPLATE, luarc_template()),
+        (LUARC_REPO, luarc_repo()),
+    ]
 
     if check:
         stale = []

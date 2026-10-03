@@ -12,8 +12,12 @@ scripts/ruby/scene_types/tilemap.rb
 resources/fonts/hangul.fnt
 resources/fonts/hangul_0.png
 
-# API 명세 (자동완성)
+# API 명세 (자동완성)와 그 스텁 (LuaLS, YARD, RBS), LuaLS 설정 (새 프로젝트의 .luarc.json)
 resources/api/initial2d-api.json
+resources/api/initial2d.lua
+resources/api/initial2d.rb
+resources/api/initial2d.rbs
+resources/templates/luarc.json
 
 # 진입 파일과 빈 프로젝트의 씬
 resources/templates/main.lua
