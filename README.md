@@ -1927,7 +1927,7 @@ INITIAL2D_KEEP_WORK=1 python3 tests/run_engine_tests.py --only=rpgdemo_scene
 - mruby 단위 테스트는 `tests/ruby/cases/`에 파일을 만들고 `tests/ruby/manifest.rb` 목록에 추가합니다. 화면을 보는 Ruby 씬은 `tests/engine/scenes/`에 `.rb`로 두면 `scripts/ruby/main.rb`로 들어갑니다. mruby가 없는 빌드에서는 건너뜁니다.
 - 화면을 보는 테스트는 `tests/engine/scenes/`에 씬을 만들고 `tests/run_engine_tests.py`에 검사를 추가합니다. 씬 테스트는 `scripts/`를 통째로 얹고 `main.lua`만 갈아 끼우므로, 게임이 실제로 여는 파일을 그대로 검사합니다.
 - 사람의 조작이 필요한 시나리오는 `tests/lua/input_replay.lua`로 재생합니다. 프레임 단위로 키를 예약하거나(`{ at = 10, press = "Z" }`), 화면 상태를 보고 그때그때 누를 수도 있습니다(`replay:tap("Z")`, `replay:press("LEFT")`). 고정 타임스텝이라 같은 시나리오는 항상 같은 결과를 냅니다.
-- 입력 재생기는 스크립트의 `Input`을 바꾸므로 엔진의 입력 처리(SDL 이벤트, `Input::update`, 바인딩)를 지나지 않습니다. 그 경로는 `INITIAL2D_TEST_EVENTS`로 SDL 이벤트를 넣어 확인합니다. 형식은 `프레임:종류:값`을 쉼표로 이은 것이고, 종류는 `wheel`(SDL 부호, 위로 굴리면 양수)과 `mousedown`(0 왼쪽, 1 오른쪽, 2 가운데)입니다. 프레임 번호는 `INITIAL2D_SCREENSHOT_FRAME`처럼 1부터 셉니다.
+- 입력 재생기는 스크립트의 `Input`을 바꾸므로 엔진의 입력 처리(SDL 이벤트, `Input::update`, 바인딩)를 지나지 않습니다. 그 경로는 `INITIAL2D_TEST_EVENTS`로 SDL 이벤트를 만들어 엔진의 이벤트 처리에 넘겨 확인합니다. 형식은 `프레임:종류:값`을 쉼표로 이은 것이고, 종류는 `wheel`(SDL 부호, 위로 굴리면 양수)과 `mousedown`(0 왼쪽, 1 오른쪽, 2 가운데)입니다. 프레임 번호는 `INITIAL2D_SCREENSHOT_FRAME`처럼 1부터 셉니다.
 
 ```bash
 # 10번째 프레임에 왼쪽 클릭, 30번째 프레임에 휠 한 칸 위로

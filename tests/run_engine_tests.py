@@ -348,7 +348,7 @@ def test_mruby_assert_scene():
     run_assert_scene("mruby_assert_scene.rb", "mruby_assert_scene")
 
 
-# 입력 경로 (C++): INITIAL2D_TEST_EVENTS 가 SDL 이벤트 큐에 넣은 마우스 이벤트가 HandleEvent, Input::update,
+# 입력 경로 (C++): INITIAL2D_TEST_EVENTS 가 만든 SDL 마우스 이벤트가 HandleEvent, Input::update,
 # 바인딩을 거쳐 스크립트에 보이는가. 이벤트 사이는 20 프레임이다 (헤드리스는 한 프레임이 한 틱보다 짧을 수 있다)
 INPUT_EVENTS = "10:mousedown:0,30:wheel:1,50:wheel:-1,70:wheel:-3,90:mousedown:1"
 INPUT_EXPECTED = [
