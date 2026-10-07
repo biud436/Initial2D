@@ -409,21 +409,26 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 ```lua
 	-- loop: true = 무한 반복, false = 한 번 재생
 	-- 숫자를 주면 SDL_mixer의 루프 값을 그대로 사용합니다.
+	-- 생략하면 BGM은 무한 반복, SE는 한 번 재생합니다.
+	-- 재생 함수는 파일을 읽었으면 true, 읽지 못했으면 false를 돌려줍니다.
 	Audio.PlayMusic(path, id, loop) -- BGM 재생
 	Audio.PlaySound(path, id, loop) -- SE 재생
-	Audio.SetVolume(vol) -- BGM 볼륨 설정
-	Audio.GetVolume() -- BGM 볼륨 획득
-	Audio.InsertNextMusic(path, id, loop) -- 다음 BGM 추가
+	Audio.SetVolume(vol) -- BGM과 SE 볼륨 설정 (0~255)
+	Audio.GetVolume() -- 설정한 볼륨 획득 (0~255)
+	Audio.InsertNextMusic(path, id, loop) -- 지금 BGM이 끝나면 이어서 재생할 BGM 예약
 	Audio.PauseMusic() -- BGM 일시 정지
-	Audio.StopMusic() -- BGM 정지
+	Audio.StopMusic() -- BGM 정지 (예약한 BGM도 취소)
 	Audio.ResumeMusic() -- BGM 재개
 	Audio.IsPlayingMusic() -- BGM 재생 여부
-	Audio.FadeOutMusic(ms) -- BGM 페이드아웃
+	Audio.FadeOutMusic(ms) -- BGM 페이드아웃 (예약한 BGM도 취소)
 	Audio.SetMusicPosition(position) -- BGM 재생 위치 설정
 	Audio.ReleaseMusic(id) -- 메모리 해제
 ```
 
 음악 재생 시 오디오 파일을 자동으로 로드합니다. 하지만 메모리는 반드시 수동으로 해제해야 합니다.
+파일을 읽지 못하면 경로마다 한 번 표준 오류에 `Audio: cannot load <경로>`를 출력합니다.
+
+예약한 BGM은 지금 BGM이 반복 횟수를 다 채우고 끝날 때 페이드 없이 바로 이어집니다. 재생 중인 BGM이 없으면 바로 재생합니다.
 
 # Input
 

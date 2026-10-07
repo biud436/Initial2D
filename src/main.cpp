@@ -139,6 +139,12 @@ void App::Initialize()
 */
 void App::ObjectUpdate(double elapsed)
 {
+	// 곡이 멈춘 뒤의 곡 전환과 예약 곡 재생. 오디오를 쓰지 않는 게임에서는 장치를 열지 않는다
+	if (SoundManager::HasInstance())
+	{
+		Audio->update();
+	}
+
 	Script_Update(elapsed);
 	m_pGameStateMachine->update(elapsed);
 }

@@ -288,7 +288,8 @@ def run_assert_scene(scene, dump_name):
           log[-200:])
     # 엔진의 커스텀 print는 인자를 구분자 없이 이어서 출력한다
     check("폰트 로드 성공", "fontReady:true" in log, log[:200])
-    check("오디오 볼륨 질의(BGM+SE 재생 후)", "volume:128" in log)
+    # GetVolume 은 설정한 0..255 값을 돌려준다. 설정하지 않았으면 255
+    check("오디오 볼륨 질의(BGM+SE 재생 후)", "volume:255" in log, log[-300:])
     check("프레임 덤프 3장 생성", len(shots) == 3, f"{len(shots)}장")
 
     if len(shots) != 3:

@@ -15,6 +15,7 @@
 
 #include <string>
 #include <map>
+#include <set>
 #include <SDL_mixer.h>
 #include "NonCopyable.h"
 
@@ -99,14 +100,22 @@ public:
 	void playMusic(std::string id, int loop);
 
 	/**
-	* 다음에 재생될 BGM을 추가합니다.
+	* 지금 곡이 저절로 끝나면 이어서 재생할 BGM을 예약합니다. 재생 중인 곡이 없으면 바로 재생합니다.
 	*/
 	void insertNextMusic(std::string id, int loop);
 
 	/**
-	* 다음 BGM을 재생합니다.
+	* 곡이 멈춘 뒤의 처리(곡 전환, 예약 곡 재생)를 합니다. 메인 스레드에서 틱마다 부릅니다.
 	*/
-	void playNextMusic();
+	void update();
+
+	/**
+	* 인스턴스가 만들어졌는지 확인합니다 (오디오 장치를 열지 않고 확인할 때 씁니다).
+	*/
+	static bool HasInstance()
+	{
+		return s_pInstance != NULL;
+	}
 	
 	/**
 	* BGM을 일시 중단합니다.
@@ -119,12 +128,12 @@ public:
 	void resumeMusic();
 
 	/**
-	* BGM 재생을 완전히 중단합니다.
+	* BGM 재생을 완전히 중단합니다. 예약한 곡과 진행 중인 곡 전환도 취소합니다.
 	*/
 	void stopMusic();
 
 	/**
-	* BGM을 페이드 아웃합니다.
+	* BGM을 페이드 아웃합니다. 예약한 곡과 진행 중인 곡 전환도 취소합니다.
 	*/
 	void fadeOutMusic(int ms);
 	
@@ -142,14 +151,9 @@ public:
 
 	/**
 	* BGM의 볼륨 값을 가져옵니다.
-	* @return 0 ~ 255. 0은 볼륨 없음. 255는 최대 볼륨.
+	* @return 0 ~ 255. 0은 볼륨 없음. 255는 최대 볼륨. setVolume에 준 값을 그대로 돌려줍니다.
 	*/
 	int getVolume();
-
-	/**
-	* 현재 재생 중인 BGM ID를 리셋합니다.
-	*/
-	void resetCurrentMusicID();
 
 	/**
 	* 현재 재생 중인 BGM의 ID를 가져옵니다.
@@ -179,13 +183,27 @@ private:
 	SoundManager(const SoundManager&);
 	SoundManager& operator=(const SoundManager&);
 
+	/** 예약한 곡을 페이드 없이 재생합니다. */
+	void startNextMusic();
+
+	/** 곡 전환이 끝났을 때 이전 곡을 해제합니다. 지금 곡이나 예약한 곡이면 남깁니다. */
+	void releasePreviousMusic();
+
+	/** 읽기 실패를 경로마다 한 번 stderr에 알립니다. */
+	void reportLoadError(const std::string& fileName);
+
 	BGM         m_music;	// BGM
 	SE          m_sfxs;	// SE
 
-	std::string m_previousMusicID; // 이전 BGM ID
+	std::string m_previousMusicID; // 전환 중에 페이드 아웃되는 BGM ID
 	std::string m_currentMusicID; // 현재 BGM ID
-	std::string m_nextMusicID; // 다음 BGM ID
-	int         m_nextMusicLoop; // 다음 BGM 반복 재생 여부 
+	std::string m_switchMusicID; // 페이드 아웃이 끝나면 시작할 BGM ID (없으면 빈 문자열)
+	int         m_switchMusicLoop;
+	std::string m_nextMusicID; // 지금 곡이 끝나면 재생할 BGM ID (없으면 빈 문자열)
+	int         m_nextMusicLoop;
+	int         m_volume; // setVolume에 준 값 (0 ~ 255)
+
+	std::set<std::string> m_failedPaths; // 읽기에 실패해 이미 알린 경로
 		
 };
 

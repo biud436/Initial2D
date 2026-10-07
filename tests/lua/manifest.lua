@@ -16,6 +16,7 @@ return {
     "scripts/lua/luatests/cases/buttons_test",
     "scripts/lua/luatests/cases/layout_test",
     "scripts/lua/luatests/cases/bgm_test",
+    "scripts/lua/luatests/cases/audio_test",
     "scripts/lua/luatests/cases/rpg_specs_test",
     "scripts/lua/luatests/cases/rpg_rng_test",
     "scripts/lua/luatests/cases/rpg_camera_test",

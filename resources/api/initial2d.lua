@@ -191,36 +191,39 @@ function Input.GetTouch(index) end
 ---@class Audio
 Audio = {}
 
----음악 파일을 로드해 배경 음악으로 재생 (Lua 는 loop 까지 인자 3개 모두 필요). Ruby 는 로드에 성공하면 true
+---음악 파일을 로드해 배경 음악으로 재생. 다른 곡이 재생 중이면 그 곡을 1초 동안 줄여 멈춘 뒤 시작한다. 로드에 성공하면 true (실패하면 stderr 에 경로마다 한 번 알린다)
 ---@param path string
 ---@param id string
----@param loop boolean|integer true 무한 반복, false 1회, 숫자는 SDL_mixer 루프 값 그대로
+---@param loop? boolean|integer true 무한 반복, false 1회, 숫자는 SDL_mixer 루프 값 그대로, 기본값 true
+---@return boolean
 function Audio.PlayMusic(path, id, loop) end
 
----효과음 파일을 로드해 재생 (Lua 는 loop 까지 인자 3개 모두 필요). Ruby 는 로드에 성공하면 true
+---효과음 파일을 로드해 재생. 로드에 성공하면 true (실패하면 stderr 에 경로마다 한 번 알린다)
 ---@param path string
 ---@param id string
----@param loop boolean|integer true 무한 반복, false 1회, 숫자는 SDL_mixer 루프 값 그대로
+---@param loop? boolean|integer true 무한 반복, false 1회, 숫자는 SDL_mixer 루프 값 그대로, 기본값 false
+---@return boolean
 function Audio.PlaySound(path, id, loop) end
 
----배경 음악 볼륨 설정 (0..255 를 SDL_mixer 의 0..128 로 변환)
+---배경 음악과 효과음 볼륨 설정 (0..255, 범위 밖은 잘린다)
 ---@param volume integer 0 에서 255
 function Audio.SetVolume(volume) end
 
----배경 음악 볼륨 (SDL_mixer 의 0..128)
+---설정한 볼륨 (0..255, 기본 255)
 ---@return integer
 function Audio.GetVolume() end
 
----현재 곡이 끝난 뒤 재생할 음악 예약 (Lua 는 loop 까지 인자 3개 모두 필요). Ruby 는 로드에 성공하면 true
+---지금 곡이 반복을 마치고 끝나면 이어서 재생할 음악 예약 (재생 중인 곡이 없으면 바로 재생, 페이드 없음). 음악 정지와 페이드 아웃은 예약을 지운다. 로드에 성공하면 true
 ---@param path string
 ---@param id string
----@param loop boolean|integer true 무한 반복, false 1회, 숫자는 SDL_mixer 루프 값 그대로
+---@param loop? boolean|integer true 무한 반복, false 1회, 숫자는 SDL_mixer 루프 값 그대로, 기본값 true
+---@return boolean
 function Audio.InsertNextMusic(path, id, loop) end
 
 ---배경 음악 일시 정지
 function Audio.PauseMusic() end
 
----배경 음악 정지
+---배경 음악 정지 (예약한 곡도 지운다)
 function Audio.StopMusic() end
 
 ---일시 정지한 배경 음악 재개
@@ -230,7 +233,7 @@ function Audio.ResumeMusic() end
 ---@return boolean
 function Audio.IsPlayingMusic() end
 
----ms 동안 페이드 아웃 후 배경 음악 정지
+---ms 동안 페이드 아웃 후 배경 음악 정지 (예약한 곡도 지운다)
 ---@param ms integer
 function Audio.FadeOutMusic(ms) end
 
