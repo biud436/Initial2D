@@ -11,29 +11,41 @@
 */
 
 #include <SDL.h>
+#include <atomic>
+#include <cstdio>
 #include "SoundManager.h"
 
 SoundManager* SoundManager::s_pInstance;
 
-void musicFinished()
+namespace
 {
-	SoundManager::Instance()->releaseMusic("null");
-	SoundManager::Instance()->playNextMusic();
-	Mix_HookMusicFinished(NULL);
+	// SDL_mixer가 곡이 멈출 때(끝까지 재생, Mix_HaltMusic, 페이드 아웃 끝) 오디오 스레드에서 부른다.
+	// 여기서는 표시만 하고, 처리는 메인 스레드의 SoundManager::update()가 한다.
+	std::atomic<bool> s_musicStopped(false);
+
+	void SDLCALL OnMusicStopped()
+	{
+		s_musicStopped.store(true);
+	}
 }
 
 SoundManager::SoundManager() : 
 	m_previousMusicID("null"),
 	m_currentMusicID("null"),
+	m_switchMusicID(""),
+	m_switchMusicLoop(-1),
 	m_nextMusicID(""),
-	m_nextMusicLoop(-1)
+	m_nextMusicLoop(-1),
+	m_volume(255)
 {
 	// 오디오 버퍼의 크기 (2048 bytes)
 	Mix_OpenAudio(22050, AUDIO_S16, 2, 4096 / 2);
+	Mix_HookMusicFinished(OnMusicStopped);
 }
 
 SoundManager::~SoundManager()
 {
+	Mix_HookMusicFinished(NULL);
 	Mix_CloseAudio();
 }
 
@@ -54,10 +66,12 @@ bool SoundManager::load(std::string fileName, std::string id, sound_type type)
 
 		if (pMusic == 0)
 		{
+			reportLoadError(fileName);
 			return false;
 		}
 
 		m_music[id] = pMusic;
+		m_failedPaths.erase(fileName);
 		return true;
 	}
 	else if (type == SOUND_SFX)
@@ -66,10 +80,12 @@ bool SoundManager::load(std::string fileName, std::string id, sound_type type)
 		
 		if (pChunk == 0)
 		{
+			reportLoadError(fileName);
 			return false;
 		}
 
 		m_sfxs[id] = pChunk;
+		m_failedPaths.erase(fileName);
 		return true;
 	}
 
@@ -77,40 +93,106 @@ bool SoundManager::load(std::string fileName, std::string id, sound_type type)
 
 }
 
+void SoundManager::reportLoadError(const std::string& fileName)
+{
+	// 같은 경로를 틱마다 재생하려는 스크립트가 같은 줄을 반복해 찍지 않게 한다
+	if (m_failedPaths.insert(fileName).second)
+	{
+		std::fprintf(stderr, "Audio: cannot load %s (%s)\n", fileName.c_str(), Mix_GetError());
+	}
+}
+
 // number of times to play through the music.
 // 0 plays the music zero times...
 // -1 plays the music forever (or as close as it can get to that)
 void SoundManager::playMusic(std::string id, int loop)
 {
-	// 음악이 재생 중이고, 재생하려는 음악이 현재 음악과 다르면
-	if (isPlaying() && getCurrentMusicID() != id)
+	BGM::iterator music = m_music.find(id);
+	if (music == m_music.end())
 	{
-		m_previousMusicID = getCurrentMusicID();
-		insertNextMusic(id, loop);
-		fadeOutMusic(1000);
-		Mix_HookMusicFinished(musicFinished);
 		return;
 	}
 
-	// 음악이 재생 중이고, 재생하려는 음악이 현재 음악과 같으면
-	//if (isPlaying() && getCurrentMusicID() == id)
-	//	return;
+	// 다른 곡이 재생 중이면 그 곡을 1초 동안 페이드 아웃한다. 새 곡은 페이드 아웃이 끝난 뒤
+	// update()가 이 함수를 다시 불러 시작한다 (Mix_FadeInMusic은 페이드 아웃이 끝날 때까지 기다리기 때문이다).
+	if (isPlaying() && (getCurrentMusicID() != id || !m_switchMusicID.empty()))
+	{
+		if (m_switchMusicID.empty())
+		{
+			m_previousMusicID = getCurrentMusicID();
+		}
+		m_switchMusicID = id;
+		m_switchMusicLoop = loop;
+		Mix_FadeOutMusic(1000);
+		return;
+	}
 
-	Mix_FadeInMusic(m_music[id], loop, 1000);
-	
+	m_switchMusicID.clear();
+	Mix_FadeInMusic(music->second, loop, 1000);
 	m_currentMusicID = id;
-
+	releasePreviousMusic();
 }
 
 void SoundManager::insertNextMusic(std::string id, int loop)
 {
+	if (m_music.find(id) == m_music.end())
+	{
+		return;
+	}
+
 	m_nextMusicID = id;
 	m_nextMusicLoop = loop;
+
+	if (!isPlaying() && m_switchMusicID.empty())
+	{
+		startNextMusic();
+	}
 }
 
-void SoundManager::playNextMusic()
+void SoundManager::startNextMusic()
 {
-	playMusic(m_nextMusicID, m_nextMusicLoop);
+	const std::string id = m_nextMusicID;
+	m_nextMusicID.clear();
+
+	BGM::iterator music = m_music.find(id);
+	if (music == m_music.end())
+	{
+		return;
+	}
+
+	Mix_PlayMusic(music->second, m_nextMusicLoop);
+	m_currentMusicID = id;
+}
+
+void SoundManager::update()
+{
+	// 표시가 남아 있어도 지금 곡이 재생 중이면 그 표시는 이미 지나간 곡의 것이다
+	if (!s_musicStopped.exchange(false) || isPlaying())
+	{
+		return;
+	}
+
+	if (!m_switchMusicID.empty())
+	{
+		playMusic(m_switchMusicID, m_switchMusicLoop);
+		return;
+	}
+
+	if (!m_nextMusicID.empty())
+	{
+		startNextMusic();
+	}
+}
+
+void SoundManager::releasePreviousMusic()
+{
+	const std::string id = m_previousMusicID;
+	m_previousMusicID = "null";
+
+	if (id != "null" && id != m_currentMusicID && id != m_nextMusicID)
+	{
+		releaseMusic(id);
+	}
 }
 
 void SoundManager::pauseMusic()
@@ -125,6 +207,9 @@ void SoundManager::resumeMusic()
 
 void SoundManager::stopMusic()
 {
+	m_switchMusicID.clear();
+	m_nextMusicID.clear();
+	m_previousMusicID = "null";
 	Mix_HaltMusic();
 }
 
@@ -132,6 +217,10 @@ void SoundManager::setVolume(int volume)
 {
 	if (volume < 0) 
 		volume = 0;
+	if (volume > 255)
+		volume = 255;
+
+	m_volume = volume;
 
 	// 연립 방정식으로 구한 변환 식이다.
 	int n = 255;
@@ -146,6 +235,9 @@ void SoundManager::setVolume(int volume)
 
 void SoundManager::fadeOutMusic(int ms)
 {
+	m_switchMusicID.clear();
+	m_nextMusicID.clear();
+	m_previousMusicID = "null";
 	Mix_FadeOutMusic(ms);
 }
 
@@ -156,13 +248,7 @@ void SoundManager::setMusicPosition(double position)
 
 int SoundManager::getVolume()
 {
-	return Mix_VolumeMusic(-1);
-}
-
-void SoundManager::resetCurrentMusicID()
-{
-	m_currentMusicID = "null";
-	m_previousMusicID = "null";
+	return m_volume;
 }
 
 std::string SoundManager::getCurrentMusicID()
@@ -177,25 +263,55 @@ bool SoundManager::isPlaying()
 
 void SoundManager::releaseMusic(std::string id)
 {
-	if (id == "null") 
+	BGM::iterator music = m_music.find(id);
+	if (music == m_music.end())
 	{
-		id = m_previousMusicID;
+		return;
 	}
 
-	Mix_FreeMusic(m_music[id]);
-	m_music.erase(id);
-	resetCurrentMusicID();
+	if (m_switchMusicID == id)
+	{
+		m_switchMusicID.clear();
+	}
+	if (m_nextMusicID == id)
+	{
+		m_nextMusicID.clear();
+	}
+	if (m_currentMusicID == id)
+	{
+		m_currentMusicID = "null";
+	}
+	if (m_previousMusicID == id)
+	{
+		m_previousMusicID = "null";
+	}
+
+	// 재생 중인 곡이면 Mix_FreeMusic이 멈춘다 (곡 종료 콜백은 부르지 않는다)
+	Mix_FreeMusic(music->second);
+	m_music.erase(music);
 }
 
 void SoundManager::releaseSound(std::string id)
 {
-	Mix_FreeChunk(m_sfxs[id]);
-	m_sfxs.erase(id);
+	SE::iterator sound = m_sfxs.find(id);
+	if (sound == m_sfxs.end())
+	{
+		return;
+	}
+
+	Mix_FreeChunk(sound->second);
+	m_sfxs.erase(sound);
 }
 
 void SoundManager::playSound(std::string id, int loop)
 {
+	SE::iterator sound = m_sfxs.find(id);
+	if (sound == m_sfxs.end())
+	{
+		return;
+	}
+
 	// -1, 임의의 채널 할당
 	// loop : 효과음의 반복 횟수.
-	Mix_PlayChannel(-1, m_sfxs[id], loop);
+	Mix_PlayChannel(-1, sound->second, loop);
 }

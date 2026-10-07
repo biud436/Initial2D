@@ -32,7 +32,7 @@ module Graphics
   # @return [Integer]
   def self.frame_count; end
 
-  # 비트맵 폰트(.fnt)를 로드해 텍스트 그리기에 사용. 로드에 성공하면 true
+  # 비트맵 폰트(.fnt)와 페이지 이미지를 로드해 지금 폰트를 바꾼다. 로드에 성공하면 true (실패하면 지금 폰트를 그대로 쓴다)
   # @param [String] path BMFont .fnt 파일 경로
   # @return [Boolean]
   def self.prepare_font(path); end
@@ -182,11 +182,11 @@ module Input
   # @return [Boolean]
   def self.any_mouse_down?; end
 
-  # 마우스 휠 값 (올림 -1, 내림 1)
+  # 이번 틱의 마우스 휠 값 (올림 -1, 내림 1, 굴리지 않았으면 0)
   # @return [Integer]
   def self.mouse_z; end
 
-  # 마우스 휠 값 설정
+  # 이번 틱의 마우스 휠 값 설정 (다음 틱에는 휠 입력으로 다시 정해진다)
   # @param [Integer] wheel
   # @return [void]
   def self.mouse_z=(wheel); end
@@ -207,30 +207,30 @@ end
 
 # 배경 음악과 효과음 (SDL_mixer, 파일은 재생 시 로드하고 id 로 구분)
 module Audio
-  # 음악 파일을 로드해 배경 음악으로 재생 (Lua 는 loop 까지 인자 3개 모두 필요). Ruby 는 로드에 성공하면 true
+  # 음악 파일을 로드해 배경 음악으로 재생. 다른 곡이 재생 중이면 그 곡을 1초 동안 줄여 멈춘 뒤 시작한다. 로드에 성공하면 true (실패하면 stderr 에 경로마다 한 번 알린다)
   # @param [String] path
   # @param [String] id
   # @param [Boolean, Integer] loop true 무한 반복, false 1회, 숫자는 SDL_mixer 루프 값 그대로, 기본값 true
   # @return [Boolean]
   def self.play_music(path, id, loop = true); end
 
-  # 효과음 파일을 로드해 재생 (Lua 는 loop 까지 인자 3개 모두 필요). Ruby 는 로드에 성공하면 true
+  # 효과음 파일을 로드해 재생. 로드에 성공하면 true (실패하면 stderr 에 경로마다 한 번 알린다)
   # @param [String] path
   # @param [String] id
   # @param [Boolean, Integer] loop true 무한 반복, false 1회, 숫자는 SDL_mixer 루프 값 그대로, 기본값 false
   # @return [Boolean]
   def self.play_sound(path, id, loop = false); end
 
-  # 배경 음악 볼륨 설정 (0..255 를 SDL_mixer 의 0..128 로 변환)
+  # 배경 음악과 효과음 볼륨 설정 (0..255, 범위 밖은 잘린다)
   # @param [Integer] volume 0 에서 255
   # @return [void]
   def self.volume=(volume); end
 
-  # 배경 음악 볼륨 (SDL_mixer 의 0..128)
+  # 설정한 볼륨 (0..255, 기본 255)
   # @return [Integer]
   def self.volume; end
 
-  # 현재 곡이 끝난 뒤 재생할 음악 예약 (Lua 는 loop 까지 인자 3개 모두 필요). Ruby 는 로드에 성공하면 true
+  # 지금 곡이 반복을 마치고 끝나면 이어서 재생할 음악 예약 (재생 중인 곡이 없으면 바로 재생, 페이드 없음). 음악 정지와 페이드 아웃은 예약을 지운다. 로드에 성공하면 true
   # @param [String] path
   # @param [String] id
   # @param [Boolean, Integer] loop true 무한 반복, false 1회, 숫자는 SDL_mixer 루프 값 그대로, 기본값 true
@@ -241,7 +241,7 @@ module Audio
   # @return [void]
   def self.pause_music; end
 
-  # 배경 음악 정지
+  # 배경 음악 정지 (예약한 곡도 지운다)
   # @return [void]
   def self.stop_music; end
 
@@ -253,7 +253,7 @@ module Audio
   # @return [Boolean]
   def self.playing_music?; end
 
-  # ms 동안 페이드 아웃 후 배경 음악 정지
+  # ms 동안 페이드 아웃 후 배경 음악 정지 (예약한 곡도 지운다)
   # @param [Integer] ms
   # @return [void]
   def self.fade_out_music(ms); end

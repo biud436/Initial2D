@@ -23,6 +23,15 @@ T.run_case("graphics") do |t|
   drawn = Graphics.draw_text(0, -100, "안녕")
   t.check_eq(drawn, w1, "text_width 와 draw_text 반환 폭 일치")
 
+  # 폰트를 바꾸면 이전 폰트의 글리프가 남지 않는다. font.fnt(Arial 16)에는 한글이 없다
+  t.check_eq(Graphics.prepare_font("./resources/fonts/font.fnt"), true, "font.fnt 로 바꾼다")
+  t.check_eq(Graphics.text_width("가"), 0, "font.fnt 에 없는 '가'는 폭 0 (hangul.fnt 의 글리프가 남지 않는다)")
+  t.check_eq(Graphics.text_width("A"), 9, "font.fnt 의 'A' 폭 (xadvance 9)")
+  # 읽지 못한 파일은 지금 폰트를 그대로 둔다
+  t.check_eq(Graphics.prepare_font("./resources/fonts/no_such.fnt"), false, "없는 파일은 false")
+  t.check_eq(Graphics.text_width("A"), 9, "실패한 로드 뒤에도 font.fnt 그대로")
+  t.check_eq(Graphics.prepare_font("./resources/fonts/hangul.fnt"), true, "hangul.fnt 로 되돌린다")
+
   # 렌더 배율: 창은 그대로, 논리 해상도만 1/n
   base_w = Graphics.width
   Graphics.render_scale = 2

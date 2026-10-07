@@ -95,7 +95,9 @@ void Input::updateMouse()
 	m_mouse.setX(logicalX);
 	m_mouse.setY(logicalY);
 
-	setMouseZ(0);
+	// 이번 틱의 휠 값은 지난 틱 뒤에 들어온 이벤트 합의 부호다 (올림 -1, 내림 1).
+	setMouseZ(m_nWheelLatch > 0 ? -1 : (m_nWheelLatch < 0 ? 1 : 0));
+	m_nWheelLatch = 0;
 }
 
 void Input::latchKeyDown(int vKey)
@@ -103,6 +105,11 @@ void Input::latchKeyDown(int vKey)
 	if (vKey > 0 && vKey < 256) {
 		m_kbEventLatch[vKey] = 1;
 	}
+}
+
+void Input::latchMouseWheel(int y)
+{
+	m_nWheelLatch += y;
 }
 
 // ---- 멀티터치 (T1: docs/plans/t1-touch-input.md) ----------------------------

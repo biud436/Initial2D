@@ -734,7 +734,8 @@ function Scene:remove(id)
 	return true
 end
 
--- 다음 tick 에서 이 씬을 닫고 resources/scenes/<name>.json 을 연다 (경로도 된다)
+-- 전환을 예약한다. tick 이 이번 틱의 update 를 모두 마친 뒤 이 씬을 닫고 resources/scenes/<name>.json 을
+-- 연다 (경로도 된다). update 밖(render, init)에서 부르면 다음 tick 의 끝에서 연다.
 function Scene:switch(name)
 	self._pending = name
 end

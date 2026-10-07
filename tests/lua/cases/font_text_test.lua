@@ -62,8 +62,26 @@ function M.run(t)
     broken:close()
     t.check_eq(PreparaFont("./no_chars.fnt"), false, "chars 없는 폰트는 거부한다")
 
+    -- 페이지 이미지를 올리지 못한 폰트는 false 다
+    local noPage = assert(io.open("./no_page.fnt", "w"))
+    noPage:write((minimal:gsub("hangul_0.png", "no_such_page.png")))
+    noPage:close()
+    t.check_eq(PreparaFont("./no_page.fnt"), false, "페이지 이미지가 없는 폰트는 false")
+
     os.remove("./no_kernings.fnt")
     os.remove("./no_chars.fnt")
+    os.remove("./no_page.fnt")
+
+    -- 폰트를 바꾸면 이전 폰트의 글리프가 남지 않는다. font.fnt(Arial 16)에는 한글이 없다
+    t.check_eq(PreparaFont("./resources/fonts/hangul.fnt"), true, "hangul.fnt 로드")
+    t.check(GetTextWidth("가") > 0, "hangul.fnt 의 '가' 폭")
+    t.check_eq(PreparaFont("./resources/fonts/font.fnt"), true, "font.fnt 로 바꾼다")
+    t.check_eq(GetTextWidth("가"), 0, "font.fnt 에 없는 '가'는 폭 0 (hangul.fnt 의 글리프가 남지 않는다)")
+    t.check_eq(GetTextWidth("A"), 9, "font.fnt 의 'A' 폭 (xadvance 9)")
+
+    -- 읽지 못한 파일은 지금 폰트를 그대로 둔다
+    t.check_eq(PreparaFont("./resources/fonts/no_such.fnt"), false, "없는 파일은 false")
+    t.check_eq(GetTextWidth("A"), 9, "실패한 로드 뒤에도 font.fnt 그대로")
 
     -- 다음 케이스를 위해 원래 폰트로 되돌린다
     t.check_eq(PreparaFont("./resources/fonts/hangul.fnt"), true, "원래 폰트 복구")

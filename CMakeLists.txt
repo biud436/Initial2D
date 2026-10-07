@@ -443,3 +443,10 @@ if(SDL2_FOUND)
   )
   target_link_libraries(engine_unit_tests PRIVATE SDL2::SDL2)
 endif()
+
+# 오디오(SoundManager)는 SDL 더미 오디오 장치로 연다 (tests/unit/sound_manager_test.cpp)
+if(SDL2_FOUND AND INITIAL2D_SDL2_AUDIO)
+  target_sources(engine_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/sound_manager_test.cpp
+  )
+endif()

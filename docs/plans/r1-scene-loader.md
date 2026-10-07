@@ -232,7 +232,7 @@ Lua 의 obj 는 그냥 표라 컴포넌트가 아무 필드나 붙일 수 있다
 | `scene:find(id)` | `scene.find(id)` | 오브젝트 또는 nil |
 | `scene:spawn(spec [, afterId])` | `scene.spawn(spec, after_id = nil)` | 파일의 항목과 같은 표(Ruby 는 문자열 키 Hash)로 오브젝트를 만든다. `id` 가 없으면 `<type>_<n>` 으로 만들어 준다. 검증은 같은 규칙. `afterId` 를 주면 그 오브젝트 **바로 뒤**(그리기 순서)에 끼우고 없으면 맨 뒤. 컴포넌트 `init` 은 바로, `update` 는 다음 틱부터 |
 | `scene:remove(id)` | `scene.remove(id)` | 컴포넌트 destroy, 스프라이트 해제. 없던 id 면 false |
-| `scene:switch(name)` | `scene.switch(name)` | 다음 tick 에서 이 씬을 닫고 `resources/scenes/<name>.json` 을 연다 (경로도 된다) |
+| `scene:switch(name)` | `scene.switch(name)` | 전환을 예약한다. `tick` 이 이번 틱의 update 를 모두 마친 뒤 이 씬을 닫고 `resources/scenes/<name>.json` 을 연다 (경로도 된다). update 밖(render, init)에서 부르면 다음 tick 의 끝에서 연다 |
 | `scene:objects()` | `scene.objects` | 그리기 순서의 목록 (복사본) |
 | `scene.name`, `scene.state` | 같음 | `state` 는 컴포넌트들이 나눠 쓰는 빈 표/Hash |
 | `scene.source`, `scene.path` | 같음 | 파일의 원본 표와 경로 |

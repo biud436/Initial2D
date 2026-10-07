@@ -573,11 +573,13 @@ GameFont* App::GetFont()
 */
 bool App::LoadFont(std::string fontName)
 {
-	bool isValid = m_pFont->ParseFont(fontName);
-	
-	m_pFont->load();
+	// 읽지 못한 파일이면 지금 폰트를 그대로 둔다
+	if (!m_pFont->ParseFont(fontName))
+	{
+		return false;
+	}
 
-	return isValid;
+	return m_pFont->load();
 }
 
 /**

@@ -288,7 +288,8 @@ def run_assert_scene(scene, dump_name):
           log[-200:])
     # 엔진의 커스텀 print는 인자를 구분자 없이 이어서 출력한다
     check("폰트 로드 성공", "fontReady:true" in log, log[:200])
-    check("오디오 볼륨 질의(BGM+SE 재생 후)", "volume:128" in log)
+    # GetVolume 은 설정한 0..255 값을 돌려준다. 설정하지 않았으면 255
+    check("오디오 볼륨 질의(BGM+SE 재생 후)", "volume:255" in log, log[-300:])
     check("프레임 덤프 3장 생성", len(shots) == 3, f"{len(shots)}장")
 
     if len(shots) != 3:
@@ -345,6 +346,52 @@ def test_mruby_assert_scene():
         print("  SKIP: 이 빌드에는 mruby 가 없습니다 (brew install mruby 후 cmake 다시 실행)")
         return
     run_assert_scene("mruby_assert_scene.rb", "mruby_assert_scene")
+
+
+# 입력 경로 (C++): INITIAL2D_TEST_EVENTS 가 만든 SDL 마우스 이벤트가 HandleEvent, Input::update,
+# 바인딩을 거쳐 스크립트에 보이는가. 이벤트 사이는 20 프레임이다 (헤드리스는 한 프레임이 한 틱보다 짧을 수 있다)
+INPUT_EVENTS = "10:mousedown:0,30:wheel:1,50:wheel:-1,70:wheel:-3,90:mousedown:1"
+INPUT_EXPECTED = [
+    ("왼쪽 버튼을 누른 틱: IsAnyMouseDown 과 IsMouseDown(0) 이 참",
+     "input:any_mouse=true left=true any_key=false wheel=0"),
+    ("휠을 위로 굴린 틱의 GetMouseZ 는 -1",
+     "input:any_mouse=false left=false any_key=false wheel=-1"),
+    ("휠을 아래로 굴린 틱의 GetMouseZ 는 1",
+     "input:any_mouse=false left=false any_key=false wheel=1"),
+    ("한 번에 여러 칸 굴려도 GetMouseZ 는 1",
+     "input:any_mouse=false left=false any_key=false wheel=1"),
+    ("오른쪽 버튼을 누른 틱: IsAnyMouseDown 은 참, IsMouseDown(0) 은 거짓",
+     "input:any_mouse=true left=false any_key=false wheel=0"),
+    ("SetMouseZ 는 이번 틱의 값을 바꾼다", "input:set_wheel=7"),
+    ("다음 틱의 휠 값은 새 이벤트에서 온다 (없으면 0)", "input:after_set_wheel=0"),
+]
+
+
+def check_input_events_run(result):
+    log = result.stdout + result.stderr
+    lines = [l for l in log.splitlines() if l.startswith("input:")]
+    check("입력 씬이 이벤트 다섯 개를 보고 스스로 끝났다",
+          result.returncode == 0 and len(lines) == len(INPUT_EXPECTED), "\n".join(lines) or log[-400:])
+    for i, (label, expected) in enumerate(INPUT_EXPECTED):
+        got = lines[i] if i < len(lines) else None
+        check(label, got == expected, f"got={got!r}")
+
+
+def test_input_events_lua():
+    print("\n[1i] input_events_lua: SDL 마우스 이벤트가 Lua 의 Input 에 보이는가")
+    _, result, _ = run_scene("input_events_scene.lua", [], 600,
+                             extra_env={"INITIAL2D_TEST_EVENTS": INPUT_EVENTS})
+    check_input_events_run(result)
+
+
+def test_input_events_mruby():
+    print("\n[1i-m] input_events_mruby: 같은 이벤트를 Ruby 의 Input 으로")
+    if not HAS_MRUBY:
+        print("  SKIP: 이 빌드에는 mruby 가 없습니다 (brew install mruby 후 cmake 다시 실행)")
+        return
+    _, result, _ = run_scene("mruby_input_events_scene.rb", [], 600,
+                             extra_env={"INITIAL2D_TEST_EVENTS": INPUT_EVENTS})
+    check_input_events_run(result)
 
 
 def test_mruby_units():
@@ -2146,6 +2193,8 @@ def main():
         test_mruby_units,
         test_assert_scene,
         test_mruby_assert_scene,
+        test_input_events_lua,
+        test_input_events_mruby,
         test_mruby_flappy_scene,
         test_lua_error_scene,
         test_mruby_binding_guard,

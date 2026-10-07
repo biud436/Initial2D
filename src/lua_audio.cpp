@@ -21,20 +21,21 @@ LuaObjectToken luaj_Audio[LUA_AUDIO_MEMBERS] = {
 /**
  * @brief loop 인자를 SDL_mixer 루프 값으로 해석한다.
  *
- * 불리언이면 true = 무한 반복(-1), false = 한 번 재생.
- * 숫자면 SDL_mixer 값을 그대로 쓴다 (음악: 재생 횟수, 효과음: 추가 반복 횟수 —
- * 예를 들어 효과음에 1을 주면 두 번 재생된다).
- *
- * 기존 코드는 lua_toboolean 결과가 0일 때 -1로 바꿨는데, Lua에서는 숫자 0도
- * 참이라 false만 무한 반복이 되는 반전된 동작이었다 (1단계 버그 수정).
+ * 생략하거나 nil 이면 loopByDefault 가 참일 때 무한 반복(-1), 거짓일 때 한 번(onceValue).
+ * 불리언이면 true = 무한 반복(-1), false = 한 번. 숫자면 SDL_mixer 값을 그대로 쓴다
+ * (음악: 재생 횟수, 효과음: 추가 반복 횟수. 효과음에 1을 주면 두 번 재생된다).
  */
-static int ResolveLoopArg(lua_State* pL, int index, int onceValue)
+static int ResolveLoopArg(lua_State* pL, int index, int onceValue, bool loopByDefault)
 {
+	if (lua_isnoneornil(pL, index))
+	{
+		return loopByDefault ? -1 : onceValue;
+	}
 	if (lua_type(pL, index) == LUA_TBOOLEAN)
 	{
 		return lua_toboolean(pL, index) ? -1 : onceValue;
 	}
-	return static_cast<int>(luaL_optinteger(pL, index, onceValue));
+	return static_cast<int>(luaL_checkinteger(pL, index));
 }
 
 LUA_METHOD(CreateAudioObject)
@@ -80,21 +81,11 @@ LUA_METHOD(GetBgmVolume)
 
 LUA_METHOD(PlayMusic)
 {
-	int n = lua_gettop(pL);
+	std::string path = luaL_checkstring(pL, 1);
+	std::string id = luaL_checkstring(pL, 2);
 
-	if (n < 3)
-	{
-		return 0;
-	}
-
-	// path
-	std::string path = lua_tostring(pL, 1);
-
-	// id
-	std::string id = lua_tostring(pL, 2);
-
-	// loop: true = 무한 반복, false = 한 번 (Mix_FadeInMusic은 1이 한 번)
-	int loop = ResolveLoopArg(pL, 3, 1);
+	// loop: 생략하면 무한 반복, false 면 한 번 (Mix_FadeInMusic은 1이 한 번)
+	int loop = ResolveLoopArg(pL, 3, 1, true);
 
 	bool result = Audio->load(path, id, SOUND_MUSIC);
 
@@ -103,26 +94,17 @@ LUA_METHOD(PlayMusic)
 		Audio->playMusic(id, loop);
 	}
 
-	return 0;
+	lua_pushboolean(pL, result);
+	return 1;
 }
 
 LUA_METHOD(InsertNextMusic)
 {
-	int n = lua_gettop(pL);
+	std::string path = luaL_checkstring(pL, 1);
+	std::string id = luaL_checkstring(pL, 2);
 
-	if (n < 3)
-	{
-		return 0;
-	}
-
-	// path
-	std::string path = lua_tostring(pL, 1);
-
-	// id
-	std::string id = lua_tostring(pL, 2);
-
-	// loop: true = 무한 반복, false = 한 번
-	int loop = ResolveLoopArg(pL, 3, 1);
+	// loop: 생략하면 무한 반복, false 면 한 번
+	int loop = ResolveLoopArg(pL, 3, 1, true);
 
 	bool result = Audio->load(path, id, SOUND_MUSIC);
 
@@ -131,26 +113,17 @@ LUA_METHOD(InsertNextMusic)
 		Audio->insertNextMusic(id, loop);
 	}
 
-	return 0;
+	lua_pushboolean(pL, result);
+	return 1;
 }
 
 LUA_METHOD(PlaySound)
 {
-	int n = lua_gettop(pL);
+	std::string path = luaL_checkstring(pL, 1);
+	std::string id = luaL_checkstring(pL, 2);
 
-	if (n < 3)
-	{
-		return 0;
-	}
-
-	// path
-	std::string path = lua_tostring(pL, 1);
-
-	// id
-	std::string id = lua_tostring(pL, 2);
-
-	// loop: true = 무한 반복, false = 한 번 (Mix_PlayChannel은 0이 한 번)
-	int loop = ResolveLoopArg(pL, 3, 0);
+	// loop: 생략하거나 false 면 한 번 (Mix_PlayChannel은 0이 한 번)
+	int loop = ResolveLoopArg(pL, 3, 0, false);
 
 	bool result = Audio->load(path, id, SOUND_SFX);
 
@@ -159,7 +132,8 @@ LUA_METHOD(PlaySound)
 		Audio->playSound(id, loop);
 	}
 
-	return 0;
+	lua_pushboolean(pL, result);
+	return 1;
 }
 
 LUA_METHOD(PauseMusic)

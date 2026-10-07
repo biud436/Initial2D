@@ -29,6 +29,8 @@
 #include <cstdio>
 #include <vector>
 #include <fstream>
+#include <cstring>
+#include <string>
 
 #include <sys/stat.h>
 
@@ -159,6 +161,78 @@ namespace {
 	};
 
 	LoopState g_loop;
+
+	struct TestEvent {
+		long frame;
+		SDL_Event event;
+	};
+
+	/**
+	 * @brief INITIAL2D_TEST_EVENTS 의 검증용 입력 이벤트 목록 (처음 부를 때 한 번 읽는다).
+	 *
+	 * 형식은 "프레임:종류:값" 을 쉼표로 이은 것이다. 프레임 번호는 INITIAL2D_SCREENSHOT_FRAME 과
+	 * 같이 1부터 센다. 종류는 둘이다.
+	 *   wheel:<y>       SDL_MOUSEWHEEL. y 는 SDL 부호다 (위로 굴리면 양수)
+	 *   mousedown:<n>   SDL_MOUSEBUTTONDOWN. n 은 0 왼쪽, 1 오른쪽, 2 가운데
+	 */
+	const std::vector<TestEvent>& TestEvents()
+	{
+		static std::vector<TestEvent> events;
+		static bool parsed = false;
+		if (parsed) {
+			return events;
+		}
+		parsed = true;
+
+		const char* spec = Initial2D::Platform::GetEnv("INITIAL2D_TEST_EVENTS");
+		if (spec == nullptr) {
+			return events;
+		}
+		std::stringstream items(spec);
+		std::string item;
+		while (std::getline(items, item, ',')) {
+			long frame = 0;
+			char kind[16] = { 0 };
+			int value = 0;
+			TestEvent entry;
+			entry.frame = 0;
+			SDL_zero(entry.event);
+			bool valid = std::sscanf(item.c_str(), "%ld:%15[a-z]:%d", &frame, kind, &value) == 3;
+			if (valid && std::strcmp(kind, "wheel") == 0) {
+				entry.event.type = SDL_MOUSEWHEEL;
+				entry.event.wheel.y = value;
+				entry.event.wheel.preciseY = static_cast<float>(value);
+				entry.event.wheel.direction = SDL_MOUSEWHEEL_NORMAL;
+			} else if (valid && std::strcmp(kind, "mousedown") == 0 && value >= 0 && value <= 2) {
+				static const Uint8 buttons[3] = { SDL_BUTTON_LEFT, SDL_BUTTON_RIGHT, SDL_BUTTON_MIDDLE };
+				entry.event.type = SDL_MOUSEBUTTONDOWN;
+				entry.event.button.button = buttons[value];
+				entry.event.button.state = SDL_PRESSED;
+				entry.event.button.clicks = 1;
+			} else {
+				valid = false;
+			}
+			if (!valid) {
+				SDL_Log("INITIAL2D_TEST_EVENTS: ignored entry '%s'", item.c_str());
+				continue;
+			}
+			entry.frame = frame;
+			events.push_back(entry);
+		}
+		return events;
+	}
+
+	/** frame 번째 프레임의 검증용 이벤트. */
+	std::vector<SDL_Event> TestEventsAt(long frame)
+	{
+		std::vector<SDL_Event> events;
+		for (const TestEvent& entry : TestEvents()) {
+			if (entry.frame == frame) {
+				events.push_back(entry.event);
+			}
+		}
+		return events;
+	}
 
 } // namespace
 
@@ -348,6 +422,12 @@ bool App::StepFrame()
 	const int fps = 60;
 	const int lengthOfFrame = 1000 / fps;
 
+	// 검증용 이벤트는 SDL 큐를 거치지 않고 실제 이벤트와 같은 HandleEvent 로 처리한다.
+	// sdl2-compat 는 큐에 넣은 휠 이벤트의 정수 값을 되돌려 주지 않는다 (SDL3 의 integer_y 가 비어 있다).
+	for (const SDL_Event& testEvent : TestEventsAt(g_loop.frameCount + 1)) {
+		HandleEvent(testEvent);
+	}
+
 	SDL_Event event;
 	while (SDL_PollEvent(&event))
 	{
@@ -493,8 +573,9 @@ void App::HandleEvent(const SDL_Event& event)
 		}
 		break;
 	case SDL_MOUSEWHEEL:
+		// 값은 다음 입력 갱신 때 이번 틱의 휠 값이 된다 (Input::updateMouse)
 		if (m_pInput != nullptr) {
-			m_pInput->setMouseZ(event.wheel.y > 0 ? 1 : -1);
+			m_pInput->latchMouseWheel(event.wheel.y);
 		}
 		break;
 	case SDL_MOUSEBUTTONDOWN:

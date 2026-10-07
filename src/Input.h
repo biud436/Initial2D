@@ -144,9 +144,13 @@ protected:
 	// (macOS에서 ESC가 그랬다, 2026-08-18).
 	BYTE m_kbEventLatch[256];
 
+	// 지난 update() 뒤에 들어온 휠 이벤트의 세로 이동량 합 (SDL 부호: 위로 굴리면 양수).
+	int m_nWheelLatch = 0;
+
 public:
 	void latchMouseDown(int index);
 	void latchKeyDown(int vKey);
+	void latchMouseWheel(int y);
 
 	// 멀티터치 (T1). 손가락마다 마우스와 같은 4-상태 기계와 이벤트 래치를 둔다.
 	// 좌표는 논리 좌표다 (AppSDL2가 SDL_RenderWindowToLogical로 바꿔 넘긴다).
