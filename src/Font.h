@@ -9,6 +9,7 @@
 #include <unordered_map>
 
 class Sprite;
+class TextureManager;
 
 #define MIN_CHAR 32
 #define MAX_CHAR 255
@@ -145,6 +146,11 @@ public:
 	int getTextWidth(int x, int y, std::wstring text);
 
 private:
+
+	/**
+	 * @brief 올려 둔 페이지 이미지를 TextureManager 에서 내린다.
+	 */
+	void removeTextures(TextureManager& tm);
 
 	Charset      m_charsetDesc;
 	std::string  m_filename[2];

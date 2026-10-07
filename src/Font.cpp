@@ -78,16 +78,6 @@ bool Font::ParseFont(std::string fntName)
 		if (e->Value() == std::string("common"))
 		{
 			pCommon = e;
-			e->Attribute("lineHeight", &m_charsetDesc.LineHeight);
-			// 그리기 배율의 기준. 폰트가 가진 크기 그대로 찍는다 (배율 1).
-			if (m_charsetDesc.LineHeight > 0) {
-				m_fontSize = m_charsetDesc.LineHeight;
-			}
-			e->Attribute("base", &m_charsetDesc.Base);
-			e->Attribute("scaleW", &m_charsetDesc.Width);
-			e->Attribute("scaleH", &m_charsetDesc.Height);
-			e->Attribute("pages", &m_charsetDesc.Pages);
-
 		}
 		else if (e->Value() == std::string("pages"))
 		{
@@ -105,14 +95,30 @@ bool Font::ParseFont(std::string fntName)
 
 	// common, pages, chars 가 없으면 폰트로 쓸 수 없다. kernings 는 없어도 된다 —
 	// BMFont 규격에서 선택 사항이고, 커닝 쌍이 없는 폰트에는 아예 블록이 없다.
-	// (이 검사가 없어서 kernings 없는 .fnt 를 열면 널 역참조로 죽었다. 2026-08-17)
 	if (pCommon == nullptr || pPages == nullptr || pChars == nullptr) {
 		return false;
 	}
 
-	// 여기부터 상태를 바꾼다. 위에서 걸러진 파일은 이미 열려 있는 폰트를
-	// 건드리지 않는다 (재호출 시 이전 파싱 결과가 누적되지 않도록 비운다).
+	// 여기부터 상태를 바꾼다. 위에서 걸러진 파일은 이미 열려 있는 폰트를 건드리지 않는다.
+	// 이전 폰트의 글리프와 커닝을 지운다. 남겨 두면 새 폰트에 없는 글자를 이전 폰트의 좌표로
+	// 새 폰트 이미지에서 잘라 그린다.
+	for (int i = 0; i < GLYPH_TABLE_SIZE; ++i) {
+		m_charsetDesc.Chars[i] = CharDescriptor();
+	}
+	m_charsetDesc.LineHeight = 0;
+	m_charsetDesc.Base = 0;
+	m_charsetDesc.Width = 0;
+	m_charsetDesc.Height = 0;
+	m_charsetDesc.Pages = 0;
 	m_textureNames.clear();
+
+	pCommon->Attribute("lineHeight", &m_charsetDesc.LineHeight);
+	// 그리기 배율의 기준. 폰트가 가진 크기 그대로 찍는다 (배율 1).
+	m_fontSize = (m_charsetDesc.LineHeight > 0) ? m_charsetDesc.LineHeight : 32.0;
+	pCommon->Attribute("base", &m_charsetDesc.Base);
+	pCommon->Attribute("scaleW", &m_charsetDesc.Width);
+	pCommon->Attribute("scaleH", &m_charsetDesc.Height);
+	pCommon->Attribute("pages", &m_charsetDesc.Pages);
 
 	// Parse Page
 	for (TiXmlElement *e = pPages->FirstChildElement(); e != NULL; e = e->NextSiblingElement()) {
@@ -161,8 +167,6 @@ bool Font::ParseFont(std::string fntName)
 		}
 	}
 
-	// (pCommon/pChars 검사는 실제로 쓰기 전인 위쪽으로 옮겼다)
-
 	m_charsetDesc.IsReady = true;
 
 	return true;
@@ -179,8 +183,13 @@ bool Font::load()
 	std::string resourcePath = ".\\resources\\fonts\\";
 	std::string textureId = "font";
 
-	TextureNames::iterator iter = m_textureNames.begin();
 	TextureManager &tm = App::GetInstance().GetTextureManager();
+
+	// 이전에 올린 페이지 이미지를 먼저 내린다. TextureManager::Load 는 같은 id 의 이전 이미지를
+	// 해제하지 않고 덮어쓴다.
+	removeTextures(tm);
+
+	bool ready = !m_textureNames.empty();
 	int i = 0;
 
 	for (TextureNames::iterator iter = m_textureNames.begin(); iter != m_textureNames.end(); iter++)
@@ -189,25 +198,33 @@ bool Font::load()
 		std::string path = resourcePath + iter[0];
 		std::string id = textureId + std::to_string(i);
 		m_textureIds[i++] = id;
-		m_charsetDesc.IsTextureReady = tm.Load(path, id, NULL);
+		ready = tm.Load(path, id, NULL) && ready;
 	}
 
-	return m_charsetDesc.IsTextureReady;
+	m_charsetDesc.IsTextureReady = ready;
+	return ready;
+}
+
+void Font::removeTextures(TextureManager& tm)
+{
+	for (TextureIds::iterator iter = m_textureIds.begin(); iter != m_textureIds.end(); iter++)
+	{
+		if (tm.valid(iter->second)) {
+			tm.Remove(iter->second);
+		}
+	}
+
+	m_textureIds.clear();
+	m_charsetDesc.IsTextureReady = false;
 }
 
 bool Font::remove()
 {
-	if (!m_charsetDesc.IsTextureReady)
+	if (m_textureIds.empty())
 		return false;
 
-	TextureManager &tm = App::GetInstance().GetTextureManager();
-	std::string textureId = "font";
+	removeTextures(App::GetInstance().GetTextureManager());
 
-	if (tm.valid(textureId)) {
-		tm.Remove(textureId);
-		m_charsetDesc.IsTextureReady = false;
-	}
-	
 	return true;
 }
 

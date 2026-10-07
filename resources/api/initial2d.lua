@@ -42,7 +42,7 @@ function SetRenderScale(scale) end
 ---@return integer
 function GetFrameCount() end
 
----비트맵 폰트(.fnt)를 로드해 텍스트 그리기에 사용. 로드에 성공하면 true
+---비트맵 폰트(.fnt)와 페이지 이미지를 로드해 지금 폰트를 바꾼다. 로드에 성공하면 true (실패하면 지금 폰트를 그대로 쓴다)
 ---@param path string BMFont .fnt 파일 경로
 ---@return boolean
 function PreparaFont(path) end

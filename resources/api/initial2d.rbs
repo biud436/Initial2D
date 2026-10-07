@@ -20,7 +20,7 @@ module Graphics
   # 최근 초당 프레임 수 (FPS, SDL2 백엔드는 보통 60)
   def self.frame_count: () -> Integer
 
-  # 비트맵 폰트(.fnt)를 로드해 텍스트 그리기에 사용. 로드에 성공하면 true
+  # 비트맵 폰트(.fnt)와 페이지 이미지를 로드해 지금 폰트를 바꾼다. 로드에 성공하면 true (실패하면 지금 폰트를 그대로 쓴다)
   def self.prepare_font: (String path) -> bool
 
   # 로드한 비트맵 폰트로 텍스트 그리기. 그린 너비(px) 반환 (폰트가 없으면 0)
