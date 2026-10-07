@@ -1768,7 +1768,7 @@ local M = {}
 function M.init(obj, scene) obj.y = 416 end
 function M.update(obj, scene, elapsed)          -- elapsed 는 ms
 	obj.y = obj.y + 100 * elapsed / 1000
-	if obj.y > 800 then scene:switch("title") end   -- 다음 틱에 resources/scenes/title.json 으로
+	if obj.y > 800 then scene:switch("title") end   -- 이번 틱이 끝나면 resources/scenes/title.json 으로
 end
 function M.render(obj, scene) end               -- 로더가 스프라이트를 그린 뒤
 function M.destroy(obj, scene) end
