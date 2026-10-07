@@ -46,6 +46,7 @@ void Input::initialize(HWND hWnd)
 	memset(m_kbEventLatch, 0, sizeof(m_kbEventLatch));
 	memset(m_touches, 0, sizeof(m_touches));
 	m_nTouchCount = 0;
+	m_nWheelLatch = 0;
 #endif
 
 	m_mouse.setX(0.0f);
@@ -199,9 +200,9 @@ bool Input::isMousePress(int vKey) const
 
 bool Input::isAnyMouseDown() const
 {
-	for (int i = 0; i < 256; ++i)
+	for (int i = 0; i < 8; ++i)
 	{
-		if (m_kbMap[i] == KB_DOWN)
+		if (m_mbMap[i] == KB_DOWN)
 			return true;
 	}
 	return false;

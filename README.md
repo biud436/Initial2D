@@ -448,8 +448,8 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 	Input.IsMousePress(vKey)
 	Input.IsAnyMouseDown()
 
-	-- 마우스 휠 처리는 메시지 콜백 함수에서 수신합니다.
-	-- 마우스 휠 올림 내림 판단을 -1과 1로 처리합니다.
+	-- 마우스 휠: 이번 틱에 위로 굴렸으면 -1, 아래로 굴렸으면 1, 굴리지 않았으면 0입니다.
+	-- SetMouseZ는 이번 틱의 값만 바꿉니다.
 	Input.GetMouseZ()
 	Input.SetMouseZ(wheel)
 
@@ -1922,6 +1922,12 @@ INITIAL2D_KEEP_WORK=1 python3 tests/run_engine_tests.py --only=rpgdemo_scene
 - mruby 단위 테스트는 `tests/ruby/cases/`에 파일을 만들고 `tests/ruby/manifest.rb` 목록에 추가합니다. 화면을 보는 Ruby 씬은 `tests/engine/scenes/`에 `.rb`로 두면 `scripts/ruby/main.rb`로 들어갑니다. mruby가 없는 빌드에서는 건너뜁니다.
 - 화면을 보는 테스트는 `tests/engine/scenes/`에 씬을 만들고 `tests/run_engine_tests.py`에 검사를 추가합니다. 씬 테스트는 `scripts/`를 통째로 얹고 `main.lua`만 갈아 끼우므로, 게임이 실제로 여는 파일을 그대로 검사합니다.
 - 사람의 조작이 필요한 시나리오는 `tests/lua/input_replay.lua`로 재생합니다. 프레임 단위로 키를 예약하거나(`{ at = 10, press = "Z" }`), 화면 상태를 보고 그때그때 누를 수도 있습니다(`replay:tap("Z")`, `replay:press("LEFT")`). 고정 타임스텝이라 같은 시나리오는 항상 같은 결과를 냅니다.
+- 입력 재생기는 스크립트의 `Input`을 바꾸므로 엔진의 입력 처리(SDL 이벤트, `Input::update`, 바인딩)를 지나지 않습니다. 그 경로는 `INITIAL2D_TEST_EVENTS`로 SDL 이벤트를 넣어 확인합니다. 형식은 `프레임:종류:값`을 쉼표로 이은 것이고, 종류는 `wheel`(SDL 부호, 위로 굴리면 양수)과 `mousedown`(0 왼쪽, 1 오른쪽, 2 가운데)입니다. 프레임 번호는 `INITIAL2D_SCREENSHOT_FRAME`처럼 1부터 셉니다.
+
+```bash
+# 10번째 프레임에 왼쪽 클릭, 30번째 프레임에 휠 한 칸 위로
+INITIAL2D_TEST_EVENTS=10:mousedown:0,30:wheel:1 INITIAL2D_EXIT_AFTER=60 SDL_VIDEODRIVER=dummy ./build/Initial2D
+```
 
 푸시할 때마다 GitHub Actions(macOS 러너)가 같은 검수를 헤드리스로 실행합니다. 웹 빌드 검수(`tools/web_ci.sh`,
 [웹 빌드](#웹-빌드-emscripten) 절)는 같은 러너 계열의 두 번째 작업이 돌립니다.

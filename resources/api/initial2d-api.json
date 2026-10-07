@@ -301,14 +301,14 @@
           "lua": "GetMouseZ", "ruby": "mouse_z",
           "params": [],
           "returns": "integer",
-          "doc": "마우스 휠 값 (올림 -1, 내림 1)",
+          "doc": "이번 틱의 마우스 휠 값 (올림 -1, 내림 1, 굴리지 않았으면 0)",
           "rubyKind": "getter"
         },
         {
           "lua": "SetMouseZ", "ruby": "mouse_z=",
           "params": [{ "name": "wheel", "type": "integer" }],
           "returns": "nil",
-          "doc": "마우스 휠 값 설정",
+          "doc": "이번 틱의 마우스 휠 값 설정 (다음 틱에는 휠 입력으로 다시 정해진다)",
           "rubyKind": "setter"
         },
         {

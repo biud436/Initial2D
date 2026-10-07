@@ -167,11 +167,11 @@ function Input.IsMousePress(button) end
 ---@return boolean
 function Input.IsAnyMouseDown() end
 
----마우스 휠 값 (올림 -1, 내림 1)
+---이번 틱의 마우스 휠 값 (올림 -1, 내림 1, 굴리지 않았으면 0)
 ---@return integer
 function Input.GetMouseZ() end
 
----마우스 휠 값 설정
+---이번 틱의 마우스 휠 값 설정 (다음 틱에는 휠 입력으로 다시 정해진다)
 ---@param wheel integer
 function Input.SetMouseZ(wheel) end
 

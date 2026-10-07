@@ -182,11 +182,11 @@ module Input
   # @return [Boolean]
   def self.any_mouse_down?; end
 
-  # 마우스 휠 값 (올림 -1, 내림 1)
+  # 이번 틱의 마우스 휠 값 (올림 -1, 내림 1, 굴리지 않았으면 0)
   # @return [Integer]
   def self.mouse_z; end
 
-  # 마우스 휠 값 설정
+  # 이번 틱의 마우스 휠 값 설정 (다음 틱에는 휠 입력으로 다시 정해진다)
   # @param [Integer] wheel
   # @return [void]
   def self.mouse_z=(wheel); end
