@@ -150,12 +150,25 @@ bool Tilemap::load(const std::string& path)
 			for (const Json::Value& animNode : animationsNode) {
 				const int tile = animNode["tile"].asInt();
 				const int duration = animNode["duration"].asInt();
+				const int count = animNode.isMember("count") ? animNode["count"].asInt() : 1;
 				const Json::Value& framesNode = animNode["frames"];
-				if (tile < 0 || duration < 1 || !framesNode.isArray() || framesNode.empty()) {
+				if (tile < 0 || duration < 1 || count < 1 || !framesNode.isArray() || framesNode.empty()) {
 					return fail("invalid tile animation in " + normalized);
+				}
+				// 범위는 겹치지 않는다 (한 타일의 프레임은 하나로 정해진다)
+				const auto next = tileset.animations.lower_bound(tile);
+				if (next != tileset.animations.end() && next->first < tile + count) {
+					return fail("overlapping tile animations in " + normalized);
+				}
+				if (next != tileset.animations.begin()) {
+					const auto prev = std::prev(next);
+					if (prev->first + prev->second.count > tile) {
+						return fail("overlapping tile animations in " + normalized);
+					}
 				}
 				Animation animation;
 				animation.durationMs = duration;
+				animation.count = count;
 				for (const Json::Value& frame : framesNode) {
 					if (!frame.isInt() || frame.asInt() < 0) {
 						return fail("invalid tile animation frame in " + normalized);
@@ -238,14 +251,19 @@ int Tilemap::animatedGid(int gid) const
 	if (tileset == nullptr || tileset->animations.empty()) {
 		return gid;
 	}
-	const auto it = tileset->animations.find(gid - tileset->firstGid);
-	if (it == tileset->animations.end()) {
+	const int local = gid - tileset->firstGid;
+	auto it = tileset->animations.upper_bound(local);
+	if (it == tileset->animations.begin()) {
 		return gid;
 	}
+	--it;
 	const Animation& animation = it->second;
+	if (local >= it->first + animation.count) {
+		return gid;
+	}
 	const long long step = _clockMs / animation.durationMs;
 	const int frame = animation.frames[static_cast<size_t>(step % static_cast<long long>(animation.frames.size()))];
-	return tileset->firstGid + frame;
+	return tileset->firstGid + frame + (local - it->first);
 }
 
 bool Tilemap::isPassable(int x, int y) const

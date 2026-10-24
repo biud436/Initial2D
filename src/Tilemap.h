@@ -28,10 +28,14 @@ public:
 		std::vector<int> data;   /** 행 우선 gid 배열 (width*height개), 0 = 빈 칸 */
 	};
 
-	/** 타일 하나의 애니메이션. frames 는 타일셋 안의 번호(0부터), 프레임마다 durationMs 동안 보인다 */
+	/**
+	 * 타일 count 개(첫 번호부터 이어진 번호)의 애니메이션. frames 는 첫 타일의 프레임(타일셋 안의 번호, 0부터)이고,
+	 * 범위의 i 번째 타일은 frames[k] + i 를 그린다. 프레임마다 durationMs 동안 보인다
+	 */
 	struct Animation {
 		std::vector<int> frames;
 		int durationMs;
+		int count;
 	};
 
 	struct Tileset {
@@ -39,7 +43,7 @@ public:
 		std::string textureId;   /** TextureManager 등록 ID (정규화된 경로) */
 		int firstGid;
 		int columns;
-		std::map<int, Animation> animations;  /** 타일셋 안의 번호 → 애니메이션 */
+		std::map<int, Animation> animations;  /** 범위의 첫 번호 → 애니메이션 (범위는 겹치지 않는다) */
 	};
 
 	Tilemap();

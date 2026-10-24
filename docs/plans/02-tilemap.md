@@ -173,11 +173,17 @@ RPG가 아닌 타일맵 게임에도 쓰는 기능이라 엔진 코어에 둔다
 
 ```json
 { "image": "resources/tiles/world.rm2k.png", "firstGid": 1, "columns": 16,
-  "animations": [ { "tile": 0, "frames": [0, 1, 2, 1], "duration": 133 } ] }
+  "animations": [
+    { "tile": 0, "frames": [0, 1, 2, 1], "duration": 133 },
+    { "tile": 40, "count": 300, "frames": [40, 340, 640, 340], "duration": 400 }
+  ] }
 ```
 
 - `tile`은 타일셋 안의 번호(0부터)이고, 맵에는 이 번호의 gid가 적힌다. `frames`는 차례로 그릴 번호, `duration`은 프레임마다의 ms다.
+- `count`(기본 1)는 `tile`부터 이어진 번호 `count`개에 같은 애니메이션을 건다. 범위의 i 번째 타일은 `frames[k] + i`를 그린다.
+  프레임마다 같은 배치의 덩어리를 이어 붙인 시트(물 타일 수백 장이 함께 출렁이는 ChipSet 굽기 결과)를 항목 하나로 적는다.
+  범위는 겹칠 수 없다 (`overlapping tile animations`).
 - 시계는 스크립트가 틱마다 넘기는 경과 시간이다 (`Tilemap.Update(map, elapsed)`, Ruby `map.update(elapsed)`). 그래서 같은 틱 수면
   같은 프레임이고 골든 스크린샷이 흔들리지 않는다. 부르지 않으면 첫 프레임에 머문다. 씬 로더의 `tilemap` 타입은 틱마다 부른다.
-- `frames`가 비었거나, `duration`이 1보다 작거나, 번호가 음수면 맵을 읽지 못한다 (`invalid tile animation`).
+- `frames`가 비었거나, `duration`이나 `count`가 1보다 작거나, 번호가 음수면 맵을 읽지 못한다 (`invalid tile animation`).
 - `GetTileId`는 맵에 적힌 gid를 돌려준다 (지금 그려지는 프레임이 아니다).
