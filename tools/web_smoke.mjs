@@ -212,7 +212,7 @@ function runNative(files, { copyFrom = null, env = {}, frame = 0 } = {}) {
 			fs.mkdirSync(path.dirname(full), { recursive: true });
 			fs.writeFileSync(full, data);
 		}
-		const runEnv = { ...process.env, SDL_VIDEODRIVER: "dummy", INITIAL2D_EXIT_AFTER: "60", ...env };
+		const runEnv = { ...process.env, SDL_VIDEODRIVER: "dummy", SDL_AUDIODRIVER: "dummy", INITIAL2D_EXIT_AFTER: "60", ...env };
 		const shotPath = path.join(work, "native_shot.bmp");
 		if (frame > 0) {
 			runEnv.INITIAL2D_SCREENSHOT = shotPath;
@@ -239,7 +239,7 @@ function nativeHasMRuby() {
 		return false;
 	}
 	const r = spawnSync(NATIVE, ["--features"], {
-		env: { ...process.env, SDL_VIDEODRIVER: "dummy" },
+		env: { ...process.env, SDL_VIDEODRIVER: "dummy", SDL_AUDIODRIVER: "dummy" },
 		encoding: "utf-8",
 		timeout: 30000,
 	});
@@ -270,7 +270,8 @@ console.log(`web_smoke: serving ${SITE} at ${base}`);
 
 // 2. 브라우저
 const { chromium } = await import(pathToFileURL(path.join(PLAYWRIGHT_DIR, "index.mjs")).href);
-const browser = await chromium.launch({ headless: !HEADED });
+// 웹 엔진의 소리는 브라우저가 낸다. 헤드리스 검수에서는 끈다
+const browser = await chromium.launch({ headless: !HEADED, args: HEADED ? [] : ["--mute-audio"] });
 const context = await browser.newContext({ viewport: { width: 1280, height: 1000 }, deviceScaleFactor: 1 });
 
 const BAD = /Lua error|abort\(|RuntimeError|Uncaught|Aborted\(/;

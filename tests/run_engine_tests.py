@@ -44,6 +44,10 @@ GOLDEN_DIFF_RATIO = 0.02
 GOLDEN_WINDOW = 16
 GOLDEN_WINDOW_MAX = 64
 
+# 헤드리스(SDL_VIDEODRIVER=dummy)면 소리도 끈다. 씬마다 env 를 os.environ 에서 복사하므로 여기 한 번이면 된다
+if os.environ.get("SDL_VIDEODRIVER") == "dummy" and "SDL_AUDIODRIVER" not in os.environ:
+    os.environ["SDL_AUDIODRIVER"] = "dummy"
+
 PASSES = []
 FAILS = []
 
