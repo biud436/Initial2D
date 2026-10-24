@@ -536,6 +536,10 @@ v2 파일의 `events`(RPG 이벤트)와 `objects`(배치, 픽셀 좌표)는 엔�
 	-- 충돌 레이어 조회 (맵 범위 밖은 항상 false)
 	if Tilemap.IsPassable(map, x, y) then --[[ 이동 ]] end
 
+	-- 타일 애니메이션: 타일셋의 animations 가 있으면 틱마다 경과 시간(ms)을 넘깁니다.
+	-- 부르지 않으면 첫 프레임에 머뭅니다. 씬 로더의 tilemap 타입은 알아서 부릅니다.
+	Tilemap.Update(map, elapsed)
+
 	-- 해제. 타일셋 텍스처는 TextureManager 캐시에 남아 재사용됩니다.
 	Tilemap.Dispose(map)
 ```

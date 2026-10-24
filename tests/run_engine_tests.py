@@ -2132,6 +2132,40 @@ def test_resolution():
           "resolution:100x50" in log3 and "scale:2" in log3, log3[-300:])
 
 
+def write_anim_fixture(work):
+    """1x1 맵과 빨강, 파랑 두 타일의 타일셋. 0번 타일은 프레임 [0, 1], 프레임마다 100ms. broken.json 은 프레임이 비었다."""
+    sheet = Image.new("RGB", (32, 16), (0, 0, 0))
+    for x in range(16):
+        for y in range(16):
+            sheet.putpixel((x, y), (220, 30, 30))
+            sheet.putpixel((16 + x, y), (30, 30, 220))
+    sheet.save(os.path.join(work, "anim_tiles.png"))
+    base = {"version": 2, "name": "anim", "width": 1, "height": 1, "tileWidth": 16, "tileHeight": 16,
+            "layers": [{"name": "ground", "data": [1]}]}
+    good = dict(base, tilesets=[{"image": "./anim_tiles.png", "firstGid": 1, "columns": 2,
+                                 "animations": [{"tile": 0, "frames": [0, 1], "duration": 100}]}])
+    broken = dict(base, tilesets=[{"image": "./anim_tiles.png", "firstGid": 1, "columns": 2,
+                                   "animations": [{"tile": 0, "frames": [], "duration": 100}]}])
+    with open(os.path.join(work, "anim.json"), "w") as f:
+        json.dump(good, f)
+    with open(os.path.join(work, "broken.json"), "w") as f:
+        json.dump(broken, f)
+
+
+def test_tile_animation():
+    """타일셋의 animations: 시계(Tilemap.Update)에 따라 프레임이 바뀌고, 잘못된 animations 는 맵을 읽지 못한다."""
+    print("\n[2a] tile_animation: 타일 애니메이션 (프레임 [0, 1], 100ms)")
+    for ms, frame, color in [(0, 0, (220, 30, 30)), (99, 0, (220, 30, 30)), (150, 1, (30, 30, 220)), (230, 0, (220, 30, 30))]:
+        _, result, shots = run_scene("tile_animation_scene.lua", [10], 12, extra_env={"INITIAL2D_TEST_ANIM_MS": str(ms)},
+                                     prepare=write_anim_fixture)
+        log = result.stdout + result.stderr
+        check(f"{ms}ms: 맵을 읽는다", "anim:load=true" in log, log[-300:])
+        img = shots.get(10)
+        check(f"{ms}ms: 프레임 {frame}", img is not None and near(img.getpixel((40, 40)), color), f"{img.getpixel((40, 40)) if img else None}")
+        if ms == 0:
+            check("빈 프레임 목록은 맵 읽기 오류", "anim:broken=true" in log and "invalid tile animation" in log, log[-300:])
+
+
 def test_rtp_charset():
     """변환된 CharSet의 투명 배경을 엔진 렌더링으로 확인한다 (4단계).
 
@@ -2207,6 +2241,7 @@ def main():
         test_scene_params_lua,
         test_scene_params_mruby,
         test_tilemap_scene,
+        test_tile_animation,
         test_rpg_walk_scene,
         test_rpg_event_scene,
         test_rpg_dialogue_scene,

@@ -164,3 +164,20 @@ collision, tilesets만 읽고 나머지 키를 무시하며, 게임 스크립트
 
 - 선행: 1단계 (JSON 바인딩. 다만 Tilemap이 자체적으로 JSON을 읽으므로 A항목 전체를 기다릴 필요는 없음)
 - 후행: 3단계(포맷 공유), 5단계(통행 판정과 레이어 분할 그리기)
+
+## 타일 애니메이션 (2026-10-24)
+
+타일셋에 `animations`를 두면 타일 하나가 여러 프레임으로 바뀌어 그려진다 (물결, 횃불). Tiled의 타일 애니메이션과 같은 뜻이고,
+RPG가 아닌 타일맵 게임에도 쓰는 기능이라 엔진 코어에 둔다. 에디터의 RPG Maker 2000 타일맵 확장이 ChipSet의 물과 애니메이션
+타일을 이것으로 내보낸다.
+
+```json
+{ "image": "resources/tiles/world.rm2k.png", "firstGid": 1, "columns": 16,
+  "animations": [ { "tile": 0, "frames": [0, 1, 2, 1], "duration": 133 } ] }
+```
+
+- `tile`은 타일셋 안의 번호(0부터)이고, 맵에는 이 번호의 gid가 적힌다. `frames`는 차례로 그릴 번호, `duration`은 프레임마다의 ms다.
+- 시계는 스크립트가 틱마다 넘기는 경과 시간이다 (`Tilemap.Update(map, elapsed)`, Ruby `map.update(elapsed)`). 그래서 같은 틱 수면
+  같은 프레임이고 골든 스크린샷이 흔들리지 않는다. 부르지 않으면 첫 프레임에 머문다. 씬 로더의 `tilemap` 타입은 틱마다 부른다.
+- `frames`가 비었거나, `duration`이 1보다 작거나, 번호가 음수면 맵을 읽지 못한다 (`invalid tile animation`).
+- `GetTileId`는 맵에 적힌 gid를 돌려준다 (지금 그려지는 프레임이 아니다).

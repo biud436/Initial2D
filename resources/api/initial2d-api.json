@@ -871,6 +871,13 @@
           "rubyKind": "predicate"
         },
         {
+          "lua": "Update", "ruby": "update",
+          "params": [{ "name": "elapsed", "type": "number", "doc": "지난 틱의 경과 시간 (ms)" }],
+          "returns": "nil",
+          "doc": "타일셋의 애니메이션(animations) 시계를 진행 (부르지 않으면 첫 프레임). 씬 로더의 tilemap 타입은 틱마다 부른다",
+          "rubyKind": "method"
+        },
+        {
           "lua": "Dispose", "ruby": "dispose",
           "params": [],
           "returns": "nil",
