@@ -4,7 +4,7 @@
 # 사용법:
 #   tests/run_all.sh                  # 빌드 + C++ 단위 + Lua 단위 + 픽셀 검증 + 브리지 + RTP
 #   tests/run_all.sh --update-golden  # 골든 스크린샷 갱신 (변경을 눈으로 확인 후 커밋)
-#   SDL_VIDEODRIVER= tests/run_all.sh # 실제 창을 띄워 실행 (기본은 헤드리스)
+#   SDL_VIDEODRIVER= tests/run_all.sh # 실제 창을 띄워 실행 (기본은 헤드리스, 헤드리스는 소리도 끈다)
 #
 # 기본은 헤드리스(SDL_VIDEODRIVER=dummy)다 — 테스트가 개발자 화면에 창을 껐다 켰다
 # 하지 않게 하고, CI와 같은 경로(소프트웨어 렌더러)로 돌린다. 골든 허용 오차는
@@ -16,6 +16,10 @@ cd "$(dirname "$0")/.."
 
 if [ -z "${SDL_VIDEODRIVER+x}" ]; then
   export SDL_VIDEODRIVER=dummy
+fi
+# 헤드리스면 소리도 끈다 (검증 씬의 음악과 효과음이 개발자 스피커로 나가지 않게). 정해 두었으면 그 값을 쓴다
+if [ "${SDL_VIDEODRIVER}" = "dummy" ] && [ -z "${SDL_AUDIODRIVER+x}" ]; then
+  export SDL_AUDIODRIVER=dummy
 fi
 
 echo "== [1/6] 빌드 =="
