@@ -57,7 +57,8 @@ Tilemap::Tilemap() :
 	_width(0),
 	_height(0),
 	_tileWidth(0),
-	_tileHeight(0)
+	_tileHeight(0),
+	_clockMs(0)
 {
 }
 
@@ -141,6 +142,42 @@ bool Tilemap::load(const std::string& path)
 		if (tileset.image.empty() || tileset.firstGid < 1 || tileset.columns < 1) {
 			return fail("invalid tileset entry in " + normalized);
 		}
+		const Json::Value& animationsNode = tilesetNode["animations"];
+		if (!animationsNode.isNull()) {
+			if (!animationsNode.isArray()) {
+				return fail("tileset animations must be an array in " + normalized);
+			}
+			for (const Json::Value& animNode : animationsNode) {
+				const int tile = animNode["tile"].asInt();
+				const int duration = animNode["duration"].asInt();
+				const int count = animNode.isMember("count") ? animNode["count"].asInt() : 1;
+				const Json::Value& framesNode = animNode["frames"];
+				if (tile < 0 || duration < 1 || count < 1 || !framesNode.isArray() || framesNode.empty()) {
+					return fail("invalid tile animation in " + normalized);
+				}
+				// 범위는 겹치지 않는다 (한 타일의 프레임은 하나로 정해진다)
+				const auto next = tileset.animations.lower_bound(tile);
+				if (next != tileset.animations.end() && next->first < tile + count) {
+					return fail("overlapping tile animations in " + normalized);
+				}
+				if (next != tileset.animations.begin()) {
+					const auto prev = std::prev(next);
+					if (prev->first + prev->second.count > tile) {
+						return fail("overlapping tile animations in " + normalized);
+					}
+				}
+				Animation animation;
+				animation.durationMs = duration;
+				animation.count = count;
+				for (const Json::Value& frame : framesNode) {
+					if (!frame.isInt() || frame.asInt() < 0) {
+						return fail("invalid tile animation frame in " + normalized);
+					}
+					animation.frames.push_back(frame.asInt());
+				}
+				tileset.animations[tile] = std::move(animation);
+			}
+		}
 		tileset.textureId = Platform::NormalizePath(tileset.image);
 		if (!TheTextureManager.valid(tileset.textureId)) {
 			if (!TheTextureManager.Load(tileset.image, tileset.textureId, 0)) {
@@ -161,6 +198,7 @@ bool Tilemap::load(const std::string& path)
 	_layers = std::move(layers);
 	_collision = std::move(collision);
 	_tilesets = std::move(tilesets);
+	_clockMs = 0;
 	_lastError.clear();
 	return true;
 }
@@ -198,6 +236,34 @@ bool Tilemap::setTileId(int x, int y, int layer, int gid)
 	}
 	_layers[layer].data[static_cast<size_t>(y) * _width + x] = gid;
 	return true;
+}
+
+void Tilemap::update(int elapsedMs)
+{
+	if (elapsedMs > 0) {
+		_clockMs += elapsedMs;
+	}
+}
+
+int Tilemap::animatedGid(int gid) const
+{
+	const Tileset* tileset = findTileset(gid);
+	if (tileset == nullptr || tileset->animations.empty()) {
+		return gid;
+	}
+	const int local = gid - tileset->firstGid;
+	auto it = tileset->animations.upper_bound(local);
+	if (it == tileset->animations.begin()) {
+		return gid;
+	}
+	--it;
+	const Animation& animation = it->second;
+	if (local >= it->first + animation.count) {
+		return gid;
+	}
+	const long long step = _clockMs / animation.durationMs;
+	const int frame = animation.frames[static_cast<size_t>(step % static_cast<long long>(animation.frames.size()))];
+	return tileset->firstGid + frame + (local - it->first);
 }
 
 bool Tilemap::isPassable(int x, int y) const
@@ -250,11 +316,14 @@ void Tilemap::draw(int layerFrom, int layerTo, int camX, int camY) const
 					continue;
 				}
 				const Tileset* tileset = findTileset(gid);
+				int local = gid - (tileset != nullptr ? tileset->firstGid : 0);
+				if (tileset != nullptr && !tileset->animations.empty()) {
+					local = animatedGid(gid) - tileset->firstGid;
+				}
 				if (tileset == nullptr) {
 					continue;
 				}
 
-				const int local = gid - tileset->firstGid;
 				const int srcX = (local % tileset->columns) * _tileWidth;
 				const int srcY = (local / tileset->columns) * _tileHeight;
 

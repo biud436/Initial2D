@@ -136,6 +136,15 @@ namespace
 		return mrb_bool_value(GetTilemap(mrb, self)->isPassable(static_cast<int>(x), static_cast<int>(y)));
 	}
 
+	/** map.update(elapsed_ms): 타일 애니메이션의 시계를 진행한다 */
+	mrb_value tilemap_update(mrb_state* mrb, mrb_value self)
+	{
+		mrb_float elapsed = 0;
+		mrb_get_args(mrb, "f", &elapsed);
+		GetTilemap(mrb, self)->update(static_cast<int>(elapsed));
+		return mrb_nil_value();
+	}
+
 	mrb_value tilemap_dispose(mrb_state* mrb, mrb_value self)
 	{
 		mrb_data_check_type(mrb, self, &TilemapType);
@@ -170,6 +179,7 @@ void MRuby_DefineTilemap(mrb_state* mrb)
 	mrb_define_method(mrb, cls, "tile_id", MRUBY_GUARD(tilemap_tile_id), MRB_ARGS_REQ(3));
 	mrb_define_method(mrb, cls, "set_tile_id", MRUBY_GUARD(tilemap_set_tile_id), MRB_ARGS_REQ(4));
 	mrb_define_method(mrb, cls, "passable?", MRUBY_GUARD(tilemap_passable), MRB_ARGS_REQ(2));
+	mrb_define_method(mrb, cls, "update", MRUBY_GUARD(tilemap_update), MRB_ARGS_REQ(1));
 	mrb_define_method(mrb, cls, "dispose", MRUBY_GUARD(tilemap_dispose), MRB_ARGS_NONE());
 	mrb_define_method(mrb, cls, "disposed?", MRUBY_GUARD(tilemap_disposed), MRB_ARGS_NONE());
 }

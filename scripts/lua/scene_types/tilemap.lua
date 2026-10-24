@@ -42,6 +42,11 @@ function M.create(obj, scene)
 	obj.mapWidth, obj.mapHeight, obj.tileWidth, obj.tileHeight, obj.layerCount = Tilemap.GetSize(handle)
 end
 
+-- 타일셋의 animations(물결 같은 움직이는 타일)가 틱마다 나아간다
+function M.update(obj, scene, elapsed)
+	Tilemap.Update(obj.tilemap, elapsed)
+end
+
 local function groundLayers(obj)
 	return math.min(math.floor(obj.props.groundLayers or 1), obj.layerCount)
 end

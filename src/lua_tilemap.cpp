@@ -10,6 +10,7 @@
  *  - Tilemap.GetTileId(handle, x, y, layer) -> gid
  *  - Tilemap.SetTileId(handle, x, y, layer, gid) -> boolean
  *  - Tilemap.IsPassable(handle, x, y) -> boolean
+ *  - Tilemap.Update(handle, elapsedMs)   타일 애니메이션의 시계를 진행한다
  *
  * 좌표 규약: x, y는 0 기준 타일 좌표 (맵 데이터·에디터와 동일),
  * layer는 1 기준 인덱스 (Lua 배열 관례). camX, camY는 월드 픽셀.
@@ -37,6 +38,7 @@ LuaObjectToken luaj_Tilemap[LUA_TILEMAP_MEMBERS] = {
 	{ "GetTileId", LUA_METHOD_P1(TilemapGetTileId) },
 	{ "SetTileId", LUA_METHOD_P1(TilemapSetTileId) },
 	{ "IsPassable", LUA_METHOD_P1(TilemapIsPassable) },
+	{ "Update", LUA_METHOD_P1(TilemapUpdate) },
 };
 
 LUA_METHOD(CreateTilemapObject)
@@ -196,4 +198,20 @@ LUA_METHOD(TilemapIsPassable)
 
 	lua_pushboolean(pL, p->isPassable(x, y) ? 1 : 0);
 	return 1;
+}
+
+/**
+ * Tilemap.Update(handle, elapsedMs): 타일 애니메이션의 시계를 elapsedMs 만큼 진행한다.
+ */
+LUA_METHOD(TilemapUpdate)
+{
+	Initial2D::Tilemap* p = ToTilemap(pL, 1);
+
+	if (!p)
+	{
+		return 0;
+	}
+
+	p->update(static_cast<int>(luaL_checknumber(pL, 2)));
+	return 0;
 }

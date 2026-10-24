@@ -430,6 +430,9 @@ class Tilemap
   # 타일 좌표 (x, y)가 통행 가능하면 true (범위 밖은 false)
   def passable?: (Integer x, Integer y) -> bool
 
+  # 타일셋의 애니메이션(animations) 시계를 진행 (부르지 않으면 첫 프레임). 씬 로더의 tilemap 타입은 틱마다 부른다
+  def update: (Numeric elapsed) -> void
+
   # 타일맵 해제 (타일셋 텍스처는 TextureManager 에 남음)
   def dispose: () -> void
 

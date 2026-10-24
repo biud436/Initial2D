@@ -46,6 +46,11 @@ module SceneTypes
         obj.layer_count = map.layer_count
       end
 
+      # 타일셋의 animations(물결 같은 움직이는 타일)가 틱마다 나아간다
+      def update(obj, scene, elapsed)
+        obj.tilemap.update(elapsed)
+      end
+
       def ground_layers(obj)
         [(obj.props["groundLayers"] || 1).floor, obj.layer_count].min
       end
