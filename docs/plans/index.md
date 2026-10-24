@@ -218,3 +218,18 @@ R3 는 [r3-emscripten.md](r3-emscripten.md), R4 는 [r4-dist-build.md](r4-dist-b
 E6 의 안드로이드 스테이징(`InitialEditor/docs/plans/e6-packaging.md` 6절)은 엔진 쪽에 `android/prepare_assets.sh --project`,
 `tools/stage_list.py`, `tools/stage_rules.json` 과 그 검사(`tests/tools/prepare_assets_test.sh`)를 더했다. 인자 없는 실행은
 예전과 같다 (RTP 변환물과 `config.setting` 까지 올린다). C++ 은 그대로다.
+
+## 9. 에디터 완성도 계획의 엔진 짝 (2026-10-24)
+
+에디터는 2026-10-24 저자 판정 뒤로 완성도 계획(`InitialEditor/docs/plans/quality.md`)을 따른다. 목표는 처음 쓰는 사람이
+설명서 없이 플래피버드를 만들어 친구에게 보내는 것이고, 그 길에서 엔진이 채워야 할 것이 아래 여섯이다. 번호는 에디터 문서의
+10절과 같다. 원칙은 그대로다: 플래피버드에도 말이 되는 것은 C++ 코어에, RPG에만 말이 되는 것은 `scripts/*/rpg/`에 둔다.
+
+| 번호 | 내용 | 에디터 짝 | 상태 |
+|---|---|---|---|
+| 엔진 1 | 기본 렌더링: 글자 색과 크기, 색 입히기(`SDL_SetTextureColorMod`), 혼합 모드, 피벗, 뒤집기, 렌더 타깃, 도형. 모두 SDL_Renderer 로 된다 | Q2, Q8 | ⬜ |
+| 엔진 2 | 스프라이트 시트 파일과 애니메이션 클립 (스크립트 층의 로더) | Q3 | ⬜ |
+| 엔진 3 | 내보낸 게임: 실행 파일 위치 기준의 게임 폴더, 게임 이름과 아이콘 | Q4 | ⬜ |
+| 엔진 4 | 저장 데이터 API (데스크톱 `SDL_GetPrefPath`, 웹 IDBFS, 안드로이드 내부 저장소) | Q4 | ⬜ |
+| 엔진 5 | 디버그 채널: 실행 중 값 보기, 일시 정지, Lua 중단점(`lua_sethook`) | Q7 | ⬜ |
+| 엔진 6 | 셰이더를 쓸 수 있는 렌더러. 방식은 저자가 정한다 (에디터 문서 9절) | Q9 | ⬜ |
