@@ -44,6 +44,10 @@ GOLDEN_DIFF_RATIO = 0.02
 GOLDEN_WINDOW = 16
 GOLDEN_WINDOW_MAX = 64
 
+# 헤드리스(SDL_VIDEODRIVER=dummy)면 소리도 끈다. 씬마다 env 를 os.environ 에서 복사하므로 여기 한 번이면 된다
+if os.environ.get("SDL_VIDEODRIVER") == "dummy" and "SDL_AUDIODRIVER" not in os.environ:
+    os.environ["SDL_AUDIODRIVER"] = "dummy"
+
 PASSES = []
 FAILS = []
 
@@ -2132,6 +2136,54 @@ def test_resolution():
           "resolution:100x50" in log3 and "scale:2" in log3, log3[-300:])
 
 
+ANIM_COLORS = [(220, 30, 30), (30, 200, 30), (30, 30, 220), (220, 220, 30), (220, 30, 220), (30, 220, 220)]
+
+
+def write_anim_fixture(work):
+    """3x1 맵(타일 0, 1, 4)과 여섯 색 타일의 타일셋. 0, 1번은 범위 하나(count 2)로 프레임 [0, 2], 4번은 [4, 5], 프레임마다
+    100ms. broken.json 은 프레임이 비었고 overlap.json 은 범위가 겹친다."""
+    sheet = Image.new("RGB", (16 * len(ANIM_COLORS), 16), (0, 0, 0))
+    for i, color in enumerate(ANIM_COLORS):
+        for x in range(16):
+            for y in range(16):
+                sheet.putpixel((16 * i + x, y), color)
+    sheet.save(os.path.join(work, "anim_tiles.png"))
+    base = {"version": 2, "name": "anim", "width": 3, "height": 1, "tileWidth": 16, "tileHeight": 16,
+            "layers": [{"name": "ground", "data": [1, 2, 5]}]}
+
+    def with_animations(animations):
+        return dict(base, tilesets=[{"image": "./anim_tiles.png", "firstGid": 1, "columns": len(ANIM_COLORS),
+                                     "animations": animations}])
+    files = {
+        "anim.json": [{"tile": 0, "count": 2, "frames": [0, 2], "duration": 100},
+                      {"tile": 4, "frames": [4, 5], "duration": 100}],
+        "broken.json": [{"tile": 0, "frames": [], "duration": 100}],
+        "overlap.json": [{"tile": 0, "count": 2, "frames": [0, 2], "duration": 100},
+                         {"tile": 1, "frames": [1, 3], "duration": 100}],
+    }
+    for name, animations in files.items():
+        with open(os.path.join(work, name), "w") as f:
+            json.dump(with_animations(animations), f)
+
+
+def test_tile_animation():
+    """타일셋의 animations: 시계(Tilemap.Update)에 따라 프레임이 바뀌고, 범위(count)의 타일은 같은 만큼 옮겨 간 프레임을 그린다.
+    잘못된 animations 는 맵을 읽지 못한다."""
+    print("\n[2a] tile_animation: 타일 애니메이션 (범위 [0, 2] + i, 한 칸 [4, 5], 100ms)")
+    for ms, frames in [(0, (0, 1, 4)), (99, (0, 1, 4)), (150, (2, 3, 5)), (230, (0, 1, 4))]:
+        _, result, shots = run_scene("tile_animation_scene.lua", [10], 12, extra_env={"INITIAL2D_TEST_ANIM_MS": str(ms)},
+                                     prepare=write_anim_fixture)
+        log = result.stdout + result.stderr
+        check(f"{ms}ms: 맵을 읽는다", "anim:load=true" in log, log[-300:])
+        img = shots.get(10)
+        got = [img.getpixel((64 + 128 * i, 64)) if img else None for i in range(3)]
+        want = [ANIM_COLORS[f] for f in frames]
+        check(f"{ms}ms: 프레임 {frames}", img is not None and all(near(g, w) for g, w in zip(got, want)), f"{got}")
+        if ms == 0:
+            check("빈 프레임 목록은 맵 읽기 오류", "anim:broken=true" in log and "invalid tile animation" in log, log[-300:])
+            check("겹친 범위는 맵 읽기 오류", "anim:overlap=true" in log and "overlapping tile animations" in log, log[-300:])
+
+
 def test_rtp_charset():
     """변환된 CharSet의 투명 배경을 엔진 렌더링으로 확인한다 (4단계).
 
@@ -2207,6 +2259,7 @@ def main():
         test_scene_params_lua,
         test_scene_params_mruby,
         test_tilemap_scene,
+        test_tile_animation,
         test_rpg_walk_scene,
         test_rpg_event_scene,
         test_rpg_dialogue_scene,

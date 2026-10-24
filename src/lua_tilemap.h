@@ -12,5 +12,6 @@ LUA_METHOD(TilemapGetSize);
 LUA_METHOD(TilemapGetTileId);
 LUA_METHOD(TilemapSetTileId);
 LUA_METHOD(TilemapIsPassable);
+LUA_METHOD(TilemapUpdate);
 
 #endif

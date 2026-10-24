@@ -643,6 +643,11 @@ class Tilemap
   # @return [Boolean]
   def passable?(x, y); end
 
+  # 타일셋의 애니메이션(animations) 시계를 진행 (부르지 않으면 첫 프레임). 씬 로더의 tilemap 타입은 틱마다 부른다
+  # @param [Numeric] elapsed 지난 틱의 경과 시간 (ms)
+  # @return [void]
+  def update(elapsed); end
+
   # 타일맵 해제 (타일셋 텍스처는 TextureManager 에 남음)
   # @return [void]
   def dispose; end

@@ -536,6 +536,10 @@ v2 파일의 `events`(RPG 이벤트)와 `objects`(배치, 픽셀 좌표)는 엔�
 	-- 충돌 레이어 조회 (맵 범위 밖은 항상 false)
 	if Tilemap.IsPassable(map, x, y) then --[[ 이동 ]] end
 
+	-- 타일 애니메이션: 타일셋의 animations 가 있으면 틱마다 경과 시간(ms)을 넘깁니다.
+	-- 부르지 않으면 첫 프레임에 머뭅니다. 씬 로더의 tilemap 타입은 알아서 부릅니다.
+	Tilemap.Update(map, elapsed)
+
 	-- 해제. 타일셋 텍스처는 TextureManager 캐시에 남아 재사용됩니다.
 	Tilemap.Dispose(map)
 ```
@@ -1904,8 +1908,11 @@ actor.setPosition(100, 200)
 전체 검수는 스크립트 하나로 실행합니다. C++ 단위 테스트, API 스텁 확인, Lua 단위 테스트, mruby 단위 테스트, 픽셀 검증, 골든 스크린샷 비교, 브리지 서버 테스트, RTP 변환 검증이 순서대로 수행됩니다.
 
 ```bash
-# 빌드부터 전체 테스트까지 한 번에 실행 (기본은 헤드리스라 창을 띄우지 않습니다. CI와 동일)
+# 빌드부터 전체 테스트까지 한 번에 실행 (기본은 헤드리스라 창을 띄우지 않고 소리도 내지 않습니다. CI와 동일)
 tests/run_all.sh
+
+# 러너만 따로 부를 때도 헤드리스면 소리를 끕니다 (SDL_AUDIODRIVER 를 정해 두면 그 값을 씁니다)
+SDL_VIDEODRIVER=dummy python3 tests/run_engine_tests.py --only=assert_scene
 
 # 실제 창을 띄워 실행하고 싶을 때
 SDL_VIDEODRIVER= tests/run_all.sh

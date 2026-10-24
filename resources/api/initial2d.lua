@@ -496,6 +496,11 @@ function Tilemap.SetTileId(handle, x, y, layer, gid) end
 ---@return boolean
 function Tilemap.IsPassable(handle, x, y) end
 
+---타일셋의 애니메이션(animations) 시계를 진행 (부르지 않으면 첫 프레임). 씬 로더의 tilemap 타입은 틱마다 부른다
+---@param handle TilemapHandle
+---@param elapsed number 지난 틱의 경과 시간 (ms)
+function Tilemap.Update(handle, elapsed) end
+
 ---타일맵 해제 (타일셋 텍스처는 TextureManager 에 남음)
 ---@param handle TilemapHandle
 function Tilemap.Dispose(handle) end
