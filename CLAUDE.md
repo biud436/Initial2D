@@ -19,4 +19,4 @@ Lua 스크립트로 게임을 만드는 범용 2D 엔진. Windows(GDI), macOS(SD
 
 - 문서는 한국어로 작성하고, 가운뎃점(·)을 쓰지 않는다 (쉼표나 풀어쓰기).
 - 새 도구나 워크플로우를 만들면 사용법을 docs/뿐 아니라 README.md에도 반드시 정리한다.
-- 커밋 메시지는 **영어**로 작성한다 (타입 접두사 feat:, fix:, docs:, test: 유지). 커밋 끝에 `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>` 푸터를 표시한다. push된 이력은 재작성하지 않는다.
+- 커밋 메시지는 **영어**로 작성한다 (타입 접두사 feat:, fix:, docs:, test: 유지). `Co-Authored-By` 푸터는 붙이지 않는다. 붙여야 할 때는 실제로 작업한 모델 이름을 적는다. push된 이력은 재작성하지 않는다.
