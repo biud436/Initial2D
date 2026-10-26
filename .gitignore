@@ -20,9 +20,6 @@ resources/*.*
 # resources/*.* 에 걸려 커밋되지 않으므로 신선한 체크아웃에서는 없는 것과 같다.
 resources/RTP.zip
 resources/rtp/
-# 에디터의 RPG Maker 2000 타일맵 확장이 ChipSet 으로 구운 아틀라스. 원본 ChipSet 에서 다시 만들고(맵을 열 때 없으면 굽는다),
-# RTP 의 ChipSet 으로 구운 것은 위의 변환 결과와 같이 커밋하지 않는다
-resources/tiles/*.rm2k.png
 lib/*.exe
 
 # User-specific files (MonoDevelop/Xamarin Studio)
