@@ -490,6 +490,15 @@ function Destroy() scene:close() end
   `new(params)` 판정 여섯 가지와 모듈 경로 클래스 찾기 포함). scene_loader 케이스가 Lua 121 에서 208건 (전체 2569건),
   Ruby 126 에서 227건 (전체 2029건). 전체 스위트는 엔진 씬 621 PASS / 0 FAIL, C++ 단위 18, 브리지 25, 템플릿 44,
   스테이징 56 으로 통과했다.
+- **플래피 컴포넌트 (2026-11-03)**: `tests/lua/cases/flappy_components_test.lua` 와
+  `tests/ruby/cases/flappy_components_test.rb` 가 같은 라벨 172건씩. `resources/scenes/flappy.json` 을 진짜 씬으로 열고
+  컴포넌트 함수를 직접 부르며, 입력, 효과음, 종료, 화면 크기(768x896)만 가짜로 바꿔 끼운다 (Lua 는 전역 함수를 갈아 끼우고,
+  Ruby 는 모듈 메서드를 `alias_method` 로 잠시 바꾼다). 보는 것: 공용 규칙(dt 상한, 속도와 간격의 한계, 파이프 높이의 양 끝,
+  판정 상자의 경계 1px, 죽음과 최고 점수, 새 판), 새(대기 부유, 중력, 최대 낙하, 천장, 날갯짓, 자동 시연, 지면 판정 844,
+  추락), 파이프(bg2 와 ground1 사이의 spawn 순서, 흐름, 점수 한 번, 되돌리기, 충돌), 배경과 지면(속도, 게임 오버에 멈춤,
+  2000틱 뒤에도 768 간격), 감독(글자 켜고 끄기, stdout 알림, 0.6초와 1.5초 문턱, 화면 위 1/3 종료, ESC, 900틱 예산),
+  그리고 진짜 `tick` 으로 한 번 날고 두면 56틱 만에 땅에 닿는 것. 규칙을 일부러 틀리게 바꾼 여섯 가지(경계 `<` 를 `<=` 로,
+  점수 표시 빼기, 게임 오버의 지면 흐름, 종료 문턱 0.3초, 속도 상한 330, 이동에 1.01배)가 모두 FAIL 을 냈다.
 - **픽스처**: `tests/fixtures/scenes/sample_v1.json`. 타입 넷 전부, 줄바꿈과 한글이 든 text, 컴포넌트가 움직이는
   node, `resources/maps/sample.json` 위의 tilemap, 루트와 오브젝트 안의 모르는 키 `editorOnly`. 에디터는 이 파일을
   열어 저장하면 같아야 한다 (모르는 키 보존).
@@ -546,6 +555,7 @@ function Destroy() scene:close() end
 - [x] params 픽스처 `tests/fixtures/scenes/params_v1.json`, 예제 컴포넌트 `components/sample/probe`, `drift`, `loose`
       두 언어, 씬 테스트 둘(`test_scene_params_lua`, `test_scene_params_mruby`), 단위 케이스 두 언어
 - [x] `tools/web_stage.py`, `tools/hmr_push.py`, 브리지의 `POST /api/reload` 가 선언 파일을 싣는다, README 「씬 파일과 씬 로더」
+- [x] 플래피 컴포넌트 단위 케이스 두 언어 (2026-11-03): `flappy_components_test.lua`, `.rb`, 9절
 - [ ] 에디터 쪽 E2/E3 가 같은 픽스처를 왕복한다 (InitialEditor 저장소)
 - [ ] 에디터의 인스펙터가 선언 파일로 params 입력 항목을 만들고 5.4절의 문장으로 검사한다 (InitialEditor 저장소)
 - [ ] 텍스트 색 (엔진에 색 인자가 생기면 `color` 를 붙인다)

@@ -39,4 +39,6 @@ MRUBY_TEST_MANIFEST = [
   "scripts/ruby/rbtests/cases/aldebaran_map_objects_test.rb",
   # R1: 씬 로더
   "scripts/ruby/rbtests/cases/scene_loader_test.rb",
+  # 플래피 컴포넌트
+  "scripts/ruby/rbtests/cases/flappy_components_test.rb",
 ]
