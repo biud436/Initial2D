@@ -20,6 +20,10 @@
 
 #include <thread>
 #include <chrono>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include "platform/Env.h"
 
 #ifdef RS_WINDOWS
 extern HWND g_hWnd;
@@ -203,6 +207,67 @@ const int App::GetRenderScale() const
 /**
  * @brief 게임 모듈을 초기화하고 게임 루프를 실행합니다.
  */
+namespace
+{
+	/** list 가 쉼표로 이은 정수 가운데 value 가 있으면 true. */
+	bool ListHas(const char* list, long value)
+	{
+		const char* p = list;
+		while (*p != '\0')
+		{
+			if (std::atol(p) == value)
+			{
+				return true;
+			}
+			while (*p != '\0' && *p != ',') { ++p; }
+			if (*p == ',') { ++p; }
+		}
+		return false;
+	}
+
+	/** 메모리 DC 의 그림(논리 해상도)을 32비트 BMP 파일로 쓴다. */
+	void SaveDcAsBmp(HDC source, int width, int height, const char* path)
+	{
+		BITMAPINFO info;
+		ZeroMemory(&info, sizeof(info));
+		info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+		info.bmiHeader.biWidth = width;
+		info.bmiHeader.biHeight = -height; // 위에서 아래로
+		info.bmiHeader.biPlanes = 1;
+		info.bmiHeader.biBitCount = 32;
+		info.bmiHeader.biCompression = BI_RGB;
+		void* bits = NULL;
+		HDC copyDc = CreateCompatibleDC(source);
+		HBITMAP copy = CreateDIBSection(copyDc, &info, DIB_RGB_COLORS, &bits, NULL, 0);
+		if (copy == NULL || bits == NULL)
+		{
+			DeleteDC(copyDc);
+			return;
+		}
+		HGDIOBJ old = SelectObject(copyDc, copy);
+		BitBlt(copyDc, 0, 0, width, height, source, 0, 0, SRCCOPY);
+		GdiFlush();
+
+		const DWORD imageSize = static_cast<DWORD>(width) * static_cast<DWORD>(height) * 4;
+		BITMAPFILEHEADER file;
+		ZeroMemory(&file, sizeof(file));
+		file.bfType = 0x4D42; // "BM"
+		file.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+		file.bfSize = file.bfOffBits + imageSize;
+		FILE* out = std::fopen(path, "wb");
+		if (out != NULL)
+		{
+			std::fwrite(&file, sizeof(file), 1, out);
+			std::fwrite(&info.bmiHeader, sizeof(BITMAPINFOHEADER), 1, out);
+			std::fwrite(bits, 1, imageSize, out);
+			std::fclose(out);
+		}
+		SelectObject(copyDc, old);
+		DeleteObject(copy);
+		DeleteDC(copyDc);
+	}
+}
+
 int App::Run(int nCmdShow)
 {
 	MSG Message;
@@ -223,13 +288,19 @@ int App::Run(int nCmdShow)
 	
 	RegisterClassEx(&wx);
 
+	// 그리는 영역(클라이언트)이 배율 1의 창 크기가 되도록 테두리와 제목 표시줄을 더한 바깥 크기
+	RECT outer = { 0, 0, this->GetBaseWidth(), this->GetBaseHeight() };
+	AdjustWindowRect(&outer, WS_OVERLAPPEDWINDOW, FALSE);
+	const int outerWidth = outer.right - outer.left;
+	const int outerHeight = outer.bottom - outer.top;
+
 	m_hWnd = CreateWindow(this->GetClassName(),
 		this->GetWindowName(),
 		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		CW_USEDEFAULT, // x
 		CW_USEDEFAULT, // y
-		this->GetWindowWidth(),  // width
-		this->GetWindowHeight(), // height
+		outerWidth,  // width
+		outerHeight, // height
 		0,
 		(HMENU)0,
 		::GetModuleHandle(0),
@@ -245,19 +316,12 @@ int App::Run(int nCmdShow)
 
 	ShowWindow(g_hWnd, nCmdShow);
 
-	std::unique_ptr<RECT> pRect = std::make_unique<RECT>();
-	GetClientRect(g_hWnd, pRect.get());
-	int cw = pRect.get()->right - pRect.get()->left;
-	int ch = pRect.get()->bottom - pRect.get()->top;
-
 	SetWindowPos(g_hWnd, NULL,
-		GetSystemMetrics(SM_CXSCREEN) / 2 - cw / 2,
-		GetSystemMetrics(SM_CYSCREEN) / 2 - ch / 2,
-		GetWindowWidth(),
-		GetWindowHeight(),
+		GetSystemMetrics(SM_CXSCREEN) / 2 - outerWidth / 2,
+		GetSystemMetrics(SM_CYSCREEN) / 2 - outerHeight / 2,
+		outerWidth,
+		outerHeight,
 		SWP_SHOWWINDOW);
-
-	pRect.reset(0);
 
 	Initialize();
 
@@ -271,6 +335,17 @@ int App::Run(int nCmdShow)
 	long tickCount = 0;
 	long fpsElapsedTime = 0;
 
+	// 검증용 (SDL2 판과 같은 이름). GDI 판은 화면을 그리는 횟수가 주사율에 묶이지 않으므로 갱신 틱을 센다.
+	//   INITIAL2D_SCREENSHOT=<경로.bmp>  INITIAL2D_SCREENSHOT_FRAME 의 틱(쉼표 목록, 없으면 120)에 화면을 저장한다.
+	//                                    경로에 %ld 가 있으면 틱 번호로 바꾼다
+	//   INITIAL2D_EXIT_AFTER=<n>         n 틱 뒤에 끝낸다
+	const char* shotPath = Initial2D::Platform::GetEnv("INITIAL2D_SCREENSHOT");
+	const char* shotTicks = Initial2D::Platform::GetEnv("INITIAL2D_SCREENSHOT_FRAME");
+	const char* exitAfter = Initial2D::Platform::GetEnv("INITIAL2D_EXIT_AFTER");
+	const long exitTick = exitAfter != nullptr ? std::atol(exitAfter) : 0;
+	long totalTicks = 0;
+	long shotDoneTick = 0;
+
 	/**
 	 * Game Loop (C++ 11)
 	 * https://www.gamedev.net/forums/topic/690860-60-fps-game-loop-using-stdchrono/
@@ -281,6 +356,13 @@ int App::Run(int nCmdShow)
 		std::chrono::milliseconds elapsedTime(std::chrono::duration_cast<std::chrono::milliseconds>(startTime - endTime));
 		endTime = startTime;
 
+		// 창을 끌거나 멈췄다 돌아온 뒤 한꺼번에 따라잡지 않도록 프레임 시간을 자른다 (SDL2 판과 같다)
+		const long long maxFrameMs = static_cast<long long>(MAX_FRAME_TIME * 1000.0);
+		if (elapsedTime.count() > maxFrameMs)
+		{
+			elapsedTime = std::chrono::milliseconds(maxFrameMs);
+		}
+
 		lag += static_cast<int>(elapsedTime.count());
 
 		if (elapsedTime.count() == 0) 
@@ -290,7 +372,7 @@ int App::Run(int nCmdShow)
 		const int fps = 60;
 		const int lengthOfFrame = 1000 / fps;
 
-		if (PeekMessage(&Message, NULL, 0, 0, PM_REMOVE))
+		while (PeekMessage(&Message, NULL, 0, 0, PM_REMOVE))
 		{
 			if (Message.message == WM_QUIT)
 				done = true;
@@ -304,8 +386,11 @@ int App::Run(int nCmdShow)
 		while (lag >= lengthOfFrame) 
 		{
 			UpdateInput();
-			ObjectUpdate(elapsedTime.count());
+			// 고정 스텝에는 고정 delta 를 넘긴다 (SDL2 판과 같다). 프레임 시간을 넘기면
+			// 화면을 자주 그릴수록 한 스텝의 시간이 줄어 게임이 느려진다
+			ObjectUpdate(lengthOfFrame);
 			lag -= lengthOfFrame;
+			++totalTicks;
 			
 			tickCount++;
 			m_elapsed = 1.0 / elapsedTime.count();
@@ -314,8 +399,36 @@ int App::Run(int nCmdShow)
 		RenderClear();
 		RenderTransform();
 		Render();
+
+		if (shotPath != nullptr)
+		{
+			for (long tick = shotDoneTick + 1; tick <= totalTicks; ++tick)
+			{
+				const bool hit = shotTicks != nullptr ? ListHas(shotTicks, tick) : tick == 120;
+				if (hit)
+				{
+					char path[1024];
+					if (std::strchr(shotPath, '%') != nullptr)
+					{
+						std::snprintf(path, sizeof(path), shotPath, tick);
+					}
+					else
+					{
+						std::snprintf(path, sizeof(path), "%s", shotPath);
+					}
+					SaveDcAsBmp(m_context.currentContext, GetWindowWidth(), GetWindowHeight(), path);
+				}
+			}
+			shotDoneTick = totalTicks;
+		}
+
 		RenderPresent();
 		m_nFPS++;
+
+		if (exitTick > 0 && totalTicks >= exitTick)
+		{
+			done = true;
+		}
 
 		fpsElapsedTime += static_cast<long>(elapsedTime.count());
 
@@ -512,7 +625,8 @@ void App::RenderTransform()
 	RECT rect;
 	SetMapMode(m_context.mainContext, MM_ANISOTROPIC);
 	GetClientRect(g_hWnd, &rect);
-	SetWindowExtEx(m_context.mainContext, WINDOW_WIDTH, WINDOW_HEIGHT, NULL);
+	// 논리 해상도(배율을 나눈 크기)를 창 전체에 맞춘다. RenderPresent 가 이 매핑으로 늘려 그린다
+	SetWindowExtEx(m_context.mainContext, GetWindowWidth(), GetWindowHeight(), NULL);
 	SetViewportExtEx(m_context.mainContext, rect.right, rect.bottom, NULL);
 }
 
@@ -522,7 +636,8 @@ void App::RenderTransform()
 void App::RenderPresent()
 {
 	SetStretchBltMode(m_context.mainContext, COLORONCOLOR);
-	BitBlt(m_context.mainContext, 0, 0, GetWindowWidth(), GetWindowHeight(), m_context.currentContext, 0, 0, SRCCOPY);
+	StretchBlt(m_context.mainContext, 0, 0, GetWindowWidth(), GetWindowHeight(),
+		m_context.currentContext, 0, 0, GetWindowWidth(), GetWindowHeight(), SRCCOPY);
 
 	DeleteObject(SelectObject(m_context.currentContext, m_context.prevSurface)); // 이전 상태로 복원
 	DeleteObject(m_context.currentSurface); // 복사된 DC 삭제

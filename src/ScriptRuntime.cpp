@@ -178,6 +178,11 @@ int Script_Init()
 		std::fprintf(stderr,
 			"mruby: this build has no mruby. Install it (brew install mruby) and run cmake again,\n"
 			"       or select Lua with INITIAL2D_SCRIPT=lua.\n");
+#ifdef RS_WINDOWS
+		// GDI 판은 콘솔이 없어 위 줄이 보이지 않는다
+		MessageBoxA(NULL, "이 빌드에는 mruby 가 없습니다.\ngame.json 의 \"script\" 를 \"lua\" 로 바꾸거나 INITIAL2D_SCRIPT=lua 로 실행하십시오.",
+			"Initial2D", MB_OK | MB_ICONERROR);
+#endif
 		MarkFailed();
 		return 1;
 #endif

@@ -283,8 +283,9 @@ void Tilemap::draw(int layerFrom, int layerTo, int camX, int camY) const
 		return;
 	}
 
-	layerFrom = std::max(layerFrom, 0);
-	layerTo = std::min(layerTo, layerCount() - 1);
+	// (std::max) 꼴은 Windows.h 의 max, min 매크로가 펼쳐지지 않게 한다
+	layerFrom = (std::max)(layerFrom, 0);
+	layerTo = (std::min)(layerTo, layerCount() - 1);
 	if (layerFrom > layerTo) {
 		return;
 	}
@@ -293,10 +294,10 @@ void Tilemap::draw(int layerFrom, int layerTo, int camX, int camY) const
 	const App& app = App::GetInstance();
 	const int screenW = app.GetWindowWidth();
 	const int screenH = app.GetWindowHeight();
-	const int x0 = std::max(0, FloorDiv(camX, _tileWidth));
-	const int y0 = std::max(0, FloorDiv(camY, _tileHeight));
-	const int x1 = std::min(_width - 1, FloorDiv(camX + screenW - 1, _tileWidth));
-	const int y1 = std::min(_height - 1, FloorDiv(camY + screenH - 1, _tileHeight));
+	const int x0 = (std::max)(0, FloorDiv(camX, _tileWidth));
+	const int y0 = (std::max)(0, FloorDiv(camY, _tileHeight));
+	const int x1 = (std::min)(_width - 1, FloorDiv(camX + screenW - 1, _tileWidth));
+	const int y1 = (std::min)(_height - 1, FloorDiv(camY + screenH - 1, _tileHeight));
 
 	TransformData transform;
 	transform.eM11 = 1.0f;
