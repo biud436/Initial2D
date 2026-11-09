@@ -1352,38 +1352,25 @@ INITIAL2D_DEMO_STOP=town INITIAL2D_NO_RTP=1 \
 
 ## Windows (GDI 백엔드, Visual Studio)
 
-Visual Studio에서 `Initial2D.sln`을 열고 빌드합니다. 실행 시 필요한 DLL은 저장소 루트에 포함되어 있습니다.
+Visual Studio 2022 (툴셋 v143)에서 `Initial2D.vcxproj` 를 빌드합니다. 명령줄로는 다음과 같습니다.
+결과는 `lib\Initial2D.exe`(Debug 는 `lib\Initial2D_d.exe`)이고, 실행에 필요한 DLL 과 `scripts`, `resources` 는 저장소 루트에 있습니다.
 
-빌드 시 다음 라이브러리 파일과 DLL 파일이 필요합니다.
+```powershell
+MSBuild Initial2D.vcxproj /m /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v143 /p:SolutionDir=$PWD\
+```
 
-- zlib
-  - libzlib.lib
-  - zlib1.dll
-  - libpng16.lib
+Lua(`lua/*.cpp`), jsoncpp, tinyxml 은 CMake 빌드처럼 소스로 함께 컴파일합니다. 저장소에 가져오기 라이브러리가 없는
+SDL2 와 libpng 는 루트의 `SDL2.dll`, `libpng16-16.dll` 에서 뽑은 내보내기 목록(`external/SDL2/SDL2.def`,
+`external/libpng/libpng16-16.def`)으로 빌드 중에 `lib.exe /def` 가 `SDL2.lib`, `libpng16-16.lib` 를 만듭니다.
+DLL 을 바꾸면 목록도 다시 뽑습니다.
 
-- Msimg32.lib
+```bash
+python3 tools/make_import_def.py SDL2.dll external/SDL2/SDL2.def
+python3 tools/make_import_def.py libpng16-16.dll external/libpng/libpng16-16.def
+```
 
-- SDL2 (zlib license)
-  - SDL2.dll
-  - SDL2.lib
-
-- SDL2 Mixer (zlib license)
-  - SDL2_mixer.dll
-  - SDL2_mixer.lib
-  - native_midi.lib
-  - playmus.lib
-  - playwave.lib
-  - timidity.lib
-  - libFLAC-8.dll
-  - libmodplug-1.dll
-  - libmpg123-0.dll
-  - libogg-0.dll
-  - libvorbis-0.dll
-  - libvorbisfile-3.dll
-
-- TinyXML (zlib license)
-  - tinyxml.lib
-  - OpenAL32.lib
+링크하는 그 밖의 라이브러리는 `external/` 의 `libzlib.lib`, `SDL2_mixer.lib`, `OpenAL32.lib` 와 `lib/SDL2_image.lib`,
+Windows 의 `Msimg32.lib`, `winmm.lib` 입니다.
 
 ## macOS (SDL2 백엔드, CMake)
 

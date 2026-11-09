@@ -1,7 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="packages\v8-v140-x64.7.4.288.11\build\native\v8-v140-x64.props" Condition="Exists('packages\v8-v140-x64.7.4.288.11\build\native\v8-v140-x64.props')" />
-  <Import Project="packages\v8.redist-v140-x64.7.4.288.11\build\native\v8.redist-v140-x64.props" Condition="Exists('packages\v8.redist-v140-x64.7.4.288.11\build\native\v8.redist-v140-x64.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -39,7 +37,16 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="src\File.cpp" />
-    <ClCompile Include="src\FMODSoundManager.cpp" />
+    <ClCompile Include="src\ScriptRuntime.cpp" />
+    <ClCompile Include="src\lua_json.cpp" />
+    <ClCompile Include="src\lua_tilemap.cpp" />
+    <ClCompile Include="src\platform\Utf8.cpp" />
+    <ClCompile Include="lua\*.cpp" />
+    <ClCompile Include="json\Json\jsoncpp.cpp" />
+    <ClCompile Include="external\tinyxml\src\tinystr.cpp" />
+    <ClCompile Include="external\tinyxml\src\tinyxml.cpp" />
+    <ClCompile Include="external\tinyxml\src\tinyxmlerror.cpp" />
+    <ClCompile Include="external\tinyxml\src\tinyxmlparser.cpp" />
     <ClCompile Include="src\Font.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">true</ExcludedFromBuild>
     </ClCompile>
@@ -341,7 +348,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libzlib.lib;libpng16d.lib;SDL2.lib;native_midi.lib;playmus.lib;playwave.lib;timidity.lib;tinyxml_d.lib;SDL2_mixer.lib;Msimg32.lib;OpenAL32.lib;winmm.lib;luaLib_d.lib;json_d.lib;SDL2_image.lib;fmod_vc.lib;fmodL_vc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libzlib.lib;$(IntDir)libpng16-16.lib;$(IntDir)SDL2.lib;SDL2_mixer.lib;SDL2_image.lib;Msimg32.lib;OpenAL32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/NODEFAULTLIB:msvcrt.lib %(AdditionalOptions)</AdditionalOptions>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
@@ -349,26 +356,6 @@
       <Command>
       </Command>
     </CustomBuildStep>
-    <PreBuildEvent>
-      <Command>node tools\copydir.js ./bin/zlib1.dll ./$(Configuration)/zlib1.dll --file
-node tools\copydir.js ./bin/libpng16d.dll  ./$(Configuration)/libpng16d.dll --file 
-node tools\copydir.js ./bin/libFLAC-8.dll  ./$(Configuration)/libFLAC-8.dll --file
-node tools\copydir.js ./bin/libmodplug-1.dll  ./$(Configuration)/libmodplug-1.dll --file
-node tools\copydir.js ./bin/libmpg123-0.dll  ./$(Configuration)/libmpg123-0.dll --file
-node tools\copydir.js ./bin/libogg-0.dll  ./$(Configuration)/libogg-0.dll --file 
-node tools\copydir.js ./bin/libvorbis-0.dll  ./$(Configuration)/libvorbis-0.dll --file 
-node tools\copydir.js ./bin/libvorbisfile-3.dll  ./$(Configuration)/libvorbisfile-3.dll --file 
-node tools\copydir.js ./bin/SDL2.dll  ./$(Configuration)/SDL2.dll --file 
-node tools\copydir.js ./bin/SDL2_mixer.dll  ./$(Configuration)/SDL2_mixer.dll --file 
-node tools\copydir.js ./bin/SDL2_image.dll  ./$(Configuration)/SDL2_image.dll --file
-node tools\copydir.js ./bin/libjpeg-9.dll  ./$(Configuration)/libjpeg-9.dll --file
-node tools\copydir.js ./bin/libpng16-16.dll  ./$(Configuration)/libpng16-16.dll --file
-node tools\copydir.js ./bin/libtiff-5.dll  ./$(Configuration)/libtiff-5.dll --file
-node tools\copydir.js ./bin/libwebp-7.dll  ./$(Configuration)/libwebp-7.dll --file
-node tools\copydir.js ./scripts ./$(Configuration)/scripts --dir
-node tools\copydir.js ./resources ./$(Configuration)/resources --dir</Command>
-      <Message>실행에 필요한 기본 DLL 파일을 복사합니다.</Message>
-    </PreBuildEvent>
     <Lib>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Lib>
@@ -389,7 +376,7 @@ node tools\copydir.js ./resources ./$(Configuration)/resources --dir</Command>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libzlib.lib;libpng16d.lib;SDL2.lib;native_midi.lib;playmus.lib;playwave.lib;timidity.lib;tinyxml_d.lib;SDL2_mixer.lib;Msimg32.lib;OpenAL32.lib;winmm.lib;luaLib_d.lib;json_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libzlib.lib;$(IntDir)libpng16-16.lib;$(IntDir)SDL2.lib;SDL2_mixer.lib;SDL2_image.lib;Msimg32.lib;OpenAL32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/NODEFAULTLIB:msvcrt.lib %(AdditionalOptions)</AdditionalOptions>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
@@ -450,55 +437,13 @@ node tools\copydir.js ./resources ./$(Configuration)/resources --dir</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libzlib.lib;libpng16.lib;SDL2.lib;native_midi.lib;playmus.lib;playwave.lib;timidity.lib;tinyxml.lib;SDL2_mixer.lib;Msimg32.lib;OpenAL32.lib;winmm.lib;luaLib.lib;json.lib;SDL2_image.lib;fmod_vc.lib;fmodL_vc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libzlib.lib;$(IntDir)libpng16-16.lib;$(IntDir)SDL2.lib;SDL2_mixer.lib;SDL2_image.lib;Msimg32.lib;OpenAL32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/NODEFAULTLIB:msvcrt.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <CustomBuildStep>
       <Command>
       </Command>
     </CustomBuildStep>
-    <PreBuildEvent>
-      <Command>node tools\copydir.js ./bin/zlib1.dll ./$(Configuration)/zlib1.dll --file
-node tools\copydir.js ./bin/libpng16.dll  ./$(Configuration)/libpng16.dll --file 
-node tools\copydir.js ./bin/libFLAC-8.dll  ./$(Configuration)/libFLAC-8.dll --file
-node tools\copydir.js ./bin/libmodplug-1.dll  ./$(Configuration)/libmodplug-1.dll --file
-node tools\copydir.js ./bin/libmpg123-0.dll  ./$(Configuration)/libmpg123-0.dll --file
-node tools\copydir.js ./bin/libogg-0.dll  ./$(Configuration)/libogg-0.dll --file 
-node tools\copydir.js ./bin/libvorbis-0.dll  ./$(Configuration)/libvorbis-0.dll --file 
-node tools\copydir.js ./bin/libvorbisfile-3.dll  ./$(Configuration)/libvorbisfile-3.dll --file 
-node tools\copydir.js ./bin/SDL2.dll  ./$(Configuration)/SDL2.dll --file 
-node tools\copydir.js ./bin/SDL2_mixer.dll  ./$(Configuration)/SDL2_mixer.dll --file 
-node tools\copydir.js ./bin/SDL2_image.dll  ./$(Configuration)/SDL2_image.dll --file
-node tools\copydir.js ./bin/libjpeg-9.dll  ./$(Configuration)/libjpeg-9.dll --file
-node tools\copydir.js ./bin/libpng16-16.dll  ./$(Configuration)/libpng16-16.dll --file
-node tools\copydir.js ./bin/libtiff-5.dll  ./$(Configuration)/libtiff-5.dll --file
-node tools\copydir.js ./bin/libwebp-7.dll  ./$(Configuration)/libwebp-7.dll --file
-node tools\copydir.js ./scripts ./$(Configuration)/scripts --dir
-node tools\copydir.js ./resources ./$(Configuration)/resources --dir</Command>
-      <Message>실행에 필요한 기본 DLL 파일을 복사합니다.</Message>
-    </PreBuildEvent>
-    <PostBuildEvent>
-      <Command>node tools\copydir.js ./$(Configuration)/zlib1.dll ./Editor/bin/$(Configuration)/Engine/zlib1.dll --file
-node tools\copydir.js ./$(Configuration)/libpng16.dll ./Editor/bin/$(Configuration)/Engine/libpng16.dll --file 
-node tools\copydir.js ./$(Configuration)/libFLAC-8.dll ./Editor/bin/$(Configuration)/Engine/libFLAC-8.dll --file
-node tools\copydir.js ./$(Configuration)/libmodplug-1.dll ./Editor/bin/$(Configuration)/Engine/libmodplug-1.dll --file
-node tools\copydir.js ./$(Configuration)/libmpg123-0.dll ./Editor/bin/$(Configuration)/Engine/libmpg123-0.dll --file
-node tools\copydir.js ./$(Configuration)/libogg-0.dll ./Editor/bin/$(Configuration)/Engine/libogg-0.dll --file 
-node tools\copydir.js ./$(Configuration)/libvorbis-0.dll ./Editor/bin/$(Configuration)/Engine/libvorbis-0.dll --file 
-node tools\copydir.js ./$(Configuration)/libvorbisfile-3.dll ./Editor/bin/$(Configuration)/Engine/libvorbisfile-3.dll --file 
-node tools\copydir.js ./$(Configuration)/SDL2.dll ./Editor/bin/$(Configuration)/Engine/SDL2.dll --file 
-node tools\copydir.js ./$(Configuration)/SDL2_mixer.dll ./Editor/bin/$(Configuration)/Engine/SDL2_mixer.dll --file 
-node tools\copydir.js ./$(Configuration)/SDL2_image.dll ./Editor/bin/$(Configuration)/Engine/SDL2_image.dll --file
-node tools\copydir.js ./$(Configuration)/libjpeg-9.dll ./Editor/bin/$(Configuration)/Engine/libjpeg-9.dll --file
-node tools\copydir.js ./$(Configuration)/libpng16-16.dll ./Editor/bin/$(Configuration)/Engine/libpng16-16.dll --file
-node tools\copydir.js ./$(Configuration)/libtiff-5.dll ./Editor/bin/$(Configuration)/Engine/libtiff-5.dll --file
-node tools\copydir.js ./$(Configuration)/libwebp-7.dll ./Editor/bin/$(Configuration)/Engine/libwebp-7.dll --file
-node tools\copydir.js ./$(Configuration)/libwebp-7.dll ./Editor/bin/$(Configuration)/Engine/libwebp-7.dll --file
-node tools\copydir.js ./$(Configuration)/scripts ./Editor/bin/$(Configuration)/Engine/scripts --dir
-node tools\copydir.js ./$(Configuration)/resources ./Editor/bin/$(Configuration)/Engine/resources --dir
-node tools\copydir.js ./lib/Initial2D.exe ./Editor/bin/$(Configuration)/Engine/Initial2D.exe --file
-node tools\copydir.js ./lib/Initial2D.pdb ./Editor/bin/$(Configuration)/Engine/Initial2D.pdb --file</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -519,11 +464,17 @@ node tools\copydir.js ./lib/Initial2D.pdb ./Editor/bin/$(Configuration)/Engine/I
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+  <!-- SDL2 와 libpng 의 가져오기 라이브러리는 저장소에 없다 (libpng 의 정적 lib 는 옛 컴파일러의 /GL 이라 링크되지 않는다).
+       루트의 DLL 에서 뽑은 내보내기 목록(tools/make_import_def.py)으로 빌드 중에 만든다 -->
+  <Target Name="Initial2DImportLibraries" BeforeTargets="ClCompile" Condition="'$(Platform)'=='Win32'"
+          Inputs="$(ProjectDir)external\SDL2\SDL2.def;$(ProjectDir)external\libpng\libpng16-16.def"
+          Outputs="$(IntDir)SDL2.lib;$(IntDir)libpng16-16.lib">
     <PropertyGroup>
-      <ErrorText>이 프로젝트는 이 컴퓨터에 없는 NuGet 패키지를 참조합니다. 해당 패키지를 다운로드하려면 NuGet 패키지 복원을 사용하십시오. 자세한 내용은 http://go.microsoft.com/fwlink/?LinkID=322105를 참조하십시오. 누락된 파일은 {0}입니다.</ErrorText>
+      <Initial2DLibExe>$(VCToolsInstallDir)bin\Hostx64\x86\lib.exe</Initial2DLibExe>
+      <Initial2DLibExe Condition="!Exists('$(Initial2DLibExe)')">$(VCToolsInstallDir)bin\Hostx86\x86\lib.exe</Initial2DLibExe>
     </PropertyGroup>
-    <Error Condition="!Exists('packages\v8.redist-v140-x64.7.4.288.11\build\native\v8.redist-v140-x64.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\v8.redist-v140-x64.7.4.288.11\build\native\v8.redist-v140-x64.props'))" />
-    <Error Condition="!Exists('packages\v8-v140-x64.7.4.288.11\build\native\v8-v140-x64.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\v8-v140-x64.7.4.288.11\build\native\v8-v140-x64.props'))" />
+    <MakeDir Directories="$(IntDir)" />
+    <Exec Command="&quot;$(Initial2DLibExe)&quot; /nologo /machine:x86 /def:&quot;$(ProjectDir)external\SDL2\SDL2.def&quot; /out:&quot;$(IntDir)SDL2.lib&quot;" />
+    <Exec Command="&quot;$(Initial2DLibExe)&quot; /nologo /machine:x86 /def:&quot;$(ProjectDir)external\libpng\libpng16-16.def&quot; /out:&quot;$(IntDir)libpng16-16.lib&quot;" />
   </Target>
 </Project>
