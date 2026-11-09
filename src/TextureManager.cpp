@@ -45,7 +45,9 @@ struct libpng_func_group
 	png_structp(*png_create_read_struct) (png_const_charp, png_voidp, png_error_ptr, png_error_ptr);
 	png_infop(*png_create_info_struct) (png_const_structrp);
 	void(*png_destroy_read_struct) (png_structpp, png_infopp, png_infopp);
-	void(*png_init_io) (png_structrp, png_FILE_p);
+	void(*png_set_read_fn) (png_structrp, png_voidp, png_rw_ptr);
+	png_voidp(*png_get_io_ptr) (png_const_structrp);
+	void(*png_error) (png_const_structrp, png_const_charp);
 	void(*png_read_info) (png_structrp, png_inforp);
 	png_uint_32(*png_get_image_width) (png_const_structrp, png_const_inforp);
 	png_uint_32(*png_get_image_height) (png_const_structrp, png_const_inforp);
@@ -92,7 +94,9 @@ int TextureManager_InitPNG()
 	GET_FUNC(png_create_read_struct, png_structp, (png_const_charp, png_voidp, png_error_ptr, png_error_ptr));
 	GET_FUNC(png_create_info_struct, png_infop, (png_const_structrp));
 	GET_FUNC(png_destroy_read_struct, void, (png_structpp, png_infopp, png_infopp));
-	GET_FUNC(png_init_io, void, (png_structrp, png_FILE_p));
+	GET_FUNC(png_set_read_fn, void, (png_structrp, png_voidp, png_rw_ptr));
+	GET_FUNC(png_get_io_ptr, png_voidp, (png_const_structrp));
+	GET_FUNC(png_error, void, (png_const_structrp, png_const_charp));
 	GET_FUNC(png_read_info, void, (png_structrp, png_inforp));
 	GET_FUNC(png_get_image_width, png_uint_32, (png_const_structrp, png_const_inforp));
 	GET_FUNC(png_get_image_height, png_uint_32, (png_const_structrp, png_const_inforp));
@@ -115,6 +119,16 @@ int TextureManager_InitPNG()
 	g_png_func.is_loaded = TRUE;
 
 	return g_png_func.is_loaded;
+}
+
+// libpng DLL 은 실행 파일과 C 런타임이 달라 FILE* 를 받아도 읽지 못한다. 읽기는 실행 파일 쪽 fread 로 한다.
+static void ReadPngFromFile(png_structp png_ptr, png_bytep data, png_size_t length)
+{
+	FILE* fp = static_cast<FILE*>(g_png_func.png_get_io_ptr(png_ptr));
+	if (fread(data, 1, length, fp) != length)
+	{
+		g_png_func.png_error(png_ptr, "read error");
+	}
 }
 
 TextureData::TextureData()
@@ -155,12 +169,11 @@ TextureData* LoadBMP(std::string fileName)
 
 	// 래스터 데이터 취득
 	ReadFile(hFile, pRaster, bhFileHeader.bfSize - bhFileHeader.bfOffBits, &dwRead, NULL);
+	pTextureData->width = ih->bmiHeader.biWidth;
+	pTextureData->height = ih->bmiHeader.biHeight;
 	free(ih);
 	ih = NULL;
 	CloseHandle(hFile);
-
-	pTextureData->width = ih->bmiHeader.biWidth;
-	pTextureData->height = ih->bmiHeader.biHeight;
 
 	return pTextureData;
 
@@ -223,7 +236,7 @@ TextureData* LoadPNG(std::string fileName)
 		return pTextureData;
 	}
 
-	g_png_func.png_init_io(png_ptr, fp);
+	g_png_func.png_set_read_fn(png_ptr, fp, ReadPngFromFile);
 	g_png_func.png_read_info(png_ptr, info_ptr);
 
 	// 이미지의 폭
@@ -333,8 +346,13 @@ TextureData* LoadPNG(std::string fileName)
 			// 4바이트라면,
 			if ((x * 4) % 4 == 0) {
 
-				// 비트 플래그로 RGBA -> ARGB로 변환한다.
-				((UINT32 *)pvBits)[y * width + x] = (px[3]<< 24)|(px[0]<<16)|(px[1]<<8)|(px[2]);
+				// RGBA -> ARGB. AlphaBlend(AC_SRC_ALPHA) 는 미리 곱한 알파를 받으므로 색에 알파를 곱해 둔다
+				// (곱하지 않으면 투명한 흰 픽셀이 흰색으로 더해진다)
+				const UINT32 a = px[3];
+				const UINT32 r = (px[0] * a + 127) / 255;
+				const UINT32 g = (px[1] * a + 127) / 255;
+				const UINT32 b = (px[2] * a + 127) / 255;
+				((UINT32 *)pvBits)[y * width + x] = (a << 24) | (r << 16) | (g << 8) | b;
 
 			}
 		}
@@ -409,6 +427,9 @@ bool TextureManager::Load(std::string fileName, std::string id, HDC *hdc)
 {
 	
 	TextureData *tempTexture = NULL;
+	if (fileName.size() < 4) {
+		return false;
+	}
 	
 	std::string fmt = fileName.substr(fileName.size() - 4, 4);
 
@@ -424,8 +445,8 @@ bool TextureManager::Load(std::string fileName, std::string id, HDC *hdc)
 		tempTexture = LoadBMP(fileName.c_str());
 	}
 
-	// 텍스처가 있으면 텍스처 맵에 복사
-	if (tempTexture->texture != 0) {
+	// 텍스처가 있으면 텍스처 맵에 복사 (읽기에 실패한 로더는 NULL 을 돌려준다)
+	if (tempTexture != NULL && tempTexture->texture != 0) {
 		m_textureMap[id] = tempTexture;
 		return true;
 	}

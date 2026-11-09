@@ -13,6 +13,13 @@
 
 #include "Input.h"
 #include "App.h"
+#include "platform/Env.h"
+
+#include <cstdio>
+#include <cstring>
+#include <sstream>
+#include <string>
+#include <vector>
 
 #ifdef RS_WINDOWS
 extern HWND g_hWnd;
@@ -78,6 +85,59 @@ void Input::setMouseZ(int value)
 #ifdef RS_WINDOWS
 // Win32 키보드/마우스 폴링. SDL2 어댑터는 platform/sdl2/InputSDL2.cpp 참조.
 
+namespace
+{
+	struct TestKeyEvent
+	{
+		long tick;
+		int vk;
+		bool down;
+	};
+
+	/**
+	 * @brief INITIAL2D_TEST_EVENTS 의 키 항목 (처음 부를 때 한 번 읽는다).
+	 *
+	 * "틱:keydown:가상키" 와 "틱:keyup:가상키" 를 쉼표로 잇는다 (예: "120:keydown:39,420:keyup:39" 는
+	 * 120번째 갱신에서 오른쪽 화살표를 누르고 420번째에서 뗀다). 틱은 1부터 센 갱신 횟수다.
+	 * 다른 종류(SDL2 판의 wheel, mousedown)는 건너뛴다.
+	 */
+	const std::vector<TestKeyEvent>& TestKeyEvents()
+	{
+		static std::vector<TestKeyEvent> events;
+		static bool parsed = false;
+		if (parsed)
+		{
+			return events;
+		}
+		parsed = true;
+		const char* spec = Initial2D::Platform::GetEnv("INITIAL2D_TEST_EVENTS");
+		if (spec == nullptr)
+		{
+			return events;
+		}
+		std::stringstream items(spec);
+		std::string item;
+		while (std::getline(items, item, ','))
+		{
+			long tick = 0;
+			char kind[16] = { 0 };
+			int vk = 0;
+			if (std::sscanf(item.c_str(), "%ld:%15[a-z]:%d", &tick, kind, &vk) != 3 || vk <= 0 || vk > 255)
+			{
+				continue;
+			}
+			if (std::strcmp(kind, "keydown") == 0 || std::strcmp(kind, "keyup") == 0)
+			{
+				events.push_back({ tick, vk, std::strcmp(kind, "keydown") == 0 });
+			}
+		}
+		return events;
+	}
+
+	long g_testTick = 0;
+	bool g_testKeys[256] = { false };
+}
+
 void Input::updateKeyboard()
 {
 	memcpy(m_kbOld, m_kbCurrent, sizeof(m_kbOld));
@@ -85,6 +145,23 @@ void Input::updateKeyboard()
 	memset(m_kbMap, 0, sizeof(m_kbMap));
 
 	GetKeyboardState(m_kbCurrent);
+
+	// 검증용 키 입력을 실제 키 상태 위에 덧씌운다 (엔진 안에서만, 다른 창에는 가지 않는다)
+	++g_testTick;
+	for (const TestKeyEvent& e : TestKeyEvents())
+	{
+		if (e.tick == g_testTick)
+		{
+			g_testKeys[e.vk] = e.down;
+		}
+	}
+	for (int i = 0; i < 256; ++i)
+	{
+		if (g_testKeys[i])
+		{
+			m_kbCurrent[i] |= 0x80;
+		}
+	}
 
 	for (int i = 0; i < 256; ++i)
 	{
@@ -132,6 +209,16 @@ void Input::updateMouse()
 	POINT tempPt;
 	GetCursorPos(&tempPt);
 	ScreenToClient(m_hWnd, &tempPt);
+
+	// 화면은 논리 해상도를 창 전체로 늘려 그리므로 마우스도 논리 좌표로 바꾼다 (SDL2 판과 같다)
+	RECT client;
+	GetClientRect(m_hWnd, &client);
+	if (client.right > 0 && client.bottom > 0)
+	{
+		const App& app = App::GetInstance();
+		tempPt.x = tempPt.x * app.GetWindowWidth() / client.right;
+		tempPt.y = tempPt.y * app.GetWindowHeight() / client.bottom;
+	}
 
 	m_mouse.setX(static_cast<float>(tempPt.x));
 	m_mouse.setY(static_cast<float>(tempPt.y));
