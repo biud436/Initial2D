@@ -35,7 +35,7 @@ Initial2D는 **범용 2D 게임 엔진**이다. 플래피버드 같은 게임(�
 | 타일맵 | 맵 포맷 v1과 v2 (JSON, v2는 `events`를 실어 나른다), 다층 렌더러(컬링, 카메라 오프셋, 레이어 분할), `Tilemap.*` Lua API, 샘플 맵과 데모 씬 (2단계에서 재작성) | 오토타일, 4방향 통행 (v2 로드맵) |
 | 오디오 | SDL2_mixer, OGG와 WAV, 페이드와 탐색 | 채널별 볼륨, BGS/ME 구분 |
 | RPG 레이어 | `scripts/lua/rpg/`의 캐릭터, 플레이어 입력, 카메라, 맵 씬, 시드 난수(5단계), 이벤트와 코루틴 실행기(6단계), 스킨 창과 대화창, 선택지(7단계), 리소스 고르기(8단계), 이벤트 커맨드(9단계), 소지품과 소지품 창(10단계). 그리드 이동, y정렬 그리기, 트리거 4종, 맵 전환, 타자 효과와 얼굴 | 메뉴 화면과 씬 스택, 저장과 로드 (v2) |
-| 도구 | HMR 서버(127.0.0.1:5959, `tools/hmr_push.py`), 에디터 브리지 서버(127.0.0.1:5960, `tools/bridge/`), RTP 변환기(`tools/rtp_import.py`, 4단계), 플레이스홀더 생성기(CharSet `tools/generate_charset.py`, 창 스킨 `tools/generate_windowskin.py`, FaceSet `tools/generate_faceset.py`, 타이틀 배경 `tools/generate_title.py`), 비트맵 폰트 굽기(`tools/generate_bmfont.py`) | |
+| 도구 | HMR 서버(127.0.0.1:5959, `tools/hmr_push.py`), 에디터 브리지 서버(127.0.0.1:5960, `tools/bridge/`), RTP 변환기(`tools/rtp_import.py`, 4단계), 플레이스홀더 생성기(CharSet `tools/generate_charset.py`, 창 스킨 `tools/generate_windowskin.py`, FaceSet `tools/generate_faceset.py`, 타이틀 배경 `tools/generate_title.py`), 앱 아이콘(`tools/generate_app_icon.py`), 비트맵 폰트 굽기(`tools/generate_bmfont.py`) | |
 
 ### 에디터 (InitialEditor, 별도 저장소)
 

@@ -1185,6 +1185,10 @@ python3 tools/generate_port_maps.py
 
 # 타이틀 배경 (제목 글자가 그림에 구워집니다. 한글 TTF 필요)
 python3 tools/generate_title.py
+
+# 앱 아이콘 resources/icons/icon.png (512px, 도형만 쓰고 글꼴은 쓰지 않습니다)
+# 엔진이 시작할 때 창 아이콘으로 쓰고, macOS에서는 Dock 아이콘도 됩니다. --size 와 -o 로 다른 크기를 뽑습니다
+python3 tools/generate_app_icon.py
 ```
 
 ## 맵 등록과 여기서 실행
