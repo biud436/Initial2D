@@ -49,6 +49,9 @@ python3 tests/tools/templates_test.py
 # 안드로이드 에셋 스테이징 (android/prepare_assets.sh --project, tools/stage_list.py, tools/stage_rules.json).
 # 규칙 표대로 빠지고 남는가, 스탬프, 인자 없는 실행이 예전과 같은가, web_stage.py 의 목록이 그대로인가
 bash tests/tools/prepare_assets_test.sh
+# Windows 빌드 채널의 맥 서버 (W1, tools/winbuild/server.py). 인증서를 고정한 TLS, 에코, 스냅숏 묶음과
+# 빌드 결과, Windows 가 꺼진 경우. 127.0.0.1 의 빈 포트만 쓰고 Windows 쪽은 Python 가짜 에이전트가 맡는다
+python3 tests/tools/winbuild_test.py
 
 echo ""
 echo "== [4/6] 엔진 씬 테스트 (Lua 단위 + 픽셀 검증 + 골든) =="
