@@ -1372,6 +1372,58 @@ python3 tools/make_import_def.py libpng16-16.dll external/libpng/libpng16-16.def
 링크하는 그 밖의 라이브러리는 `external/` 의 `libzlib.lib`, `SDL2_mixer.lib`, `OpenAL32.lib` 와 `lib/SDL2_image.lib`,
 Windows 의 `Msimg32.lib`, `winmm.lib` 입니다.
 
+### 맥에서 Windows 빌드 채널
+
+맥에서 명령 한 줄로 같은 LAN의 Windows PC에게 빌드를 시키고, 로그와 결과물을 맥으로 받습니다.
+Windows 쪽 클라이언트가 맥의 포트로 접속해 일을 받아 가는 방식이라 Windows는 포트를 열지 않고, Windows가 꺼져 있으면
+맥이 잠시 기다리다가 그렇게 알려 줍니다. 연결은 양쪽이 서로의 인증서를 고정한 TLS 입니다.
+단계와 결정은 [docs/plans/w1-windows-build-channel.md](./docs/plans/w1-windows-build-channel.md)에 있습니다.
+
+처음 한 번은 짝을 맞춥니다. 오가는 것은 공개 인증서와 지문뿐입니다.
+
+```bash
+# 맥: 서버 인증서를 만들고 지문을 확인합니다 (~/.config/initial2d-winbuild)
+python3 tools/winbuild/server.py init
+```
+
+```powershell
+# Windows: client.ps1 과 install.ps1 이 있는 폴더에서. 이 PC 의 인증서를 만들고 PEM 을 출력합니다
+powershell -NoProfile -ExecutionPolicy Bypass -File client.ps1 -Init -ServerHost <맥 주소> -ServerFingerprint <맥의 지문>
+```
+
+```bash
+# 맥: Windows 가 출력한 PEM 을 등록합니다
+python3 tools/winbuild/server.py trust client.pem --name U
+```
+
+```powershell
+# Windows: 로그온할 때마다 클라이언트가 뜨도록 작업 스케줄러에 등록합니다 (관리자 권한은 필요 없습니다)
+powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1
+```
+
+그 다음부터는 맥에서만 합니다.
+
+```bash
+# 작업 트리(커밋하지 않은 변경 포함)를 보내 GDI 엔진을 빌드하고 build/winbuild/gdi-release/lib/Initial2D.exe 로 받습니다
+python3 tools/winbuild/server.py build gdi-release --host <맥 주소>
+
+# Windows 클라이언트가 붙는지, 어떤 레시피를 가졌는지만 봅니다
+python3 tools/winbuild/server.py status --host <맥 주소>
+```
+
+```bash
+# 빌드하고 Windows 에서 띄웁니다. 엔진 창을 찍어 build/winbuild/run-release/screenshot.png 로 받고, 끝나면 닫습니다
+python3 tools/winbuild/server.py build run-release --host <맥 주소>
+
+# 스테이지를 열어 오른쪽으로 걸으며 60틱마다 엔진이 저장한 화면을 받습니다 (build/winbuild/play-stage/)
+python3 tools/winbuild/server.py build play-stage --host <맥 주소>
+```
+
+레시피는 Windows 의 `%LOCALAPPDATA%\Initial2DBuildAgent\recipes.json` 에 있고(`gdi-release`, `gdi-debug`, `selftest`,
+`run-release`, `run-stage`, `play-stage`), 맥은 그 이름만 고를 수 있습니다. 종료 코드는 빌드의 것이고, 클라이언트가 15초 안에
+붙지 않으면(Windows 가 꺼져 있으면) 3 입니다. 클라이언트는 일을 마칠 때마다 스냅숏에 든 `tools/winbuild/client.ps1` 로
+스스로 바뀌고, 기본 레시피도 따라갑니다. 손으로 고친 레시피를 지키려면 그 레시피에 `"managed": false` 를 둡니다.
+
 ## macOS (SDL2 백엔드, CMake)
 
 Homebrew로 의존성을 설치한 뒤 CMake로 빌드합니다.
