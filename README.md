@@ -1415,7 +1415,8 @@ python3 tools/winbuild/server.py status --host <맥 주소>
 # 빌드하고 Windows 에서 띄웁니다. 엔진 창을 찍어 build/winbuild/run-release/screenshot.png 로 받고, 끝나면 닫습니다
 python3 tools/winbuild/server.py build run-release --host <맥 주소>
 
-# 스테이지를 열어 오른쪽으로 걸으며 60틱마다 엔진이 저장한 화면을 받습니다 (build/winbuild/play-stage/)
+# 스테이지를 열어 오른쪽으로 걸으며 60틱부터 180틱까지 15틱마다 엔진이 저장한 화면을 받습니다 (build/winbuild/play-stage/).
+# 띄운 엔진의 종료 코드가 0 이 아니어도 저장된 화면은 받습니다
 python3 tools/winbuild/server.py build play-stage --host <맥 주소>
 ```
 

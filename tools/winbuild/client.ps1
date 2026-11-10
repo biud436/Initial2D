@@ -27,7 +27,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$AgentVersion = '0.2.6'
+$AgentVersion = '0.2.8'
 $Utf8 = New-Object Text.UTF8Encoding($false)
 try { [Console]::OutputEncoding = $Utf8 } catch { }
 
@@ -79,7 +79,7 @@ $DefaultRecipes = @'
       "path": "lib/Initial2D.exe",
       "env": { "INITIAL2D_SCRIPT": "lua", "INITIAL2D_SCENE": "aldebaran", "INITIAL2D_SKIP_INTRO": "1",
                "INITIAL2D_DEBUG": "1", "INITIAL2D_TEST_EVENTS": "60:keydown:39,360:keyup:39",
-               "INITIAL2D_SCREENSHOT": "winbuild-shot-%ld.bmp", "INITIAL2D_SCREENSHOT_FRAME": "60,120,180,240,300,360",
+               "INITIAL2D_SCREENSHOT": "winbuild-shot-%ld.bmp", "INITIAL2D_SCREENSHOT_FRAME": "60,75,90,105,120,135,150,165,180",
                "INITIAL2D_EXIT_AFTER": "400" },
       "until_exit": true,
       "timeout_seconds": 60,
@@ -562,7 +562,7 @@ function Invoke-Launch($Stream, [string]$Repo, $Launch) {
                 foreach ($line in @(Get-Content -LiteralPath $pair[1] -Tail 40 -Encoding UTF8)) { Send-Log $Stream ($pair[0] + ': ' + $line) }
             }
         }
-        if ($proc.ExitCode -ne 0) { throw ('the program exited with code 0x{0:X8}' -f $proc.ExitCode) }
+        # The files are sent even when the exit code is not 0: they show how far the run got.
         if ($Launch.collect) {
             Add-Type -AssemblyName System.Drawing
             foreach ($file in @(Get-ChildItem -Path $Repo -Filter ([string]$Launch.collect) -File | Sort-Object Name)) {
@@ -572,6 +572,7 @@ function Invoke-Launch($Stream, [string]$Repo, $Launch) {
                 Send-FileArtifact $Stream $png ([IO.Path]::GetFileName($png))
             }
         }
+        if ($proc.ExitCode -ne 0) { throw ('the program exited with code 0x{0:X8}' -f $proc.ExitCode) }
         return
     }
     $wait = 8
