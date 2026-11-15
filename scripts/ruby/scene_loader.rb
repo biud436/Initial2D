@@ -45,7 +45,8 @@ module SceneLoader
     "width" => 0, "height" => 0, "frames" => 1, "scale" => 1, "angle" => 0, "opacity" => 255,
     "loop" => true, "startFrame" => 0, "endFrame" => 0, "frameDelay" => DEFAULT_FRAME_DELAY,
   }
-  TEXT_DEFAULTS = { "text" => "", "font" => "" }
+  TEXT_DEFAULTS = { "text" => "", "font" => "", "size" => 0 }
+  BLEND_MODES = ["normal", "add", "multiply"]
 
   SPRITE_NUMBER_KEYS = ["width", "height", "frames", "scale", "angle", "opacity", "startFrame", "endFrame", "frameDelay"]
   SPRITE_INTEGER_KEYS = ["width", "height", "frames", "startFrame", "endFrame", "opacity"]
@@ -487,6 +488,26 @@ module SceneLoader
         end
         loop_v = p["loop"]
         err("props.loop must be a boolean (#{label})") if !loop_v.nil? && loop_v != true && loop_v != false
+        color = p["color"]
+        unless color.nil?
+          err("props.color must be [r, g, b] (#{label})") unless color.is_a?(Array) && color.size == 3
+          color.each_with_index do |c, i|
+            err("props.color[#{i + 1}] must be 0..255 (#{label})") unless c.is_a?(Numeric) && c >= 0 && c <= 255
+          end
+        end
+        pivot = p["pivot"]
+        unless pivot.nil?
+          unless pivot.is_a?(Array) && pivot.size == 2 && pivot.all? { |v| v.is_a?(Numeric) }
+            err("props.pivot must be [x, y] (#{label})")
+          end
+        end
+        ["flipX", "flipY"].each do |k|
+          v = p[k]
+          err("props.#{k} must be a boolean (#{label})") if !v.nil? && v != true && v != false
+        end
+        if !p["blend"].nil? && !BLEND_MODES.include?(p["blend"])
+          err("props.blend must be \"normal\", \"add\" or \"multiply\" (#{label})")
+        end
       elsif type == "text"
         text = p["text"]
         err("props.text must be a string (#{label})") if !text.nil? && !text.is_a?(String) && !text.is_a?(Numeric)
@@ -499,6 +520,11 @@ module SceneLoader
           color.each_with_index do |c, i|
             err("props.color[#{i + 1}] must be 0..255 (#{label})") unless c.is_a?(Numeric) && c >= 0 && c <= 255
           end
+        end
+        size = p["size"]
+        unless size.nil?
+          err("props.size must be an integer (#{label})") unless integer_like?(size)
+          err("props.size must be >= 0 (#{label})") if size < 0
         end
       elsif type_mod != :core && type_hooks(type_mod)[:validate]
         begin
@@ -783,6 +809,24 @@ module SceneLoader
       end
     end
 
+    # 색 입히기, 기준점, 뒤집기, 혼합 모드. 없는 키는 엔진 기본값(원래 색, 왼쪽 위, 그대로, normal)
+    def apply_look(sprite, p)
+      c = p["color"]
+      if c.is_a?(Array)
+        sprite.set_color((c[0] || 255).floor, (c[1] || 255).floor, (c[2] || 255).floor)
+      else
+        sprite.set_color(255, 255, 255)
+      end
+      pv = p["pivot"]
+      if pv.is_a?(Array)
+        sprite.set_pivot((pv[0] || 0).to_f, (pv[1] || 0).to_f)
+      else
+        sprite.set_pivot(0, 0)
+      end
+      sprite.set_flip(p["flipX"] == true, p["flipY"] == true)
+      sprite.blend_mode = BLEND_MODES.include?(p["blend"]) ? p["blend"] : "normal"
+    end
+
     # sprite props -> 엔진 Sprite API. 대응은 계획 문서 4절에 적혀 있다.
     def create_sprite(obj)
       p = obj.props
@@ -810,6 +854,7 @@ module SceneLoader
       sprite.angle = p["angle"].to_f
       sprite.opacity = p["opacity"].floor
       sprite.visible = obj.visible ? true : false
+      apply_look(sprite, p)
       obj.sprite = sprite
       obj.texture = tex_id
       obj.frame_width = w
@@ -863,15 +908,24 @@ module SceneLoader
       s.opacity = opacity
       s.scale = (p["scale"] || 1).to_f
       s.angle = (p["angle"] || 0).to_f
+      apply_look(s, p)
       s.update(obj.animate == false ? 0 : elapsed)
     end
 
     def draw_text(obj)
       p = obj.props
       SceneLoader.use_font(p["font"], obj.id)
-      # 줄바꿈은 엔진의 draw_text 가 처리한다 ("\n" 마다 x 로 돌아가 lineHeight 만큼 내려간다).
-      # props["color"] 는 보존만 한다. 엔진의 비트맵 폰트 API 에 색 인자가 없다 (계획 문서 4절).
+      # 줄바꿈은 엔진의 draw_text 가 처리한다 ("\n" 마다 x 로 돌아가 줄 높이만큼 내려간다).
+      # 글자 색과 크기는 그리는 동안만 바꾸고 기본값(흰색, 폰트 파일의 크기)으로 되돌린다.
+      c = p["color"]
+      if c.is_a?(Array)
+        Graphics.set_text_color((c[0] || 255).floor, (c[1] || 255).floor, (c[2] || 255).floor, (c[3] || 255).floor)
+      end
+      size = (p["size"] || 0).floor
+      Graphics.text_size = size if size > 0
       Graphics.draw_text(obj.x, obj.y, p["text"].to_s)
+      Graphics.set_text_color(255, 255, 255, 255)
+      Graphics.text_size = 0
     end
   end
 end

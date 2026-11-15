@@ -60,6 +60,23 @@ T.run_case("scene_loader") do |t|
   t.check(e && e.include?("scripts"), "scripts 항목은 문자열이어야 한다", e)
   e = fails_with.call { SceneLoader.validate(scene_of.call([{ "id" => "l", "type" => "text", "props" => { "color" => [1, 2] } }])) }
   t.check(e && e.include?("color"), "color 는 [r, g, b] 나 [r, g, b, a]", e)
+  # [검증] 엔진 1 의 sprite 와 text props
+  sprite_err = lambda do |props|
+    fails_with.call { SceneLoader.validate(scene_of.call([{ "id" => "s", "type" => "sprite", "props" => props.merge("image" => "x.png") }])) }
+  end
+  t.check_eq(sprite_err.call({ "color" => [255, 0] }), "scene: props.color must be [r, g, b] (s)", "sprite 의 color 는 [r, g, b]")
+  t.check_eq(sprite_err.call({ "color" => [255, 0, 300] }), "scene: props.color[3] must be 0..255 (s)", "color 는 0..255")
+  t.check_eq(sprite_err.call({ "pivot" => [0.5] }), "scene: props.pivot must be [x, y] (s)", "pivot 은 [x, y]")
+  t.check_eq(sprite_err.call({ "flipX" => 1 }), "scene: props.flipX must be a boolean (s)", "flipX 는 불리언")
+  t.check_eq(sprite_err.call({ "flipY" => "yes" }), "scene: props.flipY must be a boolean (s)", "flipY 는 불리언")
+  t.check_eq(sprite_err.call({ "blend" => "screen" }), 'scene: props.blend must be "normal", "add" or "multiply" (s)',
+             "blend 는 normal, add, multiply")
+  t.check_eq(sprite_err.call({ "color" => [1, 2, 3], "pivot" => [0.5, 1], "flipX" => true, "flipY" => false, "blend" => "add" }), nil,
+             "올바른 color, pivot, flipX, flipY, blend 는 통과")
+  e = fails_with.call { SceneLoader.validate(scene_of.call([{ "id" => "l", "type" => "text", "props" => { "size" => 12.5 } }])) }
+  t.check_eq(e, "scene: props.size must be an integer (l)", "text 의 size 는 정수")
+  e = fails_with.call { SceneLoader.validate(scene_of.call([{ "id" => "l", "type" => "text", "props" => { "size" => -1 } }])) }
+  t.check_eq(e, "scene: props.size must be >= 0 (l)", "text 의 size 는 0 이상")
   e = fails_with.call { SceneLoader.validate(scene_of.call([{ "id" => "m", "type" => "tilemap", "props" => {} }])) }
   t.check(e && e.include?("map"), "확장 타입의 validate 도 불린다 (tilemap 은 map 이 필요)", e)
   e = fails_with.call do
@@ -281,6 +298,22 @@ RUBY
   t.check_eq(sp.sprite.opacity, 200, "tick 이 props.opacity 를 옮긴다 (정수로)")
   t.check_eq(sp.sprite.scale, 3.0, "tick 이 props.scale 을 옮긴다")
   t.check_eq(sp.sprite.angle, 90.0, "tick 이 props.angle 을 옮긴다")
+  # 엔진 1: 색 입히기, 기준점, 뒤집기, 혼합 모드도 매 틱 옮긴다. 없는 키는 엔진 기본값
+  t.check_eq(sp.sprite.color, [255, 255, 255], "color 가 없으면 원래 색")
+  t.check_eq(sp.sprite.blend_mode, :normal, "blend 가 없으면 normal")
+  sp.props["color"] = [10, 20, 30]
+  sp.props["pivot"] = [0.5, 1]
+  sp.props["flipX"] = true
+  sp.props["blend"] = "add"
+  scene.tick(0)
+  t.check_eq(sp.sprite.color, [10, 20, 30], "tick 이 props.color 를 옮긴다")
+  t.check_eq(sp.sprite.pivot, [0.5, 1.0], "tick 이 props.pivot 을 옮긴다")
+  t.check_eq(sp.sprite.flip, [true, false], "tick 이 props.flipX, flipY 를 옮긴다")
+  t.check_eq(sp.sprite.blend_mode, :add, "tick 이 props.blend 를 옮긴다")
+  ["color", "pivot", "flipX", "blend"].each { |k| sp.props.delete(k) }
+  scene.tick(0)
+  t.check(sp.sprite.color == [255, 255, 255] && sp.sprite.pivot == [0.0, 0.0] && sp.sprite.flip == [false, false] &&
+          sp.sprite.blend_mode == :normal, "키를 지우면 엔진 기본값으로 돌아간다")
   handle = sp.sprite
   scene.close
   t.check_eq(TextureManager.valid?("./" + tileset), false, "close 가 텍스처를 놓는다")
@@ -296,6 +329,13 @@ RUBY
   t.check_eq(scene.find("l").props["color"][0], 255, "color 는 props 에 보존된다")
   e = fails_with.call { scene.draw }
   t.check(e.nil?, "text 오브젝트를 그릴 수 있다", e)
+  # 글자 색과 크기는 그리는 동안만 바뀐다
+  scene.find("l").props["size"] = 48
+  Graphics.set_text_color(1, 2, 3, 4)
+  scene.draw
+  t.check_eq(Graphics.text_color, [255, 255, 255, 255], "text 를 그린 뒤 글자 색은 흰색으로 돌아간다")
+  t.check_eq(Graphics.text_size, 32, "text 를 그린 뒤 글자 크기는 폰트 파일의 크기로 돌아간다")
+  t.check_eq(scene.find("num").props["size"], 0, "size 기본 0 (폰트 파일의 크기)")
   scene.close
   e = fails_with.call { SceneLoader.from_hash(scene_of.call([{ "id" => "l", "type" => "text", "props" => { "font" => "resources/fonts/none.fnt" } }])) }
   t.check(e && e.include?("none.fnt"), "없는 폰트는 실패", e)

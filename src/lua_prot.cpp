@@ -368,6 +368,200 @@ int Lua_GetTextWidth(lua_State *pL)
 	return 1;
 }
 
+namespace
+{
+	BYTE ClampColor(lua_Integer v)
+	{
+		if (v < 0) return 0;
+		if (v > 255) return 255;
+		return static_cast<BYTE>(v);
+	}
+
+	// 지금 글자 크기 (줄 높이, 픽셀). 정하지 않았으면 폰트 파일의 줄 높이, 폰트가 없으면 0
+	int CurrentTextSize()
+	{
+		TextureManager &tm = App::GetInstance().GetTextureManager();
+		if (tm.m_textSize > 0)
+		{
+			return tm.m_textSize;
+		}
+		GameFont* pFont = App::GetInstance().GetFont();
+		if (pFont != nullptr && pFont->get() != nullptr && pFont->get()->isValid())
+		{
+			return pFont->get()->getDesc().LineHeight;
+		}
+		return 0;
+	}
+}
+
+/**
+ * SetTextColor(r, g, b [, a])
+ * DrawText 의 글자 색. 기본은 흰색 255, 255, 255, 255. 스크립트가 다시 시작하면 기본으로 돌아간다.
+ */
+int Lua_SetTextColor(lua_State *pL)
+{
+	TextureManager &tm = App::GetInstance().GetTextureManager();
+	tm.m_textColor = Initial2D::Color(
+		ClampColor(luaL_checkinteger(pL, 1)),
+		ClampColor(luaL_checkinteger(pL, 2)),
+		ClampColor(luaL_checkinteger(pL, 3)),
+		ClampColor(luaL_optinteger(pL, 4, 255)));
+	return 0;
+}
+
+/** local r, g, b, a = GetTextColor() */
+int Lua_GetTextColor(lua_State *pL)
+{
+	const Initial2D::Color& c = App::GetInstance().GetTextureManager().m_textColor;
+	lua_pushinteger(pL, c.red);
+	lua_pushinteger(pL, c.green);
+	lua_pushinteger(pL, c.blue);
+	lua_pushinteger(pL, c.alpha);
+	return 4;
+}
+
+/**
+ * SetTextSize(px)
+ * DrawText 와 GetTextWidth 의 글자 크기 (줄 높이, 픽셀). 0 이면 폰트 파일의 크기.
+ * 글리프를 늘여 그리므로 폰트 파일의 크기에서 멀수록 거칠어진다.
+ */
+int Lua_SetTextSize(lua_State *pL)
+{
+	const lua_Integer size = luaL_checkinteger(pL, 1);
+#ifndef RS_WINDOWS
+	App::GetInstance().GetTextureManager().m_textSize = size > 0 ? static_cast<int>(size) : 0;
+#else
+	(void)size; // GDI 판은 폰트 파일의 크기로만 그린다
+#endif
+	return 0;
+}
+
+/** local px = GetTextSize()  -- 지금 글자 크기. 폰트가 없으면 0 */
+int Lua_GetTextSize(lua_State *pL)
+{
+	lua_pushinteger(pL, CurrentTextSize());
+	return 1;
+}
+
+/** DrawRect(x, y, width, height): 테두리 1픽셀. 색은 draw_set_color */
+int Lua_DrawRect(lua_State *pL)
+{
+	const float x = static_cast<float>(luaL_checknumber(pL, 1));
+	const float y = static_cast<float>(luaL_checknumber(pL, 2));
+	const float w = static_cast<float>(luaL_checknumber(pL, 3));
+	const float h = static_cast<float>(luaL_checknumber(pL, 4));
+#ifndef RS_WINDOWS
+	App::GetInstance().GetTextureManager().DrawRect(x, y, w, h, false);
+#else
+	(void)x; (void)y; (void)w; (void)h;
+#endif
+	return 0;
+}
+
+/** FillRect(x, y, width, height): 칠한 사각형. 색은 draw_set_color */
+int Lua_FillRect(lua_State *pL)
+{
+	const float x = static_cast<float>(luaL_checknumber(pL, 1));
+	const float y = static_cast<float>(luaL_checknumber(pL, 2));
+	const float w = static_cast<float>(luaL_checknumber(pL, 3));
+	const float h = static_cast<float>(luaL_checknumber(pL, 4));
+#ifndef RS_WINDOWS
+	App::GetInstance().GetTextureManager().DrawRect(x, y, w, h, true);
+#else
+	(void)x; (void)y; (void)w; (void)h;
+#endif
+	return 0;
+}
+
+/** DrawLine(x1, y1, x2, y2). 색은 draw_set_color */
+int Lua_DrawLine(lua_State *pL)
+{
+	const float x1 = static_cast<float>(luaL_checknumber(pL, 1));
+	const float y1 = static_cast<float>(luaL_checknumber(pL, 2));
+	const float x2 = static_cast<float>(luaL_checknumber(pL, 3));
+	const float y2 = static_cast<float>(luaL_checknumber(pL, 4));
+#ifndef RS_WINDOWS
+	App::GetInstance().GetTextureManager().DrawLine(x1, y1, x2, y2);
+#else
+	(void)x1; (void)y1; (void)x2; (void)y2;
+#endif
+	return 0;
+}
+
+/** DrawCircle(cx, cy, radius): 테두리 1픽셀. 색은 draw_set_color */
+int Lua_DrawCircle(lua_State *pL)
+{
+	const float cx = static_cast<float>(luaL_checknumber(pL, 1));
+	const float cy = static_cast<float>(luaL_checknumber(pL, 2));
+	const float r = static_cast<float>(luaL_checknumber(pL, 3));
+#ifndef RS_WINDOWS
+	App::GetInstance().GetTextureManager().DrawCircle(cx, cy, r, false);
+#else
+	(void)cx; (void)cy; (void)r;
+#endif
+	return 0;
+}
+
+/** FillCircle(cx, cy, radius): 칠한 원. 색은 draw_set_color */
+int Lua_FillCircle(lua_State *pL)
+{
+	const float cx = static_cast<float>(luaL_checknumber(pL, 1));
+	const float cy = static_cast<float>(luaL_checknumber(pL, 2));
+	const float r = static_cast<float>(luaL_checknumber(pL, 3));
+#ifndef RS_WINDOWS
+	App::GetInstance().GetTextureManager().DrawCircle(cx, cy, r, true);
+#else
+	(void)cx; (void)cy; (void)r;
+#endif
+	return 0;
+}
+
+/**
+ * local ok = SetRenderTarget(id)   -- TextureManager.CreateTarget 으로 만든 텍스처에 그린다
+ * SetRenderTarget(nil)             -- 화면으로 돌아간다
+ * 엔진은 매 프레임 Render 가 끝나면 화면으로 되돌린다.
+ */
+int Lua_SetRenderTarget(lua_State *pL)
+{
+	const char* id = lua_isnoneornil(pL, 1) ? "" : luaL_checkstring(pL, 1);
+#ifndef RS_WINDOWS
+	lua_pushboolean(pL, App::GetInstance().GetTextureManager().SetRenderTarget(id));
+#else
+	lua_pushboolean(pL, id[0] == '\0');
+#endif
+	return 1;
+}
+
+/** local id = GetRenderTarget()   -- 화면이면 nil */
+int Lua_GetRenderTarget(lua_State *pL)
+{
+#ifndef RS_WINDOWS
+	const std::string& id = App::GetInstance().GetTextureManager().GetRenderTarget();
+	if (!id.empty())
+	{
+		lua_pushstring(pL, id.c_str());
+		return 1;
+	}
+#endif
+	lua_pushnil(pL);
+	return 1;
+}
+
+/** ClearRenderTarget(r, g, b [, a]): 지금 그리는 곳을 한 색으로 지운다. 화면이면 게임 영역만 */
+int Lua_ClearRenderTarget(lua_State *pL)
+{
+	const BYTE r = ClampColor(luaL_checkinteger(pL, 1));
+	const BYTE g = ClampColor(luaL_checkinteger(pL, 2));
+	const BYTE b = ClampColor(luaL_checkinteger(pL, 3));
+	const BYTE a = ClampColor(luaL_optinteger(pL, 4, 255));
+#ifndef RS_WINDOWS
+	App::GetInstance().GetTextureManager().ClearTarget(r, g, b, a);
+#else
+	(void)r; (void)g; (void)b; (void)a;
+#endif
+	return 0;
+}
+
 int Lua_WindowWidth(lua_State *pL)
 {
 	lua_pushinteger(pL, App::GetInstance().GetWindowWidth());
@@ -533,6 +727,18 @@ int Lua_Init()
 		lua_register(g_pLuaState, "PreparaFont", Lua_PreparaFont);
 		lua_register(g_pLuaState, "DrawText", Lua_DrawText);
 		lua_register(g_pLuaState, "GetTextWidth", Lua_GetTextWidth);
+		lua_register(g_pLuaState, "SetTextColor", Lua_SetTextColor);
+		lua_register(g_pLuaState, "GetTextColor", Lua_GetTextColor);
+		lua_register(g_pLuaState, "SetTextSize", Lua_SetTextSize);
+		lua_register(g_pLuaState, "GetTextSize", Lua_GetTextSize);
+		lua_register(g_pLuaState, "DrawRect", Lua_DrawRect);
+		lua_register(g_pLuaState, "FillRect", Lua_FillRect);
+		lua_register(g_pLuaState, "DrawLine", Lua_DrawLine);
+		lua_register(g_pLuaState, "DrawCircle", Lua_DrawCircle);
+		lua_register(g_pLuaState, "FillCircle", Lua_FillCircle);
+		lua_register(g_pLuaState, "SetRenderTarget", Lua_SetRenderTarget);
+		lua_register(g_pLuaState, "GetRenderTarget", Lua_GetRenderTarget);
+		lua_register(g_pLuaState, "ClearRenderTarget", Lua_ClearRenderTarget);
 		lua_register(g_pLuaState, "WindowWidth", Lua_WindowWidth);
 		lua_register(g_pLuaState, "WindowHeight", Lua_WindowHeight);
 		lua_register(g_pLuaState, "SetRenderScale", Lua_SetRenderScale);

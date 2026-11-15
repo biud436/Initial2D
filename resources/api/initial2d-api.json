@@ -8,7 +8,7 @@
       "name": "Graphics",
       "lua": null,
       "ruby": "Graphics",
-      "doc": "화면 크기, 렌더 배율, 비트맵 폰트 텍스트, 점 그리기 (Lua 는 전역 함수)",
+      "doc": "화면 크기, 렌더 배율, 비트맵 폰트 텍스트와 글자 색과 크기, 점과 도형, 렌더 타깃 (Lua 는 전역 함수)",
       "functions": [
         {
           "lua": "WindowWidth", "ruby": "width",
@@ -82,7 +82,7 @@
           "luaParams": [{ "name": "r", "type": "integer" }, { "name": "g", "type": "integer" }, { "name": "b", "type": "integer" }, { "name": "a", "type": "integer" }],
           "returns": "nil",
           "luaReturns": "number",
-          "doc": "draw_point 의 색 설정 (Lua 는 인자 4개 모두 필요, 0 반환)",
+          "doc": "점과 도형의 색 설정 (Lua 는 인자 4개 모두 필요, 0 반환)",
           "rubyKind": "method"
         },
         {
@@ -91,6 +91,91 @@
           "returns": "nil",
           "luaReturns": "number",
           "doc": "점 1개 그리기 (색은 Lua 는 draw_set_color, Ruby 는 set_color 로 설정, Lua 는 0 반환)",
+          "rubyKind": "method"
+        },
+        {
+          "lua": "SetTextColor", "ruby": "set_text_color",
+          "params": [{ "name": "r", "type": "integer" }, { "name": "g", "type": "integer" }, { "name": "b", "type": "integer" }, { "name": "a", "type": "integer", "optional": true, "default": 255 }],
+          "returns": "nil",
+          "doc": "글자 그리기의 색 (흰 글리프에 곱한다, 기본 255, 255, 255, 255, 스크립트가 다시 시작하면 기본으로)",
+          "rubyKind": "method"
+        },
+        {
+          "lua": "GetTextColor", "ruby": "text_color",
+          "params": [],
+          "returns": "integer[]",
+          "luaReturns": ["integer", "integer", "integer", "integer"],
+          "doc": "글자 색 (r, g, b, a)",
+          "rubyKind": "getter"
+        },
+        {
+          "lua": "SetTextSize", "ruby": "text_size=",
+          "params": [{ "name": "size", "type": "integer", "doc": "줄 높이 (px), 0 이면 폰트 파일의 크기" }],
+          "returns": "nil",
+          "doc": "글자 그리기와 폭 재기의 글자 크기. 글리프를 늘여 그리므로 폰트 파일의 크기에서 멀수록 거칠다 (GDI 판은 무시)",
+          "rubyKind": "setter"
+        },
+        {
+          "lua": "GetTextSize", "ruby": "text_size",
+          "params": [],
+          "returns": "integer",
+          "doc": "지금 글자 크기 (줄 높이, px). 정하지 않았으면 폰트 파일의 줄 높이, 폰트가 없으면 0",
+          "rubyKind": "getter"
+        },
+        {
+          "lua": "DrawRect", "ruby": "draw_rect",
+          "params": [{ "name": "x", "type": "number" }, { "name": "y", "type": "number" }, { "name": "width", "type": "number" }, { "name": "height", "type": "number" }],
+          "returns": "nil",
+          "doc": "사각형 테두리 1픽셀 (색은 Lua 는 draw_set_color, Ruby 는 set_color, 알파 적용)",
+          "rubyKind": "method"
+        },
+        {
+          "lua": "FillRect", "ruby": "fill_rect",
+          "params": [{ "name": "x", "type": "number" }, { "name": "y", "type": "number" }, { "name": "width", "type": "number" }, { "name": "height", "type": "number" }],
+          "returns": "nil",
+          "doc": "칠한 사각형 (색은 Lua 는 draw_set_color, Ruby 는 set_color, 알파 적용)",
+          "rubyKind": "method"
+        },
+        {
+          "lua": "DrawLine", "ruby": "draw_line",
+          "params": [{ "name": "x1", "type": "number" }, { "name": "y1", "type": "number" }, { "name": "x2", "type": "number" }, { "name": "y2", "type": "number" }],
+          "returns": "nil",
+          "doc": "선분 1픽셀 (색은 Lua 는 draw_set_color, Ruby 는 set_color)",
+          "rubyKind": "method"
+        },
+        {
+          "lua": "DrawCircle", "ruby": "draw_circle",
+          "params": [{ "name": "cx", "type": "number" }, { "name": "cy", "type": "number" }, { "name": "radius", "type": "number" }],
+          "returns": "nil",
+          "doc": "원 테두리 1픽셀 (반지름은 반올림한 정수, 색은 Lua 는 draw_set_color, Ruby 는 set_color)",
+          "rubyKind": "method"
+        },
+        {
+          "lua": "FillCircle", "ruby": "fill_circle",
+          "params": [{ "name": "cx", "type": "number" }, { "name": "cy", "type": "number" }, { "name": "radius", "type": "number" }],
+          "returns": "nil",
+          "doc": "칠한 원 (반지름은 반올림한 정수, 색은 Lua 는 draw_set_color, Ruby 는 set_color)",
+          "rubyKind": "method"
+        },
+        {
+          "lua": "SetRenderTarget", "ruby": "set_render_target",
+          "params": [{ "name": "id", "type": "string|nil", "doc": "렌더 타깃으로 만든 텍스처의 id, nil 이면 화면" }],
+          "returns": "boolean",
+          "doc": "이후의 그리기가 들어갈 곳. 렌더 타깃이 아닌 id 면 false. 엔진은 매 프레임 그리기 훅이 끝나면 화면으로 되돌린다",
+          "rubyKind": "method"
+        },
+        {
+          "lua": "GetRenderTarget", "ruby": "render_target",
+          "params": [],
+          "returns": "string|nil",
+          "doc": "지금 그리기가 들어가는 렌더 타깃의 id (화면이면 nil)",
+          "rubyKind": "getter"
+        },
+        {
+          "lua": "ClearRenderTarget", "ruby": "clear",
+          "params": [{ "name": "r", "type": "integer" }, { "name": "g", "type": "integer" }, { "name": "b", "type": "integer" }, { "name": "a", "type": "integer", "optional": true, "default": 255 }],
+          "returns": "nil",
+          "doc": "지금 그리는 곳을 한 색으로 지운다 (화면이면 게임 영역만)",
           "rubyKind": "method"
         }
       ]
@@ -477,6 +562,21 @@
           "returns": "boolean",
           "doc": "id 로 등록된 텍스처가 있으면 true",
           "rubyKind": "predicate"
+        },
+        {
+          "lua": "GetSize", "ruby": "size",
+          "params": [{ "name": "id", "type": "string" }],
+          "returns": "integer[]|nil",
+          "luaReturns": ["integer|nil", "integer"],
+          "doc": "등록한 텍스처의 크기 (width, height, px). 없는 id 면 nil",
+          "rubyKind": "method"
+        },
+        {
+          "lua": "CreateTarget", "ruby": "create_target",
+          "params": [{ "name": "id", "type": "string" }, { "name": "width", "type": "integer" }, { "name": "height", "type": "integer" }],
+          "returns": "boolean",
+          "doc": "그려 넣을 수 있는 빈(투명) 텍스처를 만든다. 같은 id 가 있으면 바꾼다. 스프라이트가 이 id 로 그린다 (GDI 판은 false)",
+          "rubyKind": "method"
         }
       ]
     }
@@ -758,6 +858,69 @@
           "rubyReturns": "Sprite",
           "doc": "소스 사각형 설정 (텍스처에서 잘라 그릴 영역, x, y, width, height 키를 가진 테이블 1개도 허용)",
           "rubyKind": "method"
+        },
+        {
+          "lua": "GetColor", "ruby": "color",
+          "params": [],
+          "returns": "integer[]",
+          "luaReturns": ["integer", "integer", "integer"],
+          "doc": "색 입히기 값 (r, g, b)",
+          "rubyKind": "getter"
+        },
+        {
+          "lua": "SetColor", "ruby": "set_color",
+          "params": [{ "name": "r", "type": "integer" }, { "name": "g", "type": "integer" }, { "name": "b", "type": "integer" }],
+          "returns": "nil",
+          "rubyReturns": "Sprite",
+          "doc": "색 입히기. 텍스처 색에 r/255, g/255, b/255 를 곱한다 (255, 255, 255 가 원래 색, GDI 판은 무시)",
+          "rubyKind": "method"
+        },
+        {
+          "lua": "GetPivot", "ruby": "pivot",
+          "params": [],
+          "returns": "number[]",
+          "luaReturns": ["number", "number"],
+          "doc": "기준점 (칸 안의 비율 x, y)",
+          "rubyKind": "getter"
+        },
+        {
+          "lua": "SetPivot", "ruby": "set_pivot",
+          "params": [{ "name": "x", "type": "number" }, { "name": "y", "type": "number" }],
+          "returns": "nil",
+          "rubyReturns": "Sprite",
+          "doc": "기준점 (칸 안의 비율, 0, 0 은 왼쪽 위, 0.5, 0.5 는 가운데). 위치는 이 점이 놓일 자리이고 회전과 확대의 중심 (GDI 판은 무시)",
+          "rubyKind": "method"
+        },
+        {
+          "lua": "GetFlip", "ruby": "flip",
+          "params": [],
+          "returns": "boolean[]",
+          "luaReturns": ["boolean", "boolean"],
+          "doc": "뒤집기 (좌우, 상하)",
+          "rubyKind": "getter"
+        },
+        {
+          "lua": "SetFlip", "ruby": "set_flip",
+          "params": [{ "name": "x", "type": "boolean" }, { "name": "y", "type": "boolean" }],
+          "returns": "nil",
+          "rubyReturns": "Sprite",
+          "doc": "칸 안에서 좌우(x), 상하(y)로 뒤집는다. 기준점의 자리는 그대로 (GDI 판은 무시)",
+          "rubyKind": "method"
+        },
+        {
+          "lua": "GetBlendMode", "ruby": "blend_mode",
+          "params": [],
+          "returns": "string",
+          "rubyReturns": "symbol",
+          "doc": "혼합 모드 (normal, add, multiply)",
+          "rubyKind": "getter"
+        },
+        {
+          "lua": "SetBlendMode", "ruby": "blend_mode=",
+          "params": [{ "name": "mode", "type": "string", "doc": "normal, add, multiply (Ruby 는 심벌도)" }],
+          "returns": "nil",
+          "doc": "혼합 모드. normal 은 알파 혼합, add 는 더하기(빛), multiply 는 곱하기(그림자, 색 필터). 다른 값은 오류 (GDI 판은 무시)",
+          "rubyKind": "setter"
         },
         {
           "lua": "Dispose", "ruby": "dispose",

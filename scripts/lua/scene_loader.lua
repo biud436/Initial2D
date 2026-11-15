@@ -39,7 +39,8 @@ local SPRITE_DEFAULTS = {
 	width = 0, height = 0, frames = 1, scale = 1, angle = 0, opacity = 255,
 	loop = true, startFrame = 0, endFrame = 0, frameDelay = SceneLoader.DEFAULT_FRAME_DELAY,
 }
-local TEXT_DEFAULTS = { text = "", font = "" }
+local TEXT_DEFAULTS = { text = "", font = "", size = 0 }
+local BLEND_MODES = { normal = true, add = true, multiply = true }
 
 local registeredTypes = {}   -- 코드로 등록한 확장 타입 (이름 -> 모듈)
 local loadedTypes = {}       -- 파일에서 읽은 확장 타입 (이름 -> 모듈)
@@ -446,6 +447,30 @@ local function validateObject(spec, index, ids, allowNoId)
 		if p.loop ~= nil and type(p.loop) ~= "boolean" then
 			return string.format("props.loop must be a boolean (%s)", label)
 		end
+		if p.color ~= nil then
+			if type(p.color) ~= "table" or #p.color ~= 3 then
+				return string.format("props.color must be [r, g, b] (%s)", label)
+			end
+			for i = 1, 3 do
+				if type(p.color[i]) ~= "number" or p.color[i] < 0 or p.color[i] > 255 then
+					return string.format("props.color[%d] must be 0..255 (%s)", i, label)
+				end
+			end
+		end
+		if p.pivot ~= nil then
+			if type(p.pivot) ~= "table" or #p.pivot ~= 2
+					or type(p.pivot[1]) ~= "number" or type(p.pivot[2]) ~= "number" then
+				return string.format("props.pivot must be [x, y] (%s)", label)
+			end
+		end
+		for _, k in ipairs({ "flipX", "flipY" }) do
+			if p[k] ~= nil and type(p[k]) ~= "boolean" then
+				return string.format("props.%s must be a boolean (%s)", k, label)
+			end
+		end
+		if p.blend ~= nil and not BLEND_MODES[p.blend] then
+			return string.format('props.blend must be "normal", "add" or "multiply" (%s)', label)
+		end
 	elseif spec.type == "text" then
 		if p.text ~= nil and type(p.text) ~= "string" and type(p.text) ~= "number" then
 			return string.format("props.text must be a string (%s)", label)
@@ -461,6 +486,14 @@ local function validateObject(spec, index, ids, allowNoId)
 				if type(p.color[i]) ~= "number" or p.color[i] < 0 or p.color[i] > 255 then
 					return string.format("props.color[%d] must be 0..255 (%s)", i, label)
 				end
+			end
+		end
+		if p.size ~= nil then
+			if type(p.size) ~= "number" or not isInteger(p.size) then
+				return string.format("props.size must be an integer (%s)", label)
+			end
+			if p.size < 0 then
+				return string.format("props.size must be >= 0 (%s)", label)
 			end
 		end
 	elseif typeMod ~= "core" and typeMod.validate then
@@ -566,6 +599,24 @@ function Scene:_releaseTexture(path)
 	end
 end
 
+-- 색 입히기, 기준점, 뒤집기, 혼합 모드. 없는 키는 엔진 기본값(원래 색, 왼쪽 위, 그대로, normal)
+local function applyLook(handle, p)
+	local c = p.color
+	if type(c) == "table" then
+		Sprite.SetColor(handle, math.floor(c[1] or 255), math.floor(c[2] or 255), math.floor(c[3] or 255))
+	else
+		Sprite.SetColor(handle, 255, 255, 255)
+	end
+	local pv = p.pivot
+	if type(pv) == "table" then
+		Sprite.SetPivot(handle, pv[1] or 0, pv[2] or 0)
+	else
+		Sprite.SetPivot(handle, 0, 0)
+	end
+	Sprite.SetFlip(handle, p.flipX == true, p.flipY == true)
+	Sprite.SetBlendMode(handle, BLEND_MODES[p.blend] and p.blend or "normal")
+end
+
 -- sprite props -> 엔진 Sprite API. 대응은 계획 문서 4절에 적혀 있다.
 function Scene:_createSprite(obj)
 	local p = obj.props
@@ -597,6 +648,7 @@ function Scene:_createSprite(obj)
 	Sprite.SetAngle(handle, p.angle)
 	Sprite.SetOpacity(handle, math.floor(p.opacity))
 	Sprite.SetVisible(handle, obj.visible and true or false)
+	applyLook(handle, p)
 	obj.sprite = handle
 	obj.texture = texId
 	obj.frameWidth = w
@@ -651,15 +703,25 @@ function Scene:_commitSprite(obj, elapsed)
 	Sprite.SetOpacity(h, opacity)
 	Sprite.SetScale(h, p.scale or 1)
 	Sprite.SetAngle(h, p.angle or 0)
+	applyLook(h, p)
 	Sprite.Update(h, (obj.animate ~= false) and elapsed or 0)
 end
 
 local function drawText(obj)
 	local p = obj.props
 	useFont(p.font, obj.id)
-	-- 줄바꿈은 엔진의 DrawText 가 처리한다 ("\n" 마다 x 로 돌아가 lineHeight 만큼 내려간다).
-	-- props.color 는 보존만 한다. 엔진의 비트맵 폰트 API 에 색 인자가 없다 (계획 문서 4절).
+	-- 줄바꿈은 엔진의 DrawText 가 처리한다 ("\n" 마다 x 로 돌아가 줄 높이만큼 내려간다).
+	-- 글자 색과 크기는 그리는 동안만 바꾸고 기본값(흰색, 폰트 파일의 크기)으로 되돌린다.
+	local c = p.color
+	if type(c) == "table" then
+		SetTextColor(math.floor(c[1] or 255), math.floor(c[2] or 255), math.floor(c[3] or 255),
+			math.floor(c[4] or 255))
+	end
+	local size = math.floor(tonumber(p.size) or 0)
+	if size > 0 then SetTextSize(size) end
 	DrawText(obj.x, obj.y, tostring(p.text))
+	SetTextColor(255, 255, 255, 255)
+	SetTextSize(0)
 end
 
 -- ---------------------------------------------------------------------------

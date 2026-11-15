@@ -58,6 +58,25 @@ function M.run(t)
     t.check(not ok and err:find("scripts"), "scripts 항목은 문자열이어야 한다", err)
     ok, err = SceneLoader.validate(sceneOf({ { id = "l", type = "text", props = { color = { 1, 2 } } } }))
     t.check(not ok and err:find("color"), "color 는 [r, g, b] 나 [r, g, b, a]", err)
+    -- [검증] 엔진 1 의 sprite 와 text props
+    local function spriteErr(props)
+        props.image = "x.png"
+        local okv, errv = SceneLoader.validate(sceneOf({ { id = "s", type = "sprite", props = props } }))
+        return (not okv) and errv or nil
+    end
+    t.check_eq(spriteErr({ color = { 255, 0 } }), "scene: props.color must be [r, g, b] (s)", "sprite 의 color 는 [r, g, b]")
+    t.check_eq(spriteErr({ color = { 255, 0, 300 } }), "scene: props.color[3] must be 0..255 (s)", "color 는 0..255")
+    t.check_eq(spriteErr({ pivot = { 0.5 } }), "scene: props.pivot must be [x, y] (s)", "pivot 은 [x, y]")
+    t.check_eq(spriteErr({ flipX = 1 }), "scene: props.flipX must be a boolean (s)", "flipX 는 불리언")
+    t.check_eq(spriteErr({ flipY = "yes" }), "scene: props.flipY must be a boolean (s)", "flipY 는 불리언")
+    t.check_eq(spriteErr({ blend = "screen" }), 'scene: props.blend must be "normal", "add" or "multiply" (s)',
+        "blend 는 normal, add, multiply")
+    t.check_eq(spriteErr({ color = { 1, 2, 3 }, pivot = { 0.5, 1 }, flipX = true, flipY = false, blend = "add" }), nil,
+        "올바른 color, pivot, flipX, flipY, blend 는 통과")
+    ok, err = SceneLoader.validate(sceneOf({ { id = "l", type = "text", props = { size = 12.5 } } }))
+    t.check_eq(err, "scene: props.size must be an integer (l)", "text 의 size 는 정수")
+    ok, err = SceneLoader.validate(sceneOf({ { id = "l", type = "text", props = { size = -1 } } }))
+    t.check_eq(err, "scene: props.size must be >= 0 (l)", "text 의 size 는 0 이상")
     ok, err = SceneLoader.validate(sceneOf({ { id = "m", type = "tilemap", props = {} } }))
     t.check(not ok and err:find("map"), "확장 타입의 validate 도 불린다 (tilemap 은 map 이 필요)", err)
     ok, err = SceneLoader.validate(sceneOf({
@@ -272,6 +291,29 @@ return M
     t.check_eq(Sprite.GetOpacity(sp.sprite), 200, "tick 이 props.opacity 를 옮긴다 (정수로)")
     t.check_eq(Sprite.GetScale(sp.sprite), 3, "tick 이 props.scale 을 옮긴다")
     t.check_eq(Sprite.GetAngle(sp.sprite), 90, "tick 이 props.angle 을 옮긴다")
+    -- 엔진 1: 색 입히기, 기준점, 뒤집기, 혼합 모드도 매 틱 옮긴다. 없는 키는 엔진 기본값
+    local r, g, b = Sprite.GetColor(sp.sprite)
+    t.check(r == 255 and g == 255 and b == 255, "color 가 없으면 원래 색", r .. "," .. g .. "," .. b)
+    t.check_eq(Sprite.GetBlendMode(sp.sprite), "normal", "blend 가 없으면 normal")
+    sp.props.color = { 10, 20, 30 }
+    sp.props.pivot = { 0.5, 1 }
+    sp.props.flipX = true
+    sp.props.blend = "add"
+    scene:tick(0)
+    r, g, b = Sprite.GetColor(sp.sprite)
+    t.check(r == 10 and g == 20 and b == 30, "tick 이 props.color 를 옮긴다", r .. "," .. g .. "," .. b)
+    local pvx, pvy = Sprite.GetPivot(sp.sprite)
+    t.check(pvx == 0.5 and pvy == 1, "tick 이 props.pivot 을 옮긴다", pvx .. "," .. pvy)
+    local fx, fy = Sprite.GetFlip(sp.sprite)
+    t.check(fx == true and fy == false, "tick 이 props.flipX, flipY 를 옮긴다")
+    t.check_eq(Sprite.GetBlendMode(sp.sprite), "add", "tick 이 props.blend 를 옮긴다")
+    sp.props.color, sp.props.pivot, sp.props.flipX, sp.props.blend = nil, nil, nil, nil
+    scene:tick(0)
+    r, g, b = Sprite.GetColor(sp.sprite)
+    pvx, pvy = Sprite.GetPivot(sp.sprite)
+    fx = Sprite.GetFlip(sp.sprite)
+    t.check(r == 255 and pvx == 0 and pvy == 0 and fx == false and Sprite.GetBlendMode(sp.sprite) == "normal",
+        "키를 지우면 엔진 기본값으로 돌아간다")
     scene:close()
     t.check_eq(TextureManager.IsValid("./" .. TILESET), false, "close 가 텍스처를 놓는다")
 
@@ -285,6 +327,15 @@ return M
     t.check_eq(scene:find("l").props.color[1], 255, "color 는 props 에 보존된다")
     okp, e = pcall(scene.draw, scene)
     t.check(okp, "text 오브젝트를 그릴 수 있다", e)
+    -- 글자 색과 크기는 그리는 동안만 바뀐다
+    scene:find("l").props.size = 48
+    SetTextColor(1, 2, 3, 4)
+    scene:draw()
+    local tr, tg, tb, ta = GetTextColor()
+    t.check(tr == 255 and tg == 255 and tb == 255 and ta == 255, "text 를 그린 뒤 글자 색은 흰색으로 돌아간다",
+        tr .. "," .. tg .. "," .. tb .. "," .. ta)
+    t.check_eq(GetTextSize(), 32, "text 를 그린 뒤 글자 크기는 폰트 파일의 크기로 돌아간다")
+    t.check_eq(scene:find("num").props.size, 0, "size 기본 0 (폰트 파일의 크기)")
     scene:close()
     okp, e = pcall(SceneLoader.fromTable, sceneOf({ { id = "l", type = "text", props = { font = "resources/fonts/none.fnt" } } }))
     t.check(not okp and tostring(e):find("none.fnt", 1, true), "없는 폰트는 실패", e)

@@ -60,14 +60,18 @@
    Ruby 에서 `scripts/ruby/components/bird.rb` 로 풀린다.
 8. sprite 의 props: `image` 필수. `width`, `height` 는 프레임 크기(0 이면 이미지 전체), `frames` 는 프레임 수
    (시트를 가로로 나눈다), `scale`, `angle`(도), `opacity` 0..255, `loop`, `startFrame`, `endFrame`(0 기준, `endFrame` 0 은
-   한 프레임). 엔진 API 와의 대응은 4절.
-9. text 의 props: `text`(줄바꿈과 한글 가능), `font`(.fnt 경로. 비어 있으면 게임이 준비해 둔 폰트), 선택 `color` [r, g, b, a].
+   한 프레임). 선택 `color` [r, g, b](색 입히기), `pivot` [x, y](기준점, 칸 안의 비율), `flipX`, `flipY`, `blend`
+   (`"normal"`, `"add"`, `"multiply"`). 엔진 API 와의 대응은 4절.
+9. text 의 props: `text`(줄바꿈과 한글 가능), `font`(.fnt 경로. 비어 있으면 게임이 준비해 둔 폰트), 선택 `color` [r, g, b, a],
+   선택 `size`(줄 높이 픽셀, 0 이면 폰트 파일의 크기).
 10. `node` 는 아무것도 그리지 않는다. 컴포넌트를 붙이는 자리다.
 11. `params` 는 컴포넌트 매개변수다. 컴포넌트 논리 이름에서 값 객체로 가는 객체이고, 기본은 없음이다.
     매개변수의 선언 파일, 로더의 의미, 검사는 5.4절. 2026-09-28 에 더한 키이며 포맷은 그대로 v1 이다
     (예전 로더는 모르는 키로 무시했다).
 
-**계약에 더한 것 하나**: sprite 의 `frameDelay` (ms, 기본 100). 엔진의 프레임 지연 기본값이 0 이라 애니메이션이
+**계약에 더한 것**: sprite 의 `color`, `pivot`, `flipX`, `flipY`, `blend` 와 text 의 `size` (2026-11-15, 엔진 1,
+[engine1-render-basics.md](engine1-render-basics.md)). 포맷은 그대로 v1 이고 예전 로더는 모르는 키로 무시한다.
+그리고 sprite 의 `frameDelay` (ms, 기본 100). 엔진의 프레임 지연 기본값이 0 이라 애니메이션이
 매 틱 넘어가 버리므로 파일에서 정할 수 있게 했다. 없으면 100 이다. 에디터는 이 키를 모르는 키로 보존해도 되고
 칸으로 노출해도 된다.
 
@@ -96,8 +100,13 @@
 | width, height, frames, startFrame, endFrame, opacity 가 정수가 아니다 | `scene: props.<key> must be an integer (<id>)` |
 | frames < 1, width/height < 0, startFrame/endFrame < 0, opacity 밖 | `scene: props.frames must be >= 1 (<id>)` 등 |
 | loop 가 불리언이 아니다 | `scene: props.loop must be a boolean (<id>)` |
+| sprite 의 color 가 [r, g, b] 가 아니거나 0..255 밖 | `scene: props.color must be [r, g, b] (<id>)`, `scene: props.color[<i>] must be 0..255 (<id>)` |
+| pivot 이 숫자 둘의 배열이 아니다 | `scene: props.pivot must be [x, y] (<id>)` |
+| flipX, flipY 가 불리언이 아니다 | `scene: props.flipX must be a boolean (<id>)` |
+| blend 가 셋 중 하나가 아니다 | `scene: props.blend must be "normal", "add" or "multiply" (<id>)` |
 | text 의 text 가 문자열(또는 숫자)이 아니다, font 가 문자열이 아니다 | `scene: props.text must be a string (<id>)` 등 |
-| color 가 [r, g, b] 나 [r, g, b, a] 가 아니거나 0..255 밖 | `scene: props.color must be [r, g, b] or [r, g, b, a] (<id>)` |
+| text 의 color 가 [r, g, b] 나 [r, g, b, a] 가 아니거나 0..255 밖 | `scene: props.color must be [r, g, b] or [r, g, b, a] (<id>)` |
+| text 의 size 가 정수가 아니거나 0 보다 작다 | `scene: props.size must be an integer (<id>)`, `scene: props.size must be >= 0 (<id>)` |
 | 확장 타입의 검사 (tilemap: map 필수, groundLayers >= 0) | `scene: tilemap needs props.map (<id>)` |
 
 컴포넌트 매개변수(`params`)와 선언 파일의 검사 목록과 메시지는 5.4절의 표에 따로 있다. 같은 `validate` 가 위의
@@ -125,6 +134,7 @@
 | `frameDelay` | `Sprite.SetFrameDelay(ms)` | 기본 100 |
 | `loop` | `Sprite.SetLoop` | |
 | `scale`, `angle`, `opacity` | `SetScale`, `SetAngle`(도), `SetOpacity`(0..255 정수, 소수는 내림) | 만들 때와 **매 틱** |
+| `color`, `pivot`, `flipX`, `flipY`, `blend` | `SetColor`, `SetPivot`, `SetFlip`, `SetBlendMode` | 만들 때와 **매 틱**. 키가 없으면 엔진 기본값(원래 색, 0, 0, 뒤집지 않음, normal) |
 | `x`, `y`, `visible` (오브젝트의 것) | `SetPosition`, `SetVisible` | **매 틱** `obj.x`, `obj.y`, `obj.visible` 을 옮긴다 |
 | 매 틱 | `Sprite.Update(elapsed)` (`obj.animate == false` 면 0) | 트랜스폼 커밋과 애니메이션 |
 | 그리기 | `Sprite.Draw` | `visible` 이 false 면 부르지 않는다 |
@@ -139,7 +149,8 @@
 |---|---|---|
 | `font` | `PreparaFont("./" .. font)` | 엔진의 비트맵 폰트는 **하나뿐**이다. 로더가 지금 준비된 경로를 기억해 다를 때만 다시 읽는다 (열 때와 그릴 때). 비어 있으면 게임이 준비해 둔 폰트를 쓴다. 못 읽으면 오류 |
 | `text` | `DrawText(x, y, tostring(text))` | **줄바꿈은 엔진이 처리한다**: `Font::drawText` 가 `\n` 마다 x 로 돌아가고 y 를 lineHeight(hangul.fnt 는 32) 만큼 내린다. 숫자를 주면 문자열로 바꾼다 |
-| `color` | 적용하지 않는다 | 엔진의 비트맵 폰트 API 에 색 인자가 없다 (SDL 백엔드의 `DrawText` 는 색 변조를 하지 않는다). `props.color` 에 보존되어 컴포넌트가 읽을 수는 있다. 엔진에 텍스트 색이 생기면 로더가 붙인다 (10절) |
+| `color` | `SetTextColor(r, g, b, a)` | 그리는 동안만 바꾸고 흰색으로 되돌린다. 없으면 흰색 |
+| `size` | `SetTextSize(size)` | 0 보다 클 때만 바꾸고 그린 뒤 0(폰트 파일의 크기)으로 되돌린다. 글리프를 늘여 그린다 |
 
 ### 4.3 node
 
@@ -509,7 +520,6 @@ function Destroy() scene:close() end
 - **레이어와 z 순서**: `objects` 의 순서뿐이다. 확장 타입의 아래/위 층은 tilemap 을 위한 것이고 화면 고정 UI 층이 없어
   tilemap 의 위 레이어가 글자를 덮는다 (픽스처의 label 이 장식 없는 띠에 있는 이유).
 - **계층(부모 자식)과 프리팹**: 오브젝트는 평탄하다. 프리팹은 `spawn` 에 표를 넘기는 것으로 대신한다.
-- **텍스트 색과 크기**: 엔진 API 에 없다. `color` 는 보존만 한다.
 - **격자 시트(CharSet)**: `frames` 는 가로 한 줄이다. `columns`/`rows` 는 v2 후보.
 - **소리, 입력, 저장**: 씬 파일에 없다. 컴포넌트가 엔진 API 로 한다.
 - **리소스 고르기**(RTP 유무로 갈리는 논리 이름): 초안 5번의 후반부. v1 은 경로 그대로다.
@@ -558,4 +568,4 @@ function Destroy() scene:close() end
 - [x] 플래피 컴포넌트 단위 케이스 두 언어 (2026-11-03): `flappy_components_test.lua`, `.rb`, 9절
 - [ ] 에디터 쪽 E2/E3 가 같은 픽스처를 왕복한다 (InitialEditor 저장소)
 - [ ] 에디터의 인스펙터가 선언 파일로 params 입력 항목을 만들고 5.4절의 문장으로 검사한다 (InitialEditor 저장소)
-- [ ] 텍스트 색 (엔진에 색 인자가 생기면 `color` 를 붙인다)
+- [x] 텍스트 색 (엔진 1 에서 `color` 와 `size` 를 붙였다, 2026-11-15)

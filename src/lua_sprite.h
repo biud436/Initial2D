@@ -38,5 +38,13 @@ LUA_CLASS(Set, Sprite, Rect);
 LUA_CLASS(Set, Sprite, Loop);
 LUA_CLASS(Set, Sprite, AnimComplete);
 LUA_CLASS(Set, Sprite, SheetGrid);
+LUA_CLASS(Get, Sprite, Color);
+LUA_CLASS(Set, Sprite, Color);
+LUA_CLASS(Get, Sprite, Pivot);
+LUA_CLASS(Set, Sprite, Pivot);
+LUA_CLASS(Get, Sprite, Flip);
+LUA_CLASS(Set, Sprite, Flip);
+LUA_CLASS(Get, Sprite, BlendMode);
+LUA_CLASS(Set, Sprite, BlendMode);
 
 #endif

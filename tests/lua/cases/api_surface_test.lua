@@ -16,6 +16,9 @@ local GLOBALS = {
     "GetFrameCount", "GameExit",
     "draw_text", "draw_point", "draw_set_color",
     "GetCurrentDirectory", "SetAppIcon", "GetResourcesFiles",
+    "SetTextColor", "GetTextColor", "SetTextSize", "GetTextSize",
+    "DrawRect", "FillRect", "DrawLine", "DrawCircle", "FillCircle",
+    "SetRenderTarget", "GetRenderTarget", "ClearRenderTarget",
 }
 
 local MODULES = {
@@ -26,12 +29,13 @@ local MODULES = {
     Audio = { "PlayMusic", "PlaySound", "SetVolume", "GetVolume",
               "PauseMusic", "StopMusic", "ResumeMusic", "IsPlayingMusic",
               "FadeOutMusic", "SetMusicPosition", "ReleaseMusic" },
-    TextureManager = { "Load", "Remove", "IsValid" },
+    TextureManager = { "Load", "Remove", "IsValid", "GetSize", "CreateTarget" },
     Json = { "Load" },
     Sprite = { "Create", "Update", "Draw", "Dispose", "SetPosition", "GetPosition",
                "SetScale", "SetAngle", "SetVisible", "SetOpacity",
                "SetFrames", "SetCurrentFrame", "SetRect", "SetLoop",
-               "SetSheetGrid", "GetRect" },
+               "SetSheetGrid", "GetRect", "SetColor", "GetColor", "SetPivot", "GetPivot",
+               "SetFlip", "GetFlip", "SetBlendMode", "GetBlendMode" },
 }
 
 -- ---- 명세 대조 (R2) ---------------------------------------------------------

@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <cstring>
 #include "lua_sprite.h"
 #include "Sprite.h"
 
@@ -35,8 +36,28 @@ LuaObjectToken luaj_Sprite[LUA_SPRITE_MEMBERS] = {
 	{ "SetLoop", LUA_METHOD_P1(SetSpriteLoop) },
 	{ "SetAnimComplete", LUA_METHOD_P1(SetSpriteAnimComplete) },
 	{ "SetSheetGrid", LUA_METHOD_P1(SetSpriteSheetGrid) },
+	{ "GetColor", LUA_METHOD_P1(GetSpriteColor) },
+	{ "SetColor", LUA_METHOD_P1(SetSpriteColor) },
+	{ "GetPivot", LUA_METHOD_P1(GetSpritePivot) },
+	{ "SetPivot", LUA_METHOD_P1(SetSpritePivot) },
+	{ "GetFlip", LUA_METHOD_P1(GetSpriteFlip) },
+	{ "SetFlip", LUA_METHOD_P1(SetSpriteFlip) },
+	{ "GetBlendMode", LUA_METHOD_P1(GetSpriteBlendMode) },
+	{ "SetBlendMode", LUA_METHOD_P1(SetSpriteBlendMode) },
 	{ "Dispose", LUA_METHOD_P1(DisposeSprite) },
 };
+
+namespace
+{
+	BYTE ClampByte(lua_Integer v)
+	{
+		if (v < 0) return 0;
+		if (v > 255) return 255;
+		return static_cast<BYTE>(v);
+	}
+
+	const char* const kBlendNames[] = { "normal", "add", "multiply" };
+}
 
 LUA_METHOD(CreateSpriteImpl)
 {
@@ -663,6 +684,150 @@ LUA_CLASS(Set, Sprite, Loop)
 
 	p->setLoop(b == 1);
 
+	return 0;
+}
+
+/**
+ * local r, g, b = Sprite.GetColor(spriteId)
+ */
+LUA_CLASS(Get, Sprite, Color)
+{
+	Sprite* p = (Sprite*)(uintptr_t)lua_tonumber(pL, 1);
+	if (!p)
+	{
+		lua_pushinteger(pL, 255);
+		lua_pushinteger(pL, 255);
+		lua_pushinteger(pL, 255);
+		return 3;
+	}
+	const SpriteData& data = p->getSpriteData();
+	lua_pushinteger(pL, data.red);
+	lua_pushinteger(pL, data.green);
+	lua_pushinteger(pL, data.blue);
+	return 3;
+}
+
+/**
+ * Sprite.SetColor(spriteId, r, g, b)
+ * 색 입히기. 텍스처 색에 r/255, g/255, b/255 를 곱한다. 255, 255, 255 가 원래 색.
+ */
+LUA_CLASS(Set, Sprite, Color)
+{
+	Sprite* p = (Sprite*)(uintptr_t)lua_tonumber(pL, 1);
+	const BYTE r = ClampByte(luaL_checkinteger(pL, 2));
+	const BYTE g = ClampByte(luaL_checkinteger(pL, 3));
+	const BYTE b = ClampByte(luaL_checkinteger(pL, 4));
+	if (p)
+	{
+		p->setColor(r, g, b);
+	}
+	return 0;
+}
+
+/**
+ * local px, py = Sprite.GetPivot(spriteId)
+ */
+LUA_CLASS(Get, Sprite, Pivot)
+{
+	Sprite* p = (Sprite*)(uintptr_t)lua_tonumber(pL, 1);
+	if (!p)
+	{
+		lua_pushnumber(pL, 0);
+		lua_pushnumber(pL, 0);
+		return 2;
+	}
+	const SpriteData& data = p->getSpriteData();
+	lua_pushnumber(pL, data.pivotX);
+	lua_pushnumber(pL, data.pivotY);
+	return 2;
+}
+
+/**
+ * Sprite.SetPivot(spriteId, px, py)
+ * 기준점 (칸 안의 비율, 0, 0 은 왼쪽 위, 0.5, 0.5 는 가운데). 위치는 이 점이 놓일 자리이고
+ * 회전과 확대의 중심이다.
+ */
+LUA_CLASS(Set, Sprite, Pivot)
+{
+	Sprite* p = (Sprite*)(uintptr_t)lua_tonumber(pL, 1);
+	const float px = static_cast<float>(luaL_checknumber(pL, 2));
+	const float py = static_cast<float>(luaL_checknumber(pL, 3));
+	if (p)
+	{
+		p->setPivot(px, py);
+	}
+	return 0;
+}
+
+/**
+ * local flipX, flipY = Sprite.GetFlip(spriteId)
+ */
+LUA_CLASS(Get, Sprite, Flip)
+{
+	Sprite* p = (Sprite*)(uintptr_t)lua_tonumber(pL, 1);
+	if (!p)
+	{
+		lua_pushboolean(pL, 0);
+		lua_pushboolean(pL, 0);
+		return 2;
+	}
+	const SpriteData& data = p->getSpriteData();
+	lua_pushboolean(pL, data.flipX);
+	lua_pushboolean(pL, data.flipY);
+	return 2;
+}
+
+/**
+ * Sprite.SetFlip(spriteId, flipX, flipY)
+ * 칸 안에서 좌우(flipX), 상하(flipY)로 뒤집는다. 기준점의 자리는 그대로다.
+ */
+LUA_CLASS(Set, Sprite, Flip)
+{
+	Sprite* p = (Sprite*)(uintptr_t)lua_tonumber(pL, 1);
+	const bool flipX = lua_toboolean(pL, 2) != 0;
+	const bool flipY = lua_toboolean(pL, 3) != 0;
+	if (p)
+	{
+		p->setFlip(flipX, flipY);
+	}
+	return 0;
+}
+
+/**
+ * local mode = Sprite.GetBlendMode(spriteId)   -- "normal" | "add" | "multiply"
+ */
+LUA_CLASS(Get, Sprite, BlendMode)
+{
+	Sprite* p = (Sprite*)(uintptr_t)lua_tonumber(pL, 1);
+	const int blend = p ? p->getSpriteData().blend : 0;
+	lua_pushstring(pL, kBlendNames[(blend >= 0 && blend <= 2) ? blend : 0]);
+	return 1;
+}
+
+/**
+ * Sprite.SetBlendMode(spriteId, mode)
+ * "normal"(알파 혼합), "add"(더하기, 빛), "multiply"(곱하기, 그림자와 색 필터). 다른 값은 오류.
+ */
+LUA_CLASS(Set, Sprite, BlendMode)
+{
+	Sprite* p = (Sprite*)(uintptr_t)lua_tonumber(pL, 1);
+	const char* name = luaL_checkstring(pL, 2);
+	int blend = -1;
+	for (int i = 0; i < 3; i++)
+	{
+		if (std::strcmp(name, kBlendNames[i]) == 0)
+		{
+			blend = i;
+		}
+	}
+	if (blend < 0)
+	{
+		return luaL_argerror(pL, 2, "blend mode must be \"normal\", \"add\" or \"multiply\"");
+	}
+	if (p)
+	{
+		p->setBlendMode(blend);
+	}
 	return 0;
 }
 

@@ -19,7 +19,7 @@
 ---FontEx 의 숫자 핸들 (FontEx 표의 함수에 첫 인자로 넘긴다)
 ---@alias FontExHandle number
 
--- Graphics: 화면 크기, 렌더 배율, 비트맵 폰트 텍스트, 점 그리기 (Lua 는 전역 함수)
+-- Graphics: 화면 크기, 렌더 배율, 비트맵 폰트 텍스트와 글자 색과 크기, 점과 도형, 렌더 타깃 (Lua 는 전역 함수)
 
 ---논리 해상도 너비 (px, 렌더 배율로 나눈 값)
 ---@return integer
@@ -66,7 +66,7 @@ function draw_text(x, y, text) end
 ---@return number
 function GetTextWidth(text) end
 
----draw_point 의 색 설정 (Lua 는 인자 4개 모두 필요, 0 반환)
+---점과 도형의 색 설정 (Lua 는 인자 4개 모두 필요, 0 반환)
 ---@param r integer
 ---@param g integer
 ---@param b integer
@@ -79,6 +79,77 @@ function draw_set_color(r, g, b, a) end
 ---@param y integer
 ---@return number
 function draw_point(x, y) end
+
+---글자 그리기의 색 (흰 글리프에 곱한다, 기본 255, 255, 255, 255, 스크립트가 다시 시작하면 기본으로)
+---@param r integer
+---@param g integer
+---@param b integer
+---@param a? integer 기본값 255
+function SetTextColor(r, g, b, a) end
+
+---글자 색 (r, g, b, a)
+---@return integer
+---@return integer
+---@return integer
+---@return integer
+function GetTextColor() end
+
+---글자 그리기와 폭 재기의 글자 크기. 글리프를 늘여 그리므로 폰트 파일의 크기에서 멀수록 거칠다 (GDI 판은 무시)
+---@param size integer 줄 높이 (px), 0 이면 폰트 파일의 크기
+function SetTextSize(size) end
+
+---지금 글자 크기 (줄 높이, px). 정하지 않았으면 폰트 파일의 줄 높이, 폰트가 없으면 0
+---@return integer
+function GetTextSize() end
+
+---사각형 테두리 1픽셀 (색은 Lua 는 draw_set_color, Ruby 는 set_color, 알파 적용)
+---@param x number
+---@param y number
+---@param width number
+---@param height number
+function DrawRect(x, y, width, height) end
+
+---칠한 사각형 (색은 Lua 는 draw_set_color, Ruby 는 set_color, 알파 적용)
+---@param x number
+---@param y number
+---@param width number
+---@param height number
+function FillRect(x, y, width, height) end
+
+---선분 1픽셀 (색은 Lua 는 draw_set_color, Ruby 는 set_color)
+---@param x1 number
+---@param y1 number
+---@param x2 number
+---@param y2 number
+function DrawLine(x1, y1, x2, y2) end
+
+---원 테두리 1픽셀 (반지름은 반올림한 정수, 색은 Lua 는 draw_set_color, Ruby 는 set_color)
+---@param cx number
+---@param cy number
+---@param radius number
+function DrawCircle(cx, cy, radius) end
+
+---칠한 원 (반지름은 반올림한 정수, 색은 Lua 는 draw_set_color, Ruby 는 set_color)
+---@param cx number
+---@param cy number
+---@param radius number
+function FillCircle(cx, cy, radius) end
+
+---이후의 그리기가 들어갈 곳. 렌더 타깃이 아닌 id 면 false. 엔진은 매 프레임 그리기 훅이 끝나면 화면으로 되돌린다
+---@param id string|nil 렌더 타깃으로 만든 텍스처의 id, nil 이면 화면
+---@return boolean
+function SetRenderTarget(id) end
+
+---지금 그리기가 들어가는 렌더 타깃의 id (화면이면 nil)
+---@return string|nil
+function GetRenderTarget() end
+
+---지금 그리는 곳을 한 색으로 지운다 (화면이면 게임 영역만)
+---@param r integer
+---@param g integer
+---@param b integer
+---@param a? integer 기본값 255
+function ClearRenderTarget(r, g, b, a) end
 
 -- System: 플랫폼, 종료, 경로, 리소스 목록, 메시지 상자, 환경 변수 (Lua 는 전역 함수)
 
@@ -275,6 +346,19 @@ function TextureManager.Remove(id) end
 ---@return boolean
 function TextureManager.IsValid(id) end
 
+---등록한 텍스처의 크기 (width, height, px). 없는 id 면 nil
+---@param id string
+---@return integer|nil
+---@return integer
+function TextureManager.GetSize(id) end
+
+---그려 넣을 수 있는 빈(투명) 텍스처를 만든다. 같은 id 가 있으면 바꾼다. 스프라이트가 이 id 로 그린다 (GDI 판은 false)
+---@param id string
+---@param width integer
+---@param height integer
+---@return boolean
+function TextureManager.CreateTarget(id, width, height) end
+
 ---텍스처 1장을 그리는 스프라이트 (시트 애니메이션, 회전, 확대, 불투명도)
 ---@class Sprite
 Sprite = {}
@@ -440,6 +524,54 @@ function Sprite.GetRect(handle) end
 ---@param height integer
 ---@overload fun(handle: SpriteHandle, rect: table)
 function Sprite.SetRect(handle, x, y, width, height) end
+
+---색 입히기 값 (r, g, b)
+---@param handle SpriteHandle
+---@return integer
+---@return integer
+---@return integer
+function Sprite.GetColor(handle) end
+
+---색 입히기. 텍스처 색에 r/255, g/255, b/255 를 곱한다 (255, 255, 255 가 원래 색, GDI 판은 무시)
+---@param handle SpriteHandle
+---@param r integer
+---@param g integer
+---@param b integer
+function Sprite.SetColor(handle, r, g, b) end
+
+---기준점 (칸 안의 비율 x, y)
+---@param handle SpriteHandle
+---@return number
+---@return number
+function Sprite.GetPivot(handle) end
+
+---기준점 (칸 안의 비율, 0, 0 은 왼쪽 위, 0.5, 0.5 는 가운데). 위치는 이 점이 놓일 자리이고 회전과 확대의 중심 (GDI 판은 무시)
+---@param handle SpriteHandle
+---@param x number
+---@param y number
+function Sprite.SetPivot(handle, x, y) end
+
+---뒤집기 (좌우, 상하)
+---@param handle SpriteHandle
+---@return boolean
+---@return boolean
+function Sprite.GetFlip(handle) end
+
+---칸 안에서 좌우(x), 상하(y)로 뒤집는다. 기준점의 자리는 그대로 (GDI 판은 무시)
+---@param handle SpriteHandle
+---@param x boolean
+---@param y boolean
+function Sprite.SetFlip(handle, x, y) end
+
+---혼합 모드 (normal, add, multiply)
+---@param handle SpriteHandle
+---@return string
+function Sprite.GetBlendMode(handle) end
+
+---혼합 모드. normal 은 알파 혼합, add 는 더하기(빛), multiply 는 곱하기(그림자, 색 필터). 다른 값은 오류 (GDI 판은 무시)
+---@param handle SpriteHandle
+---@param mode string normal, add, multiply (Ruby 는 심벌도)
+function Sprite.SetBlendMode(handle, mode) end
 
 ---스프라이트 해제 (텍스처는 해제하지 않음)
 ---@param handle SpriteHandle
