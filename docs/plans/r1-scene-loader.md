@@ -61,7 +61,8 @@
 8. sprite 의 props: `image` 필수. `width`, `height` 는 프레임 크기(0 이면 이미지 전체), `frames` 는 프레임 수
    (시트를 가로로 나눈다), `scale`, `angle`(도), `opacity` 0..255, `loop`, `startFrame`, `endFrame`(0 기준, `endFrame` 0 은
    한 프레임). 선택 `color` [r, g, b](색 입히기), `pivot` [x, y](기준점, 칸 안의 비율), `flipX`, `flipY`, `blend`
-   (`"normal"`, `"add"`, `"multiply"`). 엔진 API 와의 대응은 4절.
+   (`"normal"`, `"add"`, `"multiply"`). 선택 `sheet`(스프라이트 시트 파일 경로)와 `clip`(클립 이름): `sheet` 가 있으면
+   그림과 칸과 프레임이 시트 파일에서 오고 `image` 는 없어도 된다. 엔진 API 와의 대응은 4절.
 9. text 의 props: `text`(줄바꿈과 한글 가능), `font`(.fnt 경로. 비어 있으면 게임이 준비해 둔 폰트), 선택 `color` [r, g, b, a],
    선택 `size`(줄 높이 픽셀, 0 이면 폰트 파일의 크기).
 10. `node` 는 아무것도 그리지 않는다. 컴포넌트를 붙이는 자리다.
@@ -70,7 +71,8 @@
     (예전 로더는 모르는 키로 무시했다).
 
 **계약에 더한 것**: sprite 의 `color`, `pivot`, `flipX`, `flipY`, `blend` 와 text 의 `size` (2026-11-15, 엔진 1,
-[engine1-render-basics.md](engine1-render-basics.md)). 포맷은 그대로 v1 이고 예전 로더는 모르는 키로 무시한다.
+[engine1-render-basics.md](engine1-render-basics.md)). sprite 의 `sheet` 와 `clip` (2026-11-15, 엔진 2,
+[engine2-sprite-sheets.md](engine2-sprite-sheets.md)). 포맷은 그대로 v1 이고 예전 로더는 모르는 키로 무시한다.
 그리고 sprite 의 `frameDelay` (ms, 기본 100). 엔진의 프레임 지연 기본값이 0 이라 애니메이션이
 매 틱 넘어가 버리므로 파일에서 정할 수 있게 했다. 없으면 100 이다. 에디터는 이 키를 모르는 키로 보존해도 되고
 칸으로 노출해도 된다.
@@ -95,7 +97,8 @@
 | visible 이 불리언이 아니다 | `scene: visible must be a boolean (<id>)` |
 | props 가 표가 아니다 | `scene: props must be an object (<id>)` |
 | scripts 가 배열이 아니거나 항목이 빈 문자열 | `scene: scripts must be an array (<id>)`, `scene: scripts[<i>] must be a non-empty string (<id>)` |
-| sprite 에 image 가 없다 | `scene: sprite '<id>' needs props.image` |
+| sprite 에 image 가 없다 (sheet 도 없거나 빈 문자열) | `scene: sprite '<id>' needs props.image` |
+| sheet, clip 이 문자열이 아니다 | `scene: props.sheet must be a string (<id>)`, `scene: props.clip must be a string (<id>)` |
 | sprite 숫자 props 가 숫자가 아니다 | `scene: props.<key> must be a number (<id>)` |
 | width, height, frames, startFrame, endFrame, opacity 가 정수가 아니다 | `scene: props.<key> must be an integer (<id>)` |
 | frames < 1, width/height < 0, startFrame/endFrame < 0, opacity 밖 | `scene: props.frames must be >= 1 (<id>)` 등 |
@@ -135,13 +138,15 @@
 | `loop` | `Sprite.SetLoop` | |
 | `scale`, `angle`, `opacity` | `SetScale`, `SetAngle`(도), `SetOpacity`(0..255 정수, 소수는 내림) | 만들 때와 **매 틱** |
 | `color`, `pivot`, `flipX`, `flipY`, `blend` | `SetColor`, `SetPivot`, `SetFlip`, `SetBlendMode` | 만들 때와 **매 틱**. 키가 없으면 엔진 기본값(원래 색, 0, 0, 뒤집지 않음, normal) |
+| `sheet`, `clip` | `SpriteSheet.load(sheet)`, 칸 크기로 `Sprite.Create(x, y, fw, fh, 1, id)`, 재생기의 `play`, `update`, `Sprite.SetRect` | `sheet` 가 있으면 위의 `image` 부터 `loop` 까지 대신한다. **매 틱** `clip` 이 바뀌었으면 처음부터 틀고(그 틱에는 시간을 보내지 않는다), 아니면 시간을 보낸 뒤 지금 프레임의 칸을 옮긴다. 기준점은 `pivot`, 클립의 pivot, 시트의 pivot 순서. 시트 포맷과 재생 규칙은 [engine2-sprite-sheets.md](engine2-sprite-sheets.md) |
 | `x`, `y`, `visible` (오브젝트의 것) | `SetPosition`, `SetVisible` | **매 틱** `obj.x`, `obj.y`, `obj.visible` 을 옮긴다 |
 | 매 틱 | `Sprite.Update(elapsed)` (`obj.animate == false` 면 0) | 트랜스폼 커밋과 애니메이션 |
 | 그리기 | `Sprite.Draw` | `visible` 이 false 면 부르지 않는다 |
 | remove, close | `Sprite.Dispose`, 참조 수 0 이면 `TextureManager.Remove` | |
 
 로더가 채워 주는 오브젝트 필드: `obj.sprite`(핸들 또는 Sprite 객체), `obj.frameWidth`, `obj.frameHeight`
-(Ruby 는 `frame_width`, `frame_height`), `obj.texture`(텍스처 id).
+(Ruby 는 `frame_width`, `frame_height`), `obj.texture`(텍스처 id). `sheet` 를 쓰면 `obj.sheet`(읽은 시트)와
+`obj.animator`(재생기)도 있다.
 
 ### 4.2 text
 
@@ -230,8 +235,9 @@ Ruby 에서 훅의 유무는 `respond_to?` 가 아니라 클래스의 public 인
 | `sprite` | sprite 타입이면 엔진 핸들(Lua 숫자, Ruby `Sprite`), 아니면 nil. 엔진 API 를 직접 불러도 된다 |
 | `scene` | 이 오브젝트가 속한 씬 |
 | `spec` | 파일의 원본 항목 (모르는 키 포함) |
-| `animate` | false 면 프레임 애니메이션만 멈춘다 (Sprite.Update 에 0 을 넘긴다). 기본 true |
+| `animate` | false 면 프레임 애니메이션만 멈춘다 (Sprite.Update 에 0 을 넘기고, 시트의 재생기는 시간을 보내지 않는다). 기본 true |
 | `frameWidth`, `frameHeight`, `texture` | sprite 타입에 로더가 채운다 |
+| `sheet`, `animator` | `props.sheet` 를 쓰는 sprite 에 로더가 채운다. 클립은 `props.clip` 으로 바꾸고, 같은 클립을 처음부터 다시 틀 때는 `obj.animator:restart()` |
 
 Lua 의 obj 는 그냥 표라 컴포넌트가 아무 필드나 붙일 수 있다. Ruby 의 `SceneObject` 도 같게 했다: 정하지 않은
 필드는 쓰면 붙고 읽으면 nil 이다 (`obj.target = ...`).
@@ -466,7 +472,7 @@ function Destroy() scene:close() end
 | 오브젝트 | 컴포넌트 | 하는 일 |
 |---|---|---|
 | `bg1`, `bg2`, `ground1`, `ground2` (sprite) | `components/flappy/scroller` (`props.kind` 가 background 또는 ground) | 두 장을 이어붙여 왼쪽으로 흘린다. 지면은 파이프 속도, 게임 오버에는 멈춘다 |
-| `bird` (sprite, 3 프레임, frameDelay 110) | `components/flappy/bird` | 대기 부유, 플레이 중력과 날갯짓, 게임 오버 추락. `obj.animate` 로 죽으면 날갯짓을 멈춘다 |
+| `bird` (sprite, 시트 `resources/bird.sprite.json`) | `components/flappy/bird` | 대기 부유, 플레이 중력과 날갯짓, 게임 오버 추락. `props.clip` 을 평소에는 `fly`(날갯짓), 죽으면 `fall` 로 둔다 (엔진 2) |
 | `pipes` (node, `props.after = "bg2"`) | `components/flappy/pipes` | 파이프 3쌍을 `scene:spawn(spec, "bg2")` 로 배경 바로 뒤에 끼우고, 흘리고 되돌리고 점수를 세고 충돌을 본다. 새보다 뒤에 놓여 원래 게임과 같은 순서(새 물리 → 파이프)로 돈다 |
 | `director` (node) | `components/flappy/director` | 상태 기계 ready → play → dead → ready, 조작, 자동 시연, 글자 오브젝트 켜고 끄기, 로그 |
 | `title`, `best`, `score`, `over`, `result`, `hint1`, `hint2` (text) | 없음 | 감독이 `visible` 과 `props.text` 를 바꾼다 |
@@ -569,3 +575,4 @@ function Destroy() scene:close() end
 - [ ] 에디터 쪽 E2/E3 가 같은 픽스처를 왕복한다 (InitialEditor 저장소)
 - [ ] 에디터의 인스펙터가 선언 파일로 params 입력 항목을 만들고 5.4절의 문장으로 검사한다 (InitialEditor 저장소)
 - [x] 텍스트 색 (엔진 1 에서 `color` 와 `size` 를 붙였다, 2026-11-15)
+- [x] sprite 의 `sheet` 와 `clip` (엔진 2, 2026-11-15): 시트 파일과 클립, 플래피의 새

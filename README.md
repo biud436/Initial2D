@@ -1954,6 +1954,69 @@ end
 python3 tests/run_engine_tests.py --only=scene_loader,scene_flappy,scene_params   # 씬 로더 씬 테스트 여섯만
 ```
 
+### 스프라이트 시트와 클립
+
+한 장의 그림을 칸으로 잘라 이름 있는 애니메이션(클립)으로 쓰려면 그림 옆에 시트 파일(`<이름>.sprite.json`)을 둡니다.
+열과 행의 수는 그림 크기에서 나오고, 프레임 번호는 0부터 왼쪽에서 오른쪽, 위에서 아래로 셉니다. 플래피의 새가
+`resources/bird.sprite.json`을 씁니다.
+
+```json
+{ "version": 1, "image": "resources/bird_276x64.png", "frameWidth": 92, "frameHeight": 64,
+  "margin": 0, "spacing": 0, "pivot": [0, 0], "defaultClip": "fly",
+  "clips": {
+    "fly":  { "frames": [0, 1, 2], "duration": 110, "loop": "pingpong" },
+    "fall": { "frames": [0], "loop": "once" }
+  } }
+```
+
+`duration`은 프레임 하나의 ms이고 배열로 프레임마다 다르게 줄 수 있습니다(기본 100). `loop`은 `"loop"`(기본),
+`"once"`(마지막 프레임에 머뭅니다), `"pingpong"`(0 1 2 1 0 ...)입니다. 클립의 `pivot`이 시트의 것보다 먼저입니다.
+
+씬 파일의 sprite는 `image` 대신 `sheet`를 적고, 틀 클립을 `clip`에 적습니다(없으면 시트의 `defaultClip`).
+컴포넌트는 `props.clip`을 바꾸는 것으로 클립을 바꾸고, 로더가 다음 틱에 그 클립을 처음부터 틉니다.
+
+```json
+{ "id": "bird", "type": "sprite", "x": 170, "y": 416,
+  "props": { "sheet": "resources/bird.sprite.json", "clip": "fly" }, "scripts": ["components/flappy/bird"] }
+```
+
+```lua
+obj.props.clip = dead and "fall" or "fly"       -- Ruby: obj.props["clip"] = dead ? "fall" : "fly"
+obj.animator:restart()                          -- 같은 클립을 처음부터 다시 (once 를 한 번 더)
+```
+
+씬 없이 쓸 때는 시트를 읽어 재생기를 만들고 매 틱 시간을 보낸 뒤 스프라이트에 옮깁니다.
+
+```lua
+local SpriteSheet = require("scripts/lua/sprite_sheet")
+local sheet = SpriteSheet.load("resources/bird.sprite.json")
+TextureManager.Load("./" .. sheet.image, "bird")
+local bird = Sprite.Create(170, 416, sheet.frameWidth, sheet.frameHeight, 1, "bird")
+local anim = sheet:animator():play("fly")
+-- Update(elapsed) 에서
+anim:update(elapsed)
+anim:apply(bird)                                -- 지금 프레임의 칸과 기준점
+```
+
+```ruby
+require "scripts/ruby/sprite_sheet"
+sheet = SpriteSheet.load("resources/bird.sprite.json")
+TextureManager.load("./" + sheet.image, "bird")
+bird = Sprite.new(170, 416, sheet.frame_width, sheet.frame_height, 1, "bird")
+anim = sheet.animator.play("fly")
+# update(elapsed) 에서
+anim.update(elapsed)
+anim.apply(bird)
+```
+
+시트 파일이 잘못되면 두 언어가 같은 문장으로 알려 줍니다(`sheet: clip 'fly' frames[2] must be an integer >= 0
+(resources/bird.sprite.json)`). 포맷, 재생 규칙, 검사 문장 전체는
+[docs/plans/engine2-sprite-sheets.md](./docs/plans/engine2-sprite-sheets.md)에 있습니다.
+
+```bash
+python3 tests/run_engine_tests.py --only=sheet_clips   # 시트의 클립을 바꾸고 멈추고 다시 트는 씬 (두 언어, 골든 sheet_clips)
+```
+
 # RTP 리소스 변환 (RPG Maker 2003)
 
 RPG Maker 2003의 RTP 소재를 엔진이 바로 읽는 형태로 바꾸는 도구입니다 (`tools/rtp_import.py`, Pillow 필요).
