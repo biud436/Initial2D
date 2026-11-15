@@ -385,7 +385,18 @@ Image 객체는 Sprite Sheet를 사용하여 Character Animation을 표현하기
 	Sprite.SetSheetGrid(spriteId, cols, rows)
 	-- 스프라이트 메모리를 해제합니다. 텍스처는 TextureManager.Remove로 따로 해제합니다.
 	Sprite.Dispose(spriteId)
+	-- 색 입히기. 텍스처 색에 r/255, g/255, b/255를 곱합니다 (255, 255, 255가 원래 색).
+	Sprite.SetColor(spriteId, r, g, b)
+	-- 기준점 (칸 안의 비율, 0, 0은 왼쪽 위, 0.5, 0.5는 가운데). 위치는 이 점이 놓일 자리이고,
+	-- 회전과 확대도 이 점을 중심으로 합니다. 기본은 0, 0입니다.
+	Sprite.SetPivot(spriteId, 0.5, 1)
+	-- 칸 안에서 좌우, 상하로 뒤집습니다. 기준점의 자리는 그대로입니다.
+	Sprite.SetFlip(spriteId, true, false)
+	-- 혼합 모드: "normal"(알파 혼합), "add"(더하기, 빛), "multiply"(곱하기, 그림자와 색 필터)
+	Sprite.SetBlendMode(spriteId, "add")
 ```
+
+위의 넷은 `GetColor`, `GetPivot`, `GetFlip`, `GetBlendMode`로 읽습니다. Windows(GDI) 판은 넷 모두 그리지 않습니다.
 
 # TextureManager
 
@@ -400,6 +411,10 @@ Image 객체에서 내부적으로 호출하므로 굳이 수동으로 사용할
 	TextureManager.Load(filename, id)
 	TextureManager.Remove(id)
 	local isValid = TextureManager.IsValid(id)
+	-- 텍스처의 크기 (픽셀). 없는 id면 nil
+	local width, height = TextureManager.GetSize(id)
+	-- 그려 넣을 수 있는 빈(투명) 텍스처를 만듭니다. 아래 "도형과 렌더 타깃"을 참고하십시오.
+	TextureManager.CreateTarget(id, width, height)
 ```
 
 # Audio
@@ -480,7 +495,9 @@ OGG 파일 또는 WAV 파일, 미디 파일 등 여러가지 포맷의 오디오
 
 동적 할당이 아닌 고정적으로 수 만자에 대한 텍스트 메모리를 한 번에 할당합니다. 이렇게 하는 이유는 동적 할당으로 인한 캐시 문제 때문입니다.
 
-글자 크기는 폰트 파일이 가진 크기 그대로입니다. 그리는 쪽에 확대나 축소가 없으므로, 크기를 바꾸려면 그 크기로 구운 폰트를 따로 준비합니다. `PreparaFont`는 실행 중에 다시 불러 폰트를 갈아 끼울 수 있습니다 (RPG 데모가 렌더 배율 2에 맞춰 16px 폰트로 바꿨다가 나갈 때 되돌립니다).
+글자 크기의 기본은 폰트 파일이 가진 크기입니다. `SetTextSize(px)`로 줄 높이를 정하면 글리프를 늘이거나 줄여 그리는데, 폰트 파일의 크기에서 멀어질수록 획이 거칠어집니다. 또렷한 글자가 필요하면 그 크기로 구운 폰트를 따로 준비합니다. `PreparaFont`는 실행 중에 다시 불러 폰트를 갈아 끼울 수 있습니다 (RPG 데모가 렌더 배율 2에 맞춰 16px 폰트로 바꿨다가 나갈 때 되돌립니다).
+
+글자 색은 `SetTextColor(r, g, b, a)`로 정합니다. 폰트 그림의 흰 글리프에 이 색을 곱하므로 흰색이 원래 색입니다. 글자 색과 크기는 바꾼 뒤의 모든 `DrawText`에 적용되고, 스크립트가 다시 시작하면 기본값(흰색, 폰트 파일의 크기)으로 돌아갑니다.
 
 ```bash
 # TTF에서 비트맵 폰트를 굽습니다 (기본: 기존 hangul.fnt와 같은 2453자, 16px)
@@ -495,7 +512,42 @@ python3 tools/generate_bmfont.py --size 12 --out hangul12
 	DrawText(x, y, text)
 	-- 텍스트를 그리지 않고 픽셀 단위 폭을 반환합니다.
 	local width = GetTextWidth(text)
+	-- 글자 색 (a는 생략하면 255)
+	SetTextColor(255, 220, 0)
+	local r, g, b, a = GetTextColor()
+	-- 글자 크기 (줄 높이, 픽셀). 0이면 폰트 파일의 크기입니다
+	SetTextSize(48)
+	local size = GetTextSize()
 ```
+
+# 도형과 렌더 타깃
+
+사각형, 선, 원을 그립니다. 색은 점과 같이 `draw_set_color(r, g, b, a)`로 정하고, 알파는 반투명으로 섞입니다. 화면 전체를 반투명 검정으로 덮으면 페이드, 흰색으로 덮으면 번쩍임이 됩니다.
+
+```lua
+	draw_set_color(0, 0, 0, 128)
+	FillRect(x, y, width, height)  -- 칠한 사각형
+	DrawRect(x, y, width, height)  -- 테두리 1픽셀
+	DrawLine(x1, y1, x2, y2)
+	FillCircle(cx, cy, radius)     -- 반지름은 반올림한 정수
+	DrawCircle(cx, cy, radius)
+```
+
+렌더 타깃은 화면 대신 그려 넣을 수 있는 텍스처입니다. 한 번 그려 둔 그림을 스프라이트로 여러 번 찍거나, 여러 그림을 한 장으로 합쳐 함께 움직일 때 씁니다.
+
+```lua
+	TextureManager.CreateTarget("minimap", 128, 96)   -- 투명하게 비어 있는 텍스처
+	SetRenderTarget("minimap")                        -- 이후의 그리기가 이 텍스처로 들어갑니다
+	ClearRenderTarget(0, 0, 0, 0)                     -- 지금 그리는 곳을 한 색으로 지웁니다
+	Sprite.Draw(icon)
+	FillRect(10, 10, 4, 4)
+	SetRenderTarget(nil)                              -- 화면으로 돌아옵니다
+	local map = Sprite.Create(600, 16, 128, 96, 1, "minimap")  -- 스프라이트가 id로 그립니다
+```
+
+`GetRenderTarget()`은 지금 그리는 렌더 타깃의 id를, 화면이면 nil을 돌려줍니다. `SetRenderTarget`은 렌더 타깃이 아닌 id를 받으면 false를 돌려주고 대상을 바꾸지 않습니다. 엔진은 매 프레임 `Render`가 끝나면 그리기 대상을 화면으로 되돌립니다. 화면에서 `ClearRenderTarget`은 레터박스 여백을 남기고 게임 영역만 지웁니다.
+
+> Windows(GDI) 판에는 도형과 렌더 타깃, 글자 색과 크기가 없습니다. 함수는 있지만 그리지 않고, `TextureManager.CreateTarget`과 `SetRenderTarget(id)`는 false를 돌려줍니다.
 
 # Json
 
@@ -687,7 +739,11 @@ end
 | `GetFrameCount()` | `Graphics.frame_count` |
 | `PreparaFont(path)` | `Graphics.prepare_font(path)` |
 | `DrawText(x, y, text)`, `GetTextWidth(text)` | `Graphics.draw_text(x, y, text)`, `Graphics.text_width(text)` |
+| `SetTextColor(r, g, b, a)`, `GetTextColor()` | `Graphics.set_text_color(r, g, b, a = 255)`, `Graphics.text_color` (`[r, g, b, a]`) |
+| `SetTextSize(px)`, `GetTextSize()` | `Graphics.text_size = px`, `Graphics.text_size` |
 | `draw_set_color(r, g, b, a)`, `draw_point(x, y)` | `Graphics.set_color(r, g, b, a = 255)`, `Graphics.draw_point(x, y)` |
+| `DrawRect`, `FillRect`, `DrawLine`, `DrawCircle`, `FillCircle` | `Graphics.draw_rect`, `fill_rect`, `draw_line`, `draw_circle`, `fill_circle` (인자는 같습니다) |
+| `SetRenderTarget(id)`, `GetRenderTarget()`, `ClearRenderTarget(r, g, b, a)` | `Graphics.set_render_target(id)`, `Graphics.render_target`, `Graphics.clear(r, g, b, a = 255)` |
 | `GetPlatform()`, `GameExit()` | `System.platform`, `System.exit` |
 | `GetCurrentDirectory()`, `GetResourcesFiles()` | `System.current_directory`, `System.resource_files` |
 | `MessageBox(text, caption)`, `SetAppIcon(path)` | `System.message_box(text, caption = "")`, `System.app_icon = path` |
@@ -715,6 +771,7 @@ end
 | Lua | Ruby |
 | :--- | :--- |
 | `TextureManager.Load(path, id)`, `Remove(id)`, `IsValid(id)` | `TextureManager.load(path, id)`, `remove(id)`, `valid?(id)` |
+| `TextureManager.GetSize(id)` (값 둘, 없으면 nil), `CreateTarget(id, w, h)` | `TextureManager.size(id)` (`[w, h]` 또는 nil), `create_target(id, w, h)` |
 | `Json.Load(path)` (실패하면 nil과 메시지) | `Json.load(path)` (실패하면 `RuntimeError`), `Json.parse(text)` |
 
 `Sprite`, `Tilemap`, `FontEx`는 Ruby에서 진짜 클래스입니다. Lua가 숫자 핸들을 넘기고 `Dispose`를 손으로 부르는 자리에서, Ruby 객체는 GC가 거두면 C++ 쪽도 함께 지워집니다. `dispose`는 그대로 있어 바로 놓을 수 있고, 놓은 뒤에 쓰면 `RuntimeError`입니다.
@@ -733,6 +790,8 @@ end
 | `SetSheetGrid(cols, rows)` | `set_sheet_grid(cols, rows)` |
 | `GetRect()` (width 칸에 오른쪽 좌표) | `rect` (`{ x:, y:, right:, bottom:, width:, height: }`, 이름대로) |
 | `SetRect(x, y, w, h)` 또는 테이블 | `set_rect(x, y, w, h)` 또는 `set_rect(x:, y:, width:, height:)` |
+| `GetColor/SetColor(r, g, b)`, `GetPivot/SetPivot(x, y)`, `GetFlip/SetFlip(x, y)` | `color`, `set_color(r, g, b)`, `pivot`, `set_pivot(x, y)`, `flip`, `set_flip(x, y)` (읽기는 배열) |
+| `GetBlendMode/SetBlendMode("add")` | `blend_mode` (Symbol), `blend_mode = :add` (문자열도 받습니다) |
 
 | Lua `Tilemap.*(handle, ...)` | Ruby `map.*` |
 | :--- | :--- |
