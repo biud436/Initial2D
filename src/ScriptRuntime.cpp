@@ -10,6 +10,7 @@
 #endif
 
 #include "App.h"
+#include "TextureManager.h"
 #include "ExceptionText.h"
 #include "platform/Env.h"
 
@@ -164,6 +165,9 @@ std::string Script_Features()
 
 int Script_Init()
 {
+	// 새 VM 은 점과 도형의 색, 글자 색과 크기를 처음 값에서 시작한다 (재시작 때 이전 VM 의 값을 넘겨받지 않는다)
+	App::GetInstance().GetTextureManager().ResetDrawState();
+
 	if (Script_Backend() == ScriptBackend::MRuby)
 	{
 #ifdef INITIAL2D_HAS_MRUBY

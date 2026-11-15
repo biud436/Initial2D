@@ -19,6 +19,10 @@
  *   sprite.set_sheet_grid(cols, rows)
  *   sprite.rect -> { x:, y:, right:, bottom:, width:, height: }
  *   sprite.set_rect(x, y, width, height) 또는 set_rect(x: , y: , width: , height: )
+ *   sprite.color -> [r, g, b], sprite.set_color(r, g, b)
+ *   sprite.pivot -> [x, y], sprite.set_pivot(x, y)
+ *   sprite.flip -> [x, y], sprite.set_flip(x, y)
+ *   sprite.blend_mode -> :normal | :add | :multiply, sprite.blend_mode = :add
  *   sprite.dispose, sprite.disposed?
  */
 #include "Constants.h"
@@ -324,6 +328,104 @@ namespace
 		return self;
 	}
 
+	mrb_int ClampByte(mrb_int v)
+	{
+		return v < 0 ? 0 : (v > 255 ? 255 : v);
+	}
+
+	const char* const kBlendNames[] = { "normal", "add", "multiply" };
+
+	/** sprite.color -> [r, g, b] */
+	mrb_value sprite_color(mrb_state* mrb, mrb_value self)
+	{
+		const SpriteData& data = GetSprite(mrb, self)->getSpriteData();
+		mrb_value values[3] = {
+			mrb_int_value(mrb, data.red), mrb_int_value(mrb, data.green), mrb_int_value(mrb, data.blue)
+		};
+		return mrb_ary_new_from_values(mrb, 3, values);
+	}
+
+	/** sprite.set_color(r, g, b). 텍스처 색에 r/255, g/255, b/255 를 곱한다 */
+	mrb_value sprite_set_color(mrb_state* mrb, mrb_value self)
+	{
+		mrb_int r = 255, g = 255, b = 255;
+		mrb_get_args(mrb, "iii", &r, &g, &b);
+		GetSprite(mrb, self)->setColor(static_cast<BYTE>(ClampByte(r)),
+			static_cast<BYTE>(ClampByte(g)), static_cast<BYTE>(ClampByte(b)));
+		return self;
+	}
+
+	/** sprite.pivot -> [x, y] */
+	mrb_value sprite_pivot(mrb_state* mrb, mrb_value self)
+	{
+		const SpriteData& data = GetSprite(mrb, self)->getSpriteData();
+		mrb_value values[2] = { mrb_float_value(mrb, data.pivotX), mrb_float_value(mrb, data.pivotY) };
+		return mrb_ary_new_from_values(mrb, 2, values);
+	}
+
+	/** sprite.set_pivot(x, y). 칸 안의 비율 (0, 0 은 왼쪽 위, 0.5, 0.5 는 가운데) */
+	mrb_value sprite_set_pivot(mrb_state* mrb, mrb_value self)
+	{
+		mrb_float px = 0, py = 0;
+		mrb_get_args(mrb, "ff", &px, &py);
+		GetSprite(mrb, self)->setPivot(static_cast<float>(px), static_cast<float>(py));
+		return self;
+	}
+
+	/** sprite.flip -> [x, y] */
+	mrb_value sprite_flip(mrb_state* mrb, mrb_value self)
+	{
+		const SpriteData& data = GetSprite(mrb, self)->getSpriteData();
+		mrb_value values[2] = { mrb_bool_value(data.flipX), mrb_bool_value(data.flipY) };
+		return mrb_ary_new_from_values(mrb, 2, values);
+	}
+
+	/** sprite.set_flip(x, y). 칸 안에서 좌우, 상하로 뒤집는다 */
+	mrb_value sprite_set_flip(mrb_state* mrb, mrb_value self)
+	{
+		mrb_bool fx = FALSE, fy = FALSE;
+		mrb_get_args(mrb, "bb", &fx, &fy);
+		GetSprite(mrb, self)->setFlip(fx != FALSE, fy != FALSE);
+		return self;
+	}
+
+	/** sprite.blend_mode -> :normal | :add | :multiply */
+	mrb_value sprite_blend_mode(mrb_state* mrb, mrb_value self)
+	{
+		const int blend = GetSprite(mrb, self)->getSpriteData().blend;
+		return mrb_symbol_value(mrb_intern_cstr(mrb, kBlendNames[(blend >= 0 && blend <= 2) ? blend : 0]));
+	}
+
+	/** sprite.blend_mode = :normal | :add | :multiply (문자열도 받는다). 다른 값은 ArgumentError */
+	mrb_value sprite_set_blend_mode(mrb_state* mrb, mrb_value self)
+	{
+		mrb_value value;
+		mrb_get_args(mrb, "o", &value);
+		std::string name;
+		if (mrb_symbol_p(value))
+		{
+			name = mrb_sym_name(mrb, mrb_symbol(value));
+		}
+		else if (mrb_string_p(value))
+		{
+			name = MRuby_ToStdString(mrb, value);
+		}
+		int blend = -1;
+		for (int i = 0; i < 3; i++)
+		{
+			if (name == kBlendNames[i])
+			{
+				blend = i;
+			}
+		}
+		if (blend < 0)
+		{
+			mrb_raise(mrb, E_ARGUMENT_ERROR, "blend mode must be :normal, :add or :multiply");
+		}
+		GetSprite(mrb, self)->setBlendMode(blend);
+		return value;
+	}
+
 	mrb_value sprite_dispose(mrb_state* mrb, mrb_value self)
 	{
 		mrb_data_check_type(mrb, self, &SpriteType);
@@ -379,6 +481,14 @@ void MRuby_DefineSprite(mrb_state* mrb)
 	mrb_define_method(mrb, cls, "set_sheet_grid", MRUBY_GUARD(sprite_set_sheet_grid), MRB_ARGS_REQ(2));
 	mrb_define_method(mrb, cls, "rect", MRUBY_GUARD(sprite_rect), MRB_ARGS_NONE());
 	mrb_define_method(mrb, cls, "set_rect", MRUBY_GUARD(sprite_set_rect), MRB_ARGS_ANY());
+	mrb_define_method(mrb, cls, "color", MRUBY_GUARD(sprite_color), MRB_ARGS_NONE());
+	mrb_define_method(mrb, cls, "set_color", MRUBY_GUARD(sprite_set_color), MRB_ARGS_REQ(3));
+	mrb_define_method(mrb, cls, "pivot", MRUBY_GUARD(sprite_pivot), MRB_ARGS_NONE());
+	mrb_define_method(mrb, cls, "set_pivot", MRUBY_GUARD(sprite_set_pivot), MRB_ARGS_REQ(2));
+	mrb_define_method(mrb, cls, "flip", MRUBY_GUARD(sprite_flip), MRB_ARGS_NONE());
+	mrb_define_method(mrb, cls, "set_flip", MRUBY_GUARD(sprite_set_flip), MRB_ARGS_REQ(2));
+	mrb_define_method(mrb, cls, "blend_mode", MRUBY_GUARD(sprite_blend_mode), MRB_ARGS_NONE());
+	mrb_define_method(mrb, cls, "blend_mode=", MRUBY_GUARD(sprite_set_blend_mode), MRB_ARGS_REQ(1));
 	mrb_define_method(mrb, cls, "dispose", MRUBY_GUARD(sprite_dispose), MRB_ARGS_NONE());
 	mrb_define_method(mrb, cls, "disposed?", MRUBY_GUARD(sprite_disposed), MRB_ARGS_NONE());
 }

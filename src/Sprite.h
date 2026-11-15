@@ -47,7 +47,15 @@ struct SpriteData
 	double	frameDelay;		/** 프레임 지연 */
 	int	startFrame;			/** 시작 프레임 */
 	int	endFrame;			/** 마지막 프레임 */
-	BYTE	opacity;		/** 투명도(미지원) */
+	BYTE	opacity;		/** 불투명도 0..255 */
+	BYTE	red;			/** 색 입히기 (텍스처 색에 곱한다, 기본 255) */
+	BYTE	green;
+	BYTE	blue;
+	float	pivotX;			/** 기준점 (칸 안의 비율 0..1, 기본 0,0 은 왼쪽 위) */
+	float	pivotY;
+	bool	flipX;			/** 좌우 뒤집기 */
+	bool	flipY;			/** 상하 뒤집기 */
+	int		blend;			/** 혼합 모드 (Sprite::BlendMode) */
 
 	SpriteData();
 
@@ -63,6 +71,9 @@ struct SpriteData
 class Sprite : public GameObject
 {
 public:
+
+	/** 혼합 모드. 보통은 알파 혼합, 더하기는 빛, 곱하기는 그림자와 색 필터에 쓴다. */
+	enum BlendMode { BlendNormal = 0, BlendAdd = 1, BlendMultiply = 2 };
 
 	Sprite();
 	virtual ~Sprite();
@@ -247,6 +258,18 @@ public:
 	 * 애니메이션 완료 여부를 설정합니다.
 	 */
 	void	setAnimComplete(bool isComplete);
+
+	/** 색 입히기. 텍스처의 각 채널에 r/255, g/255, b/255 를 곱한다. */
+	void	setColor(BYTE r, BYTE g, BYTE b);
+
+	/** 기준점. 위치는 이 점이 놓일 자리이고, 회전과 확대의 중심이다. 칸 안의 비율 (0..1). */
+	void	setPivot(float px, float py);
+
+	/** 칸 안에서 좌우, 상하로 뒤집는다. */
+	void	setFlip(bool flipX, bool flipY);
+
+	/** 혼합 모드 (BlendMode). 모르는 값은 BlendNormal. */
+	void	setBlendMode(int blend);
 
 	/**
 	 * 회전, 확대, 축소, 이동 행렬을 다루는 행렬을 매 프레임 업데이트합니다.

@@ -352,6 +352,103 @@ def test_mruby_assert_scene():
     run_assert_scene("mruby_assert_scene.rb", "mruby_assert_scene")
 
 
+# 기본 렌더링 (엔진 1): 색 입히기, 뒤집기, 기준점, 혼합 모드, 글자 색과 크기, 도형, 렌더 타깃.
+# Lua 씬과 Ruby 씬이 같은 그림을 그리므로 같은 검사와 같은 골든(render_basics)을 쓴다.
+RENDER_BASICS_LOG = [
+    ("TextureManager.GetSize 가 텍스처 크기를 준다", "texsize:48x48"),
+    ("없는 텍스처의 크기는 nil", "nosize:nil"),
+    ("렌더 타깃을 만든다", "target:true"),
+    ("렌더 타깃으로 바꾼다", "set:true"),
+    ("지금 렌더 타깃의 id", "current:halves"),
+    ("화면으로 돌아오면 nil", "after:nil"),
+    ("렌더 타깃이 아닌 텍스처로는 바꾸지 못한다", "notarget:false"),
+    ("렌더 타깃의 크기", "targetsize:32x16"),
+    ("색 입히기 값", "color:255,0,0"),
+    ("뒤집기 값", "flip:true,false"),
+    ("기준점 값", "pivot:0.5,0.5"),
+    ("혼합 모드 값 (기본은 normal)", "blend:add,multiply,normal"),
+    ("모르는 혼합 모드는 오류", "badblend:false"),
+    ("폰트 준비", "fontReady:true"),
+    ("글자 크기의 기본은 폰트 파일의 줄 높이", "textsize:32"),
+    ("글자 크기를 바꾼다", "textsize:64"),
+]
+GREEN = (0, 128, 0)
+BLUE = (0, 0, 255)
+
+
+def run_render_basics(scene):
+    work, result, shots = run_scene(scene, [10], 12)
+    log = result.stdout + result.stderr
+    check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode}")
+    check("스크립트 오류 없음", "error" not in log.lower().replace("badblend", ""), log[-300:])
+    for label, line in RENDER_BASICS_LOG:
+        check(label, line in log, log[-400:])
+    m = re.search(r"textwidth:(\d+)(?:\.0)?:(\d+)(?:\.0)?", log)
+    check("글자 크기 64 의 폭은 32 의 두 배", m is not None and int(m.group(2)) == 2 * int(m.group(1)),
+          m.group(0) if m else log[-200:])
+    check("프레임 덤프 생성", 10 in shots)
+    if 10 not in shots:
+        return
+    img = shots[10]
+    s = img.width / 768.0
+
+    def at(x, y, target, tol=12):
+        p = px(img, s, x, y)
+        return near(p, target, tol), str(p)
+
+    def expect(label, x, y, target, tol=12):
+        ok, got = at(x, y, target, tol)
+        check(label, ok, f"{got} 기대 {target}")
+
+    # [A] 색 입히기: (216, 145, 37) 에 (1, 0, 0) 을 곱한다
+    expect("색 입히기 (빨강만 남는다)", 56, 56, (216, 0, 0))
+    # [B] 렌더 타깃에 그린 반쪽 그림, 뒤집기
+    expect("렌더 타깃 그림의 왼쪽은 빨강", 40, 128, RED)
+    expect("렌더 타깃 그림의 오른쪽은 파랑", 88, 128, BLUE)
+    expect("좌우로 뒤집으면 왼쪽이 파랑", 40, 178, BLUE)
+    expect("좌우로 뒤집으면 오른쪽이 빨강", 88, 178, RED)
+    # [C] 가운데 기준점으로 (400, 100) 에 놓고 45도: 마름모가 된다
+    expect("기준점이 위치에 놓인다 (가운데)", 400, 100, TILE1)
+    expect("기준점 중심 회전 (위 꼭짓점 쪽)", 400, 70, TILE1)
+    expect("기준점 중심 회전 (원래 모서리 자리는 바탕)", 378, 78, WHITE)
+    # [D] 회색 (100, 100, 100) 위의 더하기와 곱하기
+    expect("회색 판", 580, 244, (100, 100, 100))
+    expect("더하기 혼합", 524, 244, (255, 245, 137))
+    expect("곱하기 혼합", 624, 244, (85, 57, 15))
+    # [E] 글자 색과 크기
+    reds = count_color_in(img, s, 32, 400, 140, 432, RED, 40)
+    check("빨간 글자 (SetTextColor)", reds > 30, f"red px={reds}")
+    blues = count_color_in(img, s, 32, 460, 200, 530, BLUE, 40)
+    check("파란 글자 (SetTextColor 의 알파 포함)", blues > 100, f"blue px={blues}")
+    low = count_color_in(img, s, 32, 500, 200, 528, BLUE, 40)
+    check("글자 크기 64 는 32 줄 높이 아래까지 내려온다", low > 20, f"blue px={low}")
+    # [F] 도형
+    expect("FillRect", 632, 416, GREEN)
+    expect("DrawRect 의 테두리", 600, 450, GREEN)
+    expect("DrawRect 의 안은 비어 있다", 632, 466, WHITE)
+    expect("DrawLine", 630, 500, GREEN)
+    expect("FillCircle 의 안", 632, 562, GREEN)
+    expect("FillCircle 의 밖", 648, 596, WHITE)
+    expect("DrawCircle 의 테두리", 732, 580, GREEN)
+    expect("DrawCircle 의 안은 비어 있다", 712, 580, WHITE)
+    expect("반투명 도형 (알파 128 검정)", 632, 656, (127, 127, 127), 4)
+    # [G] Render 가 렌더 타깃을 그대로 두고 끝나도 캡처는 화면이다 (위 검사들이 화면을 봤다)
+    check_golden("render_basics", img)
+
+
+def test_render_basics_lua():
+    print("\n[1r] render_basics_scene — 색 입히기, 뒤집기, 기준점, 혼합 모드, 글자 색과 크기, 도형, 렌더 타깃")
+    run_render_basics("render_basics_scene.lua")
+
+
+def test_render_basics_mruby():
+    print("\n[1rm] mruby_render_basics_scene — 같은 그림을 mruby 로, 같은 골든에 견준다")
+    if not HAS_MRUBY:
+        print("  SKIP: 이 빌드에는 mruby 가 없습니다 (brew install mruby 후 cmake 다시 실행)")
+        return
+    run_render_basics("mruby_render_basics_scene.rb")
+
+
 # 입력 경로 (C++): INITIAL2D_TEST_EVENTS 가 만든 SDL 마우스 이벤트가 HandleEvent, Input::update,
 # 바인딩을 거쳐 스크립트에 보이는가. 이벤트 사이는 20 프레임이다 (헤드리스는 한 프레임이 한 틱보다 짧을 수 있다)
 INPUT_EVENTS = "10:mousedown:0,30:wheel:1,50:wheel:-1,70:wheel:-3,90:mousedown:1"
@@ -803,9 +900,9 @@ def check_scene_loader_run(work, result, shots, keep_as):
         # 맵(잔디)이 화면을 채운다: 왼쪽 위 구역에 흰색 아닌 픽셀이 대부분 (count_color_in 은 2px 걸러 센다)
         grass = count_color_in(img, scale, 0, 0, 200, 150, WHITE, 12, invert=True)
         check("타일맵이 그려져 있다", grass > 200 * 150 / 4 * 0.9, f"px={grass}")
-        # 글자(흰 글리프)가 label 자리에 있다 (두 줄이면 표본 150개 이상, 한 줄이면 그 절반쯤)
-        glyphs = count_color_in(img, scale, LABEL_X, LABEL_Y, LABEL_X + 400, LABEL_Y + 70, WHITE, 40)
-        check("글자가 그려져 있다 (두 줄)", glyphs > 150, f"px={glyphs}")
+        # 글자가 label 자리에 props.color 의 노란색으로 있다 (두 줄이면 표본 150개 이상, 한 줄이면 그 절반쯤)
+        glyphs = count_color_in(img, scale, LABEL_X, LABEL_Y, LABEL_X + 400, LABEL_Y + 70, (255, 255, 0), 40)
+        check("글자가 props.color 로 그려져 있다 (두 줄, 노랑)", glyphs > 150, f"px={glyphs}")
         check_golden("scene_loader", img)
         shutil.copy(os.path.join(work, "shot_0150.bmp"), keep_as)
 
@@ -2245,6 +2342,8 @@ def main():
         test_mruby_units,
         test_assert_scene,
         test_mruby_assert_scene,
+        test_render_basics_lua,
+        test_render_basics_mruby,
         test_input_events_lua,
         test_input_events_mruby,
         test_mruby_flappy_scene,

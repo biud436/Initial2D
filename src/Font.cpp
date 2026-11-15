@@ -5,6 +5,7 @@
 #include <tinyxml.h>
 #include <memory>
 #include <algorithm>
+#include <cmath>
 
 Font::Font()
 {
@@ -235,11 +236,6 @@ int Font::drawText(int x, int y, std::wstring text)
 	int width = m_charsetDesc.Width;
 	int height = m_charsetDesc.Height;
 
-	int cursorX = x;
-	int cursorY = y;
-	int prevCursorX = 0;
-
-	//int lineWidth = 0;
 	std::vector<int> lineWidth;
 	lineWidth.push_back(0);
 
@@ -257,14 +253,14 @@ int Font::drawText(int x, int y, std::wstring text)
 	
 	int prevCode = 0;
 
-	// 글자 배율. m_fontSize는 폰트를 열 때 그 폰트의 lineHeight로 맞추므로 보통 1이다.
-	//
-	// 예전에는 m_fontSize가 32로 고정이라, lineHeight가 32가 아닌 폰트를 열면
-	// 32/lineHeight 배로 늘여 그렸다. 그런데 확대하면 소스 사각형까지 같은 배율로
-	// 커져서(아래 DrawText 호출) 아틀라스의 옆 글자를 물고 나온다. 즉 배율 1이
-	// 아닌 경로는 애초에 성립하지 않는다 — 크기를 바꾸려면 폰트를 그 크기로
-	// 다시 구워야 한다 (tools/generate_bmfont.py). 2026-08-17.
-	m_scale = (lineHeight > 0) ? (m_fontSize / static_cast<double>(lineHeight)) : 1.0;
+	// 글자 배율. 글자 크기(TextureManager::m_textSize, 줄 높이 픽셀)가 0 이면 폰트 파일의 크기(배율 1)다.
+	// 크기를 바꾸면 글리프를 늘여 그린다. 잘라 올 칸은 폰트 파일의 크기 그대로다 (TextureManager::DrawText).
+	// 커서는 실수로 진행해 배율이 정수가 아니어도 글자 사이가 고르다.
+	m_scale = (tm.m_textSize > 0 && lineHeight > 0)
+		? (static_cast<double>(tm.m_textSize) / lineHeight) : 1.0;
+
+	double cursorX = x;
+	double cursorY = y;
 
 	for (std::size_t i = 0; i < text.length(); i++)
 	{
@@ -280,47 +276,46 @@ int Font::drawText(int x, int y, std::wstring text)
 			int cy = desc.y;
 			int cw = desc.Width;
 			int ch = desc.Height;
-			int ox = static_cast<int>(desc.XOffset * m_scale);
-			int oy = static_cast<int>(desc.YOffset * m_scale);
 			int page = desc.Page;
 			std::string textureId = m_textureIds[page];
 
-			transform.eDx = cursorX + ox;
-			transform.eDy = cursorY + oy;
+			if (prevCode != 0 && desc.kerning[prevCode] > 0)
+			{
+				cursorX += desc.kerning[prevCode] * m_scale;
+			}
+
+			// 글리프의 네 변을 각각 반올림해 이웃 글자와 틈이나 겹침이 생기지 않게 한다
+			const int left = static_cast<int>(std::lround(cursorX + desc.XOffset * m_scale));
+			const int top = static_cast<int>(std::lround(cursorY + desc.YOffset * m_scale));
+			const int right = static_cast<int>(std::lround(cursorX + (desc.XOffset + cw) * m_scale));
+			const int bottom = static_cast<int>(std::lround(cursorY + (desc.YOffset + ch) * m_scale));
+
+			transform.eDx = static_cast<float>(left);
+			transform.eDy = static_cast<float>(top);
 
 			RECT rt;
 			SetRect(&rt, cx, cy, cw, ch);
 
-			if (!isUsedTextWidth) 
+			if (!isUsedTextWidth)
 			{
-				tm.DrawText(textureId,
-					cursorX + ox, 
-					cursorY + oy,
-					static_cast<int>(cw * m_scale), 
-					static_cast<int>(ch * m_scale), 
-					rt, transform);
-			}
-			
-			if (prevCode != 0 && desc.kerning[prevCode] > 0) 
-			{
-				cursorX += desc.kerning[prevCode];
+				tm.DrawText(textureId, left, top, right - left, bottom - top, rt, transform);
 			}
 
-			cursorX += static_cast<int>(desc.XAdvance * m_scale);
+			cursorX += desc.XAdvance * m_scale;
 
-			lineWidth.push_back(cursorX);
+			lineWidth.push_back(static_cast<int>(std::lround(cursorX)));
 
 			prevCode = c;
 
 		}
 		else {
-			if (c == '\n') 
+			if (c == '\n')
 			{
 				cursorX = x;
-				cursorY += lineHeight;
+				cursorY += lineHeight * m_scale;
 			}
 
-			lineWidth.push_back(cursorX);
+			lineWidth.push_back(static_cast<int>(std::lround(cursorX)));
 
 		}
 	}

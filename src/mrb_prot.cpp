@@ -17,7 +17,7 @@
  * 1 이 되어 검수 러너가 실패를 잡는다.
  *
  * 이 파일이 정의하는 것:
- *   Graphics  창 크기, 렌더 배율, 비트맵 폰트 글자 그리기와 폭 재기, 점 찍기
+ *   Graphics  창 크기, 렌더 배율, 비트맵 폰트 글자 그리기와 폭 재기, 글자 색과 크기, 점과 도형, 렌더 타깃
  *   System    플랫폼 이름, 종료, 현재 디렉터리, 리소스 목록, 메시지 상자, 환경 변수
  *   Keys      가상 키 상수 (Input 이 Symbol 을 받을 때 여기서 찾는다)
  *   Kernel#load, Kernel#require   (mruby 에는 파일 읽기가 없다)
@@ -259,6 +259,161 @@ namespace
 		mrb_int x = 0, y = 0;
 		mrb_get_args(mrb, "ii", &x, &y);
 		App::GetInstance().GetTextureManager().DrawPoint(static_cast<int>(x), static_cast<int>(y));
+		return mrb_nil_value();
+	}
+
+	mrb_int ClampColor(mrb_int v)
+	{
+		return v < 0 ? 0 : (v > 255 ? 255 : v);
+	}
+
+	/** Graphics.set_text_color(r, g, b, a = 255). draw_text 의 글자 색 (기본 흰색) */
+	mrb_value gfx_set_text_color(mrb_state* mrb, mrb_value)
+	{
+		mrb_int r = 255, g = 255, b = 255, a = 255;
+		mrb_get_args(mrb, "iii|i", &r, &g, &b, &a);
+		App::GetInstance().GetTextureManager().m_textColor = Initial2D::Color(
+			static_cast<BYTE>(ClampColor(r)), static_cast<BYTE>(ClampColor(g)),
+			static_cast<BYTE>(ClampColor(b)), static_cast<BYTE>(ClampColor(a)));
+		return mrb_nil_value();
+	}
+
+	/** Graphics.text_color -> [r, g, b, a] */
+	mrb_value gfx_text_color(mrb_state* mrb, mrb_value)
+	{
+		const Initial2D::Color& c = App::GetInstance().GetTextureManager().m_textColor;
+		mrb_value values[4] = {
+			mrb_int_value(mrb, c.red), mrb_int_value(mrb, c.green), mrb_int_value(mrb, c.blue), mrb_int_value(mrb, c.alpha)
+		};
+		return mrb_ary_new_from_values(mrb, 4, values);
+	}
+
+	/** Graphics.text_size -> 지금 글자 크기 (줄 높이, 픽셀). 정하지 않았으면 폰트 파일의 크기, 폰트가 없으면 0 */
+	mrb_value gfx_text_size(mrb_state* mrb, mrb_value)
+	{
+		TextureManager& tm = App::GetInstance().GetTextureManager();
+		if (tm.m_textSize > 0)
+		{
+			return mrb_int_value(mrb, tm.m_textSize);
+		}
+		GameFont* pFont = App::GetInstance().GetFont();
+		if (pFont != nullptr && pFont->get() != nullptr && pFont->get()->isValid())
+		{
+			return mrb_int_value(mrb, pFont->get()->getDesc().LineHeight);
+		}
+		return mrb_int_value(mrb, 0);
+	}
+
+	/** Graphics.text_size = px. 0 이면 폰트 파일의 크기 */
+	mrb_value gfx_set_text_size(mrb_state* mrb, mrb_value)
+	{
+		mrb_int size = 0;
+		mrb_get_args(mrb, "i", &size);
+#ifndef RS_WINDOWS
+		App::GetInstance().GetTextureManager().m_textSize = size > 0 ? static_cast<int>(size) : 0;
+#endif
+		return mrb_int_value(mrb, size);
+	}
+
+	/** Graphics.draw_rect(x, y, width, height): 테두리 1픽셀. 색은 set_color */
+	mrb_value gfx_draw_rect(mrb_state* mrb, mrb_value)
+	{
+		mrb_float x = 0, y = 0, w = 0, h = 0;
+		mrb_get_args(mrb, "ffff", &x, &y, &w, &h);
+#ifndef RS_WINDOWS
+		App::GetInstance().GetTextureManager().DrawRect(
+			static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h), false);
+#endif
+		return mrb_nil_value();
+	}
+
+	/** Graphics.fill_rect(x, y, width, height): 칠한 사각형. 색은 set_color */
+	mrb_value gfx_fill_rect(mrb_state* mrb, mrb_value)
+	{
+		mrb_float x = 0, y = 0, w = 0, h = 0;
+		mrb_get_args(mrb, "ffff", &x, &y, &w, &h);
+#ifndef RS_WINDOWS
+		App::GetInstance().GetTextureManager().DrawRect(
+			static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h), true);
+#endif
+		return mrb_nil_value();
+	}
+
+	/** Graphics.draw_line(x1, y1, x2, y2). 색은 set_color */
+	mrb_value gfx_draw_line(mrb_state* mrb, mrb_value)
+	{
+		mrb_float x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+		mrb_get_args(mrb, "ffff", &x1, &y1, &x2, &y2);
+#ifndef RS_WINDOWS
+		App::GetInstance().GetTextureManager().DrawLine(
+			static_cast<float>(x1), static_cast<float>(y1), static_cast<float>(x2), static_cast<float>(y2));
+#endif
+		return mrb_nil_value();
+	}
+
+	/** Graphics.draw_circle(cx, cy, radius): 테두리 1픽셀. 색은 set_color */
+	mrb_value gfx_draw_circle(mrb_state* mrb, mrb_value)
+	{
+		mrb_float cx = 0, cy = 0, r = 0;
+		mrb_get_args(mrb, "fff", &cx, &cy, &r);
+#ifndef RS_WINDOWS
+		App::GetInstance().GetTextureManager().DrawCircle(
+			static_cast<float>(cx), static_cast<float>(cy), static_cast<float>(r), false);
+#endif
+		return mrb_nil_value();
+	}
+
+	/** Graphics.fill_circle(cx, cy, radius): 칠한 원. 색은 set_color */
+	mrb_value gfx_fill_circle(mrb_state* mrb, mrb_value)
+	{
+		mrb_float cx = 0, cy = 0, r = 0;
+		mrb_get_args(mrb, "fff", &cx, &cy, &r);
+#ifndef RS_WINDOWS
+		App::GetInstance().GetTextureManager().DrawCircle(
+			static_cast<float>(cx), static_cast<float>(cy), static_cast<float>(r), true);
+#endif
+		return mrb_nil_value();
+	}
+
+	/**
+	 * Graphics.set_render_target(id) -> true/false. TextureManager.create_target 으로 만든 텍스처에 그린다.
+	 * Graphics.set_render_target(nil) 은 화면으로 돌아간다. 엔진은 매 프레임 render 가 끝나면 화면으로 되돌린다.
+	 */
+	mrb_value gfx_set_render_target(mrb_state* mrb, mrb_value)
+	{
+		mrb_value value;
+		mrb_get_args(mrb, "o", &value);
+		const std::string id = mrb_nil_p(value) ? std::string() : MRuby_ToStdString(mrb, mrb_obj_as_string(mrb, value));
+#ifndef RS_WINDOWS
+		return mrb_bool_value(App::GetInstance().GetTextureManager().SetRenderTarget(id));
+#else
+		return mrb_bool_value(id.empty());
+#endif
+	}
+
+	/** Graphics.render_target -> 지금 그리는 렌더 타깃의 id. 화면이면 nil */
+	mrb_value gfx_render_target(mrb_state* mrb, mrb_value)
+	{
+#ifndef RS_WINDOWS
+		const std::string& id = App::GetInstance().GetTextureManager().GetRenderTarget();
+		if (!id.empty())
+		{
+			return mrb_str_new_cstr(mrb, id.c_str());
+		}
+#endif
+		return mrb_nil_value();
+	}
+
+	/** Graphics.clear(r, g, b, a = 255): 지금 그리는 곳을 한 색으로 지운다. 화면이면 게임 영역만 */
+	mrb_value gfx_clear(mrb_state* mrb, mrb_value)
+	{
+		mrb_int r = 0, g = 0, b = 0, a = 255;
+		mrb_get_args(mrb, "iii|i", &r, &g, &b, &a);
+#ifndef RS_WINDOWS
+		App::GetInstance().GetTextureManager().ClearTarget(
+			static_cast<BYTE>(ClampColor(r)), static_cast<BYTE>(ClampColor(g)),
+			static_cast<BYTE>(ClampColor(b)), static_cast<BYTE>(ClampColor(a)));
+#endif
 		return mrb_nil_value();
 	}
 
@@ -557,6 +712,18 @@ int MRuby_Init()
 	mrb_define_module_function(mrb, graphics, "text_width", MRUBY_GUARD(gfx_text_width), MRB_ARGS_REQ(1));
 	mrb_define_module_function(mrb, graphics, "set_color", MRUBY_GUARD(gfx_set_color), MRB_ARGS_ARG(3, 1));
 	mrb_define_module_function(mrb, graphics, "draw_point", MRUBY_GUARD(gfx_draw_point), MRB_ARGS_REQ(2));
+	mrb_define_module_function(mrb, graphics, "set_text_color", MRUBY_GUARD(gfx_set_text_color), MRB_ARGS_ARG(3, 1));
+	mrb_define_module_function(mrb, graphics, "text_color", MRUBY_GUARD(gfx_text_color), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, graphics, "text_size", MRUBY_GUARD(gfx_text_size), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, graphics, "text_size=", MRUBY_GUARD(gfx_set_text_size), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, graphics, "draw_rect", MRUBY_GUARD(gfx_draw_rect), MRB_ARGS_REQ(4));
+	mrb_define_module_function(mrb, graphics, "fill_rect", MRUBY_GUARD(gfx_fill_rect), MRB_ARGS_REQ(4));
+	mrb_define_module_function(mrb, graphics, "draw_line", MRUBY_GUARD(gfx_draw_line), MRB_ARGS_REQ(4));
+	mrb_define_module_function(mrb, graphics, "draw_circle", MRUBY_GUARD(gfx_draw_circle), MRB_ARGS_REQ(3));
+	mrb_define_module_function(mrb, graphics, "fill_circle", MRUBY_GUARD(gfx_fill_circle), MRB_ARGS_REQ(3));
+	mrb_define_module_function(mrb, graphics, "set_render_target", MRUBY_GUARD(gfx_set_render_target), MRB_ARGS_REQ(1));
+	mrb_define_module_function(mrb, graphics, "render_target", MRUBY_GUARD(gfx_render_target), MRB_ARGS_NONE());
+	mrb_define_module_function(mrb, graphics, "clear", MRUBY_GUARD(gfx_clear), MRB_ARGS_ARG(3, 1));
 
 	// System
 	struct RClass* system = mrb_define_module(mrb, "System");

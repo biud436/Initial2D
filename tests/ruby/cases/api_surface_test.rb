@@ -9,14 +9,16 @@
 
 MODULES = {
   Graphics: %i[width height render_scale render_scale= frame_count prepare_font
-               draw_text text_width set_color draw_point],
+               draw_text text_width set_color draw_point set_text_color text_color
+               text_size text_size= draw_rect fill_rect draw_line draw_circle fill_circle
+               set_render_target render_target clear],
   System: %i[platform exit current_directory resource_files message_box app_icon= env script],
   Input: %i[key_down? key_up? key_press? any_key_down? trigger? press? release?
             mouse_x mouse_y mouse_down? mouse_up? mouse_press? any_mouse_down?
             mouse_z mouse_z= touch_count touch touches],
   Audio: %i[play_music play_sound insert_next_music volume volume= pause_music stop_music
             resume_music playing_music? fade_out_music music_position= release_music],
-  TextureManager: %i[load remove valid?],
+  TextureManager: %i[load remove valid? size create_target],
   Json: %i[load parse],
 }
 
@@ -25,7 +27,8 @@ CLASSES = {
              angle angle= radians radians= visible? visible= opacity opacity=
              frame_delay frame_delay= set_frames start_frame end_frame current_frame
              current_frame= loop= anim_complete? anim_complete= set_sheet_grid
-             rect set_rect dispose disposed?],
+             rect set_rect color set_color pivot set_pivot flip set_flip blend_mode blend_mode=
+             dispose disposed?],
   Tilemap: %i[draw width height tile_width tile_height layer_count size tile_id
               set_tile_id passable? dispose disposed?],
   FontEx: %i[update draw text= set_position set_text_color opacity= angle= text_width

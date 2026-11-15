@@ -9,7 +9,7 @@
 #   def render; end                매 프레임 그리기 단계에서 호출
 #   def destroy; end               종료 시 1번 호출
 
-# 화면 크기, 렌더 배율, 비트맵 폰트 텍스트, 점 그리기 (Lua 는 전역 함수)
+# 화면 크기, 렌더 배율, 비트맵 폰트 텍스트와 글자 색과 크기, 점과 도형, 렌더 타깃 (Lua 는 전역 함수)
 module Graphics
   # 논리 해상도 너비 (px, 렌더 배율로 나눈 값)
   # @return [Integer]
@@ -49,7 +49,7 @@ module Graphics
   # @return [Integer]
   def self.text_width(text); end
 
-  # draw_point 의 색 설정 (Lua 는 인자 4개 모두 필요, 0 반환)
+  # 점과 도형의 색 설정 (Lua 는 인자 4개 모두 필요, 0 반환)
   # @param [Integer] r
   # @param [Integer] g
   # @param [Integer] b
@@ -62,6 +62,82 @@ module Graphics
   # @param [Integer] y
   # @return [void]
   def self.draw_point(x, y); end
+
+  # 글자 그리기의 색 (흰 글리프에 곱한다, 기본 255, 255, 255, 255, 스크립트가 다시 시작하면 기본으로)
+  # @param [Integer] r
+  # @param [Integer] g
+  # @param [Integer] b
+  # @param [Integer] a 기본값 255
+  # @return [void]
+  def self.set_text_color(r, g, b, a = 255); end
+
+  # 글자 색 (r, g, b, a)
+  # @return [Array<Integer>]
+  def self.text_color; end
+
+  # 글자 그리기와 폭 재기의 글자 크기. 글리프를 늘여 그리므로 폰트 파일의 크기에서 멀수록 거칠다 (GDI 판은 무시)
+  # @param [Integer] size 줄 높이 (px), 0 이면 폰트 파일의 크기
+  # @return [void]
+  def self.text_size=(size); end
+
+  # 지금 글자 크기 (줄 높이, px). 정하지 않았으면 폰트 파일의 줄 높이, 폰트가 없으면 0
+  # @return [Integer]
+  def self.text_size; end
+
+  # 사각형 테두리 1픽셀 (색은 Lua 는 draw_set_color, Ruby 는 set_color, 알파 적용)
+  # @param [Numeric] x
+  # @param [Numeric] y
+  # @param [Numeric] width
+  # @param [Numeric] height
+  # @return [void]
+  def self.draw_rect(x, y, width, height); end
+
+  # 칠한 사각형 (색은 Lua 는 draw_set_color, Ruby 는 set_color, 알파 적용)
+  # @param [Numeric] x
+  # @param [Numeric] y
+  # @param [Numeric] width
+  # @param [Numeric] height
+  # @return [void]
+  def self.fill_rect(x, y, width, height); end
+
+  # 선분 1픽셀 (색은 Lua 는 draw_set_color, Ruby 는 set_color)
+  # @param [Numeric] x1
+  # @param [Numeric] y1
+  # @param [Numeric] x2
+  # @param [Numeric] y2
+  # @return [void]
+  def self.draw_line(x1, y1, x2, y2); end
+
+  # 원 테두리 1픽셀 (반지름은 반올림한 정수, 색은 Lua 는 draw_set_color, Ruby 는 set_color)
+  # @param [Numeric] cx
+  # @param [Numeric] cy
+  # @param [Numeric] radius
+  # @return [void]
+  def self.draw_circle(cx, cy, radius); end
+
+  # 칠한 원 (반지름은 반올림한 정수, 색은 Lua 는 draw_set_color, Ruby 는 set_color)
+  # @param [Numeric] cx
+  # @param [Numeric] cy
+  # @param [Numeric] radius
+  # @return [void]
+  def self.fill_circle(cx, cy, radius); end
+
+  # 이후의 그리기가 들어갈 곳. 렌더 타깃이 아닌 id 면 false. 엔진은 매 프레임 그리기 훅이 끝나면 화면으로 되돌린다
+  # @param [String, nil] id 렌더 타깃으로 만든 텍스처의 id, nil 이면 화면
+  # @return [Boolean]
+  def self.set_render_target(id); end
+
+  # 지금 그리기가 들어가는 렌더 타깃의 id (화면이면 nil)
+  # @return [String, nil]
+  def self.render_target; end
+
+  # 지금 그리는 곳을 한 색으로 지운다 (화면이면 게임 영역만)
+  # @param [Integer] r
+  # @param [Integer] g
+  # @param [Integer] b
+  # @param [Integer] a 기본값 255
+  # @return [void]
+  def self.clear(r, g, b, a = 255); end
 end
 
 # 플랫폼, 종료, 경로, 리소스 목록, 메시지 상자, 환경 변수 (Lua 는 전역 함수)
@@ -299,6 +375,18 @@ module TextureManager
   # @param [String] id
   # @return [Boolean]
   def self.valid?(id); end
+
+  # 등록한 텍스처의 크기 (width, height, px). 없는 id 면 nil
+  # @param [String] id
+  # @return [Array<Integer>, nil]
+  def self.size(id); end
+
+  # 그려 넣을 수 있는 빈(투명) 텍스처를 만든다. 같은 id 가 있으면 바꾼다. 스프라이트가 이 id 로 그린다 (GDI 판은 false)
+  # @param [String] id
+  # @param [Integer] width
+  # @param [Integer] height
+  # @return [Boolean]
+  def self.create_target(id, width, height); end
 end
 
 # 가상 키 상수 (Windows 가상 키 값, Input 메서드에 Symbol 을 넘기면 이 상수에서 조회)
@@ -569,6 +657,46 @@ class Sprite
   #   @param [Hash] rect x, y, width, height
   # @return [Sprite]
   def set_rect(x, y, width, height); end
+
+  # 색 입히기 값 (r, g, b)
+  # @return [Array<Integer>]
+  def color; end
+
+  # 색 입히기. 텍스처 색에 r/255, g/255, b/255 를 곱한다 (255, 255, 255 가 원래 색, GDI 판은 무시)
+  # @param [Integer] r
+  # @param [Integer] g
+  # @param [Integer] b
+  # @return [Sprite]
+  def set_color(r, g, b); end
+
+  # 기준점 (칸 안의 비율 x, y)
+  # @return [Array<Numeric>]
+  def pivot; end
+
+  # 기준점 (칸 안의 비율, 0, 0 은 왼쪽 위, 0.5, 0.5 는 가운데). 위치는 이 점이 놓일 자리이고 회전과 확대의 중심 (GDI 판은 무시)
+  # @param [Numeric] x
+  # @param [Numeric] y
+  # @return [Sprite]
+  def set_pivot(x, y); end
+
+  # 뒤집기 (좌우, 상하)
+  # @return [Array<Boolean>]
+  def flip; end
+
+  # 칸 안에서 좌우(x), 상하(y)로 뒤집는다. 기준점의 자리는 그대로 (GDI 판은 무시)
+  # @param [Boolean] x
+  # @param [Boolean] y
+  # @return [Sprite]
+  def set_flip(x, y); end
+
+  # 혼합 모드 (normal, add, multiply)
+  # @return [Symbol]
+  def blend_mode; end
+
+  # 혼합 모드. normal 은 알파 혼합, add 는 더하기(빛), multiply 는 곱하기(그림자, 색 필터). 다른 값은 오류 (GDI 판은 무시)
+  # @param [String] mode normal, add, multiply (Ruby 는 심벌도)
+  # @return [void]
+  def blend_mode=(mode); end
 
   # 스프라이트 해제 (텍스처는 해제하지 않음)
   # @return [void]

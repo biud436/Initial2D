@@ -463,6 +463,8 @@ bool App::StepFrame()
 	RenderClear();
 	RenderTransform();
 	Render();
+	// 스크립트가 렌더 타깃을 화면으로 되돌리지 않고 끝냈어도 화면을 찍고 내보낸다
+	GetTextureManager().ResetRenderTarget();
 
 	// 검증/CI용 프레임 덤프 — INITIAL2D_SCREENSHOT=<path.bmp>가 설정되면
 	// 120번째 프레임을 BMP로 저장한다. INITIAL2D_EXIT_AFTER=<n>이 설정되면

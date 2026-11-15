@@ -31,6 +31,14 @@ SpriteData::SpriteData()
 	endFrame = 1;	
 	SetRect(&rect, 0, 0, 4, 4);
 	opacity = 255;
+	red = 255;
+	green = 255;
+	blue = 255;
+	pivotX = 0.0f;
+	pivotY = 0.0f;
+	flipX = false;
+	flipY = false;
+	blend = 0;
 }
 
 Sprite::Sprite() : 
@@ -135,6 +143,8 @@ void Sprite::draw(void)
 	if (m_bInitialized == false)
 		return;
 
+#ifdef RS_WINDOWS
+	// GDI 판은 색 입히기, 기준점, 뒤집기, 혼합 모드를 그리지 않는다
 	App::GetInstance().GetTextureManager().DrawFrame
 	(
 		m_spriteData.id,
@@ -146,7 +156,63 @@ void Sprite::draw(void)
 		m_spriteData.opacity,
 		m_transform
 	);
+#else
+	// 위치, 확대, 회전은 Update 가 만든 변환에서 읽는다 (Update 전에 바꾼 값은 다음 Update 부터 보인다)
+	const double scale = std::sqrt(static_cast<double>(m_transform.eM11) * m_transform.eM11 +
+		static_cast<double>(m_transform.eM12) * m_transform.eM12);
+	const double angle = std::atan2(static_cast<double>(m_transform.eM12),
+		static_cast<double>(m_transform.eM11)) * (180.0 / PI);
 
+	App::GetInstance().GetTextureManager().DrawSprite
+	(
+		m_spriteData.id,
+		static_cast<int>(m_spriteData.rect.left),
+		static_cast<int>(m_spriteData.rect.top),
+		m_spriteData.width,
+		m_spriteData.height,
+		static_cast<float>(m_transform.eDx),
+		static_cast<float>(m_transform.eDy),
+		static_cast<float>(scale),
+		static_cast<float>(angle),
+		m_spriteData.pivotX,
+		m_spriteData.pivotY,
+		m_spriteData.opacity,
+		m_spriteData.red,
+		m_spriteData.green,
+		m_spriteData.blue,
+		m_spriteData.flipX,
+		m_spriteData.flipY,
+		m_spriteData.blend
+	);
+#endif
+
+}
+
+void Sprite::setColor(BYTE r, BYTE g, BYTE b)
+{
+	m_spriteData.red = r;
+	m_spriteData.green = g;
+	m_spriteData.blue = b;
+}
+
+void Sprite::setPivot(float px, float py)
+{
+	m_spriteData.pivotX = px;
+	m_spriteData.pivotY = py;
+}
+
+void Sprite::setFlip(bool flipX, bool flipY)
+{
+	m_spriteData.flipX = flipX;
+	m_spriteData.flipY = flipY;
+}
+
+void Sprite::setBlendMode(int blend)
+{
+	if (blend != BlendAdd && blend != BlendMultiply) {
+		blend = BlendNormal;
+	}
+	m_spriteData.blend = blend;
 }
 
 const SpriteData& Sprite::getSpriteData()

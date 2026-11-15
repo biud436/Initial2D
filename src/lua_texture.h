@@ -9,5 +9,7 @@ LUA_METHOD(CreateTextureManagerObject);
 LUA_METHOD(LoadTexture);
 LUA_METHOD(RemoveTexture);
 LUA_METHOD(IsValidTexture);
+LUA_METHOD(GetTextureSize);
+LUA_METHOD(CreateTargetTexture);
 
 #endif
