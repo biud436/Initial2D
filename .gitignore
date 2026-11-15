@@ -13,6 +13,8 @@
 node_modules/
 
 resources/*.*
+# 그림 옆의 스프라이트 시트 파일은 손으로 쓰는 데이터라 추적한다 (그림은 생성물이라 무시한다)
+!resources/*.sprite.json
 
 # RPG Maker 2003 RTP 원본과 tools/rtp_import.py 의 변환 결과.
 # 재배포가 금지된 소재이므로 저장소에 들어가면 안 된다 (docs/plans/04-resources.md).

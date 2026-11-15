@@ -449,6 +449,78 @@ def test_render_basics_mruby():
     run_render_basics("mruby_render_basics_scene.rb")
 
 
+# 스프라이트 시트 클립 씬(엔진 2)의 stdout. 두 언어가 같은 줄을 같은 순서로 찍는다. 시트는
+# tests/fixtures/sprites/sample.sprite.json (16x16 칸 8개, 여백 2, 간격 2), 틱은 20ms.
+# walk 는 100, 50, 100, 50ms 의 loop, wave 는 80ms 의 pingpong (4 5 6 5), hit 는 100ms 의 once (7 3).
+SHEET_CLIPS_LINES = [
+    "sheet:grid:4x2 frames=8 frame=16x16",
+    "sheet:open:walker=walk:0 waver=wave:4 hitter=hit:7",
+    "sheet:t5:walker=walk:1 waver=wave:5 hitter=hit:3",
+    "sheet:t8:walker=walk:2 waver=wave:6 hitter=hit:3",
+    "sheet:t10:walker=walk:2 waver=wave:6 hitter=hit:3,done",
+    "sheet:t13:walker=walk:3 waver=wave:5 hitter=hit:3,done",
+    "sheet:t20:walker=walk:1 waver=wave:5 hitter=hit:3,done",
+    "sheet:t21:walker=hit:7 waver=wave:5 hitter=hit:3,done",
+    "sheet:t26:walker=hit:3 waver=wave:5 hitter=hit:7",
+    "sheet:rect:walker=56,2 waver=20,20 hitter=56,20",
+]
+# tests/fixtures/sprites/frames.png 의 칸 색 (프레임 번호 순서). 여백과 간격은 불투명 검정
+SHEET_COLORS = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0),
+                (255, 0, 255), (0, 255, 255), (255, 128, 0), (128, 0, 255)]
+
+
+def run_sheet_clips(scene):
+    work, result, shots = run_scene(scene, [10], 12, fixtures=True)
+    log = result.stdout + result.stderr
+    check("프로세스 정상 종료", result.returncode == 0, f"rc={result.returncode} | {log[-300:]}")
+    check("스크립트 오류 없음", "error" not in log.lower(), log[-300:])
+    lines = [line for line in result.stdout.splitlines() if line.startswith("sheet:")]
+    for want in SHEET_CLIPS_LINES:
+        check(f"stdout: {want}", want in lines, " / ".join(lines)[-400:])
+    check("sheet 줄이 이 순서로 이것뿐이다", lines == SHEET_CLIPS_LINES, " / ".join(lines)[-400:])
+    check("프레임 덤프 생성", 10 in shots)
+    if 10 not in shots:
+        return
+    img = shots[10]
+    s = img.width / 768.0
+
+    def expect(label, x, y, target, tol=12):
+        p = px(img, s, x, y)
+        check(label, near(p, target, tol), f"{p} 기대 {target}")
+
+    # 배율 4 의 64x64 칸 셋 (y 236..300). walker 는 시트의 pivot (0.5, 1) 로 (100, 300) 이 아래 가운데,
+    # waver 는 클립의 pivot (0, 0), hitter 는 props.pivot (0, 0) 이 시트의 것을 덮는다
+    blocks = [("walker", 68, SHEET_COLORS[3], "hit 의 둘째 프레임 3 (노랑)"),
+              ("waver", 200, SHEET_COLORS[5], "멈춘 wave 의 프레임 5 (청록)"),
+              ("hitter", 300, SHEET_COLORS[7], "다시 튼 hit 의 첫 프레임 7 (보라)")]
+    for name, x0, color, what in blocks:
+        y0 = 236
+        expect(f"{name}: {what}", x0 + 32, y0 + 32, color)
+        # 네 모서리 안쪽 2px 까지 그 칸의 색이다 (여백과 간격의 검정이 묻어 나오지 않는다)
+        for cx, cy in ((x0 + 2, y0 + 2), (x0 + 61, y0 + 2), (x0 + 2, y0 + 61), (x0 + 61, y0 + 61)):
+            expect(f"{name}: 칸 모서리 ({cx}, {cy}) 도 같은 색", cx, cy, color)
+        # 칸 밖은 바탕 (크기가 64 이고 자리가 기준점대로다)
+        expect(f"{name}: 칸 왼쪽 밖은 바탕", x0 - 3, y0 + 32, WHITE)
+        expect(f"{name}: 칸 오른쪽 밖은 바탕", x0 + 66, y0 + 32, WHITE)
+        expect(f"{name}: 칸 위 밖은 바탕", x0 + 32, y0 - 3, WHITE)
+        expect(f"{name}: 칸 아래 밖은 바탕", x0 + 32, y0 + 66, WHITE)
+    check_golden("sheet_clips", img)
+
+
+def test_sheet_clips_lua():
+    """스프라이트 시트 파일의 클립(loop, pingpong, once)과 씬 로더의 props.sheet, props.clip (엔진 2)."""
+    print("\n[1sc] sheet_clips_scene: 시트 파일의 클립을 씬 로더로 틀고 바꾸고 멈추고 다시 튼다")
+    run_sheet_clips("sheet_clips_scene.lua")
+
+
+def test_sheet_clips_mruby():
+    print("\n[1sc-m] mruby_sheet_clips_scene: 같은 시트와 클립을 mruby 로, 같은 줄과 같은 골든")
+    if not HAS_MRUBY:
+        print("  SKIP: 이 빌드에는 mruby 가 없습니다 (brew install mruby 후 cmake 다시 실행)")
+        return
+    run_sheet_clips("mruby_sheet_clips_scene.rb")
+
+
 # 입력 경로 (C++): INITIAL2D_TEST_EVENTS 가 만든 SDL 마우스 이벤트가 HandleEvent, Input::update,
 # 바인딩을 거쳐 스크립트에 보이는가. 이벤트 사이는 20 프레임이다 (헤드리스는 한 프레임이 한 틱보다 짧을 수 있다)
 INPUT_EVENTS = "10:mousedown:0,30:wheel:1,50:wheel:-1,70:wheel:-3,90:mousedown:1"
@@ -2344,6 +2416,8 @@ def main():
         test_mruby_assert_scene,
         test_render_basics_lua,
         test_render_basics_mruby,
+        test_sheet_clips_lua,
+        test_sheet_clips_mruby,
         test_input_events_lua,
         test_input_events_mruby,
         test_mruby_flappy_scene,

@@ -41,4 +41,6 @@ MRUBY_TEST_MANIFEST = [
   "scripts/ruby/rbtests/cases/scene_loader_test.rb",
   # 플래피 컴포넌트
   "scripts/ruby/rbtests/cases/flappy_components_test.rb",
+  # 엔진 2: 스프라이트 시트 파일과 클립
+  "scripts/ruby/rbtests/cases/sprite_sheet_file_test.rb",
 ]

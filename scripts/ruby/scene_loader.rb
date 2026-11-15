@@ -26,6 +26,8 @@
 # Lua 표처럼 열려 있어 컴포넌트가 아무 필드나 붙일 수 있고(obj.target = ...), 없는 필드는 nil 이다.
 # 로더가 매 틱 obj.x, obj.y, obj.visible 과 props 의 opacity, scale, angle 을 스프라이트에 옮기므로
 # 컴포넌트는 obj.x 를 바꾸는 것으로 움직인다. obj.animate = false 면 프레임 애니메이션만 멈춘다.
+# props.sheet(스프라이트 시트 파일)를 쓰는 sprite 는 obj.sheet 와 obj.animator(scripts/ruby/sprite_sheet.rb)가
+# 있고, 컴포넌트는 props["clip"] 을 바꾸는 것으로 클립을 바꾼다.
 
 # 확장 타입 모듈이 이 안에 정의된다 (scripts/ruby/scene_types/tilemap.rb -> SceneTypes::Tilemap)
 module SceneTypes
@@ -238,6 +240,15 @@ module SceneLoader
     end
 
     # -----------------------------------------------------------------------
+    # 시트 파일 모듈 (scripts/ruby/sprite_sheet.rb). 시트를 쓰는 스프라이트를 처음 만날 때 읽는다.
+    def sheet_module(label)
+      return SpriteSheet if Object.const_defined?(:SpriteSheet)
+      path = SCRIPT_ROOT + "sprite_sheet.rb"
+      err("sprite '#{label}': props.sheet needs #{path}") unless File.exist?(path)
+      require path
+      SpriteSheet
+    end
+
     # 컴포넌트 매개변수 (params, 계획 문서 5.4절)
     # -----------------------------------------------------------------------
 
@@ -470,8 +481,13 @@ module SceneLoader
       end
       p = props || {}
       if type == "sprite"
+        sheet = p["sheet"]
+        err("props.sheet must be a string (#{label})") if !sheet.nil? && !sheet.is_a?(String)
         image = p["image"]
-        err("sprite '#{label}' needs props.image") unless image.is_a?(String) && !image.empty?
+        if (sheet.nil? || sheet.empty?) && !(image.is_a?(String) && !image.empty?)
+          err("sprite '#{label}' needs props.image")
+        end
+        err("props.clip must be a string (#{label})") if !p["clip"].nil? && !p["clip"].is_a?(String)
         SPRITE_NUMBER_KEYS.each { |k| check_number(p[k], "props.#{k}", label) }
         SPRITE_INTEGER_KEYS.each do |k|
           err("props.#{k} must be an integer (#{label})") if !p[k].nil? && !integer_like?(p[k])
@@ -586,7 +602,7 @@ module SceneLoader
   # 실행 오브젝트. Lua 표처럼 열려 있다 (없는 필드는 nil, 아무 필드나 붙일 수 있다).
   class SceneObject
     attr_accessor :id, :type, :x, :y, :visible, :props, :scripts, :sprite, :scene, :animate, :spec,
-                  :texture, :frame_width, :frame_height, :removed, :type_module
+                  :texture, :frame_width, :frame_height, :removed, :type_module, :sheet, :animator
     attr_reader :components
 
     def initialize(spec)
@@ -598,6 +614,8 @@ module SceneLoader
       @props = SceneLoader.deep_copy(spec["props"] || {})
       @scripts = (spec["scripts"] || []).dup
       @sprite = nil
+      @sheet = nil
+      @animator = nil
       @animate = true
       @spec = spec
       @removed = false
@@ -809,8 +827,9 @@ module SceneLoader
       end
     end
 
-    # 색 입히기, 기준점, 뒤집기, 혼합 모드. 없는 키는 엔진 기본값(원래 색, 왼쪽 위, 그대로, normal)
-    def apply_look(sprite, p)
+    # 색 입히기, 기준점, 뒤집기, 혼합 모드. 없는 키는 엔진 기본값(원래 색, 그대로, normal)이고
+    # 기준점은 default_pivot (시트 스프라이트는 클립이나 시트의 pivot, 아니면 왼쪽 위 0, 0)
+    def apply_look(sprite, p, default_pivot = nil)
       c = p["color"]
       if c.is_a?(Array)
         sprite.set_color((c[0] || 255).floor, (c[1] || 255).floor, (c[2] || 255).floor)
@@ -820,16 +839,64 @@ module SceneLoader
       pv = p["pivot"]
       if pv.is_a?(Array)
         sprite.set_pivot((pv[0] || 0).to_f, (pv[1] || 0).to_f)
-      else
+      elsif default_pivot.nil?
         sprite.set_pivot(0, 0)
+      else
+        sprite.set_pivot(default_pivot[0].to_f, default_pivot[1].to_f)
       end
       sprite.set_flip(p["flipX"] == true, p["flipY"] == true)
       sprite.blend_mode = BLEND_MODES.include?(p["blend"]) ? p["blend"] : "normal"
     end
 
+    def uses_sheet?(p)
+      p["sheet"].is_a?(String) && !p["sheet"].empty?
+    end
+
+    # 틀 클립: props.clip, 비어 있으면 시트의 defaultClip, 그것도 없으면 nil (0 번 프레임에 머문다)
+    def wanted_clip(obj)
+      c = obj.props["clip"]
+      c = obj.sheet.default_clip if !c.is_a?(String) || c.empty?
+      c
+    end
+
+    def play_clip(obj, name)
+      obj.animator.play(name)
+    rescue SpriteSheet::Error => e
+      SceneLoader.err("sprite '#{obj.id}': #{e.message}")
+    end
+
+    # props.sheet 가 있는 sprite: 그림, 칸 크기, 프레임, 클립은 시트 파일에서 온다 (계획 문서 4.1절,
+    # engine2-sprite-sheets.md). 프레임 칸은 재생기가 매 틱 set_rect 로 옮긴다.
+    def create_sheet_sprite(obj)
+      p = obj.props
+      ss = SceneLoader.sheet_module(obj.id)
+      begin
+        obj.sheet = ss.load(p["sheet"])
+      rescue SpriteSheet::Error => e
+        SceneLoader.err("sprite '#{obj.id}': #{e.message}")
+      end
+      sheet = obj.sheet
+      obj.animator = sheet.animator
+      play_clip(obj, wanted_clip(obj))
+      tex_id = acquire_texture(SceneLoader.resolve_path(sheet.image))
+      sprite = Sprite.new(obj.x, obj.y, sheet.frame_width, sheet.frame_height, 1, tex_id)
+      x, y, w, h = obj.animator.rect
+      sprite.set_rect(x, y, w, h)
+      sprite.scale = p["scale"].to_f
+      sprite.angle = p["angle"].to_f
+      sprite.opacity = p["opacity"].floor
+      sprite.visible = obj.visible ? true : false
+      apply_look(sprite, p, obj.animator.pivot)
+      obj.sprite = sprite
+      obj.texture = tex_id
+      obj.frame_width = sheet.frame_width
+      obj.frame_height = sheet.frame_height
+    end
+
     # sprite props -> 엔진 Sprite API. 대응은 계획 문서 4절에 적혀 있다.
     def create_sprite(obj)
       p = obj.props
+      return create_sheet_sprite(obj) if uses_sheet?(p)
       path = SceneLoader.resolve_path(p["image"])
       tex_id = acquire_texture(path)
       frames = [1, p["frames"].floor].max
@@ -908,7 +975,21 @@ module SceneLoader
       s.opacity = opacity
       s.scale = (p["scale"] || 1).to_f
       s.angle = (p["angle"] || 0).to_f
-      apply_look(s, p)
+      anim = obj.animator
+      if anim.nil?
+        apply_look(s, p)
+      else
+        # props.clip 이 바뀌면 새 클립을 처음부터 튼다 (이번 틱에는 시간을 보내지 않는다)
+        want = wanted_clip(obj)
+        if want != anim.clip
+          play_clip(obj, want)
+        elsif obj.animate != false
+          anim.update(elapsed)
+        end
+        x, y, w, h = anim.rect
+        s.set_rect(x, y, w, h)
+        apply_look(s, p, anim.pivot)
+      end
       s.update(obj.animate == false ? 0 : elapsed)
     end
 

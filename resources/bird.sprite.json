@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "image": "resources/bird_276x64.png",
+  "frameWidth": 92,
+  "frameHeight": 64,
+  "defaultClip": "fly",
+  "clips": {
+    "fly": { "frames": [0, 1, 2], "duration": 110, "loop": "pingpong" },
+    "fall": { "frames": [0], "loop": "once" }
+  }
+}
