@@ -60,7 +60,8 @@ function M.update(obj, scene, elapsed)
 	end
 
 	obj.props.angle = st.birdAngle
-	obj.animate = (st.state ~= "dead")   -- 게임 오버에는 날갯짓 애니메이션을 멈춘다
+	-- 클립은 resources/bird.sprite.json 의 것: 날갯짓(fly), 게임 오버에는 날개를 편 채 떨어진다(fall)
+	obj.props.clip = (st.state == "dead") and "fall" or "fly"
 end
 
 return M

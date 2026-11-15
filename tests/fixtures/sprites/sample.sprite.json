@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "image": "fixtures/sprites/frames.png",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "margin": 2,
+  "spacing": 2,
+  "pivot": [0.5, 1],
+  "defaultClip": "walk",
+  "editorOnly": "보존",
+  "clips": {
+    "walk": { "frames": [0, 1, 2, 3], "duration": [100, 50, 100, 50] },
+    "wave": { "frames": [4, 5, 6], "duration": 80, "loop": "pingpong", "pivot": [0, 0] },
+    "hit": { "frames": [7, 3], "loop": "once", "editorOnly": true }
+  }
+}

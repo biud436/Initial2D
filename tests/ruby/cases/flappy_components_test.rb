@@ -187,7 +187,7 @@ T.run_case("flappy_components") do |t|
     check_near.call(st[:bird_angle], 6, "대기: 기울기는 6도까지")
     check_near.call(bird.props["angle"], 6, "대기: 기울기가 스프라이트 각도로 간다")
     t.check_eq(st[:ready_time], Math::PI / 8, "대기: 새는 대기 시간을 늘리지 않는다")
-    t.check_eq(bird.animate, true, "대기: 날갯짓 애니메이션은 돈다")
+    t.check_eq(bird.props["clip"], "fly", "대기: 날갯짓 클립(fly)을 튼다")
 
     # [새] 플레이: 중력, 최대 낙하 속도, 천장
     st[:state] = :play
@@ -252,7 +252,7 @@ T.run_case("flappy_components") do |t|
     bird_c.update(bird, scene, tick)
     t.check_eq(st[:state], :dead, "지면: 844 에 닿으면 죽는다")
     t.check_eq(bird.y, ground_y - c::BIRD_H, "지면: 새는 지면 위 780 에 놓인다")
-    t.check_eq(bird.animate, false, "지면: 죽으면 날갯짓 애니메이션을 멈춘다")
+    t.check_eq(bird.props["clip"], "fall", "지면: 죽으면 떨어지는 클립(fall)으로 바꾼다")
 
     # [새] 게임 오버: 고꾸라지며 지면까지 떨어지고, 거기서 멈춘다
     bird.y = 600

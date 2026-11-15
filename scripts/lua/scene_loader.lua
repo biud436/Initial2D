@@ -23,6 +23,8 @@
 -- sprite(스프라이트 핸들, sprite 타입만), scene, 그리고 spec(파일의 원본 항목, 모르는 키 포함).
 -- 로더가 매 틱 obj.x, obj.y, obj.visible 과 props 의 opacity, scale, angle 을 스프라이트에 옮기므로
 -- 컴포넌트는 obj.x 를 바꾸는 것으로 움직인다. obj.animate 를 false 로 두면 프레임 애니메이션만 멈춘다.
+-- props.sheet(스프라이트 시트 파일)를 쓰는 sprite 는 obj.sheet 와 obj.animator(scripts/lua/sprite_sheet.lua)가
+-- 있고, 컴포넌트는 props.clip 을 바꾸는 것으로 클립을 바꾼다.
 
 local SceneLoader = {}
 
@@ -419,8 +421,14 @@ local function validateObject(spec, index, ids, allowNoId)
 	end
 	local p = spec.props or {}
 	if spec.type == "sprite" then
-		if type(p.image) ~= "string" or p.image == "" then
+		if p.sheet ~= nil and type(p.sheet) ~= "string" then
+			return string.format("props.sheet must be a string (%s)", label)
+		end
+		if (p.sheet == nil or p.sheet == "") and (type(p.image) ~= "string" or p.image == "") then
 			return string.format("sprite '%s' needs props.image", label)
+		end
+		if p.clip ~= nil and type(p.clip) ~= "string" then
+			return string.format("props.clip must be a string (%s)", label)
 		end
 		for _, k in ipairs({ "width", "height", "frames", "scale", "angle", "opacity",
 				"startFrame", "endFrame", "frameDelay" }) do
@@ -548,6 +556,8 @@ local function normalizeObject(spec)
 		props = deepcopy(spec.props or {}),
 		scripts = {},
 		sprite = nil,
+		sheet = nil,
+		animator = nil,
 		animate = true,
 		spec = spec,
 		_components = {},
@@ -599,8 +609,9 @@ function Scene:_releaseTexture(path)
 	end
 end
 
--- 색 입히기, 기준점, 뒤집기, 혼합 모드. 없는 키는 엔진 기본값(원래 색, 왼쪽 위, 그대로, normal)
-local function applyLook(handle, p)
+-- 색 입히기, 기준점, 뒤집기, 혼합 모드. 없는 키는 엔진 기본값(원래 색, 그대로, normal)이고
+-- 기준점은 px, py (시트 스프라이트는 클립이나 시트의 pivot, 아니면 왼쪽 위 0, 0)
+local function applyLook(handle, p, px, py)
 	local c = p.color
 	if type(c) == "table" then
 		Sprite.SetColor(handle, math.floor(c[1] or 255), math.floor(c[2] or 255), math.floor(c[3] or 255))
@@ -611,15 +622,72 @@ local function applyLook(handle, p)
 	if type(pv) == "table" then
 		Sprite.SetPivot(handle, pv[1] or 0, pv[2] or 0)
 	else
-		Sprite.SetPivot(handle, 0, 0)
+		Sprite.SetPivot(handle, px or 0, py or 0)
 	end
 	Sprite.SetFlip(handle, p.flipX == true, p.flipY == true)
 	Sprite.SetBlendMode(handle, BLEND_MODES[p.blend] and p.blend or "normal")
 end
 
+-- 시트 파일 모듈 (scripts/lua/sprite_sheet.lua). 시트를 쓰는 스프라이트를 처음 만날 때 읽는다.
+local SpriteSheet = nil
+local function sheetModule(label)
+	if SpriteSheet == nil then
+		SpriteSheet = requireIfExists(SceneLoader.SCRIPT_ROOT .. "sprite_sheet")
+		if SpriteSheet == nil then
+			fail("sprite '%s': props.sheet needs %ssprite_sheet.lua", label, SceneLoader.SCRIPT_ROOT)
+		end
+	end
+	return SpriteSheet
+end
+
+local function usesSheet(p)
+	return type(p.sheet) == "string" and p.sheet ~= ""
+end
+
+-- 틀 클립: props.clip, 비어 있으면 시트의 defaultClip, 그것도 없으면 nil (0 번 프레임에 머문다)
+local function wantedClip(obj)
+	local c = obj.props.clip
+	if type(c) ~= "string" or c == "" then c = obj.sheet.defaultClip end
+	return c
+end
+
+local function playClip(obj, name)
+	local ok, err = pcall(obj.animator.play, obj.animator, name)
+	if not ok then fail("sprite '%s': %s", obj.id, tostring(err)) end
+end
+
+-- props.sheet 가 있는 sprite: 그림, 칸 크기, 프레임, 클립은 시트 파일에서 온다 (계획 문서 4.1절,
+-- engine2-sprite-sheets.md). 프레임 칸은 재생기가 매 틱 Sprite.SetRect 로 옮긴다.
+function Scene:_createSheetSprite(obj)
+	local p = obj.props
+	local SS = sheetModule(obj.id)
+	local ok, sheet = pcall(SS.load, p.sheet)
+	if not ok then fail("sprite '%s': %s", obj.id, tostring(sheet)) end
+	obj.sheet = sheet
+	obj.animator = sheet:animator()
+	playClip(obj, wantedClip(obj))
+	local texId = self:_acquireTexture(resolvePath(sheet.image))
+	local handle = Sprite.Create(obj.x, obj.y, sheet.frameWidth, sheet.frameHeight, 1, texId)
+	if handle == nil or handle == 0 then
+		self:_releaseTexture(texId)
+		fail("sprite '%s': Sprite.Create failed", obj.id)
+	end
+	Sprite.SetRect(handle, obj.animator:rect())
+	Sprite.SetScale(handle, p.scale)
+	Sprite.SetAngle(handle, p.angle)
+	Sprite.SetOpacity(handle, math.floor(p.opacity))
+	Sprite.SetVisible(handle, obj.visible and true or false)
+	applyLook(handle, p, obj.animator:pivot())
+	obj.sprite = handle
+	obj.texture = texId
+	obj.frameWidth = sheet.frameWidth
+	obj.frameHeight = sheet.frameHeight
+end
+
 -- sprite props -> 엔진 Sprite API. 대응은 계획 문서 4절에 적혀 있다.
 function Scene:_createSprite(obj)
 	local p = obj.props
+	if usesSheet(p) then return self:_createSheetSprite(obj) end
 	local path = resolvePath(p.image)
 	local texId = self:_acquireTexture(path)
 	local frames = math.max(1, math.floor(p.frames))
@@ -703,7 +771,20 @@ function Scene:_commitSprite(obj, elapsed)
 	Sprite.SetOpacity(h, opacity)
 	Sprite.SetScale(h, p.scale or 1)
 	Sprite.SetAngle(h, p.angle or 0)
-	applyLook(h, p)
+	local anim = obj.animator
+	if anim then
+		-- props.clip 이 바뀌면 새 클립을 처음부터 튼다 (이번 틱에는 시간을 보내지 않는다)
+		local want = wantedClip(obj)
+		if want ~= anim:clip() then
+			playClip(obj, want)
+		elseif obj.animate ~= false then
+			anim:update(elapsed)
+		end
+		Sprite.SetRect(h, anim:rect())
+		applyLook(h, p, anim:pivot())
+	else
+		applyLook(h, p)
+	end
 	Sprite.Update(h, (obj.animate ~= false) and elapsed or 0)
 end
 

@@ -62,6 +62,7 @@ class Bird
     end
 
     obj.props["angle"] = st[:bird_angle]
-    obj.animate = (st[:state] != :dead)   # 게임 오버에는 날갯짓 애니메이션을 멈춘다
+    # 클립은 resources/bird.sprite.json 의 것: 날갯짓(fly), 게임 오버에는 날개를 편 채 떨어진다(fall)
+    obj.props["clip"] = st[:state] == :dead ? "fall" : "fly"
   end
 end

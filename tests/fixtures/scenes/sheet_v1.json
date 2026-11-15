@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "name": "sheet",
+  "objects": [
+    { "id": "walker", "type": "sprite", "x": 100, "y": 300, "visible": true,
+      "props": { "sheet": "fixtures/sprites/sample.sprite.json", "scale": 4 }, "scripts": [] },
+    { "id": "waver", "type": "sprite", "x": 200, "y": 236, "visible": true,
+      "props": { "sheet": "fixtures/sprites/sample.sprite.json", "clip": "wave", "scale": 4 }, "scripts": [] },
+    { "id": "hitter", "type": "sprite", "x": 300, "y": 236, "visible": true,
+      "props": { "sheet": "fixtures/sprites/sample.sprite.json", "clip": "hit", "scale": 4, "pivot": [0, 0],
+                 "image": "", "frames": 1, "startFrame": 0, "endFrame": 0, "frameDelay": 100, "loop": true },
+      "scripts": [] }
+  ]
+}

@@ -2,11 +2,13 @@
 # InitialEditor 의 scripts/sync-engine-templates.mjs 가 복사하는 원본(from) 전부와 타일맵 템플릿이다.
 # 새 프로젝트 안의 경로(to)와 템플릿 그룹은 에디터가 정한다. 한 줄에 경로 하나, # 로 시작하는 줄은 주석.
 
-# 씬 로더 (모든 템플릿)
+# 씬 로더와 스프라이트 시트 (모든 템플릿)
 scripts/lua/scene_loader.lua
 scripts/lua/scene_types/tilemap.lua
+scripts/lua/sprite_sheet.lua
 scripts/ruby/scene_loader.rb
 scripts/ruby/scene_types/tilemap.rb
+scripts/ruby/sprite_sheet.rb
 
 # 한글 비트맵 폰트
 resources/fonts/hangul.fnt
@@ -24,8 +26,9 @@ resources/templates/main.lua
 resources/templates/main.rb
 resources/templates/scene.json
 
-# 플래피버드: 씬, 컴포넌트, 그림, 효과음
+# 플래피버드: 씬, 컴포넌트, 새의 시트 파일, 그림, 효과음
 resources/scenes/flappy.json
+resources/bird.sprite.json
 scripts/lua/components/flappy/bird.lua
 scripts/lua/components/flappy/common.lua
 scripts/lua/components/flappy/director.lua

@@ -59,11 +59,13 @@ COMMON = {
     "lua": {
         "scripts/lua/scene_loader.lua": "scripts/lua/scene_loader.lua",
         "scripts/lua/scene_types/tilemap.lua": "scripts/lua/scene_types/tilemap.lua",
+        "scripts/lua/sprite_sheet.lua": "scripts/lua/sprite_sheet.lua",
         "resources/templates/main.lua": "scripts/lua/main.lua",
     },
     "ruby": {
         "scripts/ruby/scene_loader.rb": "scripts/ruby/scene_loader.rb",
         "scripts/ruby/scene_types/tilemap.rb": "scripts/ruby/scene_types/tilemap.rb",
+        "scripts/ruby/sprite_sheet.rb": "scripts/ruby/sprite_sheet.rb",
         "resources/templates/main.rb": "scripts/ruby/main.rb",
     },
 }
