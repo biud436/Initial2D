@@ -46,6 +46,9 @@ python3 tools/export_events.py selftest
 # 타일맵 템플릿이 규칙대로인가 (맵은 mapfile.py 의 형식, 씬은 새 프로젝트처럼 늘어놓고 엔진이 연다),
 # 템플릿 묶음의 목록과 tools/pack_templates.py (R4). [1/6] 의 빌드를 쓴다
 python3 tests/tools/templates_test.py
+# 내보낸 게임 (엔진 3). 실행 파일을 임시 폴더의 앱 묶음과 game 폴더 옆에 복사해 다른 작업 폴더와 / 에서 띄우고,
+# 묶음의 게임이 뜨는가, 읽기 전용 묶음, 게임 폴더에 쓰지 않는가, 아이콘 오류 줄. [1/6] 의 빌드를 쓴다
+python3 tests/tools/exported_game_test.py
 # 안드로이드 에셋 스테이징 (android/prepare_assets.sh --project, tools/stage_list.py, tools/stage_rules.json).
 # 규칙 표대로 빠지고 남는가, 스탬프, 인자 없는 실행이 예전과 같은가, web_stage.py 의 목록이 그대로인가
 bash tests/tools/prepare_assets_test.sh

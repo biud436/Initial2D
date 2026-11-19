@@ -52,14 +52,6 @@ inline std::string GetExecutablePath() {
 	return sCurrentPath;
 }
 
-#else
-
-#include "platform/SystemPath.h"
-
-inline std::string GetExecutablePath() {
-	return Initial2D::Platform::GetExecutableDirectory() + "/";
-}
-
 #endif
 
 /**
@@ -76,6 +68,7 @@ void App::Initialize()
 
 	LOG_D("생성되었습니다.");
 
+#ifdef RS_WINDOWS
 	std::string sCurrentPath = GetExecutablePath();
 
 	sCurrentPath.append("config.setting");
@@ -92,16 +85,15 @@ void App::Initialize()
 	configFile << isDebugMode << "\n";
 	configFile << sCurrentPath << "\n";
 
-#ifdef RS_WINDOWS
 	std::string cd;
 	cd.resize(MAX_PATH);
 	GetCurrentDirectory(MAX_PATH, &cd[0]);
 	cd.resize(MAX_PATH - 1);
 
 	configFile << &cd[0] << "\n";
-#else
-	configFile << std::filesystem::current_path().string() << "\n";
 #endif
+	// SDL2 판은 게임 폴더에 아무것도 쓰지 않는다. 내보낸 앱 묶음은 읽기 전용일 수 있다
+	// (docs/plans/engine3-exported-game.md 4절)
 
 	// 마우스 및 키보드 모듈 초기화
 #ifdef RS_WINDOWS
@@ -110,8 +102,11 @@ void App::Initialize()
 	m_pInput->initialize(nullptr);
 #endif
 
+#ifdef RS_WINDOWS
 	// Set the App Icon from a certain image.
 	SetAppIcon(".\\resources\\icons\\icon.png");
+#endif
+	// SDL2 판의 아이콘은 창을 만들 때 game.json 의 icon 으로 정한다 (AppSDL2.cpp)
 
 	// 게임 상태 머신 초기화
 	m_pGameStateMachine = new GameStateMachine();

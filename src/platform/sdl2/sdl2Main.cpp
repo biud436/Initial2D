@@ -18,6 +18,14 @@
 #include <cstdio>
 #include <cstring>
 
+#if !defined(__ANDROID__) && !defined(__EMSCRIPTEN__)
+#include <cerrno>
+#include <unistd.h>
+
+#include "../GameIdentity.h"
+#include "../SystemPath.h"
+#endif
+
 // CMake 가 빌드마다 만드는 판 헤더 (cmake/initial2d_version.cmake). 그 헤더가 없는 빌드는 "unknown" 이다.
 #if defined(__has_include)
 #if __has_include("initial2d_version.h")
@@ -29,11 +37,32 @@
 #define INITIAL2D_VERSION_COMMIT "unknown"
 #endif
 
+#if !defined(__ANDROID__) && !defined(__EMSCRIPTEN__)
+/**
+ * 내보낸 게임이면 그 게임 폴더로 작업 폴더를 옮긴다 (docs/plans/engine3-exported-game.md 2절).
+ * 실행 파일 옆에 게임 폴더가 없으면 작업 폴더를 그대로 쓴다. 옮기지 못하면 false.
+ */
+static bool EnterGameFolder()
+{
+	const std::string folder = Initial2D::Platform::FindBundledGameFolder(
+		Initial2D::Platform::GetExecutableDirectory());
+	if (folder.empty()) {
+		return true;
+	}
+	if (chdir(folder.c_str()) != 0) {
+		std::fprintf(stderr, "Initial2D: cannot enter the game folder %s: %s\n",
+			folder.c_str(), std::strerror(errno));
+		return false;
+	}
+	return true;
+}
+#endif
+
 static void PrintUsage()
 {
 	std::fprintf(stderr,
 		"usage: Initial2D [--features | --version]\n"
-		"  (no option)  run the game in the current directory\n"
+		"  (no option)  run the game (the game folder beside the executable, or the current directory)\n"
 		"  --features   print the script languages this build runs\n"
 		"  --version    print \"Initial2D <describe> <commit>\"\n");
 }
@@ -81,6 +110,11 @@ int main(int argc, char* argv[])
 #ifdef __ANDROID__
 	// App 생성(설정 파일 읽기) 전에 assets 추출 + chdir이 끝나야 한다.
 	if (!Initial2D::Platform::AndroidBootstrap()) {
+		return 1;
+	}
+#elif !defined(__EMSCRIPTEN__)
+	// 설정 파일과 스크립트를 읽기 전에 게임 폴더로 옮긴다
+	if (!EnterGameFolder()) {
 		return 1;
 	}
 #endif

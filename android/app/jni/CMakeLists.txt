@@ -85,6 +85,7 @@ add_library(main SHARED
   # POSIX 어댑터
   ${REPO_ROOT}/src/platform/posix/SystemPath.cpp
   ${REPO_ROOT}/src/platform/posix/PosixProcess.cpp
+  ${REPO_ROOT}/src/platform/GameIdentity.cpp
   # 게임 로직 (플랫폼 중립 — Win32 부분은 RS_WINDOWS 가드로 제외됨)
   ${REPO_ROOT}/src/App.cpp
   ${REPO_ROOT}/src/main.cpp

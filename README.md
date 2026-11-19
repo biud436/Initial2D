@@ -1397,6 +1397,39 @@ INITIAL2D_DEMO_STOP=town INITIAL2D_NO_RTP=1 \
 	SetRenderScale(1)  -- 씬을 나갈 때 되돌립니다
 ```
 
+## 게임 이름과 아이콘
+
+`name`은 창 제목, `icon`은 창 아이콘(macOS에서는 Dock 아이콘)입니다. `icon`은 게임 폴더 기준 상대 경로의 PNG입니다.
+
+```json
+{ "name": "날아라 새", "icon": "resources/icons/bird.png", "windowWidth": 768, "windowHeight": 896 }
+```
+
+`name`이 없으면 제목은 `Initial2D`입니다. `icon`이 없으면 `resources/icons/icon.png`가 있을 때만 그것을 씁니다. `icon`에 적은 파일을 읽지 못하면 stderr에 `game.json icon: cannot load ...` 한 줄을 찍고 아이콘 없이 뜹니다. 창 제목에는 FPS를 붙이지 않습니다. 개발 중에 보고 싶으면 `INITIAL2D_SHOW_FPS=1`로 띄웁니다. (SDL2 백엔드 전용)
+
+## 내보낸 게임의 게임 폴더
+
+엔진은 시작할 때 실행 파일 위치에서 게임 폴더를 먼저 찾습니다. 아래 둘 중 `game.json`이 있는 폴더가 있으면 그리로 옮겨 가서 실행하고, 없으면 지금처럼 작업 폴더의 게임을 엽니다. 그래서 내보낸 앱은 Finder에서 더블 클릭해도(작업 폴더가 `/`입니다), 다른 폴더의 터미널에서 실행해도 자기 게임을 엽니다.
+
+1. macOS 앱 묶음: 실행 파일이 `<이름>.app/Contents/MacOS/`에 있으면 `<이름>.app/Contents/Resources/game/`
+2. 실행 파일 옆의 `game/` 폴더
+
+```text
+날아라 새.app/Contents/
+  Info.plist
+  MacOS/Initial2D          배포용 엔진(dist/Initial2D-aarch64-apple-darwin). 이름은 ASCII로 둡니다 (한글이면 서명 검사가 실패합니다)
+  Resources/icon.icns
+  Resources/game/          game.json, scripts/, resources/
+```
+
+엔진은 게임 폴더에 아무것도 쓰지 않습니다. 앱 묶음은 읽기 전용일 수 있기 때문입니다. 예전에 SDL2 판이 작업 폴더에 쓰던 `config.setting`은 이제 만들지 않습니다. `Info.plist`의 키와 서명은 [엔진 3 문서](./docs/plans/engine3-exported-game.md) 5절에 있습니다.
+
+```bash
+# 묶음과 game 폴더에서 띄워 보는 검사 (tests/run_all.sh가 돌립니다). 배포용 실행 파일도 같은 인자로 검사합니다
+python3 tests/tools/exported_game_test.py
+python3 tests/tools/exported_game_test.py dist/Initial2D-aarch64-apple-darwin
+```
+
 # 브랜치 구조
 
 |         브랜치         | 용도                                         |

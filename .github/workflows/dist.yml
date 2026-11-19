@@ -15,6 +15,9 @@ on:
       - CMakeLists.txt
       - cmake/**
       - src/platform/sdl2/sdl2Main.cpp
+      - src/platform/sdl2/AppSDL2.cpp
+      - src/platform/GameIdentity.*
+      - tests/tools/exported_game_test.py
       - tools/sdl_versions.sh
       - tools/fetch_sdl_src.sh
       - tools/build_mruby.sh
@@ -94,6 +97,10 @@ jobs:
 
       - name: 템플릿 검사
         run: python3 tests/tools/templates_test.py "dist/Initial2D-${{ matrix.target }}"
+
+      # 내보낸 게임처럼 묶음과 game 폴더 옆에 복사해 띄운다 (엔진 3, docs/plans/engine3-exported-game.md)
+      - name: 내보낸 게임 검사
+        run: python3 tests/tools/exported_game_test.py "dist/Initial2D-${{ matrix.target }}"
 
       - name: 산출물
         uses: actions/upload-artifact@v4
