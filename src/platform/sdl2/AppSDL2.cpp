@@ -47,17 +47,40 @@
 #endif
 
 #include "json/json.h"
+#include "../GameIdentity.h"
+
+namespace {
+
+	// game.json 의 name 과 icon. LoadDisplaySettings 가 시작할 때 한 번 읽는다 (엔진 3)
+	Initial2D::Platform::GameIdentity g_identity;
+
+	/** INITIAL2D_SHOW_FPS 가 비어 있지 않고 "0" 이 아니면 창 제목에 FPS 를 붙인다 */
+	bool ShowFpsInTitle()
+	{
+		const char* value = Initial2D::Platform::GetEnv("INITIAL2D_SHOW_FPS");
+		return value != nullptr && *value != '\0' && std::strcmp(value, "0") != 0;
+	}
+
+	bool FileExists(const char* path)
+	{
+		struct stat info;
+		return stat(path, &info) == 0 && S_ISREG(info.st_mode);
+	}
+
+} // namespace
 
 /**
- * @brief 게임별 해상도 설정을 읽는다 (1단계, docs/plans/01-engine-core.md).
+ * @brief 게임별 해상도 설정과 이름과 아이콘을 읽는다 (1단계 docs/plans/01-engine-core.md, 엔진 3).
  *
  * 우선순위: INITIAL2D_WINDOW=WxH 환경 변수 > 프로젝트 루트의 game.json >
  * Constants.h 기본값(768x896). game.json 예:
- *   { "windowWidth": 320, "windowHeight": 240, "renderScale": 2 }
+ *   { "name": "날아라 새", "icon": "resources/icons/bird.png",
+ *     "windowWidth": 320, "windowHeight": 240, "renderScale": 2 }
  *
  * renderScale은 픽셀 확대 배율이다 (기본 1). 창 크기는 그대로 두고 논리
  * 해상도만 1/배율로 줄여 화면 전체를 크게 그린다. 스크립트에서 씬마다
  * SetRenderScale로 바꿀 수도 있다 (INITIAL2D_SCALE 환경 변수는 초기값).
+ * name 은 창 제목, icon 은 창 아이콘이다 (docs/plans/engine3-exported-game.md 3절).
  *
  * 환경 변수는 Platform::GetEnv 로 읽는다. 브라우저에서는 로더가 넘긴 Module.initial2dEnv 가
  * 같은 이름으로 그 자리를 채운다 (platform/Env.h).
@@ -75,6 +98,12 @@ void App::LoadDisplaySettings()
 		{
 			Json::Value root;
 			file >> root;
+			std::vector<std::string> warnings;
+			g_identity = Initial2D::Platform::ReadGameIdentity(root, warnings);
+			for (const std::string& warning : warnings)
+			{
+				std::fprintf(stderr, "%s\n", warning.c_str());
+			}
 			width = root.get("windowWidth", width).asInt();
 			height = root.get("windowHeight", height).asInt();
 			scale = root.get("renderScale", scale).asInt();
@@ -270,8 +299,9 @@ int App::Run(int nCmdShow)
 
 	// 창은 배율을 적용하기 전 크기로 만든다. 논리 해상도(GetWindowWidth)는
 	// 그 1/배율이며, 확대는 SDL_RenderSetLogicalSize가 맡는다 (RenderTransform).
+	const std::string title = Initial2D::Platform::WindowTitle(g_identity, ShowFpsInTitle() ? 0 : -1);
 	m_context.window = SDL_CreateWindow(
-		GetWindowName(),
+		title.c_str(),
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 		GetBaseWidth(), GetBaseHeight(),
 		windowFlags);
@@ -280,6 +310,20 @@ int App::Run(int nCmdShow)
 		std::fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());
 		SDL_Quit();
 		return -1;
+	}
+
+	// 창 아이콘: game.json 의 icon, 없으면 기본 아이콘 파일이 있을 때만 (엔진 3 문서 3절)
+	if (g_identity.hasIcon) {
+		const std::string path = Initial2D::Platform::NormalizePath(g_identity.icon);
+		SDL_Surface* icon = IMG_Load(path.c_str());
+		if (icon == nullptr) {
+			std::fprintf(stderr, "game.json icon: cannot load %s (%s)\n", g_identity.icon.c_str(), IMG_GetError());
+		} else {
+			SDL_SetWindowIcon(m_context.window, icon);
+			SDL_FreeSurface(icon);
+		}
+	} else if (FileExists(Initial2D::Platform::kDefaultIconPath)) {
+		SetAppIcon(Initial2D::Platform::kDefaultIconPath);
 	}
 
 	// SDL은 텍스트 입력(IME 조합)을 기본으로 켜 둔다. 이 엔진은 글자 입력 이벤트를
@@ -526,10 +570,10 @@ bool App::StepFrame()
 	{
 #ifndef __EMSCRIPTEN__
 		// 브라우저에서 창 제목은 document.title 이라 손대지 않는다 (에디터 탭 이름이 바뀐다).
-		std::stringstream sstr;
-		sstr << m_nFPS;
-
-		SDL_SetWindowTitle(m_context.window, sstr.str().c_str());
+		if (ShowFpsInTitle()) {
+			const std::string title = Initial2D::Platform::WindowTitle(g_identity, m_nFPS);
+			SDL_SetWindowTitle(m_context.window, title.c_str());
+		}
 #endif
 
 		g_loop.fpsElapsedTime = 0;

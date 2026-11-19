@@ -51,7 +51,7 @@ run() {
     fi
 }
 
-# 옵션 실행은 빈 작업 폴더에 아무것도 남기지 않아야 한다 (config.setting 은 게임을 띄울 때 쓴다)
+# 옵션 실행은 빈 작업 폴더에 아무것도 남기지 않아야 한다 (게임을 띄워도 쓰지 않는 것은 tests/tools/exported_game_test.py 가 본다)
 empty_after() {
     if [ -z "$(ls -A "$1")" ]; then
         pass "$2: 작업 폴더에 쓰지 않는다"
